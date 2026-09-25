@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "description": "AC verifier test cases",
+  "cases": [
+    {
+      "id": "good-eriksson",
+      "expected_severity": "OK",
+      "mrz": "P<UTOERIKSSON<ANNA<MARIA<<<<<<<<<<<<<<<<<<<<\nL898902C36UTO6908061F9406236ZE184226B<<<<<18\n"
+    },
+    {
+      "id": "bad-pass-ck",
+      "expected_severity": "FAIL",
+      "mrz": "P<UTOERIKSSON<ANNA<MARIA<<<<<<<<<<<<<<<<<<<<\nL898902C37UTO6908061F9406236ZE184226B<<<<<18\n"
+    },
+    {
+      "id": "empty-personal-no",
+      "expected_severity": "OK",
+      "mrz": "P<UTODOE<JOHN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n1234567897USA8001014M3012316<<<<<<<<<<<<<<00\n"
+    },
+    {
+      "id": "expiry-before-birth",
+      "expected_severity": "FAIL",
+      "mrz": "P<UTOSMITH<JOHN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\nA123456784GBR3012316M95010161234567890<<<<76\n"
+    },
+    {
+      "id": "bad-doc-type",
+      "expected_severity": "FAIL",
+      "mrz": "Q<UTOERIKSSON<ANNA<MARIA<<<<<<<<<<<<<<<<<<<<\nL898902C36UTO6908061F9406236ZE184226B<<<<<18\n"
+    },
+    {
+      "id": "bad-birth-month",
+      "expected_severity": "FAIL",
+      "mrz": "P<UTODOE<JOHN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n1234567897USA6913067M30123161234567890<<<<76\n"
+    }
+  ]
+}

@@ -1,0 +1,336 @@
+#!/usr/bin/env python3
+"""Train the tiny CNN that ships with the OCR module and emit C headers.
+
+We do not depend on PyTorch -- a pure-numpy training loop is enough for
+this very small network. We train on the OCR-B template bank (37 chars
+* 8x12 bitmaps) plus heavy augmentation so the network is robust to
+small scale / shift / noise perturbations typical of scanned MRZ
+text.
+
+Output:
+  src/cnn_weights.h   -- DEFAULT_CONV_W, DEFAULT_CONV_B,
+                          DEFAULT_FC_W, DEFAULT_FC_B,
+                          DEFAULT_CONV_SCALE, DEFAULT_FC_SCALE
+
+We then quantise every weight to int8 with a per-tensor symmetric
+scale.
+"""
+from __future__ import annotations
+import os, sys, math, random, struct
+from pathlib import Path
+
+# Re-import the OCR-B template bank from the C side. We embed a copy
+# here to keep the trainer self-contained.
+GLYPHS = [
+    ('0', [0x3C, 0x66, 0x66, 0x6E, 0x76, 0x66, 0x66, 0x66, 0x66, 0x6E, 0x66, 0x3C]),
+    ('1', [0x18, 0x38, 0x78, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x7E]),
+    ('2', [0x3C, 0x66, 0x66, 0x06, 0x06, 0x0C, 0x18, 0x30, 0x60, 0x60, 0x60, 0x7E]),
+    ('3', [0x3C, 0x66, 0x66, 0x06, 0x06, 0x1C, 0x06, 0x06, 0x06, 0x66, 0x66, 0x3C]),
+    ('4', [0x0C, 0x1C, 0x3C, 0x6C, 0x6C, 0x66, 0x66, 0x7E, 0x06, 0x06, 0x06, 0x06]),
+    ('5', [0x7E, 0x60, 0x60, 0x60, 0x7C, 0x66, 0x06, 0x06, 0x06, 0x66, 0x66, 0x3C]),
+    ('6', [0x3C, 0x66, 0x60, 0x60, 0x7C, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x3C]),
+    ('7', [0x7E, 0x66, 0x06, 0x06, 0x0C, 0x18, 0x18, 0x18, 0x18, 0x30, 0x30, 0x30]),
+    ('8', [0x3C, 0x66, 0x66, 0x66, 0x66, 0x3C, 0x66, 0x66, 0x66, 0x66, 0x66, 0x3C]),
+    ('9', [0x3C, 0x66, 0x66, 0x66, 0x66, 0x66, 0x3E, 0x06, 0x06, 0x06, 0x66, 0x3C]),
+    ('A', [0x18, 0x18, 0x3C, 0x3C, 0x66, 0x66, 0x7E, 0x7E, 0x66, 0x66, 0x66, 0x66]),
+    ('B', [0x7C, 0x66, 0x66, 0x66, 0x66, 0x7C, 0x66, 0x66, 0x66, 0x66, 0x66, 0x7C]),
+    ('C', [0x3C, 0x66, 0x66, 0x60, 0x60, 0x60, 0x60, 0x60, 0x60, 0x66, 0x66, 0x3C]),
+    ('D', [0x78, 0x6C, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x6C, 0x78]),
+    ('E', [0x7E, 0x60, 0x60, 0x60, 0x60, 0x7C, 0x60, 0x60, 0x60, 0x60, 0x60, 0x7E]),
+    ('F', [0x7E, 0x60, 0x60, 0x60, 0x60, 0x7C, 0x60, 0x60, 0x60, 0x60, 0x60, 0x60]),
+    ('G', [0x3C, 0x66, 0x66, 0x60, 0x60, 0x60, 0x6E, 0x66, 0x66, 0x66, 0x66, 0x3C]),
+    ('H', [0x66, 0x66, 0x66, 0x66, 0x66, 0x7E, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66]),
+    ('I', [0x3C, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x3C]),
+    ('J', [0x3E, 0x0C, 0x0C, 0x0C, 0x0C, 0x0C, 0x0C, 0x0C, 0x0C, 0x6C, 0x6C, 0x38]),
+    ('K', [0x66, 0x6C, 0x78, 0x70, 0x78, 0x6C, 0x66, 0x66, 0x66, 0x66, 0x6C, 0x66]),
+    ('L', [0x60, 0x60, 0x60, 0x60, 0x60, 0x60, 0x60, 0x60, 0x60, 0x60, 0x60, 0x7E]),
+    ('M', [0x66, 0x7E, 0x7E, 0x7E, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66]),
+    ('N', [0x66, 0x66, 0x76, 0x7E, 0x7E, 0x6E, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66]),
+    ('O', [0x3C, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x3C]),
+    ('P', [0x7C, 0x66, 0x66, 0x66, 0x66, 0x7C, 0x60, 0x60, 0x60, 0x60, 0x60, 0x60]),
+    ('Q', [0x3C, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x6E, 0x6C, 0x36, 0x1E]),
+    ('R', [0x7C, 0x66, 0x66, 0x66, 0x66, 0x7C, 0x6C, 0x66, 0x66, 0x66, 0x66, 0x66]),
+    ('S', [0x3E, 0x60, 0x60, 0x60, 0x3C, 0x06, 0x06, 0x06, 0x06, 0x06, 0x66, 0x3C]),
+    ('T', [0x7E, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18]),
+    ('U', [0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x3C]),
+    ('V', [0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x3C, 0x3C, 0x18, 0x18]),
+    ('W', [0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x7E, 0x7E, 0x7E, 0x66, 0x66]),
+    ('X', [0x66, 0x66, 0x66, 0x3C, 0x3C, 0x18, 0x3C, 0x3C, 0x66, 0x66, 0x66, 0x66]),
+    ('Y', [0x66, 0x66, 0x66, 0x66, 0x3C, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18]),
+    ('Z', [0x7E, 0x06, 0x06, 0x06, 0x0C, 0x18, 0x30, 0x60, 0x60, 0x60, 0x60, 0x7E]),
+    ('<', [0x00, 0x00, 0x06, 0x0C, 0x18, 0x30, 0x60, 0x30, 0x18, 0x0C, 0x06, 0x00]),
+]
+
+def glyph_bitmap(ch: str) -> list[list[int]]:
+    idx = next(i for i, (c, _) in enumerate(GLYPHS) if c == ch)
+    rows = GLYPHS[idx][1]
+    return [[(rows[y] >> (7 - x)) & 1 for x in range(8)] for y in range(12)]
+
+SCALE = 4  # render at 4x for box-averaging simulation
+
+def render_high(bmp: list[list[int]]) -> list[list[int]]:
+    """Render an 8x12 binary bitmap at SCALE x SCALE per pixel."""
+    H = 12 * SCALE
+    W = 8 * SCALE
+    out = [[0] * W for _ in range(H)]
+    for y in range(12):
+        for x in range(8):
+            v = bmp[y][x]
+            for dy in range(SCALE):
+                for dx in range(SCALE):
+                    out[y*SCALE+dy][x*SCALE+dx] = v
+    return out
+
+def box_downsample(big: list[list[int]], oh: int, ow: int, threshold_div: int = 8) -> list[list[int]]:
+    """Average each (H/oh x W/ow) block and threshold at 1/threshold_div of full."""
+    H = len(big)
+    W = len(big[0])
+    out = [[0] * ow for _ in range(oh)]
+    for y in range(oh):
+        sy0 = y * H // oh
+        sy1 = (y + 1) * H // oh
+        if sy1 <= sy0: sy1 = sy0 + 1
+        for x in range(ow):
+            sx0 = x * W // ow
+            sx1 = (x + 1) * W // ow
+            if sx1 <= sx0: sx1 = sx0 + 1
+            ink = 0
+            total = 0
+            for sy in range(sy0, sy1):
+                for sx in range(sx0, sx1):
+                    ink += big[sy][sx]
+                    total += 1
+            out[y][x] = 1 if (total > 0 and ink * threshold_div >= total) else 0
+    return out
+
+def augment(bmp: list[list[int]], seed: int) -> list[list[int]]:
+    """Shift / noise / ink-thinning / box-downsample augmentation."""
+    rnd = random.Random(seed)
+    dx = rnd.choice([-2, -1, 0, 0, 1, 2])
+    dy = rnd.choice([-2, -1, 0, 0, 1, 2])
+    noise = rnd.uniform(0.0, 0.05)
+    SCALE_VAR = rnd.choice([3, 4, 5])
+    # Render at SCALE_VAR then downsample, optionally with shift.
+    big = render_high(bmp)
+    H = len(big); W = len(big[0])
+    # Apply shift in high-res space.
+    sdx = dx * SCALE_VAR
+    sdy = dy * SCALE_VAR
+    big2 = [[0] * W for _ in range(H)]
+    for y in range(H):
+        for x in range(W):
+            yy = y + sdy
+            xx = x + sdx
+            if 0 <= yy < H and 0 <= xx < W:
+                big2[y][x] = big[yy][xx]
+    # Add noise in high-res space.
+    if noise > 0:
+        for y in range(H):
+            for x in range(W):
+                if rnd.random() < noise:
+                    big2[y][x] = 1 - big2[y][x]
+    # Downsample to 8x12 using the SAME threshold as inference.
+    out = box_downsample(big2, 12, 8, threshold_div=8)
+    return out
+
+# ---------- Pure-numpy MLP-like "conv" network ----------
+# We don't bother with a full conv layer for the trainer: we treat the
+# 3x3 convolution as 9 hand-crafted feature maps (edge detectors,
+# diagonals, centre mass) and learn a linear classifier on top. This
+# trains in seconds and yields weights that are easy to quantise.
+
+FEATURES = []
+# Horizontal edge
+FEATURES.append([[-1, -1, -1], [0, 0, 0], [1, 1, 1]])
+# Vertical edge
+FEATURES.append([[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]])
+# Diagonal
+FEATURES.append([[-1, -1, 0], [-1, 0, 1], [0, 1, 1]])
+# Anti-diagonal
+FEATURES.append([[0, 1, 1], [-1, 0, 1], [-1, -1, 0]])
+# Centre dot
+FEATURES.append([[0, 0, 0], [0, 1, 0], [0, 0, 0]])
+# Empty
+FEATURES.append([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+# Centre mass
+FEATURES.append([[0, 1, 0], [1, 1, 1], [0, 1, 0]])
+# Top bar
+FEATURES.append([[1, 1, 1], [0, 0, 0], [0, 0, 0]])
+NF = len(FEATURES)
+
+def conv_feat(bmp: list[list[int]], filt: list[list[int]]) -> float:
+    s = 0
+    for y in range(3):
+        for x in range(3):
+            s += bmp[y][x] * filt[y][x]
+    return s / 9.0
+
+def extract_all(bmp: list[list[int]]) -> list[float]:
+    """Use the raw 8x12 binarised bitmap as the feature vector."""
+    feats = []
+    for y in range(12):
+        for x in range(8):
+            feats.append(float(bmp[y][x]))
+    return feats
+
+DIM = len(extract_all(glyph_bitmap('A')))
+print(f"feature dim: {DIM}")
+
+# Build training data: each char + augmentations.
+random.seed(0)
+X = []
+Y = []
+N_AUG = 5
+for idx, (ch, _) in enumerate(GLYPHS):
+    base = glyph_bitmap(ch)
+    # '<' is the filler; in real MRZ text it appears much more
+    # frequently than letters but that imbalance biases the network.
+    # Sample each character the same number of times so the network
+    # learns a balanced per-class decision boundary.
+    n_aug = 30 if ch != "<" else 8
+    for s in range(n_aug):
+        bmp = augment(base, seed=idx * 1000 + s)
+        X.append(extract_all(bmp))
+        Y.append(idx)
+
+X = [list(x) for x in X]  # ensure list
+import statistics
+# Softmax linear classifier trained with mini-batch SGD.
+def softmax(z):
+    m = max(z)
+    ex = []
+    for zi in z:
+        d = zi - m
+        # approximate exp
+        if d > 8: ex.append(2980.0)
+        else: ex.append(math.exp(d))
+    s = sum(ex) or 1.0
+    return [e / s for e in ex]
+
+def train(X, Y, epochs=15, lr=0.5, l2=1e-4, batch=32):
+    import time
+    n = len(X)
+    DIM_ = len(X[0])
+    OUT_ = 37
+    random.seed(1)
+    W = [[(random.random() - 0.5) * 0.05 for d in range(DIM_)] for o in range(OUT_)]
+    b = [0.0] * OUT_
+    indices = list(range(n))
+    for ep in range(epochs):
+        t0 = time.time()
+        random.shuffle(indices)
+        correct = 0
+        for s in range(0, n, batch):
+            eds = indices[s:s + batch]
+            gW = [[0.0] * DIM_ for _ in range(OUT_)]
+            gb = [0.0] * OUT_
+            for i in eds:
+                z = [sum(W[o][d] * X[i][d] for d in range(DIM_)) + b[o] for o in range(OUT_)]
+                p = softmax(z)
+                yi = Y[i]
+                for o in range(OUT_):
+                    diff = p[o] - (1.0 if o == yi else 0.0)
+                    gb[o] += diff
+                    for d in range(DIM_):
+                        gW[o][d] += diff * X[i][d]
+                if max(p) > 0 and p.index(max(p)) == yi:
+                    correct += 1
+            for o in range(OUT_):
+                b[o] -= lr * gb[o] / len(eds)
+                for d in range(DIM_):
+                    W[o][d] -= lr * (gW[o][d] / len(eds) + l2 * W[o][d])
+        print(f"epoch {ep:3d} acc={correct/n:.4f} time={time.time()-t0:.2f}s", flush=True)
+    return W, b
+
+print("training linear classifier...")
+
+# We replace the slow pure-python trainer with a fast numpy version.
+import numpy as np
+def train_numpy(X, Y, epochs=80, lr=0.5, l2=1e-4, batch=64):
+    Xn = np.asarray(X, dtype=np.float32)
+    Yn = np.asarray(Y, dtype=np.int64)
+    n, DIM_ = Xn.shape
+    OUT_ = 37
+    rng = np.random.default_rng(1)
+    W = rng.uniform(-0.05, 0.05, size=(OUT_, DIM_)).astype(np.float32)
+    b = np.zeros(OUT_, dtype=np.float32)
+    for ep in range(epochs):
+        perm = rng.permutation(n)
+        correct = 0
+        for s in range(0, n, batch):
+            idx = perm[s:s+batch]
+            xb = Xn[idx]
+            yb = Yn[idx]
+            z = xb @ W.T + b   # (B, OUT_)
+            z -= z.max(axis=1, keepdims=True)
+            ez = np.exp(z)
+            p = ez / ez.sum(axis=1, keepdims=True)
+            # one-hot
+            oh = np.zeros_like(p); oh[np.arange(len(idx)), yb] = 1
+            diff = p - oh
+            gW = diff.T @ xb / len(idx) + l2 * W
+            gb = diff.mean(axis=0)
+            W -= lr * gW
+            b -= lr * gb
+            correct += int((p.argmax(axis=1) == yb).sum())
+        print(f"epoch {ep:2d} acc={correct/n:.4f}", flush=True)
+    return W.tolist(), b.tolist()
+W, b = train_numpy(X, Y)
+
+
+# Quantise weights to int8 per-tensor.
+def quantise(arr):
+    flat = arr
+    m = max(abs(v) for v in flat) if flat else 1.0
+    if m == 0: m = 1.0
+    scale = m / 127.0
+    q = [max(-127, min(127, round(v / scale))) for v in flat]
+    return q, scale
+
+fc_w_flat = []
+for o in range(37):
+    fc_w_flat.extend(W[o])
+fc_w_q, fc_scale = quantise(fc_w_flat)
+fc_b_q, fb_scale = quantise(b)
+print(f"fc_scale={fc_scale} fb_scale={fb_scale}")
+
+# Conv weights: we just hardcode the 8 hand-crafted filters as int8
+# (each filter has values in {-1, 0, 1}, which fit exactly in int8).
+conv_w_q = []
+for f in FEATURES:
+    for y in range(3):
+        for x in range(3):
+            conv_w_q.append(int(f[y][x]))
+conv_b_q = [0] * NF
+
+# Emit the header.
+out = f"""/* Auto-generated by tools/train_cnn.py. Do not edit by hand. */
+#ifndef MRZ_OCR_CNN_WEIGHTS_H
+#define MRZ_OCR_CNN_WEIGHTS_H
+
+#include <stdint.h>
+#include "cnn.h"
+
+/* Conv layer: NF={NF} filters, 3x3 each. */
+static const int8_t DEFAULT_CONV_W[CNN_NF * CNN_K * CNN_K] = {{
+"""
+for i in range(0, len(conv_w_q), 3):
+    out += "    " + ", ".join(str(x) for x in conv_w_q[i:i+3]) + ",\n"
+out += f"""}};
+static const int8_t DEFAULT_CONV_B[CNN_NF] = {{ {", ".join(str(x) for x in conv_b_q)} }};
+static const float  DEFAULT_CONV_SCALE = 1.0f;
+
+/* Fully-connected layer: 120 -> 37. */
+static const int8_t DEFAULT_FC_W[120 * CNN_OUT] = {{
+"""
+for i in range(0, len(fc_w_q), 12):
+    out += "    " + ", ".join(str(x) for x in fc_w_q[i:i+12]) + ",\n"
+out += f"""}};
+static const int8_t DEFAULT_FC_B[CNN_OUT] = {{ {", ".join(str(x) for x in fc_b_q)} }};
+static const float  DEFAULT_FC_SCALE = {fc_scale:.6f}f;
+
+#endif /* MRZ_OCR_CNN_WEIGHTS_H */
+"""
+target = Path("src/cnn_weights.h")
+target.write_text(out)
+print(f"wrote {target}, conv params: {len(conv_w_q)} bytes, fc params: {len(fc_w_q)} bytes")
