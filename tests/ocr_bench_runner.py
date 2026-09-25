@@ -62,9 +62,13 @@ def compare(gt: str, got: str) -> tuple[int, int, str]:
             status += "-"
     return correct, n, status
 
-def run(case_ids: list[str] | None, methods: list[str]) -> dict:
+def run(case_ids: list[str] | None, methods: list[str],
+        on_record=None) -> dict:
     """Run the requested cases (or all if case_ids is None) with the
-    given methods. Returns an aggregate result."""
+    given methods. Returns an aggregate result.
+
+    If on_record(done, total, case_id) is given it is invoked after each
+    case completes, letting a caller drive a live progress bar."""
     corpus = json.loads(CORPUS_JSON.read_text())
     records = corpus["records"]
     if case_ids is not None:
@@ -103,16 +107,26 @@ def run(case_ids: list[str] | None, methods: list[str]) -> dict:
                         "scale": rec["scale"], "noise": rec["noise"],
                         "skew": rec["skew"],
                         "per_method": per_method})
+        if on_record:
+            on_record(len(results), len(records), rec["id"])
     return {"records": results, "agg": agg, "methods": methods,
             "total_cases": len(records)}
 
 if __name__ == "__main__":
     # CLI use: methods on argv (comma-separated), -a = all.
+    # --progress emits a @@PROGRESS@done@total@id line after each case.
     args = sys.argv[1:]
+    progress = "--progress" in args
+    if progress:
+        args.remove("--progress")
     if "-a" in args:
         args.remove("-a")
         case_ids = None
     else:
         case_ids = args[1:] if len(args) > 1 else None
     methods = args[0].split(",") if args else ["traditional", "cnn"]
-    print(json.dumps(run(case_ids, methods), indent=2))
+    def _cb(done, total, cid):
+        sys.stdout.write(f"@@PROGRESS@{done}@{total}@{cid}\n")
+        sys.stdout.flush()
+    print(json.dumps(run(case_ids, methods, _cb if progress else None),
+                     indent=2))
