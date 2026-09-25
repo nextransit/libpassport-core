@@ -69,10 +69,16 @@ static void fill_allow(int allow[37], int line_idx, int col) {
                 allow[i] = ((i >= a0 && i <= lt - 1) || i == lt) ? 1 : 0;
         }
     } else {
-        if (col == 9 || col == 19 || col == 27 ||
-            col == 42 || col == 43) {
+        if (col == 9 || col == 19 || col == 27) {
             for (int i = 0; i < 37; ++i)
                 allow[i] = (i >= d0 && i <= d0 + 9) ? 1 : 0;
+        } else if (col == 42 || col == 43) {
+            /* Final two positions: strict ICAO TD3 -> numeric check
+             * digits, but the free-form corpus may write '<' there.
+             * Accept both; beam-search enforces numeric when valid. */
+            for (int i = 0; i < 37; ++i)
+                allow[i] = (i >= d0 && i <= d0 + 9) ? 1 : 0;
+            allow[lt] = 1;
         } else if (col >= 13 && col <= 18) {
             for (int i = 0; i < 37; ++i)
                 allow[i] = (i >= d0 && i <= d0 + 9) ? 1 : 0;
@@ -273,32 +279,6 @@ static void decode_row(const cnn_t *net,
                        const mrz_ocr_rect_t *chars) {
     float feats_stk[CNN_BATCH_MAX * CNN_FLAT];
     float probs_stk[CNN_BATCH_MAX * CNN_OUT];
-#ifdef MRZ_OCR_DUMP
-    {
-        for (int _c = 0; _c < n && _c < n; ++_c)
-            if (chars) fprintf(stderr, "[L%d C%d] x=%d w=%d h=%d\n",
-                    line_idx, _c, chars[_c].x, chars[_c].w, chars[_c].h);
-    }
-#endif
-#ifdef MRZ_OCR_DUMP
-    {
-        char path[128];
-        for (int _c = 0; _c < n && _c < 44; ++_c) {
-            snprintf(path, sizeof(path), "/tmp/glyph_L%d_C%d.pgm",
-                     line_idx, _c);
-            FILE *f = fopen(path, "w");
-            if (f) {
-                fprintf(f, "P2\n%d %d\n255\n", CNN_IN_W, CNN_IN_H);
-                for (int _y = 0; _y < CNN_IN_H; ++_y) {
-                    for (int _x = 0; _x < CNN_IN_W; ++_x)
-                        fprintf(f, "%d ", (int)(glyphs[_c][_y][_x]*255));
-                    fprintf(f, "\n");
-                }
-                fclose(f);
-            }
-        }
-    }
-#endif
     cnn_row_features_batch(net, glyphs, n, feats_stk);
     cnn_fc_batch(net, feats_stk, n, probs_stk);
 
@@ -313,12 +293,6 @@ static void decode_row(const cnn_t *net,
 
     for (int c = 0; c < n && c < 44; ++c)
         dest[c] = MRZ_OCR_GLYPHS[t2[c].cand[0]].ch;
-#ifdef MRZ_OCR_DUMP
-    for (int c = 0; c < n && c < 44; ++c)
-        fprintf(stderr, "[%d] GT? c=%d cand0=%c(%.3f) cand1=%c(%.3f)\n",
-                line_idx, c, MRZ_OCR_GLYPHS[t2[c].cand[0]].ch, t2[c].p0,
-                MRZ_OCR_GLYPHS[t2[c].cand[1]].ch, t2[c].p1);
-#endif
     if (n < 44) dest[n] = '\0'; else dest[44] = '\0';
 
     /* Trailing "<" filler whitelist: ICAO 9303 guarantees that once a

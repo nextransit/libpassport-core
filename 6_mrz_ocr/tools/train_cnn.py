@@ -245,14 +245,14 @@ def build_dataset(n_per_class=500):
         # perturbation is realistic and identity-preserving)
         for _ in range(int(n_per_class * 0.5)):
             X.append(base.ravel().copy()); Y.append(idx)
-        for s in range(int(n_per_class * 0.35)):
+        for s in range(int(n_per_class * 0.5)):
             X.append(render_augment(ch, idx * 100000 + s).ravel())
             Y.append(idx)
     # hard-pair extra samples (extra 40% for confusable classes)
     for a, b in HARD_PAIRS:
         ia = next(i for i, (c, _) in enumerate(GLYPHS) if c == a)
         ib = next(i for i, (c, _) in enumerate(GLYPHS) if c == b)
-        for s in range(int(n_per_class * 0.35)):
+        for s in range(int(n_per_class * 0.5)):
             X.append(render_augment(a, 900000 + ia * 1000 + s).ravel()); Y.append(ia)
             X.append(render_augment(b, 900000 + ib * 1000 + s).ravel()); Y.append(ib)
     return np.asarray(X, dtype=np.float32), np.asarray(Y, dtype=np.int64)
