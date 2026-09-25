@@ -1,0 +1,2 @@
+8_android/app/src/main/assets/models/ppocrv6_medium_rec.onnx filter=lfs diff=lfs merge=lfs -text
+10_face_app_ios/Resources/Models/fr_2_10.dat filter=lfs diff=lfs merge=lfs -text
