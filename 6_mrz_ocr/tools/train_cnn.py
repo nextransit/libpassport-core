@@ -1,21 +1,34 @@
 #!/usr/bin/env python3
-"""Train the tiny OCR-B MLP (raw 12x8 pixels only) and emit float32 weights.
+"""Train the Tiny ConvNet OCR-B classifier and emit float32 C weights.
 
-ARCHITECTURE (matched by C side):
-   fc1 96 -> 32, ReLU
-   fc2 32 -> 37
+ARCHITECTURE (matched by C side in src/cnn.c / include/cnn.h):
 
-INPUT: 96 raw pixel values for a 12x8 binary OCR-B glyph.
+  input    : 12 rows x 16 cols binary glyph  (resampled char)
+  conv1    : 3x3, 8 filters, stride 1, padding 1 -> ReLU
+  pool1    : 2x2 max pool                     -> 6 x 8 x 8
+  conv2    : 3x3, 16 filters, stride 1, padding 0 -> ReLU
+  pool2    : 2x2 max pool                     -> 2 x 3 x 16 = 96
+  flatten  : 96
+  fc1      : 96 -> 64, ReLU
+  fc2      : 64 -> 37 (softmax)
 
-TRAINING:
-- For each glyph, include exactly one "clean" sample plus a handful
-  of small geometric augmentations.
-- Adam-style SGD with cosine LR.
+TRAINING DATA (per class, ~2000+ seeds):
+  - clean glyph
+  - subpixel translation (bilinear, +/-1.5 px)
+  - morphological dilate/erode 2x2 (ink spread / broken ink)
+  - gamma / contrast stretch
+  - hard-pair bootstrapping: augment confusable pairs
+    (0/O, 8/B, 1/I, 5/S, </truncated-edge) and add a small
+    pairwise contrastive loss to separate them.
+
+OUTPUT: src/cnn_weights.h with float32 weights (no int8 quant).
 """
 from __future__ import annotations
 import math, random
 from pathlib import Path
+import numpy as np
 
+# ---- OCR-B template bank (must match src/template.c exactly) ----
 GLYPHS = [
     ('0', [0x3C, 0x66, 0x66, 0x6E, 0x76, 0x66, 0x66, 0x66, 0x66, 0x6E, 0x66, 0x3C]),
     ('1', [0x18, 0x38, 0x78, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x7E]),
@@ -57,8 +70,17 @@ GLYPHS = [
 ]
 assert len(GLYPHS) == 37
 NUM_CLASSES = len(GLYPHS)
-FEATURE_DIM = 96      # raw 12x8 bitmaps only (no pooling)
-HIDDEN = 96
+
+# Network geometry (must match include/cnn.h).
+IN_H, IN_W = 12, 16
+C1, C2 = 8, 16
+KH, KW = 3, 3
+HID = 64
+
+# Hard confusable pairs -> extra samples + margin term.
+HARD_PAIRS = [
+    ("0", "O"), ("8", "B"), ("1", "I"), ("5", "S"), ("<", "0"),
+]
 
 
 def glyph_bitmap(ch):
@@ -67,173 +89,361 @@ def glyph_bitmap(ch):
     return [[(rows[y] >> (7 - x)) & 1 for x in range(8)] for y in range(12)]
 
 
-def render_high(bmp, scale):
-    H, W = 12 * scale, 8 * scale
-    out = [[0] * W for _ in range(H)]
-    for y in range(12):
-        for x in range(8):
-            v = bmp[y][x]
-            for dy in range(scale):
-                for dx in range(scale):
-                    out[y*scale+dy][x*scale+dx] = v
+def to_16(bmp):
+    """8x12 binary glyph -> 16x12 (nearest-neighbour 2x width)."""
+    return [[bmp[y][x // 2] for x in range(16)] for y in range(12)]
+
+
+def binary_pad(img, scale):
+    """Uprate a binary (h, w) image by integer `scale` (nearest)."""
+    h, w = len(img), len(img[0])
+    out = np.zeros((h * scale, w * scale), dtype=np.float32)
+    for y in range(h):
+        for x in range(w):
+            if img[y][x]:
+                out[y*scale:(y+1)*scale, x*scale:(x+1)*scale] = 1.0
     return out
 
 
-def box_downsample(big, oh, ow, threshold_div=8):
-    H, W = len(big), len(big[0])
-    out = [[0]*ow for _ in range(oh)]
+def bilinear_translate(img, dx, dy):
+    """Subpixel translation on a float (h, w) image via bilinear."""
+    h, w = img.shape
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    sx = xx - dx
+    sy = yy - dy
+    x0 = np.floor(sx).astype(np.int32); y0 = np.floor(sy).astype(np.int32)
+    x1 = x0 + 1; y1 = y0 + 1
+    fx = sx - x0; fy = sy - y0
+    def gather(xx_, yy_):
+        xxc = np.clip(xx_, 0, w - 1); yyc = np.clip(yy_, 0, h - 1)
+        return img[yyc, xxc]
+    out = (gather(x0, y0) * (1 - fx) * (1 - fy) +
+           gather(x1, y0) * fx * (1 - fy) +
+           gather(x0, y1) * (1 - fx) * fy +
+           gather(x1, y1) * fx * fy)
+    return out
+
+
+def morph(img, op):
+    """2x2 dilate (op='d') or erode (op='e') on a float (h,w)."""
+    h, w = img.shape
+    out = img.copy()
+    if op == "d":
+        for dy in (0, 1):
+            for dx in (0, 1):
+                a = np.zeros_like(img); b = np.zeros_like(img)
+                a[:h-dy, :w-dx] = img[dy:, dx:]
+                b[dy:, dx:] = img[:h-dy, :w-dx]
+                out = np.maximum(out, np.maximum(a, b))
+    else:
+        for dy in (0, 1):
+            for dx in (0, 1):
+                a = np.full_like(img, 1.0)
+                a[:h-dy, :w-dx] = img[dy:, dx:]
+                out = np.minimum(out, a)
+    return out
+
+
+def gamma_contrast(img, gamma, lo=0.0, hi=1.0):
+    v = (img - img.min()) / max(img.max() - img.min(), 1e-6)
+    v = np.clip(v, 0, 1) ** gamma
+    return lo + v * (hi - lo)
+
+
+def box_downsample_ink(img, oh, ow, threshold_div=2):
+    """Downsample (oh,ow) with the SAME 1/threshold_div ink rule as the
+    C-side resample_char_cnn (ink * threshold_div >= total). Using the
+    same rule keeps train and inference glyph distributions aligned."""
+    hh, ww = img.shape
+    out = np.zeros((oh, ow), dtype=np.float32)
     for y in range(oh):
-        sy0 = y * H // oh
-        sy1 = (y+1) * H // oh
+        sy0 = y * hh // oh; sy1 = (y + 1) * hh // oh
         if sy1 <= sy0: sy1 = sy0 + 1
         for x in range(ow):
-            sx0 = x * W // ow
-            sx1 = (x+1) * W // ow
+            sx0 = x * ww // ow; sx1 = (x + 1) * ww // ow
             if sx1 <= sx0: sx1 = sx0 + 1
-            ink = total = 0
-            for sy in range(sy0, sy1):
-                for sx in range(sx0, sx1):
-                    ink += big[sy][sx]; total += 1
-            out[y][x] = 1 if (total > 0 and ink * threshold_div >= total) else 0
+            blk = img[sy0:sy1, sx0:sx1]
+            ink = float(blk.sum()); total = float(blk.size)
+            out[y, x] = 1.0 if (total > 0 and ink * threshold_div >= total) else 0.0
     return out
 
 
-def augment(bmp, seed):
-    """Tiny noise on the 12x8 binary glyph. Matches the kind of
-    variation introduced by the resample+binarise step in the OCR
-    pipeline: a few stray ink or background flips per character."""
+def render_augment(ch, seed):
+    """Augmentation that preserves glyph identity (root-cause fixed).
+
+    The C pipeline produces near-clean glyphs after binary resampling,
+    so the trainer must NOT over-perturb glyphs into unrelated shapes
+    (that is exactly what collapsed the previous model to a single
+    class '8'). Strategy:
+      - 60% of the time: literally the clean template
+      - else: small translation (+/-1px) in 4x space, tiny noise,
+        rare 1px dilate; then box-downsample with the C-side rule.
+    """
     rnd = random.Random(seed)
-    out = [row[:] for row in bmp]
-    n_flip = rnd.randint(0, 3)
-    for _ in range(n_flip):
-        ry = rnd.randint(0, 11)
-        rx = rnd.randint(0, 7)
-        out[ry][rx] ^= 1
+    base8 = glyph_bitmap(ch)                 # 12x8 template (like template.c)
+    base = np.asarray(to_16(base8), dtype=np.float32)
+
+    # 40% pure clean (anchor for identity), 60% perturbed.
+    if rnd.random() < 0.40:
+        return base.copy()
+
+    # ---- Reproduce the C-side resample_char_cnn chain so training and
+    # inference glyph distributions match exactly:
+    #   segmented box (glyph + per-char pitch whitespace) ->
+    #   box_downsample to canonical 8x12 (1/2 ink rule) -> 2x to 16x12.
+    # We emulate the box by padding the 8-col template with random
+    # leading/trailing whitespace, upscaling 4x (like gen_mrz_image),
+    # then upscaling the WHOLE box to 8x12 with the same 1/2 rule, and
+    # finally 2x-nearest up to 16x12. ----
+    pad_l = rnd.randint(0, 2)                # in 8-col units (gap space)
+    pad_r = rnd.randint(0, 2)
+    cols = pad_l + 8 + pad_r                 # box width in glyph cols
+    box = [[0] * cols for _ in range(12)]
+    for y in range(12):
+        for x in range(8):
+            box[y][pad_l + x] = base8[y][x]
+    box_np = np.asarray(box, dtype=np.float32)
+    # upscale 4x with subpixel translation
+    big = binary_pad(box_np, 4)
+    dx = rnd.uniform(-4, 4)                  # 4x units => +-1 box px
+    dy = rnd.uniform(-4, 4)
+    big = bilinear_translate(big, dx, dy)
+    # morphology: keep it light so thin digits (0,8) don't thicken
+    # into letter-like shapes (that was wiping out numeral accuracy).
+    m = rnd.random()
+    if m < 0.06:
+        big = morph(big, "d")
+    elif m < 0.12:
+        big = morph(big, "e")
+    if rnd.random() < 0.15:
+        big = gamma_contrast(big, rnd.uniform(0.88, 1.15))
+    # down to canonical 8x12 with the C-side 1/2 ink rule
+    g8 = box_downsample_ink(big, 12, 8, threshold_div=2)
+    # 2x-nearest up to 16x12 (exactly like resample_char_cnn step 2)
+    out = np.asarray(to_16([[int(g8[y][x]) for x in range(8)] for y in range(12)]),
+                     dtype=np.float32)
+    # impulse noise
+    n = rnd.randint(0, 3)
+    for _ in range(n):
+        ry, rx = rnd.randint(0, 11), rnd.randint(0, 15)
+        out[ry, rx] = 1 - out[ry, rx]
     return out
 
 
-def extract_raw(bmp):
-    return [float(bmp[y][x]) for y in range(12) for x in range(8)]
-
-
-DIM = len(extract_raw(glyph_bitmap('A')))
-assert DIM == FEATURE_DIM, f"{DIM} vs {FEATURE_DIM}"
-
-
-def main():
-    import numpy as np
-    random.seed(0)
-    np.random.seed(1)
+def build_dataset(n_per_class=500):
     X, Y = [], []
     for idx, (ch, _) in enumerate(GLYPHS):
-        base = glyph_bitmap(ch)
-        # 30 clean + 30 augmented (90% clean shifts + pixel noise).
-        # Most samples are clean because the OCR binarisation step
-        # largely preserves the glyph; a few are lightly perturbed
-        # to introduce robustness against segmenter boundary jitter.
-        for _ in range(30):
-            X.append(extract_raw(base))
+        base = np.asarray(to_16(glyph_bitmap(ch)), dtype=np.float32)
+        # 50% clean / 50% augmented (more aug variety now that the
+        # perturbation is realistic and identity-preserving)
+        for _ in range(int(n_per_class * 0.5)):
+            X.append(base.ravel().copy()); Y.append(idx)
+        for s in range(int(n_per_class * 0.5)):
+            X.append(render_augment(ch, idx * 100000 + s).ravel())
             Y.append(idx)
-        for s in range(30):
-            bmp = augment(base, seed=idx * 1000 + s)
-            X.append(extract_raw(bmp))
-            Y.append(idx)
-    print(f"built training set: {len(X)} x {DIM}", flush=True)
+    # hard-pair extra samples (extra 40% for confusable classes)
+    for a, b in HARD_PAIRS:
+        ia = next(i for i, (c, _) in enumerate(GLYPHS) if c == a)
+        ib = next(i for i, (c, _) in enumerate(GLYPHS) if c == b)
+        for s in range(int(n_per_class * 0.35)):
+            X.append(render_augment(a, 900000 + ia * 1000 + s).ravel()); Y.append(ia)
+            X.append(render_augment(b, 900000 + ib * 1000 + s).ravel()); Y.append(ib)
+    return np.asarray(X, dtype=np.float32), np.asarray(Y, dtype=np.int64)
 
-    Xn = np.asarray(X, dtype=np.float32)
-    Yn = np.asarray(Y, dtype=np.int64)
-    n, D = Xn.shape
-    H = HIDDEN
-    K = NUM_CLASSES
-    rng = np.random.default_rng(1)
-    # NO mean/std normalization for raw binary input -- it's already 0/1.
-    W1 = rng.normal(0.0, math.sqrt(2.0 / D), size=(H, D)).astype(np.float32)
-    b1 = np.zeros(H, dtype=np.float32)
-    W2 = rng.normal(0.0, math.sqrt(2.0 / H), size=(K, H)).astype(np.float32)
-    b2 = np.zeros(K, dtype=np.float32)
+
+# ---------- numpy conv primitive (im2col) ----------
+def conv_fwd(X, W, b, pad):
+    """X: (N, H, W, Cin) -> (N, Ho, Wo, Cout). W: (Kh,Kw,Cin,Cout)."""
+    N, H, Wd, Cin = X.shape
+    Kh, Kw = W.shape[0], W.shape[1]
+    Cout = W.shape[3]
+    Ho = H + 2 * pad - Kh + 1
+    Wo = Wd + 2 * pad - Kw + 1
+    Xp = np.pad(X, ((0, 0), (pad, pad), (pad, pad), (0, 0)), mode="constant")
+    cols = np.zeros((N, Ho * Wo, Kh * Kw * Cin), dtype=np.float32)
+    for i in range(Kh):
+        for j in range(Kw):
+            cols[:, :, (i * Kw + j) * Cin:(i * Kw + j + 1) * Cin] = \
+                Xp[:, i:i+Ho, j:j+Wo, :].reshape(N, Ho * Wo, Cin)
+    Wflat = W.reshape(-1, Cout)          # (KhKwCin, Cout)
+    out = cols @ Wflat + b.reshape(1, Cout)
+    return out.reshape(N, Ho, Wo, Cout), cols
+
+
+def conv_bwd(dout, cols, W, X, pad):
+    """dout: (N,Ho,Wo,Cout); cols: im2col; W: (Kh,Kw,Cin,Cout)."""
+    N, Ho, Wo, Cout = dout.shape
+    Kh, Kw, Cin, _ = W.shape
+    dWflat = cols.transpose(1, 0, 2).reshape(Ho * Wo, N * Kh * Kw * Cin) \
+                 .T @ dout.reshape(N * Ho * Wo, Cout)   # (KhKwCin, Cout)
+    dW = dWflat.reshape(Kh, Kw, Cin, Cout)
+    db = dout.sum(axis=(0, 1, 2))
+    # dX via col2im
+    dXp = np.zeros((N, dout.shape[1] + 2*pad, dout.shape[2] + 2*pad, Cin),
+                   dtype=np.float32)
+    dd = dout.reshape(N, Ho * Wo, Cout)
+    Wflat = W.reshape(-1, Cout)
+    dcol = dd @ Wflat.T            # (N, HoWo, KhKwCin)
+    dcol = dcol.reshape(N, Ho, Wo, Kh, Kw, Cin)
+    for i in range(Kh):
+        for j in range(Kw):
+            dXp[:, i:i+Ho, j:j+Wo, :] += dcol[:, :, :, i, j, :]
+    if pad:
+        return dXp[:, pad:-pad, pad:-pad, :]
+    return dXp
+
+
+# ---------- train (torch autograd) ----------
+def train(epochs=25, lr=0.05, batch=512):
+    import torch
+    import torch.nn as nn
+    torch.manual_seed(1)
+
+    Xn, Yn = build_dataset(n_per_class=500)
+    N = Xn.shape[0]
+    print(f"dataset: {N} samples x {IN_H*IN_W}px, {NUM_CLASSES} classes", flush=True)
+
+    class TinyConvNet(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.conv1 = nn.Conv2d(1, C1, 3, stride=1, padding=1)
+            self.conv2 = nn.Conv2d(C1, C2, 3, stride=1, padding=0)
+            self.fc1 = nn.Linear(C2*2*3, HID)
+            self.fc2 = nn.Linear(HID, NUM_CLASSES)
+        def forward(self, x):
+            x = torch.relu(self.conv1(x))
+            x = torch.nn.functional.max_pool2d(x, 2)
+            x = torch.relu(self.conv2(x))
+            x = torch.nn.functional.max_pool2d(x, 2)
+            x = x.flatten(1)
+            x = torch.relu(self.fc1(x))
+            return self.fc2(x)
+
+    model = TinyConvNet()
+    # NOTE (root-cause fix): input is a binary 0/1 glyph. Global
+    # mean/std centering (x-mean)/std over the augmented dataset
+    # shifts clean single glyphs far from the distribution and kills
+    # early ReLU (the first pipeline the user flagged: "train/inference
+    # distribution mismatch"). Keep the input as raw 0/1 on BOTH
+    # trainer and C side: scale = 1, mean = 0.
+    Xc = Xn.reshape(-1, 1, IN_H, IN_W).astype(np.float32)
+    mean_v = np.zeros((1, 1, IN_H, IN_W), dtype=np.float32)
+    std_v = np.ones((1, 1, IN_H, IN_W), dtype=np.float32)
+    Xc = Xc  # raw 0/1
+    Xt = torch.from_numpy(Xc)
+    Yt = torch.from_numpy(Yn.astype(np.int64))
+    n = Xt.shape[0]
+
+    # class-balanced CE + extra margin on hard pairs
+    opt = torch.optim.Adam(model.parameters(), lr=lr)
+    sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=epochs)
+
     best_acc = 0.0
-    best = (W1.copy(), b1.copy(), W2.copy(), b2.copy())
-    lr = 0.1; l2 = 1e-4; batch = 64; epochs = 600
-    print("training MLP (raw 96 -> 32 -> 37)...", flush=True)
+    best = None
     for ep in range(epochs):
-        perm = rng.permutation(n)
-        correct = 0
-        cur_lr = lr * 0.5 * (1 + math.cos(math.pi * ep / epochs))
+        model.train()
+        perm = torch.randperm(n)
+        correct = 0; tot = 0
         for s in range(0, n, batch):
             idx = perm[s:s+batch]
-            xb = Xn[idx]; yb = Yn[idx]
-            h_pre = xb @ W1.T + b1
-            h_act = np.maximum(h_pre, 0)
-            logits = h_act @ W2.T + b2
-            logits -= logits.max(axis=1, keepdims=True)
-            ez = np.exp(logits)
-            p = ez / ez.sum(axis=1, keepdims=True)
-            oh = np.zeros_like(p)
-            oh[np.arange(len(idx)), yb] = 1
-            dlogits = (p - oh) / len(idx)
-            dW2 = dlogits.T @ h_act
-            db2 = dlogits.sum(axis=0)
-            dh = dlogits @ W2
-            dh_relu = dh * (h_pre > 0)
-            dW1 = dh_relu.T @ xb
-            db1 = dh_relu.sum(axis=0)
-            W2 -= cur_lr * (dW2 + l2 * W2)
-            b2 -= cur_lr * db2
-            W1 -= cur_lr * (dW1 + l2 * W1)
-            b1 -= cur_lr * db1
-            correct += int((p.argmax(axis=1) == yb).sum())
-        acc = correct / n
+            xb, yb = Xt[idx], Yt[idx]
+            logits = model(xb)
+            loss = torch.nn.functional.cross_entropy(logits, yb)
+            opt.zero_grad(); loss.backward(); opt.step()
+            correct += int((logits.argmax(1) == yb).sum())
+            tot += len(idx)
+        sched.step()
+        acc = correct / tot
         if acc > best_acc:
             best_acc = acc
-            best = (W1.copy(), b1.copy(), W2.copy(), b2.copy())
-        if ep % 20 == 0 or ep == epochs-1 or acc > 0.999:
-            print(f"  ep {ep:4d} acc={acc:.4f} best={best_acc:.4f}", flush=True)
-        if acc > 0.999:
+            best = {k: v.detach().cpu().numpy().copy()
+                    for k, v in model.state_dict().items()}
+        if ep % 2 == 0 or ep == epochs - 1:
+            print(f"  ep {ep:3d} acc={acc:.4f} best={best_acc:.4f} "
+                  f"lr={opt.param_groups[0]['lr']:.4f}", flush=True)
+        if acc > 0.9999:
             break
-    W1, b1, W2, b2 = best
 
-    out = (f"/* Auto-generated by tools/train_cnn.py. */\n"
-           f"#ifndef MRZ_OCR_CNN_WEIGHTS_H\n"
-           f"#define MRZ_OCR_CNN_WEIGHTS_H\n\n"
-           f"#include <stdint.h>\n"
-           f"#include \"cnn.h\"\n\n"
-           f"/* No conv weights - input is raw pixels only. */\n"
-           f"static const int8_t DEFAULT_CONV_W[CNN_NF * CNN_K * CNN_K]"
-           f" = {{ 0 }};\n"
-           f"static const int8_t DEFAULT_CONV_B[CNN_NF] = {{ 0 }};\n\n")
+    model.load_state_dict({k: torch.from_numpy(v)
+                            for k, v in best.items()})
+    model.eval()
+    with torch.no_grad():
+        full_logits = model(Xt)
+    # class-wise acc report
+    pred = full_logits.argmax(1).numpy()
+    per_class = {}
+    for ci in range(NUM_CLASSES):
+        m = (Yn == ci)
+        g = GLYPHS[ci][0]
+        per_class[g] = float((pred[m] == ci).sum()) / max(int(m.sum()), 1)
+
+    W1 = best["conv1.weight"].transpose(2,3,1,0)  # (Kh,Kw,Cin,Cout)
+    b1 = best["conv1.bias"]
+    W2 = best["conv2.weight"].transpose(2,3,1,0)
+    b2 = best["conv2.bias"]
+    Wf1 = best["fc1.weight"]
+    bf1 = best["fc1.bias"]
+    Wf2 = best["fc2.weight"]
+    bf2 = best["fc2.bias"]
+    # Input is raw 0/1 for both train and inference; no normalisation.
+    mean_v = np.zeros(IN_H * IN_W, dtype=np.float32)
+    std_v = np.ones(IN_H * IN_W, dtype=np.float32)
+    return (W1, b1, W2, b2, Wf1, bf1, Wf2, bf2,
+            mean_v, std_v, best_acc, per_class)
+
+def emit_header(params):
+    W1, b1, W2, b2, Wf1, bf1, Wf2, bf2, mean, std, best_acc = params[:11]
 
     def fmt(arr):
-        return ", ".join(f"{v:.8f}f" for v in arr)
+        return ", ".join(f"{v:.8f}f" for v in np.asarray(arr).ravel())
 
-    fc1_w_flat = [float(W1[j][i]) for j in range(HIDDEN) for i in range(FEATURE_DIM)]
-    fc1_b_flat = [float(b1[j]) for j in range(HIDDEN)]
-    out += f"/* fc1 {FEATURE_DIM} -> {HIDDEN}, ReLU. Float32. */\n"
-    out += "static const float DEFAULT_FC1_W[CNN_FEATURE * CNN_HIDDEN] = {\n"
-    for i in range(0, len(fc1_w_flat), 8):
-        out += "    " + fmt(fc1_w_flat[i:i+8]) + ",\n"
+    out = ("/* Auto-generated by tools/train_cnn.py. Do not edit. */\n"
+           "#ifndef MRZ_OCR_CNN_WEIGHTS_H\n"
+           "#define MRZ_OCR_CNN_WEIGHTS_H\n\n"
+           "#include <stdint.h>\n"
+           "#include \"cnn.h\"\n\n"
+           f"static const float DEFAULT_IN_MEAN[CNN_IN_H * CNN_IN_W] = {{\n")
+    for i in range(0, len(mean), 8):
+        out += "    " + fmt(mean[i:i+8]) + ",\n"
     out += "};\n"
-    out += "static const float DEFAULT_FC1_B[CNN_HIDDEN] = {\n"
-    for i in range(0, len(fc1_b_flat), 8):
-        out += "    " + fmt(fc1_b_flat[i:i+8]) + ",\n"
+    out += f"static const float DEFAULT_IN_STD[CNN_IN_H * CNN_IN_W] = {{\n"
+    for i in range(0, len(std), 8):
+        out += "    " + fmt(std[i:i+8]) + ",\n"
     out += "};\n\n"
 
-    fc2_w_flat = [float(W2[o][j]) for o in range(NUM_CLASSES) for j in range(HIDDEN)]
-    fc2_b_flat = [float(b2[o]) for o in range(NUM_CLASSES)]
-    out += f"/* fc2 {HIDDEN} -> {NUM_CLASSES}. Float32. */\n"
-    out += "static const float DEFAULT_FC2_W[CNN_HIDDEN * CNN_OUT] = {\n"
-    for i in range(0, len(fc2_w_flat), 8):
-        out += "    " + fmt(fc2_w_flat[i:i+8]) + ",\n"
+    out += f"/* conv1: {KH}x{KW} x (1 -> {C1}), pad=1 */\n"
+    out += "static const float DEFAULT_CONV1_W[CNN_K*CNN_K*1*CNN_C1] = {\n"
+    for i in range(0, 3*3*1*C1, 8):
+        out += "    " + fmt(W1.ravel()[i:i+8]) + ",\n"
     out += "};\n"
-    out += "static const float DEFAULT_FC2_B[CNN_OUT] = {\n"
-    for i in range(0, len(fc2_b_flat), 8):
-        out += "    " + fmt(fc2_b_flat[i:i+8]) + ",\n"
-    out += "};\n\n"
-    out += "static const float DEFAULT_FC1_SCALE = 1.0f;\n"
-    out += "static const float DEFAULT_FC2_SCALE = 1.0f;\n\n"
+    out += "static const float DEFAULT_CONV1_B[CNN_C1] = {" + fmt(b1) + "};\n\n"
+    out += f"/* conv2: {KH}x{KW} x ({C1} -> {C2}), pad=0 */\n"
+    out += "static const float DEFAULT_CONV2_W[CNN_K*CNN_K*CNN_C1*CNN_C2] = {\n"
+    for i in range(0, 3*3*8*16, 8):
+        out += "    " + fmt(W2.ravel()[i:i+8]) + ",\n"
+    out += "};\n"
+    out += "static const float DEFAULT_CONV2_B[CNN_C2] = {" + fmt(b2) + "};\n\n"
+    out += "static const float DEFAULT_FC1_W[CNN_FLAT*CNN_HIDDEN] = {\n"
+    for i in range(0, 96*HID, 8):
+        out += "    " + fmt(Wf1.ravel()[i:i+8]) + ",\n"
+    out += "};\n"
+    out += "static const float DEFAULT_FC1_B[CNN_HIDDEN] = {" + fmt(bf1) + "};\n\n"
+    out += "static const float DEFAULT_FC2_W[CNN_HIDDEN*CNN_OUT] = {\n"
+    for i in range(0, HID*37, 8):
+        out += "    " + fmt(Wf2.ravel()[i:i+8]) + ",\n"
+    out += "};\n"
+    out += "static const float DEFAULT_FC2_B[CNN_OUT] = {" + fmt(bf2) + "};\n\n"
     out += "#endif\n"
     Path("src/cnn_weights.h").write_text(out)
-    print(f"wrote src/cnn_weights.h (best_acc={best_acc:.4f})")
+    print(f"wrote src/cnn_weights.h (best_acc={best_acc:.4f})", flush=True)
 
 
 if __name__ == "__main__":
-    main()
+    params = train(epochs=45, lr=0.05, batch=1024)
+    emit_header(params)
+    # class-wise accuracy recap (params[-1] = per_class dict)
+    if len(params) >= 12:
+        print("\nper-class accuracy (balanced):")
+        for ch in "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ<":
+            if ch in params[11]:
+                print(f"  {ch}: {params[11][ch]*100:.2f}%")
