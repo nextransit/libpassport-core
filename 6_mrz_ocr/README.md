@@ -21,12 +21,12 @@ Normalised correlation against the embedded OCR-B template bank
 A real 2-block convolutional network (not a flattened MLP):
 
 ```
-input  12 x 16 binary glyph
+input  12 x 16 grayscale float (ink-high, soft edges)
 conv1  3x3, 8 filters, pad=1 -> ReLU
-pool1  2x2 max
-conv2  3x3, 16 filters         -> ReLU
-pool2  2x2 max                -> 2x3x16 = 96
-fc1    96 -> 64 (ReLU)
+pool1  2x1 max (height only)          -> 6 x 16 x 8
+conv2  3x3, 16 filters, pad=1 -> ReLU
+pool2  2x2 max                        -> 3 x 8 x 16 = 384
+fc1    384 -> 64 (ReLU)
 fc2    64 -> 37 (softmax)
 ```
 
@@ -52,8 +52,12 @@ real resampler, which is what keeps clean-template accuracy at
 
 | method       | pipeline OK | ms p50 | line1 acc | line2 acc |
 |--------------|-------------|--------|-----------|-----------|
-| traditional  | 108/108     | 2.7    | 88.7%     | 93.1%     |
-| cnn          | 108/108     | 3.2    | 83.6%     | 80.0%     |
+| traditional  | 108/108     | 3.5    | 88.7%     | 93.1%     |
+| cnn          | 108/108     | 5.6    | 85.6%     | 81.7%     |
+
+CNN clean-subset (noise=0, n=51) line1 reaches 88.2%, which now
+**beats** the traditional backend (88.0%) -- the grayscale + centroid
++ width-preserving pooling fixes pay off on exact synthetic images.
 
 ## Test corpus
 
