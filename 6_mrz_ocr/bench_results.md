@@ -6,8 +6,8 @@ Corpus: 108 synthetic MRZ images (see data/corpus.json).
 
 | method | pipeline OK | ms mean | ms p50 | ms p95 | line1 acc | line2 acc |
 |--------|-------------|---------|--------|--------|-----------|-----------|
-| traditional | 108/108 (100.0%) | 0.0 | 0.0 | 0.0 | 88.7% | 93.1% |
-| cnn | 108/108 (100.0%) | 0.0 | 0.0 | 0.0 | 80.1% | 78.0% |
+| traditional | 108/108 (100.0%) | 5.3 | 5.0 | 7.0 | 88.7% | 93.1% |
+| cnn | 108/108 (100.0%) | 5.4 | 5.1 | 7.1 | 80.1% | 78.0% |
 
 ## Clean subset (noise=0, n=51)
 | method | pipeline OK | ms mean | ms p50 | ms p95 | line1 acc | line2 acc |

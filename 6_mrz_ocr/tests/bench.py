@@ -1,7 +1,6 @@
 """Generate a Markdown + JSON benchmark report from the corpus."""
 from __future__ import annotations
-import json, statistics, subprocess, sys
-from collections import defaultdict
+import json, statistics, subprocess, sys, time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -17,9 +16,12 @@ def run_all():
     for rec in corpus:
         img = DATA / rec["image"]
         for m, tool in (("traditional", TRAD), ("cnn", CNN)):
+            import time as _t
             try:
+                _t0 = _t.perf_counter()
                 r = subprocess.run([str(tool), str(img)], capture_output=True,
                                    text=True, timeout=20)
+                _ms = (_t.perf_counter() - _t0) * 1000.0
                 parsed = {}
                 for ln in r.stdout.splitlines():
                     if ":" not in ln: continue
@@ -34,7 +36,7 @@ def run_all():
                     "line2": parsed.get("result.line2", ""),
                     "conf1": int(parsed.get("result.conf1", "0") or 0),
                     "conf2": int(parsed.get("result.conf2", "0") or 0),
-                    "ms":    float(parsed.get("timing.ms", "0") or 0),
+                    "ms":    _ms,
                     "ok":    r.returncode == 0,
                     "gt1": rec["line1"],
                     "gt2": rec["line2"],
