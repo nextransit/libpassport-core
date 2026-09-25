@@ -37,7 +37,8 @@ extern "C" {
 #define CNN_POOL1_W     16     /* width kept unchanged            */
 #define CNN_POOL2_H      3     /* (6-3+1)/2                       */
 #define CNN_POOL2_W      8     /* (16-3+1)/2                      */
-#define CNN_FLAT        (CNN_C2 * CNN_POOL2_H * CNN_POOL2_W)  /* 384 */
+#define CNN_FLAT        (CNN_C3 * CNN_POOL2_H * CNN_POOL2_W)  /* 96 */
+#define CNN_C3           4      /* 1x1 conv after pool2: 16->4 ch */
 #define CNN_HIDDEN      64
 #define CNN_OUT         37
 
@@ -48,6 +49,8 @@ typedef struct {
     float conv1_b[CNN_C1];
     float conv2_w[CNN_K * CNN_K * CNN_C1 * CNN_C2];
     float conv2_b[CNN_C2];
+    float conv3_w[CNN_C2 * CNN_C3];   /* 1x1 conv: 16 -> 4 */
+    float conv3_b[CNN_C3];
     float fc1_w[CNN_FLAT * CNN_HIDDEN];
     float fc1_b[CNN_HIDDEN];
     float fc2_w[CNN_HIDDEN * CNN_OUT];

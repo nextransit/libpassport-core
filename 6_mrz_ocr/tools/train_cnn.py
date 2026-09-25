@@ -73,7 +73,7 @@ NUM_CLASSES = len(GLYPHS)
 
 # Network geometry (must match include/cnn.h).
 IN_H, IN_W = 12, 16
-C1, C2 = 8, 16
+C1, C2, C3 = 8, 16, 4
 KH, KW = 3, 3
 HID = 64
 
@@ -219,6 +219,15 @@ def render_augment(ch, seed):
             sx0, sx1 = x*ww//16, (x+1)*ww//16
             blk = big[sy0:sy1, sx0:sx1]
             out[y, x] = float(blk.mean())
+    # small random cutout (random 2x2 block erased) + gaussian noise,
+    # matching the noise the corpus inserts; forces conv1 to rely on
+    # stroke topology rather than single pixels.
+    if rnd.random() < 0.30:
+        cy0 = rnd.randint(0, 10); cx0 = rnd.randint(0, 14)
+        out[cy0:cy0+2, cx0:cx0+2] = 0.0
+    if rnd.random() < 0.40:
+        gauss = rnd.gauss(0, 0.08)
+        out = np.clip(out + gauss, 0.0, 1.0)
     # impulse noise
     n = rnd.randint(0, 3)
     for _ in range(n):
@@ -305,13 +314,15 @@ def train(epochs=25, lr=0.02, batch=512):
             super().__init__()
             self.conv1 = nn.Conv2d(1, C1, 3, stride=1, padding=1)
             self.conv2 = nn.Conv2d(C1, C2, 3, stride=1, padding=1)
-            self.fc1 = nn.Linear(C2*3*8, HID)     # pool2 -> 3x8x16
+            self.conv3 = nn.Conv2d(C2, C3, 1)          # 1x1: 16 -> 4
+            self.fc1 = nn.Linear(C3*3*8, HID)          # 3x8x4 = 96
             self.fc2 = nn.Linear(HID, NUM_CLASSES)
         def forward(self, x):
             x = torch.relu(self.conv1(x))
-            x = torch.nn.functional.max_pool2d(x, (2, 1))  # height only
+            x = torch.nn.functional.max_pool2d(x, (2, 1))
             x = torch.relu(self.conv2(x))
             x = torch.nn.functional.max_pool2d(x, (2, 2))  # 6x16 -> 3x8
+            x = self.conv3(x)                            # 1x1 -> 3x8x4
             x = x.flatten(1)
             x = torch.relu(self.fc1(x))
             return self.fc2(x)
@@ -378,6 +389,8 @@ def train(epochs=25, lr=0.02, batch=512):
     b1 = best["conv1.bias"]
     W2 = best["conv2.weight"].transpose(2,3,1,0)
     b2 = best["conv2.bias"]
+    W3 = best["conv3.weight"].transpose(2,3,1,0)  # (C3,C2,1,1)->(1,1,C2,C3) Kh,Kw,Cin,Cout
+    b3 = best["conv3.bias"]
     Wf1 = best["fc1.weight"]
     bf1 = best["fc1.bias"]
     Wf2 = best["fc2.weight"]
@@ -385,11 +398,11 @@ def train(epochs=25, lr=0.02, batch=512):
     # Input is raw 0/1 for both train and inference; no normalisation.
     mean_v = np.zeros(IN_H * IN_W, dtype=np.float32)
     std_v = np.ones(IN_H * IN_W, dtype=np.float32)
-    return (W1, b1, W2, b2, Wf1, bf1, Wf2, bf2,
+    return (W1, b1, W2, b2, W3, b3, Wf1, bf1, Wf2, bf2,
             mean_v, std_v, best_acc, per_class)
 
 def emit_header(params):
-    W1, b1, W2, b2, Wf1, bf1, Wf2, bf2, mean, std, best_acc = params[:11]
+    W1, b1, W2, b2, W3, b3, Wf1, bf1, Wf2, bf2, mean, std, best_acc = params[:13]
 
     def fmt(arr):
         return ", ".join(f"{v:.8f}f" for v in np.asarray(arr).ravel())
@@ -420,6 +433,12 @@ def emit_header(params):
         out += "    " + fmt(W2.ravel()[i:i+8]) + ",\n"
     out += "};\n"
     out += "static const float DEFAULT_CONV2_B[CNN_C2] = {" + fmt(b2) + "};\n\n"
+    out += "/* 1x1 conv (16 -> 4) after pool2 */\n"
+    out += "static const float DEFAULT_CONV3_W[CNN_C2*CNN_C3] = {\n"
+    for i in range(0, W3.ravel().size, 8):
+        out += "    " + fmt(W3.ravel()[i:i+8]) + ",\n"
+    out += "};\n"
+    out += "static const float DEFAULT_CONV3_B[CNN_C3] = {" + fmt(b3) + "};\n\n"
     out += "static const float DEFAULT_FC1_W[CNN_FLAT*CNN_HIDDEN] = {\n"
     for i in range(0, Wf1.ravel().size, 8):
         out += "    " + fmt(Wf1.ravel()[i:i+8]) + ",\n"

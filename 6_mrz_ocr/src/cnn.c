@@ -23,6 +23,8 @@ void cnn_default_init(cnn_t *net) {
     memcpy(net->conv1_b, DEFAULT_CONV1_B, sizeof(net->conv1_b));
     memcpy(net->conv2_w, DEFAULT_CONV2_W, sizeof(net->conv2_w));
     memcpy(net->conv2_b, DEFAULT_CONV2_B, sizeof(net->conv2_b));
+    memcpy(net->conv3_w, DEFAULT_CONV3_W, sizeof(net->conv3_w));
+    memcpy(net->conv3_b, DEFAULT_CONV3_B, sizeof(net->conv3_b));
     memcpy(net->fc1_w,  DEFAULT_FC1_W,   sizeof(net->fc1_w));
     memcpy(net->fc1_b,  DEFAULT_FC1_B,   sizeof(net->fc1_b));
     memcpy(net->fc2_w,  DEFAULT_FC2_W,   sizeof(net->fc2_w));
@@ -103,18 +105,31 @@ static void conv2_pool2(const cnn_t *net,
                                                  * CNN_C2 + co];
                 a2[y][x][co] = s > 0.0f ? s : 0.0f;
             }
-    /* 2x2 pool over 6x16 -> 3x8; flatten (c,y,x) matching torch */
-    int idx = 0;
-    for (int c = 0; c < CNN_C2; ++c)
-        for (int y = 0; y < CNN_POOL2_H; ++y)
-            for (int x = 0; x < CNN_POOL2_W; ++x) {
+    /* 2x2 pool over 6x16 -> 3x8x16, then 1x1 conv 16->4 (per-pixel
+     * linear recombine) giving 3x8x4 = 96 features. Flatten (c,y,x)
+     * matching torch flatten(1). */
+    float p2[CNN_POOL2_H][CNN_POOL2_W][CNN_C2];
+    for (int y = 0; y < CNN_POOL2_H; ++y)
+        for (int x = 0; x < CNN_POOL2_W; ++x)
+            for (int c = 0; c < CNN_C2; ++c) {
                 float m = a2[y * 2][x * 2][c];
                 for (int dy = 0; dy < 2; ++dy)
                     for (int dx = 0; dx < 2; ++dx) {
                         float v = a2[y * 2 + dy][x * 2 + dx][c];
                         if (v > m) m = v;
                     }
-                feat[idx++] = m;
+                p2[y][x][c] = m;
+            }
+    /* 1x1 conv (no activation; folded into fc1 later is fine, but we
+     * apply bias + keep it linear so fc can separate). */
+    int idx = 0;
+    for (int c3 = 0; c3 < CNN_C3; ++c3)
+        for (int y = 0; y < CNN_POOL2_H; ++y)
+            for (int x = 0; x < CNN_POOL2_W; ++x) {
+                float v = net->conv3_b[c3];
+                for (int c = 0; c < CNN_C2; ++c)
+                    v += p2[y][x][c] * net->conv3_w[c * CNN_C3 + c3];
+                feat[idx++] = v;
             }
 }
 
