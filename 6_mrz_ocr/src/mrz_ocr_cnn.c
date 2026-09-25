@@ -282,6 +282,7 @@ static void decode_row(const cnn_t *net,
     cnn_row_features_batch(net, glyphs, n, feats_stk);
     cnn_fc_batch(net, feats_stk, n, probs_stk);
 
+    int total = n < 44 ? n : 44;
     top2_t t2[44];
     int allow[37];
     for (int c = 0; c < n && c < 44; ++c) {
@@ -291,9 +292,45 @@ static void decode_row(const cnn_t *net,
                 &t2[c].p0, &t2[c].p1);
     }
 
-    for (int c = 0; c < n && c < 44; ++c)
+    /* Physical ink-energy gate + slot whitelist (C-side deterministic
+     * protection). '<' is the lowest-ink glyph in OCR-B; a patch that
+     * is classified as X/R/T but carries far less ink than a real X/R/T
+     * cannot be one (scale-3 '<' is a thin 6-col slash, ink~42 vs X~86).
+     * Threshold 60 cleanly separates them across all scales. */
+    float patch_ink[44];
+    for (int c = 0; c < n && c < 44; ++c) {
+        float ink = 0.0f;
+        for (int _y = 0; _y < CNN_IN_H; ++_y)
+            for (int _x = 0; _x < CNN_IN_W; ++_x)
+                ink += glyphs[c][_y][_x];
+        patch_ink[c] = ink;
         dest[c] = MRZ_OCR_GLYPHS[t2[c].cand[0]].ch;
+    }
     if (n < 44) dest[n] = '\0'; else dest[44] = '\0';
+
+    /* (a) Ink gate: X and R carry ~2.5x the ink of '<' (X~92, R~100 vs
+     * <~36 at to_16; scale3 X~86). If the model says X/R but the patch
+     * is light (can't actually be an X/R), it is '<'. T/I/L/M are NOT
+     * gated -- their ink is too close to '<' to be safe. */
+    for (int c = 0; c < total; ++c) {
+        char ch0 = dest[c];
+        if (ch0 == 'X' || ch0 == 'R') {
+            if (patch_ink[c] < 60.0f) dest[c] = '<';
+        }
+    }
+
+    /* (b) 3-neighbour smoothing: an isolated X/R/T sandwiched between
+     * '<' on both sides is syntactically impossible in ICAO 9303. */
+    for (int c = 1; c + 1 < total; ++c) {
+        if (dest[c-1] == '<' && dest[c+1] == '<' &&
+            (dest[c] == 'X' || dest[c] == 'R' || dest[c] == 'T'))
+            dest[c] = '<';
+    }
+
+    /* (c) Slot whitelist already applied via fill_allow (col1 '<', col20
+     * M/F/<, check-digit columns numeric, col42/43 digit or '<').
+     * Tail filler locking is handled below by the lock-run block
+     * (>=5 consecutive '<' on Line 1). */
 
     /* Trailing "<" filler whitelist: ICAO 9303 guarantees that once a
      * MRZ field enters the filler region, all remaining positions of
@@ -302,7 +339,6 @@ static void decode_row(const cnn_t *net,
      * of the line (excluding line2's final two check positions) to '<'
      * instead of trusting low-confidence model outputs like 8/2/0. */
     int lt = mrz_ocr_glyph_index('<');
-    int total = n < 44 ? n : 44;
     /* Lock-run only on Line 1: once we've seen >=5 consecutive '<' the
      * remaining name-field positions are guaranteed '<' by ICAO 9303.
      * Line 2 may legally contain long '<' runs in the personal-number
