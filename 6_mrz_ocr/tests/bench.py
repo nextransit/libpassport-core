@@ -123,6 +123,28 @@ def render_markdown(corpus, methods, agg, results):
             lines.append(f"| {m} | {100*l1c/l1t:.1f}% | {100*l2c/l2t:.1f}% |")
         else:
             lines.append(f"| {m} | n/a | n/a |")
+
+    # ---- 4-way breakdown (clean / noisy / skew / both) ----
+    lines += ["", "## Breakdown by condition"]
+    groups = {
+        "clean          (noise=0, skew=0)": lambda r: r["noise"] == 0 and r["skew"] == 0,
+        "noisy_only     (noise>0, skew=0)": lambda r: r["noise"] > 0 and r["skew"] == 0,
+        "skew_only      (noise=0, skew>0)": lambda r: r["noise"] == 0 and r["skew"] > 0,
+        "noisy_and_skew": lambda r: r["noise"] > 0 and r["skew"] > 0,
+    }
+    hdr = "| condition | method | line1 acc | line2 acc |"
+    lines += [hdr, "|-----------|--------|-----------|-----------|"]
+    for label, pred in groups.items():
+        for m in methods:
+            sub = [r for r in results[m] if pred(r)]
+            if not sub:
+                lines.append(f"| {label} | {m} | n/a | n/a |")
+                continue
+            l1c = sum(compare(r["gt1"], r["line1"])[0] for r in sub)
+            l1t = sum(compare(r["gt1"], r["line1"])[1] for r in sub)
+            l2c = sum(compare(r["gt2"], r["line2"])[0] for r in sub)
+            l2t = sum(compare(r["gt2"], r["line2"])[1] for r in sub)
+            lines.append(f"| {label} | {m} | {100*l1c/l1t:.1f}% | {100*l2c/l2t:.1f}% |")
     return "\n".join(lines) + "\n"
 
 

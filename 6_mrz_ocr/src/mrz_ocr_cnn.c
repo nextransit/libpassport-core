@@ -110,8 +110,29 @@ static int line2_checksum_ok(const char *l2) {
 /* ---- grayscale area-resample of a char box to 16x12 float ---- */
 static void resample_char_gray(const uint8_t *gray, int W, int H,
                                int rx, int ry, int rw, int rh,
+                               uint8_t *sm, int sm_cap,
                                float out[CNN_IN_H][CNN_IN_W]) {
     if (rw <= 0 || rh <= 0) return;
+    /* 3x3 box presmooth on the ROI to average away single-pixel
+     * salt/pepper noise before the area-average downsampling. The
+     * caller provides one reusable buffer for the whole row. */
+    if ((size_t)rw * rh > (size_t)sm_cap) return;
+    for (int y = 0; y < rh; ++y) {
+        int yy = ry + y;
+        for (int x = 0; x < rw; ++x) {
+            int xx = rx + x;
+            int acc = 0, cnt = 0;
+            for (int dy = -1; dy <= 1; ++dy) {
+                for (int dx = -1; dx <= 1; ++dx) {
+                    int ny = yy + dy, nx = xx + dx;
+                    if (ny >= 0 && ny < H && nx >= 0 && nx < W) {
+                        acc += gray[ny * W + nx]; cnt++;
+                    }
+                }
+            }
+            sm[y * rw + x] = (uint8_t)(acc / (cnt ? cnt : 1));
+        }
+    }
     for (int oy = 0; oy < CNN_IN_H; ++oy) {
         int sy0 = (oy * rh) / CNN_IN_H;
         int sy1 = ((oy + 1) * rh) / CNN_IN_H;
@@ -122,12 +143,10 @@ static void resample_char_gray(const uint8_t *gray, int W, int H,
             if (sx1 <= sx0) sx1 = sx0 + 1;
             int sum = 0, cnt = 0;
             for (int sy = sy0; sy < sy1; ++sy) {
-                int yy = ry + sy;
-                if (yy < 0 || yy >= H) continue;
+                if (sy < 0 || sy >= rh) continue;
                 for (int sx = sx0; sx < sx1; ++sx) {
-                    int xx = rx + sx;
-                    if (xx < 0 || xx >= W) continue;
-                    sum += gray[yy * W + xx];
+                    if (sx < 0 || sx >= rw) continue;
+                    sum += sm[sy * rw + sx];
                     cnt++;
                 }
             }
@@ -164,6 +183,32 @@ static void resample_char_gray(const uint8_t *gray, int W, int H,
                     int nx = x - delta;
                     if (nx >= 0 && nx < CNN_IN_W)
                         out[y][x] = tmp[y][nx];
+                }
+        }
+    }
+    /* Y-centroid alignment: shifts the glyph vertically so skew
+     * drift does not clip the strokes off the 12-row patch. */
+    double sy = 0.0, syw = 0.0;
+    for (int y = 0; y < CNN_IN_H; ++y)
+        for (int x = 0; x < CNN_IN_W; ++x) {
+            float v = out[y][x];
+            if (v > 0.35f) { sy += (double)y * (double)v; syw += v; }
+        }
+    if (syw > 1e-3) {
+        double cy = sy / syw;
+        double target = (CNN_IN_H - 1) * 0.5;
+        int delta = (int)llround(cy - target);
+        if (delta < -2) delta = -2;
+        if (delta > 2) delta = 2;
+        if (delta != 0) {
+            float tmp[CNN_IN_H][CNN_IN_W];
+            memcpy(tmp, out, sizeof(tmp));
+            memset(out, 0, sizeof(out));
+            for (int y = 0; y < CNN_IN_H; ++y)
+                for (int x = 0; x < CNN_IN_W; ++x) {
+                    int ny = y - delta;
+                    if (ny >= 0 && ny < CNN_IN_H)
+                        out[y][x] = tmp[ny][x];
                 }
         }
     }
@@ -318,17 +363,28 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
         if (!line_pixels) { free(band_pixels); free(bin); free(gray); return MRZ_OCR_ERR_LOAD; }
         for (int y = 0; y < line_h; ++y)
             memcpy(line_pixels + y * bw, band_pixels + (base + y) * bw, bw);
+
         mrz_ocr_rect_t chars[64];
         int nchars = mrz_ocr_segment_line(line_pixels, bw, line_h, chars, 64);
         if (nchars < 30) { free(line_pixels); free(band_pixels); free(bin); free(gray); return MRZ_OCR_ERR_BAD_LINES; }
         if (nchars > 44) nchars = 44;
+        /* one reusable 3x3-smooth scratch buffer for the whole line */
+        int max_box = 0;
+        for (int c = 0; c < nchars; ++c) {
+            int b = chars[c].w * chars[c].h;
+            if (b > max_box) max_box = b;
+        }
+        uint8_t *sm_scratch = (uint8_t *)malloc((size_t)(max_box > 0 ? max_box : 1));
+        if (!sm_scratch) { free(line_pixels); free(band_pixels); free(bin); free(gray); return MRZ_OCR_ERR_LOAD; }
         /* pre-extract each glyph from the ORIGINAL grayscale band */
         float glyphs[44][CNN_IN_H][CNN_IN_W];
         for (int c = 0; c < nchars; ++c) {
             resample_char_gray(gray, W, H,
                                bx + chars[c].x, by + base + chars[c].y,
-                               chars[c].w, chars[c].h, glyphs[c]);
+                               chars[c].w, chars[c].h,
+                               sm_scratch, max_box, glyphs[c]);
         }
+        free(sm_scratch);
         char *dest = (li == 0) ? out->line1 : out->line2;
         int *conf = (li == 0) ? &out->line1_avg_conf : &out->line2_avg_conf;
         decode_row(&net, glyphs, nchars, li, dest, conf);
