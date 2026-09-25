@@ -112,27 +112,9 @@ static void resample_char_gray(const uint8_t *gray, int W, int H,
                                int rx, int ry, int rw, int rh,
                                uint8_t *sm, int sm_cap,
                                float out[CNN_IN_H][CNN_IN_W]) {
+    (void)sm; (void)sm_cap;
     if (rw <= 0 || rh <= 0) return;
-    /* 3x3 box presmooth on the ROI to average away single-pixel
-     * salt/pepper noise before the area-average downsampling. The
-     * caller provides one reusable buffer for the whole row. */
-    if ((size_t)rw * rh > (size_t)sm_cap) return;
-    for (int y = 0; y < rh; ++y) {
-        int yy = ry + y;
-        for (int x = 0; x < rw; ++x) {
-            int xx = rx + x;
-            int acc = 0, cnt = 0;
-            for (int dy = -1; dy <= 1; ++dy) {
-                for (int dx = -1; dx <= 1; ++dx) {
-                    int ny = yy + dy, nx = xx + dx;
-                    if (ny >= 0 && ny < H && nx >= 0 && nx < W) {
-                        acc += gray[ny * W + nx]; cnt++;
-                    }
-                }
-            }
-            sm[y * rw + x] = (uint8_t)(acc / (cnt ? cnt : 1));
-        }
-    }
+    /* area-average the raw grayscale box to 16x12 (soft edges). */
     for (int oy = 0; oy < CNN_IN_H; ++oy) {
         int sy0 = (oy * rh) / CNN_IN_H;
         int sy1 = ((oy + 1) * rh) / CNN_IN_H;
@@ -143,25 +125,38 @@ static void resample_char_gray(const uint8_t *gray, int W, int H,
             if (sx1 <= sx0) sx1 = sx0 + 1;
             int sum = 0, cnt = 0;
             for (int sy = sy0; sy < sy1; ++sy) {
-                if (sy < 0 || sy >= rh) continue;
+                int yy = ry + sy;
+                if (yy < 0 || yy >= H) continue;
                 for (int sx = sx0; sx < sx1; ++sx) {
-                    if (sx < 0 || sx >= rw) continue;
-                    sum += sm[sy * rw + sx];
+                    int xx = rx + sx;
+                    if (xx < 0 || xx >= W) continue;
+                    sum += gray[yy * W + xx];
                     cnt++;
                 }
             }
-            /* ink = dark => value near 255 on the rendered band.
-             * map to [0,1] ink coverage with soft edges. */
             float ink = cnt > 0 ? (float)sum / cnt : 0.0f;
-            /* band canvas is white(255)/ink(0); invert so that ink is
-             * HIGH (matches trainer: 1 = ink). */
             out[oy][ox] = 1.0f - ink / 255.0f;
         }
     }
-    /* X-axis centroid alignment: shift ink mass to the glyph centre so
-     * a +-1px segmenter drift does not move the glyph inside the cell.
-     * Only use strong-ink pixels to compute the mass centre (clamped to
-     * +-2 px so continuous "<" regions do not skew the window). */
+    /* Lightweight 3x3 box on the final 16x12 (averages isolated
+     * salt/pepper pixels far cheaper than a full-ROI presmooth). */
+    {
+        float tmp[CNN_IN_H][CNN_IN_W];
+        memcpy(tmp, out, sizeof(tmp));
+        for (int y = 0; y < CNN_IN_H; ++y)
+            for (int x = 0; x < CNN_IN_W; ++x) {
+                float acc = 0; int c = 0;
+                for (int dy = -1; dy <= 1; ++dy)
+                    for (int dx = -1; dx <= 1; ++dx) {
+                        int ny = y + dy, nx = x + dx;
+                        if (ny >= 0 && ny < CNN_IN_H && nx >= 0 && nx < CNN_IN_W) {
+                            acc += tmp[ny][nx]; c++;
+                        }
+                    }
+                out[y][x] = acc / (float)(c ? c : 1);
+            }
+    }
+    /* X-axis centroid alignment (clamped +-2 px). */
     double sx = 0.0, sw = 0.0;
     for (int y = 0; y < CNN_IN_H; ++y)
         for (int x = 0; x < CNN_IN_W; ++x) {
@@ -169,7 +164,7 @@ static void resample_char_gray(const uint8_t *gray, int W, int H,
             if (v > 0.35f) { sx += (double)x * (double)v; sw += v; }
         }
     if (sw > 1e-3) {
-        double cx = sx / sw;               /* centroid x */
+        double cx = sx / sw;
         double target = (CNN_IN_W - 1) * 0.5;
         int delta = (int)llround(cx - target);
         if (delta < -2) delta = -2;
@@ -186,8 +181,7 @@ static void resample_char_gray(const uint8_t *gray, int W, int H,
                 }
         }
     }
-    /* Y-centroid alignment: shifts the glyph vertically so skew
-     * drift does not clip the strokes off the 12-row patch. */
+    /* Y-axis centroid alignment (clamped +-2 px). */
     double sy = 0.0, syw = 0.0;
     for (int y = 0; y < CNN_IN_H; ++y)
         for (int x = 0; x < CNN_IN_W; ++x) {

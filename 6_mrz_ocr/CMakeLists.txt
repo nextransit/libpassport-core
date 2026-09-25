@@ -3,7 +3,7 @@ project(mrz_ocr C)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
-add_compile_options(-Wall -Wextra -Wpedantic -O2 -DNDEBUG)
+add_compile_options(-Wall -Wextra -Wpedantic -O3 -DNDEBUG -march=native)
 
 # Re-use the PPM/BMP I/O and grayscale helpers from 3_face_recognition.
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../3_face_recognition
