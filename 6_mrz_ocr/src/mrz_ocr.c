@@ -155,6 +155,15 @@ int mrz_ocr_locate_band(const uint8_t *bin, int W, int H, mrz_ocr_rect_t *out) {
     }
     free(row_dark);
     if (right < left) return -1;
+    /* Extend the horizontal extent by a small margin (a few px) so the
+     * last glyph's full cell / pitch is included; the ink-only bbox can
+     * otherwise clip the rightmost character by ~1/3 of a cell. */
+    int margin = 8;
+    if (margin > W / 4) margin = W / 4;
+    left  -= margin;
+    right += margin;
+    if (left  < 0) left = 0;
+    if (right >= W) right = W - 1;
     out->x = left; out->y = best_top;
     out->w = right - left + 1; out->h = best_bot - best_top;
     return 0;
