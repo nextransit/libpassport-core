@@ -71,6 +71,7 @@ class PassportGUI(tk.Tk):
         super().__init__()
         self.title("护照机测试机 - Passport Test Bench")
         self.geometry("1280x780")
+        self._set_window_icon()
         self._build_menu()
         nb = ttk.Notebook(self)
         nb.pack(fill="both", expand=True, padx=8, pady=8)
@@ -105,6 +106,21 @@ class PassportGUI(tk.Tk):
                             ("nfc_tool", NFC_TOOL)):
             parts.append(f"{label}={'OK' if path.exists() else 'MISSING'}")
         return "  ".join(parts)
+
+    def _set_window_icon(self):
+        """Use the app icon (tests/assets/app_icon.png) for the window
+        title bar / dock. Falls back gracefully if the asset is missing."""
+        try:
+            icon_path = ROOT / "tests" / "assets" / "app_icon.png"
+            if icon_path.exists():
+                self.iconphoto(True,
+                               tk.PhotoImage(file=str(icon_path)),
+                               tk.PhotoImage(file=str(
+                                   ROOT / "tests" / "assets" / "app_icon_64.png")),
+                               tk.PhotoImage(file=str(
+                                   ROOT / "tests" / "assets" / "app_icon_32.png")))
+        except tk.TclError:
+            pass  # headless environment
 
     def _build_menu(self):
         menubar = tk.Menu(self)
@@ -520,40 +536,79 @@ class PassportGUI(tk.Tk):
                                        expand=True, padx=4, pady=4)
         right = ttk.Frame(f); right.pack(side="right", fill="both",
                                          expand=True, padx=4, pady=4)
+
+        # ---- Left: MRZ text -> decode ----
         ttk.Label(left, text="MRZ 文本（两行 44 字符）",
                   font=("TkDefaultFont", 11, "bold")).pack(anchor="w")
-        self.mrz_text = tk.Text(left, width=50, height=6, font=("Menlo", 12))
+        self.mrz_text = tk.Text(left, width=52, height=6, font=("Menlo", 12))
         self.mrz_text.insert("1.0", SAMPLE_MRZ)
         self.mrz_text.pack(fill="x")
         btn = ttk.Frame(left); btn.pack(fill="x", pady=4)
-        ttk.Button(btn, text="编码 sample",
-                   command=self._mrz_encode).pack(side="left", padx=2)
-        ttk.Button(btn, text="校验 check digits",
-                   command=self._mrz_verify).pack(side="left", padx=2)
+        ttk.Button(btn, text="解码并校验",
+                   command=self._mrz_decode_run).pack(side="left", padx=2)
+        ttk.Button(btn, text="编码结果 → 填入左侧",
+                   command=self._mrz_encode_run).pack(side="left", padx=2)
         ttk.Button(btn, text="运行防伪验证",
-                   command=lambda: self.tab_ac.focus_set()
-                   or self._ac_run(self.mrz_text.get("1.0", "end"))).pack(side="left", padx=2)
-        ttk.Label(right, text="输出", font=("TkDefaultFont", 11, "bold")).pack(anchor="w")
-        self.mrz_out = tk.Text(right, width=60, height=18, font=("Menlo", 11))
+                   command=lambda: (self.tab_ac.focus_set(),
+                                    self._ac_run(self.mrz_text.get("1.0", "end")))).pack(side="left", padx=2)
+        ttk.Label(left, text="输出", font=("TkDefaultFont", 11, "bold")).pack(anchor="w", pady=(8, 0))
+        self.mrz_out = tk.Text(left, width=80, height=18, font=("Menlo", 11))
         self.mrz_out.pack(fill="both", expand=True)
 
-    def _mrz_encode(self):
+        # ---- Right: 10 fields -> encode ----
+        ttk.Label(right, text="TD3 字段 → 编码生成 MRZ",
+                  font=("TkDefaultFont", 11, "bold")).pack(anchor="w")
+        fields = [
+            ("doc_type",      "证件类型 (P<)",      "P"),
+            ("issuing_state", "签发国 (3字母)",     "UTO"),
+            ("surname",       "姓",                "ERIKSSON"),
+            ("given_names",   "名",                "ANNA MARIA"),
+            ("passport_no",   "护照号 (9位)",       "L898902C3"),
+            ("nationality",   "国籍 (3字母)",       "UTO"),
+            ("birth",         "出生日期 (YYMMDD)",  "690806"),
+            ("sex",           "性别 (M/F)",        "F"),
+            ("expiry",        "有效期 (YYMMDD)",   "940623"),
+            ("personal_no",   "个人号码 (14位)",    "ZE184226B"),
+        ]
+        self.mrz_fields = {}
+        for key, label, default in fields:
+            row = ttk.Frame(right); row.pack(fill="x", pady=1)
+            ttk.Label(row, text=label, width=20, anchor="w").pack(side="left")
+            var = tk.StringVar(value=default)
+            ttk.Entry(row, textvariable=var, width=22).pack(side="left", fill="x", expand=True)
+            self.mrz_fields[key] = var
+        ttk.Button(right, text="编码生成 MRZ",
+                   command=self._mrz_encode_run).pack(anchor="e", pady=(6, 2))
+
+    def _mrz_decode_run(self):
+        """Decode + verify the MRZ text in the left editor (decode subcommand)."""
+        text = self.mrz_text.get("1.0", "end").strip()
+        if not text:
+            messagebox.showerror("错误", "请先输入 MRZ 文本")
+            return
         try:
-            r = subprocess.run([str(MRZ_TOOL), "encode"],
-                               input=self.mrz_text.get("1.0", "end"),
+            r = subprocess.run([str(MRZ_TOOL), "decode", text],
                                text=True, capture_output=True, timeout=10)
             self.mrz_out.delete("1.0", "end")
             self.mrz_out.insert("1.0", r.stdout + (r.stderr and ("\n[stderr]\n" + r.stderr) or ""))
         except Exception as e:
             messagebox.showerror("错误", str(e))
 
-    def _mrz_verify(self):
+    def _mrz_encode_run(self):
+        """Encode the 10 right-hand fields into an MRZ string, then place
+        it back into the left editor (encode subcommand)."""
+        vals = [self.mrz_fields[k].get().strip() for k in
+                ("doc_type", "issuing_state", "surname", "given_names",
+                 "passport_no", "nationality", "birth", "sex", "expiry",
+                 "personal_no")]
         try:
-            r = subprocess.run([str(MRZ_TOOL), "verify"],
-                               input=self.mrz_text.get("1.0", "end"),
+            r = subprocess.run([str(MRZ_TOOL), "encode", *vals],
                                text=True, capture_output=True, timeout=10)
             self.mrz_out.delete("1.0", "end")
             self.mrz_out.insert("1.0", r.stdout + (r.stderr and ("\n[stderr]\n" + r.stderr) or ""))
+            if r.returncode == 0 and r.stdout.strip():
+                self.mrz_text.delete("1.0", "end")
+                self.mrz_text.insert("1.0", r.stdout)
         except Exception as e:
             messagebox.showerror("错误", str(e))
 
@@ -570,7 +625,8 @@ class PassportGUI(tk.Tk):
     def _ac_run(self, _text=None):
         text = self.mrz_text.get("1.0", "end") if _text is None else _text
         try:
-            r = subprocess.run([str(AC_TOOL)], input=text,
+            # ac_tool reads the MRZ from stdin when invoked with "-".
+            r = subprocess.run([str(AC_TOOL), "-"], input=text,
                                text=True, capture_output=True, timeout=10)
             self.ac_out.delete("1.0", "end")
             self.ac_out.insert("1.0", r.stdout + (r.stderr and ("\n[stderr]\n" + r.stderr) or ""))
