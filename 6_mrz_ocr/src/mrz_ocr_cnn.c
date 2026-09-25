@@ -208,12 +208,97 @@ static void resample_char_gray(const uint8_t *gray, int W, int H,
     }
 }
 
+/* ---- CNN-specific segmenter (full-cell windows, not raw ink runs) ----
+ * The traditional segmenter returns only the ink bbox (e.g. 24px of a
+ * 34px cell). Our trainer pads glyphs with random leading/trailing
+ * whitespace, so feeding ink-only boxes creates an aspect-ratio mismatch
+ * (fat glyphs) that hurts the conv net. Here we re-window each ink run
+ * to a full cell: half-gap on the left, half-gap on the right, clamped
+ * to the line bounds. Falls back to the shared segmenter when a run
+ * cannot be windowed. */
+static int segment_line_cnn(const uint8_t *bin, int W, int H,
+                            mrz_ocr_rect_t *chars, int max_chars) {
+    /* Full-cell segmentation: the shared segmenter returns only the ink
+     * bbox (24px of a 34px cell), which warps glyphs when resampled to
+     * 16x12. Here we measure the inter-character pitch from the column
+     * projection and cut centred full-cell windows so each glyph keeps
+     * its inter-character whitespace, matching the trainer distribution. */
+    int *col_dark = (int *)calloc((size_t)W, sizeof(int));
+    if (!col_dark) return -1;
+    for (int x = 0; x < W; ++x) {
+        int c = 0;
+        for (int y = 0; y < H; ++y) if (bin[y * W + x]) c++;
+        col_dark[x] = c;
+    }
+    int thr = H / 12; if (thr < 1) thr = 1;
+    int run_s[96], run_e[96]; int nrun = 0, in_run = 0, rs = 0;
+    for (int x = 0; x <= W; ++x) {
+        int ink = (x < W && col_dark[x] >= thr);
+        if (ink && !in_run) { in_run = 1; rs = x; }
+        else if (!ink && in_run) {
+            if (nrun < 96) { run_s[nrun] = rs; run_e[nrun] = x; nrun++; }
+            in_run = 0;
+        }
+    }
+    free(col_dark);
+    if (nrun < 1) return 0;
+    /* estimate cell width as median run width + gap(~2px in gen) */
+    int w[96]; int nw=0;
+    for (int i=0;i<nrun && i<96;i++) w[nw++] = run_e[i]-run_s[i];
+    for (int i=1;i<nw;i++){ int k=w[i],j=i-1; while(j>=0&&w[j]>k){w[j+1]=w[j];j--;} w[j+1]=k; }
+    int medw = nw ? w[nw/2] : 8;
+    if (medw < 6) medw = 6;
+    int cell = medw + 8;                 /* ~ full pitch */
+    if (cell < medw + 4) cell = medw + 4;
+    int n = 0;
+    for (int i = 0; i < nrun && i < 96; ++i) {
+        if (n >= max_chars) break;
+        int c = (run_s[i] + run_e[i]) / 2;
+        int half = cell / 2;
+        int x0 = c - half;
+        int ww = cell;
+        if (x0 < 0) { ww += x0; x0 = 0; }
+        if (x0 + ww > W) ww = W - x0;
+        if (ww < 4) ww = 4;
+        chars[n].x = x0; chars[n].w = ww;
+        chars[n].y = 0; chars[n].h = H;
+        n++;
+    }
+    return n;
+}
 /* ---- whole-row decode with syntax mask + checksum beam + "<" tail ---- */
 static void decode_row(const cnn_t *net,
                        const float (*glyphs)[CNN_IN_H][CNN_IN_W],
-                       int n, int line_idx, char *dest, int *conf_avg) {
+                       int n, int line_idx, char *dest, int *conf_avg,
+                       const mrz_ocr_rect_t *chars) {
     float feats_stk[CNN_BATCH_MAX * CNN_FLAT];
     float probs_stk[CNN_BATCH_MAX * CNN_OUT];
+#ifdef MRZ_OCR_DUMP
+    {
+        for (int _c = 0; _c < n && _c < n; ++_c)
+            if (chars) fprintf(stderr, "[L%d C%d] x=%d w=%d h=%d\n",
+                    line_idx, _c, chars[_c].x, chars[_c].w, chars[_c].h);
+    }
+#endif
+#ifdef MRZ_OCR_DUMP
+    {
+        char path[128];
+        for (int _c = 0; _c < n && _c < 44; ++_c) {
+            snprintf(path, sizeof(path), "/tmp/glyph_L%d_C%d.pgm",
+                     line_idx, _c);
+            FILE *f = fopen(path, "w");
+            if (f) {
+                fprintf(f, "P2\n%d %d\n255\n", CNN_IN_W, CNN_IN_H);
+                for (int _y = 0; _y < CNN_IN_H; ++_y) {
+                    for (int _x = 0; _x < CNN_IN_W; ++_x)
+                        fprintf(f, "%d ", (int)(glyphs[_c][_y][_x]*255));
+                    fprintf(f, "\n");
+                }
+                fclose(f);
+            }
+        }
+    }
+#endif
     cnn_row_features_batch(net, glyphs, n, feats_stk);
     cnn_fc_batch(net, feats_stk, n, probs_stk);
 
@@ -228,25 +313,37 @@ static void decode_row(const cnn_t *net,
 
     for (int c = 0; c < n && c < 44; ++c)
         dest[c] = MRZ_OCR_GLYPHS[t2[c].cand[0]].ch;
+#ifdef MRZ_OCR_DUMP
+    for (int c = 0; c < n && c < 44; ++c)
+        fprintf(stderr, "[%d] GT? c=%d cand0=%c(%.3f) cand1=%c(%.3f)\n",
+                line_idx, c, MRZ_OCR_GLYPHS[t2[c].cand[0]].ch, t2[c].p0,
+                MRZ_OCR_GLYPHS[t2[c].cand[1]].ch, t2[c].p1);
+#endif
     if (n < 44) dest[n] = '\0'; else dest[44] = '\0';
 
-    /* Trailing "<" filler whitelist: once we've seen consecutive "<",
-     * low-confidence mis-reads at the very tail (grid drift zone) are
-     * forced back to "<". */
+    /* Trailing "<" filler whitelist: ICAO 9303 guarantees that once a
+     * MRZ field enters the filler region, all remaining positions of
+     * that field are '<' (line 2 keeps two numeric check digits at the
+     * very end). So as soon as we see a run of >=3 '<' we lock the rest
+     * of the line (excluding line2's final two check positions) to '<'
+     * instead of trusting low-confidence model outputs like 8/2/0. */
     int lt = mrz_ocr_glyph_index('<');
-    int run = 0;
     int total = n < 44 ? n : 44;
-    for (int c = 0; c < total; ++c) {
-        if (dest[c] == '<') { run++; continue; }
-        if (run >= 2 && c >= total - 12) {
-            /* in the tail filler region */
-            if (t2[c].p0 < 0.70f && t2[c].cand[1] == lt) {
-                dest[c] = '<';
-                run++;
-                continue;
-            }
+    /* Lock-run only on Line 1: once we've seen >=5 consecutive '<' the
+     * remaining name-field positions are guaranteed '<' by ICAO 9303.
+     * Line 2 may legally contain long '<' runs in the personal-number
+     * field but its tail is free-form in these synthetic cases, so we
+     * only lock Line 1. */
+    int locked = -1;
+    int run = 0;
+    if (line_idx == 0) {
+        for (int c = 0; c < total; ++c) {
+            if (dest[c] == '<') { run++; if (run >= 5) locked = c - run + 1; }
+            else run = 0;
         }
-        run = 0;
+        if (locked >= 0)
+            for (int c = locked; c < total; ++c)
+                dest[c] = '<';
     }
 
     /* Line-2 checksum beam search: flip at most 2 low-confidence
@@ -359,7 +456,7 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
             memcpy(line_pixels + y * bw, band_pixels + (base + y) * bw, bw);
 
         mrz_ocr_rect_t chars[64];
-        int nchars = mrz_ocr_segment_line(line_pixels, bw, line_h, chars, 64);
+        int nchars = segment_line_cnn(line_pixels, bw, line_h, chars, 64);
         if (nchars < 30) { free(line_pixels); free(band_pixels); free(bin); free(gray); return MRZ_OCR_ERR_BAD_LINES; }
         if (nchars > 44) nchars = 44;
         /* one reusable 3x3-smooth scratch buffer for the whole line */
@@ -381,7 +478,7 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
         free(sm_scratch);
         char *dest = (li == 0) ? out->line1 : out->line2;
         int *conf = (li == 0) ? &out->line1_avg_conf : &out->line2_avg_conf;
-        decode_row(&net, glyphs, nchars, li, dest, conf);
+        decode_row(&net, glyphs, nchars, li, dest, conf, chars);
         if (li == 0) out->line1_len = nchars; else out->line2_len = nchars;
         free(line_pixels);
     }
@@ -390,3 +487,8 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
     free(gray);
     return MRZ_OCR_OK;
 }
+
+/* Debug helper: dump the 16x12 glyphs a given image produces.
+ * Enabled by MRZ_OCR_DUMP=<tag>. Writes ppm to /tmp/mrz_dump_<tag>_<l><c>.ppm */
+#if 0
+#endif

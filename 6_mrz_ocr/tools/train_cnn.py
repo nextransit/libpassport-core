@@ -80,6 +80,7 @@ HID = 64
 # Hard confusable pairs -> extra samples + margin term.
 HARD_PAIRS = [
     ("0", "O"), ("8", "B"), ("1", "I"), ("5", "S"), ("<", "0"),
+    ("N", "M"),
 ]
 
 
@@ -244,7 +245,7 @@ def build_dataset(n_per_class=500):
         # perturbation is realistic and identity-preserving)
         for _ in range(int(n_per_class * 0.5)):
             X.append(base.ravel().copy()); Y.append(idx)
-        for s in range(int(n_per_class * 0.5)):
+        for s in range(int(n_per_class * 0.35)):
             X.append(render_augment(ch, idx * 100000 + s).ravel())
             Y.append(idx)
     # hard-pair extra samples (extra 40% for confusable classes)
