@@ -181,35 +181,28 @@ def render_augment(ch, seed):
     """
     rnd = random.Random(seed)
     base8 = glyph_bitmap(ch)                 # 12x8 template (like template.c)
-    base = np.asarray(to_16(base8), dtype=np.float32)
+    base = np.asarray(to_16([[base8[y][x]*1.0 for x in range(8)]*2 for y in range(12)]),
+                      dtype=np.float32)
 
-    # 40% pure clean (anchor for identity), 60% perturbed.
+    # 40% pure clean, 60% perturbed. All outputs are GRAYSCALE ink-high
+    # 16x12 float (0=bg, 1=ink), matching the C-side resample_char_gray
+    # (1 - gray/255). We upscale the 8x12 template 4x, translate, then
+    # ARIA-average down to 16x12 WITHOUT hard threshold -> soft edges.
     if rnd.random() < 0.40:
         return base.copy()
 
-    # ---- Reproduce the C-side resample_char_cnn chain so training and
-    # inference glyph distributions match exactly:
-    #   segmented box (glyph + per-char pitch whitespace) ->
-    #   box_downsample to canonical 8x12 (1/2 ink rule) -> 2x to 16x12.
-    # We emulate the box by padding the 8-col template with random
-    # leading/trailing whitespace, upscaling 4x (like gen_mrz_image),
-    # then upscaling the WHOLE box to 8x12 with the same 1/2 rule, and
-    # finally 2x-nearest up to 16x12. ----
-    pad_l = rnd.randint(0, 2)                # in 8-col units (gap space)
+    pad_l = rnd.randint(0, 2)
     pad_r = rnd.randint(0, 2)
-    cols = pad_l + 8 + pad_r                 # box width in glyph cols
+    cols = pad_l + 8 + pad_r
     box = [[0] * cols for _ in range(12)]
     for y in range(12):
         for x in range(8):
-            box[y][pad_l + x] = base8[y][x]
+            box[y][pad_l + x] = float(base8[y][x])
     box_np = np.asarray(box, dtype=np.float32)
-    # upscale 4x with subpixel translation
     big = binary_pad(box_np, 4)
-    dx = rnd.uniform(-4, 4)                  # 4x units => +-1 box px
+    dx = rnd.uniform(-4, 4)
     dy = rnd.uniform(-4, 4)
     big = bilinear_translate(big, dx, dy)
-    # morphology: keep it light so thin digits (0,8) don't thicken
-    # into letter-like shapes (that was wiping out numeral accuracy).
     m = rnd.random()
     if m < 0.06:
         big = morph(big, "d")
@@ -217,11 +210,15 @@ def render_augment(ch, seed):
         big = morph(big, "e")
     if rnd.random() < 0.15:
         big = gamma_contrast(big, rnd.uniform(0.88, 1.15))
-    # down to canonical 8x12 with the C-side 1/2 ink rule
-    g8 = box_downsample_ink(big, 12, 8, threshold_div=2)
-    # 2x-nearest up to 16x12 (exactly like resample_char_cnn step 2)
-    out = np.asarray(to_16([[int(g8[y][x]) for x in range(8)] for y in range(12)]),
-                     dtype=np.float32)
+    # area-average down to 16x12 (soft grayscale, no binarisation)
+    hh, ww = big.shape
+    out = np.zeros((12, 16), dtype=np.float32)
+    for y in range(12):
+        sy0, sy1 = y*hh//12, (y+1)*hh//12
+        for x in range(16):
+            sx0, sx1 = x*ww//16, (x+1)*ww//16
+            blk = big[sy0:sy1, sx0:sx1]
+            out[y, x] = float(blk.mean())
     # impulse noise
     n = rnd.randint(0, 3)
     for _ in range(n):
@@ -294,7 +291,7 @@ def conv_bwd(dout, cols, W, X, pad):
 
 
 # ---------- train (torch autograd) ----------
-def train(epochs=25, lr=0.05, batch=512):
+def train(epochs=25, lr=0.02, batch=512):
     import torch
     import torch.nn as nn
     torch.manual_seed(1)
@@ -307,14 +304,14 @@ def train(epochs=25, lr=0.05, batch=512):
         def __init__(self):
             super().__init__()
             self.conv1 = nn.Conv2d(1, C1, 3, stride=1, padding=1)
-            self.conv2 = nn.Conv2d(C1, C2, 3, stride=1, padding=0)
-            self.fc1 = nn.Linear(C2*2*3, HID)
+            self.conv2 = nn.Conv2d(C1, C2, 3, stride=1, padding=1)
+            self.fc1 = nn.Linear(C2*3*8, HID)     # pool2 -> 3x8x16
             self.fc2 = nn.Linear(HID, NUM_CLASSES)
         def forward(self, x):
             x = torch.relu(self.conv1(x))
-            x = torch.nn.functional.max_pool2d(x, 2)
+            x = torch.nn.functional.max_pool2d(x, (2, 1))  # height only
             x = torch.relu(self.conv2(x))
-            x = torch.nn.functional.max_pool2d(x, 2)
+            x = torch.nn.functional.max_pool2d(x, (2, 2))  # 6x16 -> 3x8
             x = x.flatten(1)
             x = torch.relu(self.fc1(x))
             return self.fc2(x)
@@ -424,7 +421,7 @@ def emit_header(params):
     out += "};\n"
     out += "static const float DEFAULT_CONV2_B[CNN_C2] = {" + fmt(b2) + "};\n\n"
     out += "static const float DEFAULT_FC1_W[CNN_FLAT*CNN_HIDDEN] = {\n"
-    for i in range(0, 96*HID, 8):
+    for i in range(0, Wf1.ravel().size, 8):
         out += "    " + fmt(Wf1.ravel()[i:i+8]) + ",\n"
     out += "};\n"
     out += "static const float DEFAULT_FC1_B[CNN_HIDDEN] = {" + fmt(bf1) + "};\n\n"
@@ -439,7 +436,7 @@ def emit_header(params):
 
 
 if __name__ == "__main__":
-    params = train(epochs=45, lr=0.05, batch=1024)
+    params = train(epochs=50, lr=0.02, batch=512)
     emit_header(params)
     # class-wise accuracy recap (params[-1] = per_class dict)
     if len(params) >= 12:
