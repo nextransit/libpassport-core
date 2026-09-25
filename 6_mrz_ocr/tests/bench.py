@@ -133,6 +133,7 @@ if __name__ == "__main__":
     md = render_markdown(corpus, methods, agg, results)
     out_path = ROOT / "bench_results.md"
     out_path.write_text(md)
+    (ROOT / "bench_results.txt").write_text(md)
     json_path = ROOT / "bench_results.json"
     json_path.write_text(json.dumps({"agg": agg, "methods": methods, "total": len(corpus)}, indent=2))
     print(md)
