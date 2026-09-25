@@ -1,0 +1,33 @@
+{
+  "agg": {
+    "traditional": {
+      "n": 108,
+      "ok": 108,
+      "l1_correct": 4172,
+      "l1_total": 4704,
+      "l2_correct": 4424,
+      "l2_total": 4752,
+      "ms_mean": 0.0,
+      "ms_p50": 0.0,
+      "ms_p95": 0.0,
+      "full_match": 0
+    },
+    "cnn": {
+      "n": 108,
+      "ok": 108,
+      "l1_correct": 3766,
+      "l1_total": 4704,
+      "l2_correct": 3705,
+      "l2_total": 4752,
+      "ms_mean": 0.0,
+      "ms_p50": 0.0,
+      "ms_p95": 0.0,
+      "full_match": 0
+    }
+  },
+  "methods": [
+    "traditional",
+    "cnn"
+  ],
+  "total": 108
+}

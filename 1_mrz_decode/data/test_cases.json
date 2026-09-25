@@ -1,0 +1,153 @@
+{
+  "version": 1,
+  "description": "ICAO 9303 TD3 (passport) test corpus for the mrz library. Each case has input fields and the expected encoded two-line MRZ string with correct check digits.",
+  "cases": [
+    {
+      "id": "icao-example-eriksson",
+      "doc_type": "P<",
+      "issuing_state": "UTO",
+      "surname": "ERIKSSON",
+      "given_names": "ANNA<MARIA",
+      "passport_no": "L898902C3",
+      "nationality": "UTO",
+      "birth_yymmdd": "690806",
+      "sex": "F",
+      "expiry_yymmdd": "940623",
+      "personal_no": "ZE184226B<<<<<",
+      "expected_mrz": "P<UTOERIKSSON<ANNA<MARIA<<<<<<<<<<<<<<<<<<<<\nL898902C36UTO6908061F9406236ZE184226B<<<<<18\n",
+      "expected_checks": {
+        "composite": 8,
+        "passport_no": 6,
+        "birth": 1,
+        "expiry": 6,
+        "personal_no": 1
+      }
+    },
+    {
+      "id": "chn-wang-li",
+      "doc_type": "P<",
+      "issuing_state": "CHN",
+      "surname": "WANG",
+      "given_names": "LI",
+      "passport_no": "E12345678",
+      "nationality": "CHN",
+      "birth_yymmdd": "900101",
+      "sex": "M",
+      "expiry_yymmdd": "301231",
+      "personal_no": "1234567890",
+      "expected_checks": {
+        "composite": 6,
+        "passport_no": 2,
+        "birth": 1,
+        "expiry": 6,
+        "personal_no": 7
+      },
+      "expected_mrz": "P<CHNWANG<LI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\nE123456782CHN9001011M30123161234567890<<<<76\n"
+    },
+    {
+      "id": "usa-smith-john",
+      "doc_type": "P<",
+      "issuing_state": "USA",
+      "surname": "SMITH",
+      "given_names": "JOHN",
+      "passport_no": "123456789",
+      "nationality": "USA",
+      "birth_yymmdd": "850215",
+      "sex": "M",
+      "expiry_yymmdd": "250215",
+      "personal_no": "A1B2C3D4E5",
+      "expected_checks": {
+        "composite": 0,
+        "passport_no": 7,
+        "birth": 3,
+        "expiry": 1,
+        "personal_no": 9
+      },
+      "expected_mrz": "P<USASMITH<JOHN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n1234567897USA8502153M2502151A1B2C3D4E5<<<<90\n"
+    },
+    {
+      "id": "deu-muller-hans",
+      "doc_type": "P<",
+      "issuing_state": "DEU",
+      "surname": "MULLER",
+      "given_names": "HANS",
+      "passport_no": "C01X00T47",
+      "nationality": "DEU",
+      "birth_yymmdd": "000101",
+      "sex": "<",
+      "expiry_yymmdd": "320101",
+      "personal_no": "00000000000000",
+      "expected_checks": {
+        "composite": 1,
+        "passport_no": 8,
+        "birth": 8,
+        "expiry": 5,
+        "personal_no": 0
+      },
+      "expected_mrz": "P<DEUMULLER<HANS<<<<<<<<<<<<<<<<<<<<<<<<<<<<\nC01X00T478DEU0001018<32010150000000000000001\n"
+    },
+    {
+      "id": "gbr-obrien-patrick",
+      "doc_type": "P<",
+      "issuing_state": "GBR",
+      "surname": "OBRIEN",
+      "given_names": "PATRICK",
+      "passport_no": "GBR123456",
+      "nationality": "IRL",
+      "birth_yymmdd": "990101",
+      "sex": "F",
+      "expiry_yymmdd": "291231",
+      "personal_no": "GBRDOCUMENT012",
+      "expected_checks": {
+        "composite": 1,
+        "passport_no": 7,
+        "birth": 8,
+        "expiry": 6,
+        "personal_no": 8
+      },
+      "expected_mrz": "P<GBROBRIEN<PATRICK<<<<<<<<<<<<<<<<<<<<<<<<<\nGBR1234567IRL9901018F2912316GBRDOCUMENT01281\n"
+    }
+  ],
+  "negative_cases": [
+    {
+      "id": "too-short",
+      "mrz": "P<UTO\n",
+      "expected_status": "BAD_LENGTH"
+    },
+    {
+      "id": "empty",
+      "mrz": "",
+      "expected_status": "BAD_LENGTH"
+    },
+    {
+      "id": "lowercase-char",
+      "mrz_above": "lowercase at pos 2",
+      "expected_status": "BAD_CHECK_OR_INVALID"
+    },
+    {
+      "id": "wrong-pass-ck",
+      "mrz": "flip passport_no check digit",
+      "expected_status": "BAD_CHECK"
+    },
+    {
+      "id": "wrong-birth-ck",
+      "mrz": "flip birth check digit",
+      "expected_status": "BAD_CHECK"
+    },
+    {
+      "id": "wrong-expiry-ck",
+      "mrz": "flip expiry check digit",
+      "expected_status": "BAD_CHECK"
+    },
+    {
+      "id": "wrong-pn-ck",
+      "mrz": "flip personal_no check digit",
+      "expected_status": "BAD_CHECK"
+    },
+    {
+      "id": "wrong-comp-ck",
+      "mrz": "flip composite check digit",
+      "expected_status": "BAD_CHECK"
+    }
+  ]
+}

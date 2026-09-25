@@ -1,0 +1,85 @@
+{
+  "stages": [
+    {
+      "name": "1_mrz_encode",
+      "rc": 0,
+      "ms": 2.599958999780938,
+      "output": "P<UTOERIKSSON<ANNA<MARIA<<<<<<<<<<<<<<<<<<<<\nL898902C36UTO6908061F9406236ZE184226B<<<<<18\n"
+    },
+    {
+      "name": "1_mrz_decode",
+      "rc": 0,
+      "ms": 2.3044160043355078,
+      "output": "doc_type       : 'P<'\nissuing_state  : 'UTO'\nsurname        : 'ERIKSSON'\ngiven_names    : 'ANNA<MARIA'\npassport_no    : 'L898902C3'  ck=6\nnationality    : 'UTO'\nbirth_yymmdd   : '690806'  ck=1\nsex            : 'F'\nexpiry_yymmdd  : '940623'  ck=6\npersonal_no    : 'ZE184226B<<<<<'  ck=1\ncomposite_ck   : 8\n"
+    },
+    {
+      "name": "2_anticounterfeit",
+      "rc": 0,
+      "ms": 2.131083980202675,
+      "output": "verification: OK\n  [OK  ] doc_type         document type prefix recognised\n  [OK  ] issuing_state    issuing state code well-formed\n  [OK  ] nationality      nationality code well-formed\n  [OK  ] sex              sex field valid\n  [OK  ] birth_date       birth date YYMMDD well-formed\n  [OK  ] expiry_date      expiry date YYMMDD well-formed\n  [OK  ] date_order       expiry > birth\n  [OK  ] name_entropy     name has plausible alphabetic content\n  [OK  ] personal_no      personal number present\n  [OK  ] check_digits     all check digits consistent\n  [OK  ] summary          0 fail / 0 warn / 0 info\n"
+    },
+    {
+      "name": "7_security_crosscheck",
+      "rc": 0,
+      "ms": 2.160542004276067,
+      "output": "cross_check: 5 ok, 0 fail\n  passport_no : OK\n  birth_date  : OK\n  expiry_date : OK\n  nationality : OK\n  name        : OK\n"
+    },
+    {
+      "name": "4_nfc_reader_happy",
+      "rc": 0,
+      "ms": 2.3500829993281513,
+      "output": "result.ok       : 1\nresult.step     : DONE\nresult.detail   : BAC happy path complete; DG1=98 bytes; SOD=16 bytes\nresult.dg1_mrz  : 5A5F4250F4EIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<<<<<<\nL898902C36UTO6908061F9406236ZE184226B<<<<<18\nresult.sod_head : AABBCCDDEEFF00112233445566778899\nmock.unexpected : 0\nmock.remaining  : 7\n"
+    },
+    {
+      "name": "4_nfc_reader_fail",
+      "rc": 1,
+      "ms": 2.3432919988408685,
+      "output": "result.ok       : 0\nresult.step     : ERROR\nresult.detail   : SELECT AID failed (sw=6A82)\nresult.dg1_mrz  : \nresult.sod_head : \nmock.unexpected : 0\nmock.remaining  : 1\n"
+    },
+    {
+      "name": "6_gen_mrz_image",
+      "rc": 0,
+      "ms": 3.061374998651445
+    },
+    {
+      "name": "6_mrz_ocr_traditional",
+      "rc": 0,
+      "ms": 4.680459009250626,
+      "output": "result.ok       : OK\nresult.line1    : P<UTOEH1KSSON<ANNA<MAH1A<<<<<<<<<<<<<<<<<<<<\nresult.line2    : LB9B902C36UTO690B061F9406236ZE1B4226B<<<<<1B\nresult.conf1    : 84\nresult.conf2    : 82\nband.x band.y band.w band.h : 16 12 1486 102\n"
+    },
+    {
+      "name": "6_mrz_ocr_cnn",
+      "rc": 0,
+      "ms": 4.751000000396743,
+      "output": "method            : cnn\nresult.ok         : OK\nresult.line1      : 77777777777777777777777777777777777777777777\nresult.line2      : 77777777777777777777777777777777777777777777\nresult.conf1      : 100\nresult.conf2      : 99\nband.x band.y band.w band.h : 16 12 1486 102\n"
+    },
+    {
+      "name": "3_face_gen_a",
+      "rc": 0,
+      "ms": 2.6594160008244216
+    },
+    {
+      "name": "3_face_gen_b",
+      "rc": 0,
+      "ms": 2.414125017821789
+    },
+    {
+      "name": "3_face_match",
+      "rc": 0,
+      "ms": 2.3693330003879964,
+      "output": "method: aHash\nscore : 100/100\n"
+    },
+    {
+      "name": "7_security_bac",
+      "rc": 0,
+      "ms": 2.45800000266172,
+      "output": "K_enc = E2270AEB7C97D607E2270AEB7C97D607\nK_mac = 558F5CF96D03FC8DE58B740594169919\n"
+    },
+    {
+      "name": "7_security_mac",
+      "rc": 0,
+      "ms": 2.035084005910903,
+      "output": "mac = 9342AE663E985835\n"
+    }
+  ]
+}
