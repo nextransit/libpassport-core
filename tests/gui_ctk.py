@@ -1033,9 +1033,14 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
         self.ocr_preview_meta.set(
             f"id={cid}  scale={rec['scale']}  noise={rec['noise']}  "
             f"skew={rec['skew']}\n{rec['image']}")
+        self._preview_img_path = img_path
         try:
             from PIL import Image
             self._preview_img_pil = Image.open(img_path).convert("RGB")
+            self._preview_w, self._preview_h = self._preview_img_pil.size
+            last = getattr(self, "_ocr_last", {}).get(cid, {}) or {}
+            pm = last.get("cnn") or last.get("traditional") or {}
+            self._preview_last_pm = pm
             self._update_preview_image()
         except Exception:
             self._preview_img_pil = None
@@ -1046,19 +1051,74 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
         im = getattr(self, "_preview_img_pil", None)
         if im is None:
             return
-        w = self.ocr_preview_label.winfo_width()
-        h = self.ocr_preview_label.winfo_height()
+        # Defensive size probe (label may not be laid out yet under
+        # headless probes or during initial pack).
+        w, h = 0, 0
+        for src_probe in (
+                lambda: (self.ocr_preview_label.winfo_width(),
+                         self.ocr_preview_label.winfo_height()),
+                lambda: (self.ocr_preview_label.winfo_reqwidth(),
+                         self.ocr_preview_label.winfo_reqheight())):
+            try:
+                w, h = src_probe()
+                break
+            except tk.TclError:
+                continue
         if w <= 1 or h <= 1:
-            return
-        im2 = im.copy()
-        im2.thumbnail((max(1, w - 6), max(1, h - 6)))
+            w, h = 320, 180
+        iw, ih = self._preview_w, self._preview_h
+        margin = 4
+        tw, th = max(1, w - margin), max(1, h - margin)
+        scale = min(tw / iw, th / ih)
+        dw, dh = int(iw * scale), int(ih * scale)
+        ox = (w - dw) // 2
+        oy = (h - dh) // 2
+        im2 = im.resize((dw, dh))
         try:
-            from PIL import ImageTk
-            photo = ImageTk.PhotoImage(im2)
+            from PIL import Image, ImageDraw, ImageTk
+            overlay = im2.copy()
+            drw = ImageDraw.Draw(overlay, "RGBA")
+            photo_box = (int(dw * 0.04), int(dh * 0.08),
+                         int(dw * 0.30), int(dh * 0.78))
+            data_box  = (int(dw * 0.30), int(dh * 0.08),
+                         int(dw * 0.96), int(dh * 0.40))
+            mrz_box   = (int(dw * 0.04), int(dh * 0.62),
+                         int(dw * 0.96), int(dh * 0.96))
+            band_raw = (getattr(self, "_preview_last_pm", {}) or {}).get("band", "")
+            if band_raw:
+                try:
+                    bx, by, bw, bh = (int(float(x)) for x in band_raw.split())
+                    sx = dw / iw; sy = dh / ih
+                    mrz_box = (int(bx * sx), int(by * sy),
+                               int((bx + bw) * sx), int((by + bh) * sy))
+                except Exception:
+                    pass
+            drw.rectangle(photo_box, outline=(0, 229, 255, 255), width=2)
+            drw.rectangle(data_box,  outline=(179, 136, 255, 255), width=2)
+            drw.rectangle(mrz_box,   outline=(46, 230, 168, 255), width=2)
+            def tag(box, label, fill):
+                x0, y0, x1, y1 = box
+                tag_w = max(28, len(label) * 7 + 8)
+                ty = max(0, y0 - 12)
+                drw.rectangle((x0, ty, x0 + tag_w, ty + 12),
+                              fill=fill)
+                drw.text((x0 + 4, ty + 1), label, fill=(0, 0, 0, 255))
+            tag(photo_box, "PHOTO", (0, 229, 255, 255))
+            tag(data_box,  "DATA",  (179, 136, 255, 255))
+            tag(mrz_box,   "MRZ",   (46, 230, 168, 255))
+            photo = ImageTk.PhotoImage(overlay)
         except Exception:
-            return
+            try:
+                from PIL import ImageTk
+                photo = ImageTk.PhotoImage(im2)
+            except Exception:
+                return
         self._preview_imgs["_current"] = photo
         self.ocr_preview_label.configure(image=photo, text="")
+        self._preview_layout = {"scale": scale, "ox": ox, "oy": oy,
+                                "dw": dw, "dh": dh,
+                                "photo": photo_box, "data": data_box,
+                                "mrz": mrz_box}
 
     def _render_diff_block(self, tw, label, gt, pred):
         """Append one aligned GT/Pred block with per-char highlighting."""
@@ -1089,6 +1149,18 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
         tw = self.ocr_diff_text
         tw.configure(state="normal")
         tw.delete("1.0", "end")
+        pm = getattr(self, "_preview_last_pm", None) or {}
+        for label, gt, pred in blocks:
+            tag = "okline" if gt == pred else "lab"
+            conf = pm.get("conf1") if "line1" in label else (
+                   pm.get("conf2") if "line2" in label else None)
+            if conf is None:
+                tw.insert("end", f"{label}  conf=n/a\n", tag)
+            else:
+                grade = "PASS" if conf >= 70 else ("WARN" if conf >= 40 else "FAIL")
+                tw.insert("end",
+                          f"{label}  conf={conf}% ({grade})\n", tag)
+            tw.insert("end", "\n", "lab")
         for label, gt, pred in blocks:
             self._render_diff_block(tw, label, gt, pred)
         tw.configure(state="disabled")
@@ -1097,6 +1169,16 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
         tw = self.ocr_diff_text
         tw.configure(state="normal")
         tw.delete("1.0", "end")
+        pm = getattr(self, "_preview_last_pm", None) or {}
+        c1 = pm.get("conf1")
+        c2 = pm.get("conf2")
+        if c1 is not None or c2 is not None:
+            tw.insert("end", "最近一次识别置信率:\n", "hdr")
+            tw.insert("end",
+                f"  line1 conf={c1 if c1 is not None else 'n/a'}%   "
+                f"line2 conf={c2 if c2 is not None else 'n/a'}%\n",
+                "lab")
+            tw.insert("end", "\n", "lab")
         tw.insert("end", "line1 (GT)\n", "hdr")
         tw.insert("end", rec["line1"] + "\n", "match")
         tw.insert("end", "line2 (GT)\n", "hdr")
@@ -1863,27 +1945,42 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
 
     def _nfc_build_adv_panel(self, parent):
         self._adv_open = tk.BooleanVar(value=False)
-        self._adv_frame = ttk.LabelFrame(parent, text="高级密码学参数")
-        self._adv_frame.pack(fill="x", padx=2, pady=2)
-        head = ttk.Frame(self._adv_frame); head.pack(fill="x")
-        ttk.Button(head, text="展开 / 折叠",
-                   command=self._nfc_toggle_adv).pack(side="left", padx=4)
-        # wrap="none" disables line wrapping, which means long hex lines
-        # were silently clipped at the right edge with no way to scroll.
-        # Keep nowrap for hex fidelity, but attach a horizontal Scrollbar
-        # and a reasonable vertical Scrollbar so the full payload is
-        # reachable regardless of panel width or content length.
+        # CustomTkinter preview: build the panel with ctk primitives so
+        # the title row, toggle button and body stay visible inside a
+        # CTkFrame parent (ttk.LabelFrame disappears under a CTkFrame).
         pal = self._pal
-        body = ttk.Frame(self._adv_frame)
+        c = pal["ctk"]
+        outer = ctk.CTkFrame(
+            parent, fg_color=c["fg_color"],
+            corner_radius=10, border_width=1, border_color=c["border"])
+        outer.pack(fill="x", padx=4, pady=4, anchor="n")
+        # Title + toggle on the same header row, all ctk widgets.
+        head = ctk.CTkFrame(outer, fg_color="transparent")
+        head.pack(fill="x", padx=6, pady=(6, 2))
+        ctk.CTkLabel(
+            head, text="  高级密码学参数  ",
+            text_color=c["text_dim"],
+            font=ctk.CTkFont(family=pal["font_ui_bold"][0],
+                             size=pal["font_ui_bold"][1],
+                             weight="bold")).pack(side="left", padx=(4, 8))
+        self._adv_toggle_btn = ctk.CTkButton(
+            head, text="展开 / 折叠", width=120, height=28,
+            command=self._nfc_toggle_adv,
+            fg_color=c["primary"], hover_color=c["primary_h"],
+            text_color="#ffffff",
+            font=ctk.CTkFont(family=pal["font_ui"][0],
+                             size=pal["font_ui"][1]),
+            corner_radius=6)
+        self._adv_toggle_btn.pack(side="right", padx=6)
+        # Body frame holds the Text + scrollbars; hidden by default.
+        body = ctk.CTkFrame(outer, fg_color=c["top_fg"],
+                            corner_radius=8, border_width=1,
+                            border_color=c["border"])
         self._adv_text_body = body
-        # Create the Text widget FIRST so scrollbars can bind to its
-        # xview/yview directly without relying on late-bound attribute
-        # access.
         self.nfc_adv_text = tk.Text(
             body, height=8, font=("Menlo", 9), wrap="none",
             bg=pal["code"], fg=pal["fg"],
-            insertbackground=pal.get("accent", pal["primary"]),
-            undo=True, maxundo=-1)
+            insertbackground=c["accent"], undo=True, maxundo=-1)
         adv_yscroll = ttk.Scrollbar(body, orient="vertical",
                                     command=self.nfc_adv_text.yview)
         adv_xscroll = ttk.Scrollbar(body, orient="horizontal",
@@ -1893,19 +1990,32 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
         adv_xscroll.pack(side="bottom", fill="x")
         self.nfc_adv_text.pack(side="left", fill="both", expand=True)
         adv_yscroll.pack(side="right", fill="y")
-        body.pack(fill="x", padx=4, pady=2)
+        body.pack(fill="x", padx=6, pady=(2, 6))
         body.pack_forget()
+        # Keep a back-pointer to the outer frame for legacy refresh paths.
+        self._adv_frame = outer
 
     def _nfc_toggle_adv(self):
         body = getattr(self, "_adv_text_body", None)
         if body is None:
             return
+        btn = getattr(self, "_adv_toggle_btn", None)
         if self._adv_open.get():
             body.pack_forget()
             self._adv_open.set(False)
+            if btn is not None:
+                try:
+                    btn.configure(text="展开")
+                except (tk.TclError, ValueError):
+                    pass
         else:
-            body.pack(fill="x", padx=4, pady=2)
+            body.pack(fill="x", padx=6, pady=(2, 6))
             self._adv_open.set(True)
+            if btn is not None:
+                try:
+                    btn.configure(text="折叠")
+                except (tk.TclError, ValueError):
+                    pass
 
     def _nfc_copy_key(self, name, var):
         val = var.get()
