@@ -1097,9 +1097,14 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
                 line1 = ocr_kv.get("result.line1", "")
                 line2 = ocr_kv.get("result.line2", "")
                 ok = ocr_kv.get("result.ok", "FAIL").upper() == "OK"
+                # Surface mrz_ocr_tool's stderr in the report.
+                self._loc_last_ocr_err = (ocr_proc.stderr or "").strip()
                 if line1 and line2:
+                    # mrz_tool decode accepts ONE MRZ string of two
+                    # newline-joined lines, not two positional args.
                     decode_proc = subprocess.run(
-                        [str(MRZ_TOOL), "decode", line1, line2],
+                        [str(MRZ_TOOL), "decode",
+                         f"{line1}\n{line2}"],
                         text=True, capture_output=True, timeout=10)
                 else:
                     decode_proc = subprocess.CompletedProcess(
@@ -1132,6 +1137,9 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
                 "",
                 f"mrz_ocr_tool rc : {ocr_proc.returncode}   "
                 f"mrz_tool rc : {decode_proc.returncode}",
+                "",
+                "mrz_ocr_tool [stderr] (only shown when non-empty):",
+                (ocr_proc.stderr.strip() or "(none)"),
                 f"result.ok   : {kv.get('result.ok', '-')}",
                 f"result.name : {kv.get('result.name', '-')}",
                 f"result.doc  : {kv.get('result.doc',  '-')}",
