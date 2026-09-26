@@ -273,3 +273,24 @@ gate:`MRZ_OCR_LOCAL_NORM=1`。
 整行可交付。前端归一化 + 重训的方向与 hard-slices 30% 权重一样,都提高
 单字、压低整行——真正能推 full-match 的路径还没找到,优先怀疑切分/deskew
 残留误差与低置信双字,而非单字分类器。
+
+### 7.6 realistic full-match 45%->85% 瓶颈定位(2026-09-26,证据)
+
+对 660 realistic 全量逐字符复测,full-match 失败 363 张(55%)构成:
+
+- 失败形态:仅 line1 错 152、仅 line2 错 93、两行都错 118;
+- 主因条件:rot>=2 占 234,illum>=30 占 68,rot<1 但 illum 轻 55;
+- **line1 行首 col0-4 是 dominant**:col0(文档类型位 P)错 95 次
+  (P->F 57、P->< 26、P->B 8),col2-4 国码区其次(U->O、E->F、
+  I->T 等)。rot<1 也存在行首错 53 次 -> 不是纯旋转残差。
+
+结论(推 full-match 的正确抓手):
+- 单字分类器已不是瓶颈(NORM/hard-slices 重训把字符精度推到
+  97.6/99.1 但 full-match 反而降),line1 行首 P/F 混淆 + 高位 rot
+  是联合失真主因;
+- 下一步两个候选,只能选产品收益可证的那个:
+  a) line1 col0/col2-4 的段级后处理(文档类型位掩码收窄到 P/I/A/
+     V+<、国码 A-Z,已含于 strict mask;改为对 col0 用 top-3 强制
+     P/I/A/V 候选,不依赖 beam);
+  b) 高位 rot 的 deskew 残差补偿(双线分离后按行再估一次斜)。
+- 验收口径不变:realistic full-match,45%->85%。

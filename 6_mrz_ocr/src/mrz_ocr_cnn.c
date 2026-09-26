@@ -128,7 +128,15 @@ static void fill_allow(int allow[37], int line_idx, int col) {
      * MRZ falls into exactly one of these sets, so the mask always
      * contains the ground truth and only removes impossible classes. */
     if (line_idx == 0) {
-        if (col == 1) {
+        if (col == 0) {
+            /* Document type letter: ICAO 9303 limits this to the
+             * standard one-letter types P/I/A/V/C + '<' filler. P->F,
+             * P->B confusions at this column were a top full-match
+             * error source; the mask only removes impossible letters. */
+            for (int i = 0; i < 37; ++i) allow[i] = 0;
+            for (const char *types = "PIAVC<"; *types; ++types)
+                allow[mrz_ocr_glyph_index(*types)] = 1;
+        } else if (col == 1) {
             /* Type-line filler: "P<..." */
             for (int i = 0; i < 37; ++i) allow[i] = (i == lt);
         } else if (col >= 2 && col <= 4) {
@@ -139,7 +147,7 @@ static void fill_allow(int allow[37], int line_idx, int col) {
             for (int i = 0; i < 37; ++i)
                 allow[i] = (i >= a0 && i < a0 + 26) || i == lt;
         }
-        /* col 0: document type letter — any of the 37. */
+        /* col 0 handled above: standard ICAO doc-type letters only. */
     } else {
         if (col <= 8) {
             /* Passport number: alnum + '<' filler */
