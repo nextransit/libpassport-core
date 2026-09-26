@@ -263,6 +263,17 @@ int mrz_ocr_segment_line(const uint8_t *bin, int W, int H, mrz_ocr_rect_t *chars
     return n;
 }
 
+/* ============================================================================
+ * LEGACY BASELINE - DO NOT ADD NEW FEATURES
+ * ----------------------------------------------------------------------------
+ * This template-matching backend is the CONTROL GROUP for A/B reporting
+ * only. Product/embedded deployment uses the CNN backend exclusively
+ * (mrz_ocr_recognise_cnn); the regression gate (FLOORS) binds only CNN.
+ * The 8x12 bitwise-XOR matcher, run-length segmentation and the absence
+ * of syntax-mask / checksum-beam post-processing are deliberately FROZEN.
+ * It may receive shared-preprocessing fixes (deskew) so the benchmark
+ * measures the classifier gap, but NO new recognition features.
+ * ========================================================================== */
 /* ---------- 5. Match one binarised char to the best glyph. ----------
  *
  * We compute a normalised correlation score between the character
@@ -364,16 +375,31 @@ mrz_ocr_status_t mrz_ocr_recognise(const face_image_t *img,
         return MRZ_OCR_ERR_BAD_GEOMETRY;
     }
 
-    /* 4. Extract the band and split into two lines. */
+    /* 4. Extract the band and split into two lines.  The band is
+     * deskewed FIRST via the shared geometry layer, so rotated scans
+     * (realistic corpus: +-3 deg) reach the classifier instead of
+     * dying in row projection.  `band_pixels` stays the raw crop for
+     * no-skew fast path; `band_work` is the (possibly rotated) copy
+     * that line splitting and per-line segmenting operate on. */
     uint8_t *band_pixels = (uint8_t *)malloc((size_t)band.w * band.h);
     if (!band_pixels) { free(bin); return MRZ_OCR_ERR_LOAD; }
     for (int y = 0; y < band.h; ++y)
         memcpy(band_pixels + y * band.w,
                bin + (band.y + y) * W + band.x, band.w);
 
+    uint8_t *band_work = band_pixels;
+    uint8_t *rot = NULL;
+    double deg = mrz_estimate_band_skew(band_pixels, band.w, band.h);
+    if (deg != 0.0) {
+        rot = (uint8_t *)malloc((size_t)band.w * band.h);
+        if (!rot) { free(bin); free(band_pixels); return MRZ_OCR_ERR_LOAD; }
+        mrz_rotate_band(band_pixels, band.w, band.h, deg, 0, rot);
+        band_work = rot;
+    }
+
     mrz_ocr_rect_t lines[2];
-    if (mrz_ocr_split_lines(band_pixels, band.w, band.h, lines) != 0) {
-        free(band_pixels); free(bin);
+    if (mrz_ocr_split_lines(band_work, band.w, band.h, lines) != 0) {
+        free(rot); free(band_pixels); free(bin);
         return MRZ_OCR_ERR_BAD_LINES;
     }
 
@@ -385,7 +411,7 @@ mrz_ocr_status_t mrz_ocr_recognise(const face_image_t *img,
         if (!line_pixels) { free(band_pixels); free(bin); return MRZ_OCR_ERR_LOAD; }
         for (int y = 0; y < line_rect.h; ++y)
             memcpy(line_pixels + y * line_rect.w,
-                   band_pixels + (line_rect.y + y) * band.w + line_rect.x,
+                   band_work + (line_rect.y + y) * band.w + line_rect.x,
                    line_rect.w);
         mrz_ocr_rect_t chars[64];
         int nchars = mrz_ocr_segment_line(line_pixels, line_rect.w, line_rect.h, chars, 64);
@@ -426,6 +452,7 @@ mrz_ocr_status_t mrz_ocr_recognise(const face_image_t *img,
         total_conf += conf_sum;
         free(line_pixels);
     }
+    free(rot);
     free(band_pixels);
     free(bin);
     (void)total_chars; (void)total_conf;

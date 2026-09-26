@@ -651,63 +651,9 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
     *conf_avg = total > 0 ? sum / total : 0;
 }
 
-/* ---- band tilt estimation ----
- * Score = energy of the ink-pixel row projection after rotating the
- * band content by -alpha; maximised when the two text lines are
- * horizontal. Only ink pixels are visited, so the sweep over
- * -4..+4 deg in 0.5 deg steps is cheap. */
-static double estimate_band_skew(const uint8_t *bin, int W, int H) {
-    if (W < 32 || H < 16) return 0.0;
-    double cx = (W - 1) / 2.0, cy = (H - 1) / 2.0;
-    double best_score = -1.0, score0 = -1.0, best_deg = 0.0;
-    int *proj = (int *)malloc(sizeof(int) * (size_t)(H + 4));
-    if (!proj) return 0.0;
-    for (int deg4 = -8; deg4 <= 8; ++deg4) {
-        double deg = deg4 * 0.5;
-        double rad = deg * M_PI / 180.0;
-        double s = sin(rad), c = cos(rad);
-        memset(proj, 0, sizeof(int) * (size_t)(H + 4));
-        for (int y = 0; y < H; ++y) {
-            for (int x = 0; x < W; ++x) {
-                if (!bin[y * W + x]) continue;
-                double yr = cy - s * (x - cx) + c * (y - cy);
-                int yi = (int)(yr + 0.5);
-                if (yi >= 0 && yi < H) proj[yi]++;
-            }
-        }
-        double score = 0;
-        for (int y = 0; y < H; ++y) score += (double)proj[y] * proj[y];
-        if (deg == 0.0) score0 = score;
-        if (score > best_score) { best_score = score; best_deg = deg; }
-    }
-    free(proj);
-    if (best_deg == 0.0) return 0.0;
-    /* require a clear win over no-rotation before touching the band */
-    if (best_score <= score0 * 1.05) return 0.0;
-    return best_deg;
-}
-
-/* Rotate the band content by -deg about its center (inverse-map,
- * nearest neighbour, white fill). After this the text lines are
- * horizontal and the normal split/segment stages apply. */
-static void rotate_band(const uint8_t *src, int W, int H, double deg,
-                        uint8_t *dst) {
-    double rad = deg * M_PI / 180.0;
-    double c = cos(rad), s = sin(rad);
-    double cx = (W - 1) / 2.0, cy = (H - 1) / 2.0;
-    for (int y = 0; y < H; ++y) {
-        for (int x = 0; x < W; ++x) {
-            double dx = x - cx, dy = y - cy;
-            /* dst pixel samples src rotated by +deg (inverse of the
-             * content transform R(-deg) used by the estimator). */
-            double sx = cx + c * dx - s * dy;
-            double sy = cy + s * dx + c * dy;
-            int ix = (int)lround(sx), iy = (int)lround(sy);
-            dst[y * W + x] = (ix >= 0 && ix < W && iy >= 0 && iy < H)
-                                 ? src[iy * W + ix] : 255;
-        }
-    }
-}
+/* Band tilt estimation + deskew live in the shared geometry layer
+ * (src/mrz_geom.c): mrz_estimate_band_skew() / mrz_rotate_band().
+ * They are used by both the CNN and legacy backends. */
 
 /* ---- top-level pipeline ---- */
 mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
@@ -776,11 +722,11 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
     {
         int tb = mrz_ocr_otsu(band_gray, bw * bh);
         for (int i = 0; i < bw * bh; ++i) band_bin[i] = (band_gray[i] < tb) ? 1 : 0;
-        double deg = estimate_band_skew(band_bin, bw, bh);
+        double deg = mrz_estimate_band_skew(band_bin, bw, bh);
         if (deg != 0.0) {
             rot = (uint8_t *)malloc((size_t)bw * bh);
             if (!rot) { status = MRZ_OCR_ERR_LOAD; goto cleanup; }
-            rotate_band(band_gray, bw, bh, deg, rot);
+            mrz_rotate_band(band_gray, bw, bh, deg, 255, rot);
             memcpy(band_gray, rot, (size_t)bw * bh);
             for (int i = 0; i < bw * bh; ++i) band_bin[i] = (band_gray[i] < tb) ? 1 : 0;
         }

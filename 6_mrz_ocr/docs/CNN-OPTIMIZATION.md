@@ -192,3 +192,64 @@ illum、invert、noise≤0.05)下 CNN 仍明显优于传统。
 | `tools/mine_failures.py` | 失败聚类 + 下轮建议 |
 | `tests/test_golden.c` / `test_postproc.c` | 进程内回归测试 |
 | `loop.sh` / `run.sh` | 闭环 / 冒烟 |
+
+
+## 7. 架构决策:几何解耦 + 产品路径定调(2026-09-26)
+
+**战略:执行「最小预处理解耦」+ 敲定「CNN 独占生产管线」,坚决不做「重写传统
+特征匹配引擎」。**
+
+背景:传统后端在 1380 张 eval 语料上只有 44.57%/36.04%,曾被误读为"需要
+升级"。拆解后真实根因:
+- 602/660 realistic 图直接 pipeline FAIL,**全部 rot!=0**——传统后端没有
+  deskew,行投影在几度倾斜下直接失效(连字符识别都到不了);
+- clean 720/720 全部跑通但只有 75.7%——8x12 逐比特 XOR 匹配器本身弱。
+
+### 7.1 共享几何预处理层(src/mrz_geom.c)
+
+`estimate_band_skew` / `rotate_band` 本是 CNN 模块私有的 static,但它们属于
+光学前处理几何层。已提取为独立公共 API:
+- `mrz_estimate_band_skew(bin, W, H)`:墨点行投影能量,±4° 0.5° 步进,
+  >5% 才采用;
+- `mrz_rotate_band(src, W, H, deg, fill, dst)`:反向映射最近邻旋转,
+  fill 参数区分灰度(255)/二值(0)。
+
+两个后端现在共用:
+```
+            [ 灰度/多光谱图 ]
+                    │
+ ┌──────────────────▼─────────────────────┐
+ │ 共享预处理层 (mrz_geom.c)               │
+ │  locate_band → estimate_skew → rotate  │
+ └──────────────────┬─────────────────────┘
+          ┌─────────┴─────────┐
+          ▼                   ▼
+   [ CNN 生产主线 ]      [ 传统 LEGACY 对照 ]
+```
+- CNN:band-local 二次 Otsu + deskew(与之前一致,行为不变);
+- 传统:全局 Otsu + deskew(新接入),行切分前无条件校正旋转。
+
+**实测(1380 eval):传统 pipeline OK 从 56.4% → 100%,realistic 从 8.8% →
+100%;传统 line1 44.57% → 63.58%,line2 36.04% → 42.60%;realistic 传统
+line1 2.95% → 42.70%。CNN 数字不变(95.63/98.87),4/4 ctest 通过。**
+
+### 7.2 传统后端定调:LEGACY BASELINE(冻结)
+
+`src/mrz_ocr.c` 已加 banner:`LEGACY BASELINE - DO NOT ADD NEW FEATURES`。
+其 8x12 逐比特 XOR、run 分割、无语法掩码/无校验和 beam 的行为**永久冻结**,
+只作为 A/B 测试的对照组存在,证明"无学习能力的浅层分类器"天花板
+(clean 75.7% vs CNN 98.5%)。回归门 FLOORS 只绑定 CNN。
+
+### 7.3 已满足项:Line-2 双字联合校验回溯
+
+检查清单第 3 项"Top-2 → 2x2 最小裕度联合翻转"**已实现于 decode_row**:
+top-3 候选 + 置信裕度(p0-p1)升序 + 单位置翻转 + 双位置 2x2 联合翻转
+(取裕度最小的 6 个位置对)。无需重复实现;当前 cksum 有效率为 94.64%。
+
+### 7.4 下一步(聚焦 CNN realistic full-match 45% → 85%)
+
+- 前端:单行 X 轴滑动窗口局部背景/前景归一化(替代全局 Otsu/1-ink/255),
+  抗光照梯度与反光;
+- 训练:把 realistic 中置信 <0.8 或 Top-2 纠错的 16x12 字符 patch 落盘,
+  按 30% 权重与 clean 混合重训;
+- 验收:以 1380 eval 的 realistic full-match 与 cksum 为唯一指标。
