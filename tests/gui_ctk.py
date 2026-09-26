@@ -1140,7 +1140,14 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
                 "",
                 "mrz_ocr_tool [stderr] (only shown when non-empty):",
                 (ocr_proc.stderr.strip() or "(none)"),
-                f"result.ok   : {kv.get('result.ok', '-')}",
+                # Surface OCR confidence so the user can see whether
+                # 'OK' actually means a confident recognition.
+                f"result.ok   : {kv.get('result.ok', '-')}   "
+                f"conf1={kv.get('result.conf1', '-')}%   "
+                f"conf2={kv.get('result.conf2', '-')}%",
+                "" if decode_proc.returncode == 0 else
+                "[!] mrz_tool decode 返回非 0 (说明 OCR 出的两行不是合法 ICAO 字符，"
+                "常见原因：合成样本 / 低分辨率 / MRZ 区定位过窄)",
                 f"result.name : {kv.get('result.name', '-')}",
                 f"result.doc  : {kv.get('result.doc',  '-')}",
                 f"result.nat  : {kv.get('result.nat',  '-')}",
