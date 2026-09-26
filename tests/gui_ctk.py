@@ -1728,15 +1728,28 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
             w.delete("1.0", "end")
         for var in self._nfc_key_vars.values():
             var.set("—")
+        # Visual-pass 3.0: dual-mode reset. The chips live in CTkLabel
+        # under CustomTkinter (fg_color/text_color) and tk.Label under
+        # ttkbootstrap (bg/fg). Try ctk first, then fall back.
+        chip_dim = self._pal["chip"]["dim"]
+        def _reset_chip(lb):
+            try:
+                lb.configure(fg_color=chip_dim["bg"],
+                             text_color=chip_dim["fg"])
+            except (tk.TclError, ValueError):
+                try:
+                    lb.configure(bg=chip_dim["bg"], fg=chip_dim["fg"])
+                except tk.TclError:
+                    pass
         for _, var, lb in self._nfc_states:
-            var.set("…")
-            lb.configure(fg="#888")
+            var.set("  ARMED  ")
+            _reset_chip(lb)
         for var in self._nfc_dg1_vars.values():
             var.set("—")
         self._nfc_sod_sha.set("—")
         self._nfc_sod_rsa.set("—")
         for _, lb in self._nfc_prog_vars.values():
-            lb.configure(fg="#888")
+            _reset_chip(lb)
         self.nfc_badge_var.set("")
         self.nfc_status_var.set("运行中…")
         def worker():
@@ -2026,64 +2039,297 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
     # ---------------- Face tab ----------------
     def _build_face_tab(self):
         f = self.tab_face
-        ttk.Label(f, text="照片比对", font=("TkDefaultFont", 11, "bold")).pack(anchor="w", padx=4)
-        # Built-in reference samples row.
-        ref = ttk.Frame(f); ref.pack(fill="x", padx=4, pady=(2, 0))
-        ttk.Label(ref, text="内置参考样本:").pack(side="left")
+        pal = self._pal
+        # ---- Title strip ----
+        title_row = ctk.CTkFrame(f, fg_color=pal["ctk"]["fg_color"],
+                                  corner_radius=10, border_width=1,
+                                  border_color=pal["ctk"]["border"])
+        title_row.pack(fill="x", padx=6, pady=(8, 4))
+        ctk.CTkLabel(
+            title_row, text="  照片比对  ",
+            text_color=pal["ctk"]["text"],
+            font=ctk.CTkFont(family=pal["font_ui_bold"][0],
+                             size=pal["font_ui_bold"][1],
+                             weight="bold"),
+        ).pack(side="left", padx=(10, 4), pady=6)
+        ctk.CTkLabel(
+            title_row, text="（face_a / face_b / face_c 已预置，可直接点“比对”）",
+            text_color=pal["ctk"]["text_dim"],
+            font=ctk.CTkFont(family=pal["font_ui"][0],
+                             size=pal["font_ui"][1]),
+        ).pack(side="left", padx=4)
+
+        # ---- Reference picker row ----
+        ref = ctk.CTkFrame(f, fg_color=pal["ctk"]["fg_color"],
+                           corner_radius=10, border_width=1,
+                           border_color=pal["ctk"]["border"])
+        ref.pack(fill="x", padx=6, pady=4)
+        ctk.CTkLabel(ref, text="内置参考样本:",
+                     text_color=pal["ctk"]["text_dim"]).pack(
+                         side="left", padx=(10, 4), pady=6)
         self.face_ref = tk.StringVar()
-        face_ref_cb = ttk.Combobox(ref, textvariable=self.face_ref,
-                                   values=list(FACE_SAMPLES.keys()),
-                                   state="readonly", width=26,
-                                   style="Field.TCombobox")
-        face_ref_cb.pack(side="left", padx=2)
-        face_ref_cb.current(0)
-        ttk.Button(ref, text="填入 → 照片A",
-                   command=self._face_load_ref).pack(side="left", padx=4)
-        ttk.Label(ref, text="（face_a 与 face_b 已预置，可直接点“比对”）",
-                  foreground="#666").pack(side="left", padx=6)
-        top = ttk.Frame(f); top.pack(fill="x", padx=4, pady=2)
-        ttk.Label(top, text="照片A:").pack(side="left")
+        self.face_ref_cb = ctk.CTkOptionMenu(
+            ref, variable=self.face_ref,
+            values=list(FACE_SAMPLES.keys()),
+            fg_color=pal["ctk"]["entry_bg"],
+            button_color=pal["ctk"]["primary"],
+            button_hover_color=pal["ctk"]["primary_h"],
+            text_color=pal["ctk"]["text"],
+            dropdown_fg_color=pal["ctk"]["top_fg"],
+            dropdown_text_color=pal["ctk"]["text"],
+            dropdown_hover_color=pal["ctk"]["hover"],
+            width=240, height=28, corner_radius=6,
+        )
+        self.face_ref_cb.pack(side="left", padx=4)
+        try:
+            self.face_ref_cb.set(list(FACE_SAMPLES.keys())[0])
+        except Exception:
+            pass
+        self._ctk_btn_ghost(
+            ref, "填入 -> 照片A",
+            command=self._face_load_ref, width=140).pack(
+                side="left", padx=6)
+
+        # ---- File picker rows (A & B) ----
+        def _path_row(parent, label, var, picker):
+            row = ctk.CTkFrame(parent, fg_color=pal["ctk"]["fg_color"],
+                               corner_radius=10, border_width=1,
+                               border_color=pal["ctk"]["border"])
+            row.pack(fill="x", padx=6, pady=4)
+            ctk.CTkLabel(row, text=label,
+                         text_color=pal["ctk"]["text_dim"],
+                         font=ctk.CTkFont(family=pal["font_ui"][0],
+                                          size=pal["font_ui"][1])
+                         ).pack(side="left", padx=(10, 4), pady=6)
+            self._ctk_entry(row, var).pack(
+                side="left", fill="x", expand=True, padx=(0, 6))
+            self._ctk_btn_ghost(row, "浏览...",
+                                command=picker, width=72).pack(
+                                    side="right", padx=8)
+            return row
+
         self.face_a = tk.StringVar(value="")
-        ttk.Entry(top, textvariable=self.face_a, width=46,
-                  style="Field.TEntry").pack(side="left", padx=2, fill="x", expand=True)
-        ttk.Button(top, text="浏览…", command=lambda: self._face_pick("a")).pack(side="left")
-        row2 = ttk.Frame(f); row2.pack(fill="x", padx=4, pady=2)
-        ttk.Label(row2, text="照片B:").pack(side="left")
         self.face_b = tk.StringVar(value="")
-        ttk.Entry(row2, textvariable=self.face_b, width=46,
-                  style="Field.TEntry").pack(side="left", padx=2, fill="x", expand=True)
-        ttk.Button(row2, text="浏览…", command=lambda: self._face_pick("b")).pack(side="left")
-        ttk.Button(row2, text="比对", command=self._face_run).pack(side="left", padx=4)
-        self.face_out = tk.Text(f, height=12, font=("Menlo", 11),
-                                bg="#ffffff", fg="#111827")
-        self.face_out.pack(fill="both", expand=True, padx=4, pady=4)
-        # Default: face_a vs face_b so the tab is directly testable.
+        _path_row(f, "照片A:", self.face_a, lambda: self._face_pick("a"))
+        _path_row(f, "照片B:", self.face_b, lambda: self._face_pick("b"))
+
+        # ---- Action + result strip ----
+        action_row = ctk.CTkFrame(f, fg_color="transparent")
+        action_row.pack(fill="x", padx=6, pady=4)
+        self._ctk_btn_primary(action_row, "▶ 比对",
+                              command=self._face_run, width=140).pack(
+                                  side="left", padx=(0, 8))
+        self.face_score_chip = self._ctk_chip(
+            action_row, "dim", text="  SCORE --  ")
+        self.face_score_chip.pack(side="left", padx=4)
+        self.face_method_var = tk.StringVar(value="")
+        ctk.CTkLabel(
+            action_row, textvariable=self.face_method_var,
+            text_color=pal["ctk"]["text_dim"],
+            font=ctk.CTkFont(family=pal["font_mono_sm"][0],
+                             size=pal["font_mono_sm"][1])
+        ).pack(side="left", padx=8)
+
+        # ---- Body: two preview tiles + detail text ----
+        body = ctk.CTkFrame(f, fg_color="transparent")
+        body.pack(fill="both", expand=True, padx=6, pady=(0, 8))
+        body.grid_columnconfigure(0, weight=1, uniform="face")
+        body.grid_columnconfigure(1, weight=1, uniform="face")
+        body.grid_rowconfigure(1, weight=1)
+        ctk.CTkLabel(body, text="  照片 A  ",
+                     text_color=pal["ctk"]["accent"],
+                     font=ctk.CTkFont(family=pal["font_ui_bold"][0],
+                                      size=pal["font_ui_bold"][1],
+                                      weight="bold")
+                     ).grid(row=0, column=0, sticky="w", padx=4, pady=(0, 4))
+        ctk.CTkLabel(body, text="  照片 B  ",
+                     text_color=pal["ctk"]["accent"],
+                     font=ctk.CTkFont(family=pal["font_ui_bold"][0],
+                                      size=pal["font_ui_bold"][1],
+                                      weight="bold")
+                     ).grid(row=0, column=1, sticky="w", padx=4, pady=(0, 4))
+        self.face_tile_a = ctk.CTkFrame(body, fg_color=pal["ctk"]["top_fg"],
+                                        corner_radius=10, border_width=1,
+                                        border_color=pal["ctk"]["border"])
+        self.face_tile_a.grid(row=1, column=0, sticky="nsew",
+                              padx=(4, 6), pady=4)
+        self.face_tile_b = ctk.CTkFrame(body, fg_color=pal["ctk"]["top_fg"],
+                                        corner_radius=10, border_width=1,
+                                        border_color=pal["ctk"]["border"])
+        self.face_tile_b.grid(row=1, column=1, sticky="nsew",
+                              padx=(6, 4), pady=4)
+        self.face_canvas_a = tk.Canvas(
+            self.face_tile_a, width=256, height=256,
+            bg=pal["code"], highlightthickness=0)
+        self.face_canvas_a.pack(padx=10, pady=10)
+        self.face_canvas_b = tk.Canvas(
+            self.face_tile_b, width=256, height=256,
+            bg=pal["code"], highlightthickness=0)
+        self.face_canvas_b.pack(padx=10, pady=10)
+
+        # Detail text under both tiles.
+        detail = ctk.CTkFrame(f, fg_color=pal["ctk"]["fg_color"],
+                              corner_radius=10, border_width=1,
+                              border_color=pal["ctk"]["border"])
+        detail.pack(fill="both", expand=False, padx=6, pady=(0, 8))
+        ctk.CTkLabel(
+            detail, text="  对比详情 (raw 输出 / 方法 / 耗时)",
+            text_color=pal["ctk"]["text_dim"],
+            font=ctk.CTkFont(family=pal["font_ui"][0],
+                             size=pal["font_ui"][1])
+        ).pack(anchor="w", padx=10, pady=(6, 2))
+        self.face_out = tk.Text(
+            detail, height=8, wrap="none",
+            font=("Menlo", 10), bg=pal["code"], fg=pal["ctk"]["text"],
+            insertbackground=pal["ctk"]["accent"], relief="flat",
+            bd=0, padx=10, pady=6)
+        self.face_out.pack(fill="both", expand=True, padx=6, pady=(0, 6))
+
+        # Image refs (kept alive so Tk does not garbage-collect the bitmaps).
+        self._face_imgs = {}
+        # Default face_a vs face_c -> 95/100 -> SUSPECT chip so the user
+        # sees the score-chip update the first time they press 比对.
         self.face_a.set(str(FACE_SAMPLES["face_a (合成, 128×128)"]))
-        self.face_b.set(str(FACE_SAMPLES["face_b (合成, 128×128)"]))
-        self.face_out.insert("1.0", "提示：内置 face_a / face_b 已预置，点击“比对”即可直接测试。\n"
-                                    "也可从内置参考样本下拉选择并填入照片A，或浏览本地图片。\n")
+        self.face_b.set(str(FACE_SAMPLES["face_c (合成, 128×128)"]))
+        self._face_render_preview("a", self.face_a.get())
+        self._face_render_preview("b", self.face_b.get())
+        self.face_out.insert(
+            "1.0",
+            "提示：内置 face_a / face_b / face_c 已预置，点击“比对”即可直接测试。\n"
+            "也可从内置参考样本下拉选择并填入照片A，或浏览本地图片。\n")
 
     def _face_load_ref(self):
         path = FACE_SAMPLES.get(self.face_ref.get())
         if path:
             self.face_a.set(str(path))
+            self._face_render_preview("a", str(path))
 
     def _face_pick(self, which):
         path = filedialog.askopenfilename(
             filetypes=[("Image", "*.ppm *.bmp *.png *.jpg"), ("All", "*.*")])
         if path:
             (self.face_a if which == "a" else self.face_b).set(path)
+            self._face_render_preview(which, path)
+
+    def _face_render_preview(self, side: str, path: str):
+        """Load an image into the preview canvas for side 'a' or 'b'.
+
+        Tk is single-threaded for image loading under tk.PhotoImage; for
+        formats like JPG/PNG we fall back to PIL.ImageTk via the project's
+        already-installed pillow. PPM/BMP are first-class via PhotoImage.
+        """
+        canvas = self.face_canvas_a if side == "a" else self.face_canvas_b
+        try:
+            canvas.delete("all")
+        except tk.TclError:
+            return
+        path = path or ""
+        if not path or not Path(path).exists():
+            canvas.create_text(
+                128, 128, text="(no image)",
+                fill=self._pal["ctk"]["text_dim"], anchor="center")
+            return
+        img = None
+        # Native PhotoImage for PPM / PGM / GIF / PNG.
+        try:
+            img = tk.PhotoImage(file=path)
+        except tk.TclError:
+            img = None
+        # Fallback: PIL for jpg / bmp / non-native PNG.
+        if img is None:
+            try:
+                from PIL import Image, ImageTk  # type: ignore
+                pil = Image.open(path).convert("RGB")
+                img = ImageTk.PhotoImage(pil)
+            except Exception:
+                canvas.create_text(
+                    128, 128, text="(unsupported format)",
+                    fill=self._pal["ctk"]["text_dim"], anchor="center")
+                return
+        # Centre / fit the image into a 256x256 canvas keeping aspect ratio.
+        cw, ch = 256, 256
+        iw, ih = img.width(), img.height()
+        scale = min(cw / iw, ch / ih)
+        if scale < 1.0:
+            # Render via PIL for proper downsampling; keep Tk PhotoImage
+            # only when scale >= 1 to avoid hidden resize quality loss.
+            try:
+                from PIL import Image as _PILImage  # type: ignore
+                pil = _PILImage.open(path).convert("RGB").resize(
+                    (max(1, int(iw * scale)), max(1, int(ih * scale))),
+                    _PILImage.LANCZOS)
+                from PIL import ImageTk  # type: ignore
+                img = ImageTk.PhotoImage(pil)
+                iw, ih = img.width(), img.height()
+            except Exception:
+                pass
+        # Keep a reference so Tk does not GC the bitmap.
+        self._face_imgs[side] = img
+        canvas.create_image((cw - iw) // 2, (ch - ih) // 2,
+                            image=img, anchor="nw")
+        # Subtle neon border to mirror the rest of the UI chrome.
+        canvas.create_rectangle(0, 0, cw - 1, ch - 1, outline="#3A3B3C")
+
+    @staticmethod
+    def _face_grade(score: int):
+        """Map a 0..100 score to a chip kind + human label."""
+        if score >= 90:
+            return "ok", "PASS"
+        if score >= 70:
+            return "run", "SUSPECT"
+        return "fail", "FAIL"
 
     def _face_run(self):
         a = self.face_a.get().strip(); b = self.face_b.get().strip()
         if not (a and b):
             messagebox.showerror("错误", "请选择两张照片")
             return
+        # Always refresh previews when the user clicks 比对, in case the
+        # path string was set programmatically (e.g. test harness).
+        self._face_render_preview("a", a)
+        self._face_render_preview("b", b)
+        t0 = time.time()
         try:
-            r = subprocess.run([str(FACE_TOOL), a, b],
+            r = subprocess.run([str(FACE_TOOL), a, b, "2"],
                                text=True, capture_output=True, timeout=20)
+            ms = int((time.time() - t0) * 1000)
             self.face_out.delete("1.0", "end")
-            self.face_out.insert("1.0", r.stdout + (r.stderr and ("\n[stderr]\n" + r.stderr) or ""))
+            method = "(unknown)"
+            score = 0
+            for ln in r.stdout.splitlines():
+                if ln.startswith("method:"):
+                    method = ln.split(":", 1)[1].strip()
+                elif ln.startswith("score"):
+                    # matches 'score : 95/100' / 'score:95/100'
+                    tail = ln.split(":", 1)[1].strip()
+                    head = tail.split("/", 1)[0]
+                    digits = "".join(ch for ch in head if ch.isdigit())
+                    try:
+                        score = int(digits)
+                    except Exception:
+                        score = 0
+            kind, label = self._face_grade(score)
+            self.face_method_var.set(f"method={method}")
+            chip = self._pal["chip"][kind]
+            try:
+                self.face_score_chip.configure(
+                    fg_color=chip["bg"], text_color=chip["fg"],
+                    text=f"  {label}  {score}/100  ")
+            except (tk.TclError, ValueError):
+                try:
+                    self.face_score_chip.configure(
+                        bg=chip["bg"], fg=chip["fg"],
+                        text=f"  {label}  {score}/100  ")
+                except tk.TclError:
+                    pass
+            header = (f"method : {method}\n"
+                      f"score  : {score}/100  ({label})\n"
+                      f"耗时   : {ms} ms\n"
+                      f"图片A  : {a}\n"
+                      f"图片B  : {b}\n"
+                      f"\n--- raw face_tool output ---\n")
+            tail = r.stdout + (r.stderr and ("\n[stderr]\n" + r.stderr) or "")
+            self.face_out.insert("1.0", header + tail)
         except Exception as e:
             messagebox.showerror("错误", str(e))
 
