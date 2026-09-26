@@ -652,7 +652,9 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
         self.ocr_case_list.pack(side="left", fill="both", expand=True)
         ysb.pack(side="right", fill="y")
         self.ocr_case_list.bind("<<TreeviewSelect>>", self._ocr_on_case_select)
-        self.ocr_case_list.bind("<Double-Button-1>", self._ocr_on_case_select)
+        # Double-click opens the full-resolution viewer; single-click
+        # keeps the existing thumbnail preview in the right pane.
+        self.ocr_case_list.bind("<Double-Button-1>", self._ocr_open_original)
 
         # Middle = metrics card + summary + detail.
         middle = ttk.Frame(body); body.add(middle, weight=2)
@@ -700,6 +702,7 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
         ysb2.pack(side="right", fill="y")
         xsb2.pack(side="bottom", fill="x")
         self.ocr_detail.bind("<<TreeviewSelect>>", self._ocr_on_detail_select)
+        self.ocr_detail.bind("<Double-Button-1>", self._ocr_open_original_from_detail)
         self._ocr_detail_map = {}
 
         # Right = single-sample perspective (image + char-level diff).
@@ -1125,6 +1128,199 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
             self._show_diff(blocks)
         else:
             self._show_gt_only(rec)
+
+    # ---- Full-size image viewer (double-click on case / detail row) ----
+    def _ocr_open_original_from_detail(self, _evt=None):
+        """Resolve the corpus record for the currently selected detail row
+        and pop the full-size viewer. Detail rows are keyed by (case_id,
+        method); the case_id is the first 8 chars of the row iid."""
+        sel = self.ocr_detail.selection()
+        if not sel:
+            return
+        iid = sel[0]
+        # detail row iids are "<case_id>::<method>" per _ocr_run/_ocr_run_photos
+        cid = iid.split("::", 1)[0] if "::" in iid else iid[:8]
+        rec = next((r for r in self._ocr_corpus["records"]
+                    if r["id"] == cid), None)
+        if rec is None:
+            return
+        self._ocr_open_original(cid, rec)
+
+    def _ocr_open_original(self, cid=None, rec=None):
+        """Open a top-level window showing the original (unresized) image
+        with zoom controls (1x / 2x / 4x / fit) and a chip bar reporting
+        case metadata."""
+        if rec is None or cid is None:
+            sel = self.ocr_case_list.selection()
+            if not sel:
+                return
+            cid = sel[0]
+            rec = next((r for r in self._ocr_corpus["records"]
+                        if r["id"] == cid), None)
+            if rec is None:
+                return
+        from pathlib import Path as _P
+        from ocr_bench_runner import CORPUS_JSON  # type: ignore
+        img_path = _P(CORPUS_JSON).parent / rec["image"]
+        if not img_path.exists():
+            messagebox.showerror("原图缺失", f"找不到图片文件:\n{img_path}")
+            return
+        # Defer heavy imports to call time; PIL is already required by
+        # _load_preview so this is cheap.
+        try:
+            from PIL import Image as _PILImage
+        except Exception as e:
+            messagebox.showerror("依赖缺失",
+                                 "原图查看器需要 Pillow: pip install pillow")
+            return
+        try:
+            full_pil = _PILImage.open(img_path).convert("RGB")
+        except Exception as e:
+            messagebox.showerror("加载失败", f"无法读取 {img_path.name}: {e}")
+            return
+        # Build the top-level window.
+        if HAS_CTK:
+            win = ctk.CTkToplevel(self)
+        else:
+            win = tk.Toplevel(self)
+        win.title(f"原图 · {cid}  ·  {img_path.name}")
+        win.configure(fg_color=self._pal["ctk"]["bg_color"])
+        # Geometry: 80% of main window, clamped to image size.
+        iw, ih = full_pil.size
+        try:
+            sw, sh = self.winfo_screenwidth(), self.winfo_screenheight()
+        except Exception:
+            sw, sh = 1440, 900
+        ww = min(max(iw + 80, 720), int(sw * 0.9))
+        wh = min(max(ih + 140, 540), int(sh * 0.9))
+        win.geometry(f"{ww}x{wh}")
+        # ---- Top metadata bar (chips) ----
+        pal = self._pal
+        top = ctk.CTkFrame(win, fg_color=pal["ctk"]["fg_color"],
+                           corner_radius=10, border_width=1,
+                           border_color=pal["ctk"]["border"])
+        top.pack(fill="x", padx=8, pady=(8, 4))
+        ctk.CTkLabel(
+            top, text=f"  原图 · {cid}  ",
+            text_color=pal["ctk"]["accent"],
+            font=ctk.CTkFont(family=pal["font_ui_bold"][0],
+                             size=pal["font_ui_bold"][1],
+                             weight="bold")).pack(side="left", padx=(10, 6), pady=6)
+        for k, label, kind in (
+                ("scale",   "scale",   "idle"),
+                ("noise",   "noise",   "idle"),
+                ("skew",    "skew",    "idle"),
+                ("channel", "channel", "idle"),
+        ):
+            v = rec.get(k, "-")
+            ctk.CTkLabel(
+                top, text=f"  {label}={v}  ",
+                text_color=pal["chip"][kind]["fg"],
+                fg_color=pal["chip"][kind]["bg"],
+                font=ctk.CTkFont(family=pal["font_mono_sm"][0],
+                                 size=pal["font_mono_sm"][1],
+                                 weight="bold"),
+                corner_radius=4, padx=2,
+            ).pack(side="left", padx=4)
+        ctk.CTkLabel(
+            top, text=f"  {iw}x{ih}  ",
+            text_color=pal["ctk"]["text_dim"],
+            font=ctk.CTkFont(family=pal["font_mono_sm"][0],
+                             size=pal["font_mono_sm"][1]),
+        ).pack(side="right", padx=8)
+        # ---- Zoom controls ----
+        bar = ctk.CTkFrame(win, fg_color="transparent")
+        bar.pack(fill="x", padx=8, pady=4)
+        zoom_state = {"factor": 1.0}
+        status_var = tk.StringVar(value="zoom 1.0x")
+        ctk.CTkLabel(
+            bar, textvariable=status_var,
+            text_color=pal["ctk"]["text_dim"],
+            font=ctk.CTkFont(family=pal["font_mono_sm"][0],
+                             size=pal["font_mono_sm"][1]),
+        ).pack(side="right", padx=8)
+        # ---- Canvas + scrollbars ----
+        canvas_frame = ctk.CTkFrame(win, fg_color=pal["ctk"]["top_fg"],
+                                    corner_radius=10, border_width=1,
+                                    border_color=pal["ctk"]["border"])
+        canvas_frame.pack(fill="both", expand=True, padx=8, pady=(0, 8))
+        canvas = tk.Canvas(canvas_frame, bg=pal["code"],
+                           highlightthickness=0)
+        canvas.pack(side="left", fill="both", expand=True, padx=2, pady=2)
+        xscroll = ttk.Scrollbar(canvas_frame, orient="horizontal",
+                                command=canvas.xview)
+        xscroll.pack(side="bottom", fill="x")
+        yscroll = ttk.Scrollbar(canvas_frame, orient="vertical",
+                                command=canvas.yview)
+        yscroll.pack(side="right", fill="y")
+        canvas.configure(xscrollcommand=xscroll.set,
+                         yscrollcommand=yscroll.set)
+        photo_ref = {"img": None, "iid": None}
+
+        def render(factor):
+            """Render the full image at the given scale factor (1.0 == original pixels)."""
+            factor = max(0.1, min(factor, 8.0))
+            zoom_state["factor"] = factor
+            status_var.set(f"zoom {factor:.2f}x")
+            zw = max(1, int(iw * factor))
+            zh = max(1, int(ih * factor))
+            if factor == 1.0:
+                # 1x is a lossless pass-through to keep memory low.
+                pil_small = full_pil
+            else:
+                # Use LANCZOS for downscale, BICUBIC for upscale.
+                from PIL import Image as _PI
+                method = _PI.LANCZOS if factor < 1.0 else _PI.BICUBIC
+                pil_small = full_pil.resize((zw, zh), method)
+            from PIL import ImageTk as _IT
+            photo = _IT.PhotoImage(pil_small)
+            photo_ref["img"] = photo
+            canvas.delete("all")
+            iid = canvas.create_image(0, 0, image=photo, anchor="nw")
+            photo_ref["iid"] = iid
+            canvas.configure(scrollregion=(0, 0, zw, zh))
+            canvas._ocr_zoom = factor  # used by wheel handler
+
+        def fit_to_window():
+            canvas.update_idletasks()
+            cw = max(canvas.winfo_width(), 1)
+            ch = max(canvas.winfo_height(), 1)
+            sx = cw / iw
+            sy = ch / ih
+            return render(min(sx, sy))
+
+        def set_zoom(f):
+            render(f)
+
+        for label, value in (("Fit", None), ("1x", 1.0),
+                             ("2x", 2.0), ("4x", 4.0)):
+            cmd = (lambda v=value: v is None and fit_to_window() or set_zoom(v))                 if HAS_CTK else (lambda v=value: fit_to_window() if v is None
+                                 else set_zoom(v))
+            self._ctk_btn_ghost(
+                bar, label, command=cmd, width=56).pack(side="left", padx=2)
+        # Mouse wheel zoom (Ctrl+wheel) and pan (wheel).
+        def on_wheel(evt):
+            # macOS delta is event.delta (small multiples); win/linux num=4/5.
+            if evt.state & 0x4 or evt.state & 0x0008:  # Ctrl / Cmd
+                delta = evt.delta if hasattr(evt, "delta") else 0
+                step = 1.1 if delta > 0 else 1 / 1.1
+                render(zoom_state["factor"] * step)
+                return "break"
+            # plain wheel: vertical pan
+            if getattr(evt, "num", None) == 4:
+                canvas.yview_scroll(-3, "units")
+            elif getattr(evt, "num", None) == 5:
+                canvas.yview_scroll(3, "units")
+            else:
+                d = -1 if evt.delta > 0 else 1
+                canvas.yview_scroll(d * 3, "units")
+            return "break"
+        canvas.bind("<MouseWheel>", on_wheel)
+        canvas.bind("<Button-4>", on_wheel)
+        canvas.bind("<Button-5>", on_wheel)
+        # Initial render: fit window.
+        canvas.update_idletasks()
+        fit_to_window()
 
     def _ocr_on_detail_select(self, _evt=None):
         sel = self.ocr_detail.selection()
@@ -1555,11 +1751,18 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
     def _nfc_build_trace_panel(self, parent):
         insp = ttk.LabelFrame(parent, text="报文透视（Raw / Decrypted / MAC）")
         insp.pack(fill="x", side="bottom", padx=2, pady=2)
-        self.nfc_inspect = tk.Text(insp, height=7, font=("Menlo", 9),
-                                   wrap="none", bg="#fafafa", fg="#111827")
+        pal = self._pal
+        self.nfc_inspect = tk.Text(
+            insp, height=7, font=("Menlo", 9), wrap="none",
+            bg=pal["code"], fg=pal["fg"],
+            insertbackground=pal.get("accent", pal["primary"]))
         yi = ttk.Scrollbar(insp, orient="vertical",
                            command=self.nfc_inspect.yview)
-        self.nfc_inspect.configure(yscrollcommand=yi.set)
+        xi = ttk.Scrollbar(insp, orient="horizontal",
+                           command=self.nfc_inspect.xview)
+        self.nfc_inspect.configure(yscrollcommand=yi.set,
+                                   xscrollcommand=xi.set)
+        xi.pack(side="bottom", fill="x")
         self.nfc_inspect.pack(side="left", fill="both", expand=True)
         yi.pack(side="right", fill="y")
 
@@ -1665,18 +1868,43 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
         head = ttk.Frame(self._adv_frame); head.pack(fill="x")
         ttk.Button(head, text="展开 / 折叠",
                    command=self._nfc_toggle_adv).pack(side="left", padx=4)
-        self.nfc_adv_text = tk.Text(self._adv_frame, height=4,
-                                    font=("Menlo", 9), wrap="none",
-                                    bg="#f7f7f7", fg="#111827")
-        self.nfc_adv_text.pack(fill="x", padx=4, pady=2)
-        self.nfc_adv_text.pack_forget()
+        # wrap="none" disables line wrapping, which means long hex lines
+        # were silently clipped at the right edge with no way to scroll.
+        # Keep nowrap for hex fidelity, but attach a horizontal Scrollbar
+        # and a reasonable vertical Scrollbar so the full payload is
+        # reachable regardless of panel width or content length.
+        pal = self._pal
+        body = ttk.Frame(self._adv_frame)
+        self._adv_text_body = body
+        # Create the Text widget FIRST so scrollbars can bind to its
+        # xview/yview directly without relying on late-bound attribute
+        # access.
+        self.nfc_adv_text = tk.Text(
+            body, height=8, font=("Menlo", 9), wrap="none",
+            bg=pal["code"], fg=pal["fg"],
+            insertbackground=pal.get("accent", pal["primary"]),
+            undo=True, maxundo=-1)
+        adv_yscroll = ttk.Scrollbar(body, orient="vertical",
+                                    command=self.nfc_adv_text.yview)
+        adv_xscroll = ttk.Scrollbar(body, orient="horizontal",
+                                    command=self.nfc_adv_text.xview)
+        self.nfc_adv_text.configure(yscrollcommand=adv_yscroll.set,
+                                    xscrollcommand=adv_xscroll.set)
+        adv_xscroll.pack(side="bottom", fill="x")
+        self.nfc_adv_text.pack(side="left", fill="both", expand=True)
+        adv_yscroll.pack(side="right", fill="y")
+        body.pack(fill="x", padx=4, pady=2)
+        body.pack_forget()
 
     def _nfc_toggle_adv(self):
+        body = getattr(self, "_adv_text_body", None)
+        if body is None:
+            return
         if self._adv_open.get():
-            self.nfc_adv_text.pack_forget()
+            body.pack_forget()
             self._adv_open.set(False)
         else:
-            self.nfc_adv_text.pack(fill="x", padx=4, pady=2)
+            body.pack(fill="x", padx=4, pady=2)
             self._adv_open.set(True)
 
     def _nfc_copy_key(self, name, var):
