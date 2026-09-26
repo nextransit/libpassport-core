@@ -10,7 +10,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 TRAD = ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_tool"
 CNN  = ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_cnn_tool"
-DATA = ROOT / "6_mrz_ocr" / "data" / "corpus"
+# The GUI's OCR batch test runs the SAME frozen evaluation corpus as
+# bench.py (data/corpus_eval, ICAO-valid TD3, clean + realistic), NOT
+# the historical 500-image free-form corpus (data/corpus). The old
+# corpus mixed digits into alpha-only fields, which collides with the
+# default strict ICAO syntax mask and reports misleadingly low line-1
+# accuracy (e.g. 76% while the eval corpus scores 95.6%).
+DATA = ROOT / "6_mrz_ocr" / "data" / "corpus_eval"
 CORPUS_JSON = DATA / "corpus.json"
 
 METHODS = {
