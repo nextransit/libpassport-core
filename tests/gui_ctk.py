@@ -67,6 +67,16 @@ FACE_TOOL = tool_path("face_tool")
 GEN_SAMP  = tool_path("gen_sample")
 NFC_TOOL  = tool_path("nfc_tool")
 
+# OCR back-end display names, kept in one place so the method picker,
+# the summary rows, and the detail rows all stay consistent.
+METHOD_LABELS = {
+    "traditional": "传统模板",
+    "cnn":         "轻量CNN",
+    "tesseract":   "Tesseract",
+    "paddle":      "PaddleOCR",
+}
+METHOD_ORDER = ["traditional", "cnn", "tesseract", "paddle"]
+
 FACE_DATA_DIR = ROOT / "3_face_recognition" / "data"
 FACE_SAMPLES = {
     "face_a (合成, 128×128)": FACE_DATA_DIR / "face_a.ppm",
@@ -255,10 +265,14 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
         # Map a friendly label to its ttkbootstrap name.
         ctk_mode = "dark"
         ttk_name = name
+        # known-light ttk themes; _theme_palette() routes dark/light via
+        # _theme_name in {"darkly","cyborg"} so map aliases here too.
+        LIGHT_TTKS = ("cosmo", "journal", "flatly", "litera", "minty", "lumen", "sandstone", "yeti")
         if name in ("dark", "dark_default"):
             ttk_name = "darkly"; ctk_mode = "dark"
-        elif name in ("light", "light_default"):
-            ttk_name = "cosmo";  ctk_mode = "light"
+        elif name in ("light", "light_default") or name in LIGHT_TTKS:
+            ttk_name = name if name in LIGHT_TTKS else "cosmo"
+            ctk_mode = "light"
         try:
             ttk.Style().theme_use(ttk_name)
         except tk.TclError:
@@ -268,17 +282,96 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
                 ctk.set_appearance_mode(ctk_mode)
             except Exception:
                 pass
+        # Stash mode for _theme_palette() so light-mode palettes resolve.
+        self._ctk_mode = ctk_mode
+        old_ctk = dict((self._pal.get("ctk") or {})) if hasattr(self, "_pal") else {}
         self._theme_name = ttk_name
         self._apply_theme_proof_styles()
         self._pal = self._theme_palette()
         self._refresh_tk_theme()
-        # Force ctk widgets to repaint by walking the widget tree and
-        # updating the root fg_color.
-        if HAS_CTK:
+        self._refresh_ctk_theme(old_ctk)
+        # Root window's bg_color: always write directly (some versions
+        # of CTk ignore the walk when the configure() returns None for
+        # this key). Use the post-palette value, not the old one.
+        try:
+            self.configure(fg_color=self._pal["ctk"]["bg_color"])
+        except tk.TclError:
+            pass
+
+    def _refresh_ctk_theme(self, old_ctk):
+        """Re-colour every CustomTkinter widget after a theme switch.
+
+        ctk widgets built with explicit fg_color= do NOT follow
+        set_appearance_mode, so switching used to leave every builder
+        painted in the old palette ("theme switch has no effect").
+        Strategy: map each widget's current colour to its ROLE via the
+        OUTGOING palette, then assign the same role's colour from the
+        incoming palette."""
+        if not HAS_CTK:
+            return
+        newc = self._pal.get("ctk") or {}
+        oldc = old_ctk or {}
+        if not newc or not oldc:
+            return
+        mapping = {}
+        for role, v in oldc.items():
+            nv = newc.get(role)
+            if isinstance(v, str) and v.startswith("#") \
+               and isinstance(nv, str) and nv.startswith("#"):
+                mapping[v.lower()] = nv
+        if not mapping:
+            return
+        # CTk widget classes (best effort across versions).
+        ctk_classes = []
+        for name in ("CTk", "CTkToplevel", "CTkBaseClass", "CTkFrame",
+                     "CTkButton", "CTkLabel",
+                     "CTkEntry", "CTkCheckBox", "CTkRadioButton",
+                     "CTkSwitch", "CTkProgressBar", "CTkTextbox",
+                     "CTkComboBox", "CTkOptionMenu", "CTkSegmentedButton",
+                     "CTkSlider", "CTkScrollableFrame", "CTkTabview"):
+            cls = getattr(ctk, name, None)
+            if cls is not None:
+                ctk_classes.append(cls)
+        color_opts = ("fg_color", "bg_color", "border_color", "text_color",
+                      "button_color", "button_hover_color", "hover_color",
+                      "progress_color", "scrollbar_button_color",
+                      "scrollbar_button_hover_color",
+                      "placeholder_text_color", "label_fg_color",
+                      "fg", "top_fg_color")
+        def walk(w):
+            for child in w.winfo_children():
+                walk(child)
+            if ctk_classes and not isinstance(w, tuple(ctk_classes)):
+                return
             try:
-                self.configure(fg_color=self._pal["ctk"]["bg_color"])
-            except tk.TclError:
-                pass
+                cfg = w.configure()
+            except Exception:
+                return
+            if not isinstance(cfg, dict):
+                return
+            updates = {}
+            for key in color_opts:
+                if key not in cfg:
+                    continue
+                val = cfg[key]
+                if isinstance(val, str) and val.startswith("#"):
+                    nv = mapping.get(val.lower())
+                    if nv and nv.lower() != val.lower():
+                        updates[key] = nv
+                elif isinstance(val, (list, tuple)):
+                    remapped = [mapping.get(v.lower(), v)
+                                if isinstance(v, str) else v for v in val]
+                    if list(remapped) != list(val):
+                        try:
+                            updates[key] = type(val)(remapped)
+                        except Exception:
+                            pass
+            if updates:
+                try:
+                    w.configure(**updates)
+                except Exception:
+                    pass
+        walk(self)
 
     def _theme_palette(self):
         """Semantic color palette for the active theme (tk widgets)."""
@@ -300,7 +393,15 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
         except AttributeError:
             bg, fg, field, field_fg, primary = ("#14181e", "#d5dae2",
                                                 "#1f242c", "#e6ebf2", "#0b5cad")
-        dark = (not HAS_TTKB) or self._theme_name in ("darkly", "cyborg")
+        # dark detection must agree with ctk_mode (set by _switch_theme
+        # via stashed self._ctk_mode) — otherwise light ctk_mode would
+        # be paired with a dark-mode palette (the "switch has no effect"
+        # bug surface). Fall back to theme name.
+        stashed = getattr(self, "_ctk_mode", None)
+        if stashed is not None:
+            dark = (stashed == "dark")
+        else:
+            dark = (not HAS_TTKB) or self._theme_name in ("darkly", "cyborg")
         accent = "#00e5ff" if dark else primary
         # ---- Visual-pass 2.0: semantic token set (chip / border / fonts) ----
         # Surface elevation: bg < card < field, kept inside a tight grayscale
@@ -355,21 +456,23 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
             "font_ui_bold": (ui_family, 10, "bold"),
             "font_mono": (mono_family, 10),
             "font_mono_sm": (mono_family, 9),
-            # CTK-aware fields; only used when HAS_CTK.
+            # CTK-aware fields; only used when HAS_CTK. MUST be
+            # mode-aware: light mode with dark ctk values was the
+            # "theme switch has no effect" bug.
             "ctk": {
                 "fg_color":   card,         # card surface
-                "bg_color":   "#0a0e14",    # root window background
-                "top_fg":     "#0d1117",    # elevated card
+                "bg_color":   "#f4f6fa" if not dark else "#0a0e14",
+                "top_fg":     "#ffffff" if not dark else "#0d1117",
                 "entry_bg":   code,         # code surface
                 "border":     border,
-                "primary":    "#2e86ff",    # brand electric blue (upgraded per spec)
-                "primary_h":  "#3d97ff",
-                "accent":     "#00e5ff",
-                "success":    "#2ee6a8",
-                "danger":     "#ff5c7a",
-                "text":       "#e6edf3",
-                "text_dim":   "#8b949e",
-                "hover":      "#1f2933",
+                "primary":    "#0b5cad" if not dark else "#2e86ff",
+                "primary_h":  "#2e86ff" if not dark else "#3d97ff",
+                "accent":     "#0b8fb0" if not dark else "#00e5ff",
+                "success":    "#027a48" if not dark else "#2ee6a8",
+                "danger":     "#b42318" if not dark else "#ff5c7a",
+                "text":       "#1a2433" if not dark else "#e6edf3",
+                "text_dim":   "#5c6773" if not dark else "#8b949e",
+                "hover":      "#e9edf3" if not dark else "#1f2933",
             } if HAS_CTK else None,
         }
 
@@ -641,12 +744,13 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
         ttk.Separator(row1, orient="vertical").pack(side="left",
                                                     fill="y", padx=6)
         ttk.Label(row1, text="方案:").pack(side="left")
-        self.ocr_methods = tk.StringVar(value="traditional,cnn")
-        for label, key in [("传统模板", "traditional"), ("CNN", "cnn")]:
-            ttk.Radiobutton(row1, text=label, variable=self.ocr_methods,
+        self.ocr_methods = tk.StringVar(value=",".join(METHOD_ORDER))
+        for key in METHOD_ORDER:
+            ttk.Radiobutton(row1, text=METHOD_LABELS[key],
+                            variable=self.ocr_methods,
                             value=key).pack(side="left", padx=2)
         self.ocr_method_both = tk.BooleanVar(value=True)
-        ttk.Checkbutton(row1, text="同时跑两个方案",
+        ttk.Checkbutton(row1, text="同时跑全部方案",
                         variable=self.ocr_method_both,
                         command=self._ocr_method_toggle).pack(side="left", padx=6)
         ttk.Separator(row1, orient="vertical").pack(side="left",
@@ -1117,6 +1221,14 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
                 return
             x, y, w, h = r["x"], r["y"], r["w"], r["h"]
             crop = img.crop((x, y, x + w, y + h))
+            # Real-photo MRZ lines are ~12px tall while the OCR pipeline
+            # was trained at 36-72px; upscale low bands so the glyphs land
+            # in-distribution (else output degenerates to garbage).
+            from passport_pipeline import auto_upscale
+            _ups = auto_upscale(crop)
+            if _ups > 1:
+                crop = crop.resize((crop.width * _ups, crop.height * _ups),
+                                   Image.LANCZOS)
             import tempfile
             with tempfile.NamedTemporaryFile(
                     suffix=".ppm", delete=False) as tf:
@@ -1509,7 +1621,7 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
 
     def _ocr_method_toggle(self):
         if self.ocr_method_both.get():
-            self.ocr_methods.set("traditional,cnn")
+            self.ocr_methods.set(",".join(METHOD_ORDER))
         else:
             m = self.ocr_methods.get()
             if "," in m:
@@ -1836,7 +1948,7 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
         for m in ("traditional", "cnn"):
             r = last.get(cid, {}).get(m)
             if r:
-                label = {"traditional": "传统模板", "cnn": "CNN"}[m]
+                label = METHOD_LABELS[m]
                 blocks.append((f"line1 [{label}]", rec["line1"],
                                r.get("line1", "")))
                 blocks.append((f"line2 [{label}]", rec["line2"],
@@ -2157,7 +2269,7 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
             return
         self._load_preview(cid, rec)
         r = getattr(self, "_ocr_last", {}).get(cid, {}).get(m, {})
-        label = {"traditional": "传统模板", "cnn": "CNN"}.get(m, m)
+        label = METHOD_LABELS.get(m, m)
         self._show_diff([(f"line1 [{label}]", rec["line1"], r.get("line1", "")),
                          (f"line2 [{label}]", rec["line2"], r.get("line2", ""))])
 
@@ -2170,7 +2282,7 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
             return
         selected = list(self.ocr_case_list.selection())
         if self.ocr_method_both.get():
-            methods = ["traditional", "cnn"]
+            methods = list(METHOD_ORDER)
         else:
             methods = [self.ocr_methods.get()]
         methods = [m for m in methods if m]
@@ -2194,7 +2306,7 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
         def worker():
             from pathlib import Path as _P
             runner = _P(__file__).resolve().parent / "ocr_bench_runner.py"
-            argv = ["python3", str(runner), "--progress",
+            argv = [sys.executable, str(runner), "--progress",
                     ",".join(methods), *selected]
             t0 = time.monotonic()
             try:
@@ -2404,7 +2516,7 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
                 self.ocr_detail.insert("", "end", iid=iid,
                     tags=(ok and "OK" or "FAIL",),
                     values=(rec["id"],
-                            {"traditional": "传统", "cnn": "CNN"}.get(m, m),
+                            METHOD_LABELS.get(m, m),
                             "PASS" if ok else "FAIL",
                             f"{r['ms']:.2f}", f"{l1p:.2f}%", f"{l2p:.2f}%"))
         self._fit_columns(self.ocr_detail, cap=160)

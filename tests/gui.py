@@ -45,6 +45,16 @@ FACE_TOOL = tool_path("face_tool")
 GEN_SAMP  = tool_path("gen_sample")
 NFC_TOOL  = tool_path("nfc_tool")
 
+# OCR back-end display names, kept in one place so the method picker,
+# the summary rows, and the detail rows all stay consistent.
+METHOD_LABELS = {
+    "traditional": "传统模板",
+    "cnn":         "轻量CNN",
+    "tesseract":   "Tesseract",
+    "paddle":      "PaddleOCR",
+}
+METHOD_ORDER = ["traditional", "cnn", "tesseract", "paddle"]
+
 FACE_DATA_DIR = ROOT / "3_face_recognition" / "data"
 FACE_SAMPLES = {
     "face_a (合成, 128×128)": FACE_DATA_DIR / "face_a.ppm",
@@ -828,12 +838,13 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         ttk.Separator(row1, orient="vertical").pack(side="left",
                                                     fill="y", padx=6)
         ttk.Label(row1, text="方案:").pack(side="left")
-        self.ocr_methods = tk.StringVar(value="traditional,cnn")
-        for label, key in [("传统模板", "traditional"), ("CNN", "cnn")]:
-            ttk.Radiobutton(row1, text=label, variable=self.ocr_methods,
+        self.ocr_methods = tk.StringVar(value=",".join(METHOD_ORDER))
+        for key in METHOD_ORDER:
+            ttk.Radiobutton(row1, text=METHOD_LABELS[key],
+                            variable=self.ocr_methods,
                             value=key).pack(side="left", padx=2)
         self.ocr_method_both = tk.BooleanVar(value=True)
-        ttk.Checkbutton(row1, text="同时跑两个方案",
+        ttk.Checkbutton(row1, text="同时跑全部方案",
                         variable=self.ocr_method_both,
                         command=self._ocr_method_toggle).pack(side="left", padx=6)
         ttk.Separator(row1, orient="vertical").pack(side="left",
@@ -1288,6 +1299,14 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 return
             x, y, w, h = r["x"], r["y"], r["w"], r["h"]
             crop = img.crop((x, y, x + w, y + h))
+            # Real-photo MRZ lines are ~12px tall while the OCR pipeline
+            # was trained at 36-72px; upscale low bands so the glyphs land
+            # in-distribution (else output degenerates to garbage).
+            from passport_pipeline import auto_upscale
+            _ups = auto_upscale(crop)
+            if _ups > 1:
+                crop = crop.resize((crop.width * _ups, crop.height * _ups),
+                                   Image.LANCZOS)
             import tempfile
             with tempfile.NamedTemporaryFile(
                     suffix=".ppm", delete=False) as tf:
@@ -1684,7 +1703,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
 
     def _ocr_method_toggle(self):
         if self.ocr_method_both.get():
-            self.ocr_methods.set("traditional,cnn")
+            self.ocr_methods.set(",".join(METHOD_ORDER))
         else:
             m = self.ocr_methods.get()
             if "," in m:
@@ -2041,7 +2060,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         for m in ("traditional", "cnn"):
             r = last.get(cid, {}).get(m)
             if r:
-                label = {"traditional": "传统模板", "cnn": "CNN"}[m]
+                label = METHOD_LABELS[m]
                 blocks.append((f"line1 [{label}]", rec["line1"],
                                r.get("line1", "")))
                 blocks.append((f"line2 [{label}]", rec["line2"],
@@ -2340,7 +2359,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             return
         self._load_preview(cid, rec)
         r = getattr(self, "_ocr_last", {}).get(cid, {}).get(m, {})
-        label = {"traditional": "传统模板", "cnn": "CNN"}.get(m, m)
+        label = METHOD_LABELS.get(m, m)
         self._show_diff([(f"line1 [{label}]", rec["line1"], r.get("line1", "")),
                          (f"line2 [{label}]", rec["line2"], r.get("line2", ""))])
 
@@ -2353,7 +2372,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             return
         selected = list(self.ocr_case_list.selection())
         if self.ocr_method_both.get():
-            methods = ["traditional", "cnn"]
+            methods = list(METHOD_ORDER)
         else:
             methods = [self.ocr_methods.get()]
         methods = [m for m in methods if m]
@@ -2377,7 +2396,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         def worker():
             from pathlib import Path as _P
             runner = _P(__file__).resolve().parent / "ocr_bench_runner.py"
-            argv = ["python3", str(runner), "--progress",
+            argv = [sys.executable, str(runner), "--progress",
                     ",".join(methods), *selected]
             t0 = time.monotonic()
             try:
@@ -2569,7 +2588,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             ok_pct = 100.0 * a["ok"] / a["n"] if a["n"] else 0
             l1 = 100.0 * a["l1_correct"] / a["l1_total"] if a["l1_total"] else 0
             l2 = 100.0 * a["l2_correct"] / a["l2_total"] if a["l2_total"] else 0
-            label = {"traditional": "传统模板", "cnn": "CNN"}.get(m, m)
+            label = METHOD_LABELS.get(m, m)
             tag = "row_ok" if a["ok"] == a["n"] else "row_fail"
             self.ocr_summary.insert("", "end", tags=(tag,), values=(
                 label, a["n"], a["ok"], f"{ok_pct:.1f}%",
@@ -2589,7 +2608,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 self.ocr_detail.insert("", "end", iid=iid,
                     tags=(ok and "OK" or "FAIL",),
                     values=(rec["id"],
-                            {"traditional": "传统", "cnn": "CNN"}.get(m, m),
+                            METHOD_LABELS.get(m, m),
                             "PASS" if ok else "FAIL",
                             f"{r['ms']:.2f}", f"{l1p:.2f}%", f"{l2p:.2f}%"))
         self._fit_columns(self.ocr_detail, cap=160)
