@@ -54,8 +54,14 @@ double mrz_estimate_band_skew(const uint8_t *bin, int W, int H) {
     return best_deg;
 }
 
+/* Rotate by -deg (deskew).  `bilinear`: keep grayscale sub-pixel
+ * fidelity (used by the CNN backend; nearest-neighbour leaves strong
+ * sawtooth on the far rows of high-rotation bands, and the top-3
+ * oracle shows the GT often drops OUT of the candidates on those
+ * patches).  `bilinear=0` = nearest neighbour (legacy binarised
+ * backend: keeps the 0/1 domain intact). */
 void mrz_rotate_band(const uint8_t *src, int W, int H, double deg,
-                     uint8_t fill, uint8_t *dst) {
+                     uint8_t fill, int bilinear, uint8_t *dst) {
     double rad = deg * M_PI / 180.0;
     double c = cos(rad), s = sin(rad);
     double cx = (W - 1) / 2.0, cy = (H - 1) / 2.0;
@@ -66,9 +72,25 @@ void mrz_rotate_band(const uint8_t *src, int W, int H, double deg,
              * content transform R(-deg) used by the estimator). */
             double sx = cx + c * dx - s * dy;
             double sy = cy + s * dx + c * dy;
-            int ix = (int)lround(sx), iy = (int)lround(sy);
-            dst[y * W + x] = (ix >= 0 && ix < W && iy >= 0 && iy < H)
-                                 ? src[iy * W + ix] : fill;
+            if (!bilinear) {
+                int ix = (int)lround(sx), iy = (int)lround(sy);
+                dst[y * W + x] = (ix >= 0 && ix < W && iy >= 0 && iy < H)
+                                     ? src[iy * W + ix] : fill;
+                continue;
+            }
+            int x0 = (int)sx, y0 = (int)sy;
+            double fx = sx - x0, fy = sy - y0;
+            double v = (double)fill;
+            if (x0 >= 0 && x0 + 1 < W && y0 >= 0 && y0 + 1 < H) {
+                double a = src[y0     * W + x0    ];
+                double b = src[y0     * W + x0 + 1];
+                double c_ = src[(y0+1) * W + x0    ];
+                double d = src[(y0+1) * W + x0 + 1];
+                double top = a + (b - a) * fx;
+                double bot = c_ + (d - c_) * fx;
+                v = top + (bot - top) * fy;
+            }
+            dst[y * W + x] = (uint8_t)(v < 0 ? 0 : (v > 255 ? 255 : v));
         }
     }
 }
