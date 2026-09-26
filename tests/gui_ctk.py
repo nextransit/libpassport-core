@@ -1050,6 +1050,34 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
                 f"不是 GUI bug。常见原因：合成样本 / 低分辨率照片 /"
                 f"MRZ 区定位过窄。可视情况：用更高分辨率的真人护照图替换样本。")
 
+    @staticmethod
+    def _ocr_garbage_hint(line1: str, line2: str):
+        """OCR sometimes returns rc=0 / "OK" yet the character string
+        is nonsense (e.g. "AAAAAAMM...") because mrz_ocr_tool has
+        no language model: it classifies each glyph independently and
+        falls back to the most-frequent training classes (A, M, W, V,
+        L, J, Z). Detect this by checking whether the OCR output is a
+        strong concentration of those training-frequent glyphs.
+        """
+        if not line1 or not line2:
+            return ""
+        from collections import Counter
+        combined = (line1 + line2).strip()
+        if len(combined) < 44:
+            return ""
+        counts = Counter(combined)
+        frequent = set("AMWVSLJKZ")
+        freq_total = sum(c for k, c in counts.items() if k in frequent)
+        freq_ratio = freq_total / len(combined)
+        if freq_ratio >= 0.55:
+            return (f"[!] OCR 输出字符分布异常（A/M/W/V/S/L/J/Z 类字符"
+                    f"占比 {freq_ratio*100:.0f}%），高概率是 OCR 模型"
+                    f"在没有语言模型时的占位字符，不是真实 MRZ。"
+                    f"建议：换用更高分辨率或更多训练样本的 OCR 模型。"
+                    f"本样本的真实 ICAO 字符（如 'P<CZSPECIMEN...'）无法从"
+                    f"当前 OCR 输出中恢复。")
+        return ""
+
     # ---- MRZ-only quick action (locator tab) -------------------------
     def _loc_mrz_recognize(self):
         """Locate the MRZ band on the currently selected image, crop
@@ -1168,6 +1196,11 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
                 self._synth_hint(int(kv.get("result.conf1", "0") or 0),
                                    int(kv.get("result.conf2", "0") or 0),
                                    decode_proc.returncode == 0),
+                # Even when OCR says "OK", the output characters may
+                # be garbage (mrz_ocr_tool has no language model so
+                # it can output A/M/W/V/L/J/Z placeholders that look
+                # like ICAO chars but make no ICAO sense).
+                self._ocr_garbage_hint(line1, line2),
                 f"result.name : {kv.get('result.name', '-')}",
                 f"result.doc  : {kv.get('result.doc',  '-')}",
                 f"result.nat  : {kv.get('result.nat',  '-')}",
