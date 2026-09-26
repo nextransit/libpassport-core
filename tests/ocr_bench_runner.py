@@ -10,6 +10,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 TRAD = ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_tool"
 CNN  = ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_cnn_tool"
+TESS = ROOT / "6_2_Tesseract" / "tesseract_tool.py"
+PADDLE = ROOT / "6_1_PaddleOCR" / "paddle_ocr_tool.py"
 # The GUI's OCR batch test runs the SAME frozen evaluation corpus as
 # bench.py (data/corpus_eval, ICAO-valid TD3, clean + realistic), NOT
 # the historical 500-image free-form corpus (data/corpus). The old
@@ -22,13 +24,24 @@ CORPUS_JSON = DATA / "corpus.json"
 METHODS = {
     "traditional": ("传统模板", TRAD),
     "cnn":         ("轻量CNN",   CNN),
+    "tesseract":   ("Tesseract", TESS),
+    "paddle":      ("PaddleOCR", PADDLE),
 }
 
 def run_one(tool: Path, image: Path) -> dict:
-    """Invoke the OCR tool and parse its text output."""
+    """Invoke the OCR tool and parse its text output.
+
+    Compiled C tools are invoked directly; Python tools
+    (*.py, e.g. tesseract_tool.py) are wrapped with sys.executable so
+    the active interpreter (which has the extra OCR deps installed)
+    is the one that runs Wrappers."""
     t0 = time.perf_counter()
     try:
-        r = subprocess.run([str(tool), str(image)], text=True,
+        if str(tool).endswith(".py"):
+            args = [sys.executable, str(tool), str(image)]
+        else:
+            args = [str(tool), str(image)]
+        r = subprocess.run(args, text=True,
                            capture_output=True, timeout=15)
         ms = (time.perf_counter() - t0) * 1000.0
     except subprocess.TimeoutExpired:
@@ -130,7 +143,7 @@ if __name__ == "__main__":
         case_ids = None
     else:
         case_ids = args[1:] if len(args) > 1 else None
-    methods = args[0].split(",") if args else ["traditional", "cnn"]
+    methods = args[0].split(",") if args else list(METHODS.keys())
     def _cb(done, total, cid):
         sys.stdout.write(f"@@PROGRESS@{done}@{total}@{cid}\n")
         sys.stdout.flush()
