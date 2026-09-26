@@ -1287,9 +1287,20 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
         tw.configure(state="normal")
         tw.delete("1.0", "end")
         chip = self._pal["chip"]
-        ok = kv.get("result.ok", "FAIL").upper() == "OK"
+        # Treat anything other than the literal string "OK" as a
+        # hard OCR failure (the binary uses result.ok as a status
+        # field: "OK" on success, otherwise an English error like
+        # "could not split into two lines"). Mirror the same gate
+        # used by _loc_mrz_recognize so the report does not pretend
+        # the OCR succeeded.
+        raw_ok = (kv.get("result.ok", "") or "").strip()
+        ok = raw_ok.upper() == "OK"
         c1 = int(kv.get("result.conf1", "0") or 0)
         c2 = int(kv.get("result.conf2", "0") or 0)
+        # If OCR failed, surface its own status as the headline
+        # instead of an empty Pred row.
+        if not ok:
+            c1 = c2 = 0
         # Confidence header (parity with corpus diff pane).
         line1_conf = (f"line1 conf={c1}% ("
                       f"{'PASS' if c1 >= 70 else 'WARN' if c1 >= 40 else 'FAIL'})")
