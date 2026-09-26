@@ -1796,9 +1796,10 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
     # ---------------- Face tab ----------------
     def _build_face_tab(self):
         f = self.tab_face
-        ttk.Label(f, text="照片比对", font=("TkDefaultFont", 11, "bold")).pack(anchor="w", padx=4)
-        # Built-in reference samples row.
-        ref = ttk.Frame(f); ref.pack(fill="x", padx=4, pady=(2, 0))
+        pal = self._pal
+        chip = pal["chip"]
+        # ---- Reference picker row ----
+        ref = ttk.Frame(f); ref.pack(fill="x", padx=4, pady=2)
         ttk.Label(ref, text="内置参考样本:").pack(side="left")
         self.face_ref = tk.StringVar()
         face_ref_cb = ttk.Combobox(ref, textvariable=self.face_ref,
@@ -1807,53 +1808,212 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                                    style="Field.TCombobox")
         face_ref_cb.pack(side="left", padx=2)
         face_ref_cb.current(0)
-        ttk.Button(ref, text="填入 → 照片A",
+        ttk.Button(ref, text="填入 -> 照片A",
                    command=self._face_load_ref).pack(side="left", padx=4)
-        ttk.Label(ref, text="（face_a 与 face_b 已预置，可直接点“比对”）",
-                  foreground="#666").pack(side="left", padx=6)
-        top = ttk.Frame(f); top.pack(fill="x", padx=4, pady=2)
-        ttk.Label(top, text="照片A:").pack(side="left")
+        ttk.Label(ref, text="（face_a / face_b / face_c 已预置，可直接点“比对”）",
+                  foreground="#888").pack(side="left", padx=6)
+
+        # ---- File picker rows (A & B) ----
+        def _path_row(label, var, picker):
+            row = ttk.Frame(f); row.pack(fill="x", padx=4, pady=2)
+            ttk.Label(row, text=label).pack(side="left")
+            ttk.Entry(row, textvariable=var, width=46,
+                      style="Field.TEntry").pack(
+                          side="left", padx=2, fill="x", expand=True)
+            ttk.Button(row, text="浏览...", command=picker).pack(side="left")
+            return row
+
         self.face_a = tk.StringVar(value="")
-        ttk.Entry(top, textvariable=self.face_a, width=46,
-                  style="Field.TEntry").pack(side="left", padx=2, fill="x", expand=True)
-        ttk.Button(top, text="浏览…", command=lambda: self._face_pick("a")).pack(side="left")
-        row2 = ttk.Frame(f); row2.pack(fill="x", padx=4, pady=2)
-        ttk.Label(row2, text="照片B:").pack(side="left")
         self.face_b = tk.StringVar(value="")
-        ttk.Entry(row2, textvariable=self.face_b, width=46,
-                  style="Field.TEntry").pack(side="left", padx=2, fill="x", expand=True)
-        ttk.Button(row2, text="浏览…", command=lambda: self._face_pick("b")).pack(side="left")
-        ttk.Button(row2, text="比对", command=self._face_run).pack(side="left", padx=4)
-        self.face_out = tk.Text(f, height=12, font=("Menlo", 11),
-                                bg="#ffffff", fg="#111827")
+        _path_row("照片A:", self.face_a, lambda: self._face_pick("a"))
+        _path_row("照片B:", self.face_b, lambda: self._face_pick("b"))
+
+        # ---- Action + result strip ----
+        action_row = ttk.Frame(f); action_row.pack(fill="x", padx=4, pady=2)
+        self.face_run_btn = tk.Button(
+            action_row, text="▶ 比对", command=self._face_run,
+            bg=pal["primary"], fg="white", relief="flat",
+            activebackground=pal["primary"], activeforeground="white",
+            font=("TkDefaultFont", 10, "bold"))
+        self.face_run_btn.pack(side="left", padx=(0, 8))
+        # Score chip (tk.Label: 3-state color).
+        self.face_score_chip = tk.Label(
+            action_row, text="  SCORE --  ",
+            bg=pal["bg"], fg=chip["dim"]["fg"],
+            font=pal["font_ui_bold"], padx=8, pady=2)
+        self.face_score_chip.pack(side="left", padx=4)
+        self.face_method_var = tk.StringVar(value="")
+        ttk.Label(action_row, textvariable=self.face_method_var,
+                  foreground="#888",
+                  font=("Menlo", 9)).pack(side="left", padx=8)
+
+        # ---- Body: two preview tiles + detail text ----
+        body = ttk.Frame(f); body.pack(fill="both", expand=True, padx=4, pady=2)
+        body.grid_columnconfigure(0, weight=1, uniform="face")
+        body.grid_columnconfigure(1, weight=1, uniform="face")
+        body.grid_rowconfigure(1, weight=1)
+        ttk.Label(body, text="  照片 A  ",
+                  foreground=pal.get("accent", pal["primary"]),
+                  font=("TkDefaultFont", 10, "bold")).grid(
+                      row=0, column=0, sticky="w", padx=4, pady=(0, 4))
+        ttk.Label(body, text="  照片 B  ",
+                  foreground=pal.get("accent", pal["primary"]),
+                  font=("TkDefaultFont", 10, "bold")).grid(
+                      row=0, column=1, sticky="w", padx=4, pady=(0, 4))
+        tile_a = tk.LabelFrame(body, text=" ", bg=pal["bg"],
+                                fg=pal["fg"], bd=1, relief="solid")
+        tile_a.grid(row=1, column=0, sticky="nsew", padx=(4, 6), pady=4)
+        tile_b = tk.LabelFrame(body, text=" ", bg=pal["bg"],
+                                fg=pal["fg"], bd=1, relief="solid")
+        tile_b.grid(row=1, column=1, sticky="nsew", padx=(6, 4), pady=4)
+        self.face_canvas_a = tk.Canvas(
+            tile_a, width=256, height=256,
+            bg=pal["code"], highlightthickness=0)
+        self.face_canvas_a.pack(padx=10, pady=10)
+        self.face_canvas_b = tk.Canvas(
+            tile_b, width=256, height=256,
+            bg=pal["code"], highlightthickness=0)
+        self.face_canvas_b.pack(padx=10, pady=10)
+
+        # ---- Detail text under tiles ----
+        detail = ttk.LabelFrame(f, text=" 对比详情 (raw 输出 / 方法 / 耗时) ")
+        detail.pack(fill="both", expand=False, padx=4, pady=(2, 4))
+        self.face_out = tk.Text(detail, height=8, wrap="none",
+                                font=("Menlo", 9),
+                                bg=pal["code"], fg=pal["fg"],
+                                insertbackground=pal.get("accent", pal["primary"]))
         self.face_out.pack(fill="both", expand=True, padx=4, pady=4)
-        # Default: face_a vs face_b so the tab is directly testable.
+
+        # Image refs kept alive.
+        self._face_imgs = {}
+        # Default face_a vs face_c -> 95/100 -> SUSPECT chip so the chip
+        # visibly changes the moment the user presses 比对.
         self.face_a.set(str(FACE_SAMPLES["face_a (合成, 128×128)"]))
-        self.face_b.set(str(FACE_SAMPLES["face_b (合成, 128×128)"]))
-        self.face_out.insert("1.0", "提示：内置 face_a / face_b 已预置，点击“比对”即可直接测试。\n"
-                                    "也可从内置参考样本下拉选择并填入照片A，或浏览本地图片。\n")
+        self.face_b.set(str(FACE_SAMPLES["face_c (合成, 128×128)"]))
+        self._face_render_preview("a", self.face_a.get())
+        self._face_render_preview("b", self.face_b.get())
+        self.face_out.insert(
+            "1.0",
+            "提示：内置 face_a / face_b / face_c 已预置，点击“比对”即可直接测试。\n"
+            "也可从内置参考样本下拉选择并填入照片A，或浏览本地图片。\n")
 
     def _face_load_ref(self):
         path = FACE_SAMPLES.get(self.face_ref.get())
         if path:
             self.face_a.set(str(path))
+            self._face_render_preview("a", str(path))
 
     def _face_pick(self, which):
         path = filedialog.askopenfilename(
             filetypes=[("Image", "*.ppm *.bmp *.png *.jpg"), ("All", "*.*")])
         if path:
             (self.face_a if which == "a" else self.face_b).set(path)
+            self._face_render_preview(which, path)
+
+    def _face_render_preview(self, side: str, path: str):
+        """Load an image into the preview canvas for side 'a' or 'b'.
+
+        Tk is single-threaded for image loading. We try the native
+        PhotoImage first (PPM / PGM / GIF / PNG) and fall back to PIL
+        for JPG / BMP and for resizing below native dimensions.
+        """
+        canvas = self.face_canvas_a if side == "a" else self.face_canvas_b
+        try:
+            canvas.delete("all")
+        except tk.TclError:
+            return
+        path = path or ""
+        if not path or not Path(path).exists():
+            canvas.create_text(
+                128, 128, text="(no image)",
+                fill=self._pal.get("fg", "#888"), anchor="center")
+            return
+        img = None
+        try:
+            img = tk.PhotoImage(file=path)
+        except tk.TclError:
+            img = None
+        if img is None:
+            try:
+                from PIL import Image, ImageTk  # type: ignore
+                pil = Image.open(path).convert("RGB")
+                img = ImageTk.PhotoImage(pil)
+            except Exception:
+                canvas.create_text(
+                    128, 128, text="(unsupported format)",
+                    fill=self._pal.get("fg", "#888"), anchor="center")
+                return
+        cw, ch = 256, 256
+        iw, ih = img.width(), img.height()
+        scale = min(cw / iw, ch / ih)
+        if scale < 1.0:
+            try:
+                from PIL import Image as _PILImage  # type: ignore
+                pil = _PILImage.open(path).convert("RGB").resize(
+                    (max(1, int(iw * scale)), max(1, int(ih * scale))),
+                    _PILImage.LANCZOS)
+                from PIL import ImageTk  # type: ignore
+                img = ImageTk.PhotoImage(pil)
+                iw, ih = img.width(), img.height()
+            except Exception:
+                pass
+        self._face_imgs[side] = img
+        canvas.create_image((cw - iw) // 2, (ch - ih) // 2,
+                            image=img, anchor="nw")
+        canvas.create_rectangle(0, 0, cw - 1, ch - 1, outline="#3A3B3C")
+
+    @staticmethod
+    def _face_grade(score: int):
+        """Map a 0..100 score to a chip kind + human label."""
+        if score >= 90:
+            return "ok", "PASS"
+        if score >= 70:
+            return "run", "SUSPECT"
+        return "fail", "FAIL"
 
     def _face_run(self):
         a = self.face_a.get().strip(); b = self.face_b.get().strip()
         if not (a and b):
             messagebox.showerror("错误", "请选择两张照片")
             return
+        self._face_render_preview("a", a)
+        self._face_render_preview("b", b)
+        t0 = time.time()
         try:
-            r = subprocess.run([str(FACE_TOOL), a, b],
+            r = subprocess.run([str(FACE_TOOL), a, b, "2"],
                                text=True, capture_output=True, timeout=20)
+            ms = int((time.time() - t0) * 1000)
             self.face_out.delete("1.0", "end")
-            self.face_out.insert("1.0", r.stdout + (r.stderr and ("\n[stderr]\n" + r.stderr) or ""))
+            method = "(unknown)"
+            score = 0
+            for ln in r.stdout.splitlines():
+                if ln.startswith("method:"):
+                    method = ln.split(":", 1)[1].strip()
+                elif ln.startswith("score"):
+                    tail = ln.split(":", 1)[1].strip()
+                    head = tail.split("/", 1)[0]
+                    digits = "".join(ch for ch in head if ch.isdigit())
+                    try:
+                        score = int(digits)
+                    except Exception:
+                        score = 0
+            kind, label = self._face_grade(score)
+            self.face_method_var.set(f"method={method}")
+            chip = self._pal["chip"][kind]
+            try:
+                self.face_score_chip.configure(
+                    bg=chip["bg"], fg=chip["fg"],
+                    text=f"  {label}  {score}/100  ")
+            except tk.TclError:
+                pass
+            header = (f"method : {method}\n"
+                      f"score  : {score}/100  ({label})\n"
+                      f"耗时   : {ms} ms\n"
+                      f"图片A  : {a}\n"
+                      f"图片B  : {b}\n"
+                      f"\n--- raw face_tool output ---\n")
+            tail = r.stdout + (r.stderr and ("\n[stderr]\n" + r.stderr) or "")
+            self.face_out.insert("1.0", header + tail)
         except Exception as e:
             messagebox.showerror("错误", str(e))
 
