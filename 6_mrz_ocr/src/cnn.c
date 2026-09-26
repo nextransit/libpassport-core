@@ -48,15 +48,19 @@ static void conv1_relu(const cnn_t *net,
         }
     }
     for (int y = 0; y < CNN_IN_H; ++y)
-        for (int x = 0; x < CNN_IN_W; ++x)
+        for (int x = 0; x < CNN_IN_W; ++x) {
+            const float x00 = xp[y][x][0], x01 = xp[y][x+1][0], x02 = xp[y][x+2][0];
+            const float x10 = xp[y+1][x][0], x11 = xp[y+1][x+1][0], x12 = xp[y+1][x+2][0];
+            const float x20 = xp[y+2][x][0], x21 = xp[y+2][x+1][0], x22 = xp[y+2][x+2][0];
             for (int co = 0; co < CNN_C1; ++co) {
+                const float *w = net->conv1_w + co;
                 float s = net->conv1_b[co];
-                for (int kh = 0; kh < 3; ++kh)
-                    for (int kw = 0; kw < 3; ++kw)
-                        s += xp[y + kh][x + kw][0] *
-                             net->conv1_w[(kh * 3 + kw) * CNN_C1 + co];
+                s += x00*w[0]       + x01*w[CNN_C1]      + x02*w[2*CNN_C1];
+                s += x10*w[3*CNN_C1] + x11*w[4*CNN_C1]    + x12*w[5*CNN_C1];
+                s += x20*w[6*CNN_C1] + x21*w[7*CNN_C1]    + x22*w[8*CNN_C1];
                 a1[y][x][co] = s > 0.0f ? s : 0.0f;
             }
+        }
 }
 
 /* 2x1 max pool (height only): 12x16 -> 6x16, width preserved. */
@@ -80,8 +84,6 @@ static void conv2_pool2(const cnn_t *net,
     const int OH = CNN_POOL1_H;         /* 6 */
     const int OW = CNN_POOL1_W;         /* 16 */
     float a2[6][16][CNN_C2];
-    for (int y = 0; y < OH + 2; ++y)
-        for (int x = 0; x < OW + 2; ++x) {}
     /* pad input to 8x18 */
     float pp[6 + 2][16 + 2][CNN_C1];
     for (int y = 0; y < 8; ++y)
@@ -94,17 +96,25 @@ static void conv2_pool2(const cnn_t *net,
                 pp[y + 1][x + 1][c] = p1[y][x][c];
 
     for (int y = 0; y < OH; ++y)
-        for (int x = 0; x < OW; ++x)
+        for (int x = 0; x < OW; ++x) {
+            /* Load the 3x3x8 receptive field once per pixel into locals
+             * so memory traffic is 72 loads instead of 16*72.
+             * W layout: (kh,kw,ci,co) => idx = ((kh*3+kw)*C1+ci)*C2+co.
+             * Summation order is unchanged (co outer, tap,ci inner). */
+            float inp[9][CNN_C1];
+            for (int kh = 0; kh < 3; ++kh)
+                for (int kw = 0; kw < 3; ++kw)
+                    for (int ci = 0; ci < CNN_C1; ++ci)
+                        inp[kh*3+kw][ci] = pp[y+kh][x+kw][ci];
             for (int co = 0; co < CNN_C2; ++co) {
                 float s = net->conv2_b[co];
-                for (int kh = 0; kh < 3; ++kh)
-                    for (int kw = 0; kw < 3; ++kw)
-                        for (int ci = 0; ci < CNN_C1; ++ci)
-                            s += pp[y + kh][x + kw][ci] *
-                                 net->conv2_w[((kh * 3 + kw) * CNN_C1 + ci)
-                                                 * CNN_C2 + co];
+                for (int tap = 0; tap < 9; ++tap)
+                    for (int ci = 0; ci < CNN_C1; ++ci)
+                        s += inp[tap][ci] *
+                             net->conv2_w[(tap * CNN_C1 + ci) * CNN_C2 + co];
                 a2[y][x][co] = s > 0.0f ? s : 0.0f;
             }
+        }
     /* 2x2 pool over 6x16 -> 3x8x16, then 1x1 conv 16->4 (per-pixel
      * linear recombine) giving 3x8x4 = 96 features. Flatten (c,y,x)
      * matching torch flatten(1). */

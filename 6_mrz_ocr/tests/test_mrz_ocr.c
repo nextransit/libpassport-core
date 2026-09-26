@@ -66,7 +66,7 @@ static void test_glyph_chars_unique(void) {
 static void test_recognise_canonical(void) {
     /* Try to load the canonical corpus image (if present). We do not
      * require it -- if missing, this test is a no-op. */
-    const char *path = "data/corpus/img_0001_p0_v0.ppm";
+    const char *path = "data/corpus_eval/img_0001_b0_v0.ppm";
     face_image_t *img = face_image_load_ppm(path);
     if (!img) { fprintf(stderr, "(skip) no corpus image yet\n"); return; }
     mrz_ocr_init();

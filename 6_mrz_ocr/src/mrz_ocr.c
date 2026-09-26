@@ -46,7 +46,10 @@ const char *mrz_ocr_strerror(mrz_ocr_status_t s) {
 }
 
 /* ---------- 1. Binarisation (Otsu threshold). ---------- */
-static int otsu_threshold(const uint8_t *gray, int n) {
+/* Shared Otsu implementation. Both the traditional and the CNN backend
+ * binarise through this entry point (global for band location, and
+ * band-local as a refinement pass). */
+int mrz_ocr_otsu(const uint8_t *gray, int n) {
     size_t hist[256] = {0};
     for (int i = 0; i < n; ++i) hist[gray[i]]++;
     double sum = 0;
@@ -92,7 +95,7 @@ int mrz_ocr_locate_band(const uint8_t *bin, int W, int H, mrz_ocr_rect_t *out) {
     int *row_dark = (int *)calloc((size_t)H, sizeof(int));
     if (!row_dark) return -1;
     /* Threshold: a row is "dense" if at least 15% of its pixels are ink. */
-    int threshold = (int)(W * 0.15);
+    int threshold = (int)(W * 0.10);
     for (int y = 0; y < H; ++y) {
         int c = 0;
         for (int x = 0; x < W; ++x) if (bin[y * W + x]) c++;
@@ -101,13 +104,18 @@ int mrz_ocr_locate_band(const uint8_t *bin, int W, int H, mrz_ocr_rect_t *out) {
     /* Find ALL dense runs; we then pick a band that is the union of two
      * dense runs separated by a relatively small gap (the inter-line
      * gap of a TD3 record). The simplest robust rule: scan for runs,
-     * collect runs of height >= H/12, and merge consecutive runs whose
-     * vertical gap is <= H/8 (the inter-line gap). */
+     * collect runs of height >= 2, and merge consecutive runs whose
+     * vertical gap is <= H/8 (the inter-line gap).
+     *
+     * min_run_h MUST stay tiny: a '<'-heavy line has a natural density
+     * valley at template row 1 ('<' has no ink there), which can split
+     * the line's dense run. Discarding short runs used to chop the top
+     * two template rows off every line-1 glyph (O -> U misreads). */
     int *run_top = (int *)malloc(sizeof(int) * H);
     int *run_bot = (int *)malloc(sizeof(int) * H);
     int n_runs = 0;
     int top = -1;
-    int min_run_h = H / 12;
+    int min_run_h = 2;
     int max_gap = H / 8;
     for (int y = 0; y < H; ++y) {
         if (row_dark[y] >= threshold) {
@@ -124,9 +132,13 @@ int mrz_ocr_locate_band(const uint8_t *bin, int W, int H, mrz_ocr_rect_t *out) {
     if (top >= 0 && H - top >= min_run_h) {
         run_top[n_runs] = top; run_bot[n_runs] = H; n_runs++;
     }
-    for (int i = 0; i < n_runs; ++i)
-    if (n_runs == 0) { free(row_dark); free(run_top); free(run_bot); return -1; }
-    /* Find the pair (i, i+1) whose union is the tallest. */
+    if (n_runs == 0) {
+        /* No dense horizontal run anywhere (blank / uniform image).
+         * Must bail BEFORE touching run_top[0]: the arrays are malloc'd
+         * and unwritten at this point. */
+        free(row_dark); free(run_top); free(run_bot); return -1;
+    }
+    /* Find the merged run group whose total height is the tallest. */
     int best_top = run_top[0], best_bot = run_bot[0], best_h = run_bot[0] - run_top[0];
     for (int i = 0; i < n_runs; ++i) {
         int merged_top = run_top[i];
@@ -179,10 +191,15 @@ int mrz_ocr_split_lines(const uint8_t *bin, int W, int H, mrz_ocr_rect_t *out) {
         for (int x = 0; x < W; ++x) if (bin[y * W + x]) c++;
         row_dark[y] = c;
     }
-    /* Find the deepest gap. A row is "gap" if its dark count is
-     * below max(W/100, 4). The gap must span at least 4% of H and
-     * both halves must span at least 20% of H. */
-    int gap_thr = W / 100;
+    /* Find the deepest gap. A row is "gap" when its ink count is a
+     * small FRACTION OF THE TEXT ROWS' PEAK -- a fixed fraction of W
+     * breaks under salt-and-pepper noise (gap rows pick up specks:
+     * at 3% noise a 1518 px row collects ~23 specks, above the old
+     * W/100 = 15 threshold, and the inter-line gap vanished). */
+    int peak = 0;
+    for (int y = 0; y < H; ++y)
+        if (row_dark[y] > peak) peak = row_dark[y];
+    int gap_thr = peak / 6;
     if (gap_thr < 4) gap_thr = 4;
     int best_gap_y = -1, best_gap_score = 0;
     int min_half = H / 5;
@@ -315,8 +332,18 @@ mrz_ocr_status_t mrz_ocr_recognise(const face_image_t *img,
     if (!gray) return MRZ_OCR_ERR_LOAD;
     face_to_grayscale(img, gray);
 
-    /* 2. Binarise (ink=black => 1). */
-    int t = otsu_threshold(gray, (int)n);
+    /* 2. Binarise (ink=black => 1). Polarity-normalise first: white
+     * ink on black background (invert scans) must not silently mark
+     * the background as ink. */
+    int t = mrz_ocr_otsu(gray, (int)n);
+    {
+        size_t dark = 0;
+        for (size_t i = 0; i < n; ++i) if (gray[i] < t) dark++;
+        if (dark * 2 > n) {
+            for (size_t i = 0; i < n; ++i) gray[i] = (uint8_t)(255 - gray[i]);
+            t = 255 - t;
+        }
+    }
     uint8_t *bin = (uint8_t *)malloc(n);
     if (!bin) { free(gray); return MRZ_OCR_ERR_LOAD; }
     for (size_t i = 0; i < n; ++i)

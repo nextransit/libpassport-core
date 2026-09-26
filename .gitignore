@@ -27,8 +27,13 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 
-# MRZ / face / nfc test corpus (regenerable)
+# MRZ / face / nfc test corpus (regenerable) + per-bench failure exports.
+# Ignore only the generated corpus dirs; keep data/baseline.json (the
+# regression-gate reference) and any future hand-written data tracked.
 6_mrz_ocr/data/corpus/
+6_mrz_ocr/data/corpus_eval/
+6_mrz_ocr/data/corpus_train/
+6_mrz_ocr/failures_*.json
 3_face_recognition/tests/data/
 4_nfc_reader/data/*.json
 
@@ -37,4 +42,4 @@ __pycache__/
 .idea/
 .vscode/
 *.swp
-/assets/
+assets/

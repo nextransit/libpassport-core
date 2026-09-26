@@ -27,3 +27,18 @@ enable_testing()
 add_executable(test_mrz_ocr tests/test_mrz_ocr.c)
 target_link_libraries(test_mrz_ocr PRIVATE mrz_ocr)
 add_test(NAME mrz_ocr_unit COMMAND test_mrz_ocr)
+
+# Post-processing internals (includes mrz_ocr_cnn.c directly to reach
+# the static helpers; the archive member is never pulled because all
+# its symbols are already defined in this TU).
+add_executable(test_postproc tests/test_postproc.c)
+target_include_directories(test_postproc PRIVATE include src)
+target_link_libraries(test_postproc PRIVATE mrz_ocr)
+target_compile_options(test_postproc PRIVATE -O1)
+add_test(NAME mrz_postproc COMMAND test_postproc)
+
+# In-process golden test: both backends must reproduce a rendered
+# ICAO-valid record exactly, no external corpus files required.
+add_executable(test_golden tests/test_golden.c)
+target_link_libraries(test_golden PRIVATE mrz_ocr)
+add_test(NAME mrz_golden COMMAND test_golden)
