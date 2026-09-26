@@ -1,24 +1,42 @@
 /* CNN ConvNet-based MRZ OCR pipeline (grayscale backend).
  *
  * Pipeline:
- *   1. locate band / split lines / segment chars on the *binary* map
- *   2. for each char, BILINEAR-resample the ORIGINAL GRAYSCALE box to
- *      16x12 float (NO hard 1/2 threshold), keep sub-pixel stroke edges
- *   3. X-axis centroid alignment (kill the segmenter offset drift)
- *   4. whole-row batch conv+fc inference
- *   5. ICAO 9303 syntax mask on the logits
- *   6. Line-2 checksum beam-search (Top-2 backtracking)
- *   7. trailing "<" filler whitelist (suppress false positives at the
- *      end of the line where the grid naturally drifts)
+ *   1. global Otsu on the grayscale page -> coarse bin map
+ *   2. locate the MRZ band by row density (shared with backend A)
+ *   3. extract the band's GRAYSCALE crop; re-Otsu LOCALLY inside the
+ *      band (two-pass threshold: robust to page-level illumination
+ *      gradients a global threshold cannot handle)
+ *   4. estimate the band tilt from the ink-pixel rotation projection
+ *      and deskew (rotate back) when |angle| >= 0.4 deg
+ *   5. split the two TD3 lines; segment each line into 44 fixed
+ *      pitch-grid windows (run centers only fit pitch/phase; run-based
+ *      windows kept as fallback) so one spurious/broken ink run can no
+ *      longer shift every subsequent character
+ *   6. per cell: area-resample the grayscale window to 16x12 float
+ *      (3x3 box smooth + centroid alignment), whole-row batch
+ *      conv+fc inference; optional ±1px test-time augmentation
+ *      (MRZ_OCR_TTA=1) averages logits over shifts
+ *   7. ICAO 9303 syntax mask on the logits (strict TD3 field whitelist
+ *      by default; MRZ_OCR_STRICT_ICAO=0 restores the loose mask)
+ *   8. deterministic protections: relative ink gate + 3-neighbour '<'
+ *      rule + trailing-filler lock (line 1)
+ *   9. line-2 checksum beam search (top-3 candidates, lowest-margin
+ *      positions first)
  */
 #include "mrz_ocr.h"
 #include "cnn.h"
 #include "template.h"
 
+#define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <time.h>
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 /* ---- ICAO 9303 mod-7/3/1 weighted check digit ---- */
 static int check_digit_of(const char *seg, int n) {
@@ -35,64 +53,123 @@ static int check_digit_of(const char *seg, int n) {
     return sum % 10;
 }
 
-typedef struct { int cand[2]; float p0, p1; } top2_t;
+/* Strict ICAO 9303 TD3 field whitelist by default. MRZ_OCR_STRICT_ICAO=0
+ * restores the historical loose mask (kept for legacy free-form
+ * corpora / debugging). */
+static int strict_icao_mode(void) {
+    const char *e = getenv("MRZ_OCR_STRICT_ICAO");
+    return !(e && e[0] && strcmp(e, "0") == 0);
+}
 
-static void top2_of(const float *probs, int allow[37],
-                    int *c0, int *c1, float *p0, float *p1) {
-    int b0 = -1, b1 = -1;
-    float v0 = -1.0f, v1 = -1.0f;
+/* ---- top-3 candidates among the allowed classes ---- */
+typedef struct { int cand[3]; float p[3]; } top3_t;
+
+static void top3_of(const float *probs, int allow[37], top3_t *t) {
+    for (int k = 0; k < 3; ++k) { t->cand[k] = -1; t->p[k] = -1.0f; }
     for (int o = 0; o < 37; ++o) {
         if (allow[o] == 0) continue;
         float p = probs[o];
-        if (p > v0) { v1 = v0; b1 = b0; v0 = p; b0 = o; }
-        else if (p > v1) { v1 = p; b1 = o; }
+        if (p > t->p[0]) {
+            t->p[2] = t->p[1]; t->cand[2] = t->cand[1];
+            t->p[1] = t->p[0]; t->cand[1] = t->cand[0];
+            t->p[0] = p; t->cand[0] = o;
+        } else if (p > t->p[1]) {
+            t->p[2] = t->p[1]; t->cand[2] = t->cand[1];
+            t->p[1] = p; t->cand[1] = o;
+        } else if (p > t->p[2]) {
+            t->p[2] = p; t->cand[2] = o;
+        }
     }
-    if (b0 < 0) b0 = mrz_ocr_glyph_index('<');
-    if (b1 < 0) b1 = b0;
-    *c0 = b0; *c1 = b1; *p0 = v0; *p1 = v1;
+    int lt = mrz_ocr_glyph_index('<');
+    if (t->cand[0] < 0) {
+        t->cand[0] = t->cand[1] = t->cand[2] = lt;
+        t->p[0] = t->p[1] = t->p[2] = 0.0f;
+    } else {
+        for (int k = 1; k < 3; ++k) {
+            if (t->cand[k] < 0) { t->cand[k] = t->cand[0]; t->p[k] = 0.0f; }
+        }
+    }
 }
 
 /* ---- per-position character whitelist (syntax mask) ---- */
 static void fill_allow(int allow[37], int line_idx, int col) {
-    for (int i = 0; i < 37; ++i) allow[i] = 1;
     int d0 = mrz_ocr_glyph_index('0');
     int a0 = mrz_ocr_glyph_index('A');
     int lt = mrz_ocr_glyph_index('<');
+    for (int i = 0; i < 37; ++i) allow[i] = 1;
+
+    if (!strict_icao_mode()) {
+        /* Loose legacy mask: numeric check digits, M/F/< sex, and the
+         * line-1 col-1 filler only. Kept for legacy free-form corpora
+         * that intentionally mix digits into alpha fields. */
+        if (line_idx == 0) {
+            if (col == 1) {
+                for (int i = 0; i < 37; ++i) allow[i] = (i == lt);
+            }
+        } else {
+            if (col == 9 || col == 19 || col == 27) {
+                for (int i = 0; i < 37; ++i)
+                    allow[i] = (i >= d0 && i <= d0 + 9) ? 1 : 0;
+            } else if (col == 42 || col == 43) {
+                for (int i = 0; i < 37; ++i)
+                    allow[i] = (i >= d0 && i <= d0 + 9) ? 1 : 0;
+                allow[lt] = 1;
+            } else if (col == 20) {
+                for (int i = 0; i < 37; ++i) allow[i] = 0;
+                allow[mrz_ocr_glyph_index('M')] = 1;
+                allow[mrz_ocr_glyph_index('F')] = 1;
+                allow[lt] = 1;
+            }
+        }
+        return;
+    }
+
+    /* Strict ICAO 9303 TD3 field mask. Every slot of a real passport
+     * MRZ falls into exactly one of these sets, so the mask always
+     * contains the ground truth and only removes impossible classes. */
     if (line_idx == 0) {
         if (col == 1) {
+            /* Type-line filler: "P<..." */
             for (int i = 0; i < 37; ++i) allow[i] = (i == lt);
         } else if (col >= 2 && col <= 4) {
-            for (int i = 0; i < 37; ++i)
-                allow[i] = (i >= a0 && i <= lt - 1) ? 1 : 0;
+            /* Issuing state: 3 alpha */
+            for (int i = 0; i < 37; ++i) allow[i] = (i >= a0 && i < a0 + 26);
         } else if (col >= 5) {
+            /* Name field: A-Z + '<' (ICAO 9303 has no digits here) */
             for (int i = 0; i < 37; ++i)
-                allow[i] = ((i >= a0 && i <= lt - 1) || i == lt) ? 1 : 0;
+                allow[i] = (i >= a0 && i < a0 + 26) || i == lt;
         }
+        /* col 0: document type letter — any of the 37. */
     } else {
-        if (col == 9 || col == 19 || col == 27) {
+        if (col <= 8) {
+            /* Passport number: alnum + '<' filler */
+            for (int i = 0; i < 37; ++i)
+                allow[i] = (i >= a0 && i < a0 + 26) || (i >= d0 && i <= d0 + 9) || i == lt;
+        } else if (col == 9 || col == 19 || col == 27) {
             for (int i = 0; i < 37; ++i)
                 allow[i] = (i >= d0 && i <= d0 + 9) ? 1 : 0;
-        } else if (col == 42 || col == 43) {
-            /* Final two positions: strict ICAO TD3 -> numeric check
-             * digits, but the free-form corpus may write '<' there.
-             * Accept both; beam-search enforces numeric when valid. */
+        } else if (col <= 12) {
+            /* Nationality: alpha + '<' (unspecified nationality) */
             for (int i = 0; i < 37; ++i)
-                allow[i] = (i >= d0 && i <= d0 + 9) ? 1 : 0;
-            allow[lt] = 1;
-        } else if (col >= 13 && col <= 18) {
+                allow[i] = (i >= a0 && i < a0 + 26) || i == lt;
+        } else if ((col <= 18) || (col >= 21 && col <= 26)) {
+            /* Birth / expiry dates: numeric ('<' = unknown date) */
             for (int i = 0; i < 37; ++i)
-                allow[i] = (i >= d0 && i <= d0 + 9) ? 1 : 0;
-        } else if (col >= 21 && col <= 26) {
-            for (int i = 0; i < 37; ++i)
-                allow[i] = (i >= d0 && i <= d0 + 9) ? 1 : 0;
-        } else if (col >= 10 && col <= 12) {
-            for (int i = 0; i < 37; ++i)
-                allow[i] = (i >= a0 && i <= lt - 1) ? 1 : 0;
+                allow[i] = ((i >= d0 && i <= d0 + 9) || i == lt) ? 1 : 0;
         } else if (col == 20) {
             for (int i = 0; i < 37; ++i) allow[i] = 0;
             allow[mrz_ocr_glyph_index('M')] = 1;
             allow[mrz_ocr_glyph_index('F')] = 1;
             allow[lt] = 1;
+        } else if (col <= 41) {
+            /* Personal number: alnum + '<' */
+            for (int i = 0; i < 37; ++i)
+                allow[i] = (i >= a0 && i < a0 + 26) || (i >= d0 && i <= d0 + 9) || i == lt;
+        } else {
+            /* col 42/43: check digits, '<' tolerated for the tail-drift
+             * case; the checksum beam prefers digits when valid. */
+            for (int i = 0; i < 37; ++i)
+                allow[i] = ((i >= d0 && i <= d0 + 9) || i == lt) ? 1 : 0;
         }
     }
 }
@@ -178,7 +255,7 @@ static void resample_char_gray(const uint8_t *gray, int W, int H,
         if (delta != 0) {
             float tmp[CNN_IN_H][CNN_IN_W];
             memcpy(tmp, out, sizeof(tmp));
-            memset(out, 0, sizeof(out));
+            memset(out, 0, sizeof(float) * CNN_IN_H * CNN_IN_W);
             for (int y = 0; y < CNN_IN_H; ++y)
                 for (int x = 0; x < CNN_IN_W; ++x) {
                     int nx = x - delta;
@@ -203,7 +280,7 @@ static void resample_char_gray(const uint8_t *gray, int W, int H,
         if (delta != 0) {
             float tmp[CNN_IN_H][CNN_IN_W];
             memcpy(tmp, out, sizeof(tmp));
-            memset(out, 0, sizeof(out));
+            memset(out, 0, sizeof(float) * CNN_IN_H * CNN_IN_W);
             for (int y = 0; y < CNN_IN_H; ++y)
                 for (int x = 0; x < CNN_IN_W; ++x) {
                     int ny = y - delta;
@@ -214,21 +291,19 @@ static void resample_char_gray(const uint8_t *gray, int W, int H,
     }
 }
 
-/* ---- CNN-specific segmenter (full-cell windows, not raw ink runs) ----
- * The traditional segmenter returns only the ink bbox (e.g. 24px of a
- * 34px cell). Our trainer pads glyphs with random leading/trailing
- * whitespace, so feeding ink-only boxes creates an aspect-ratio mismatch
- * (fat glyphs) that hurts the conv net. Here we re-window each ink run
- * to a full cell: half-gap on the left, half-gap on the right, clamped
- * to the line bounds. Falls back to the shared segmenter when a run
- * cannot be windowed. */
-static int segment_line_cnn(const uint8_t *bin, int W, int H,
-                            mrz_ocr_rect_t *chars, int max_chars) {
-    /* Full-cell segmentation: the shared segmenter returns only the ink
-     * bbox (24px of a 34px cell), which warps glyphs when resampled to
-     * 16x12. Here we measure the inter-character pitch from the column
-     * projection and cut centred full-cell windows so each glyph keeps
-     * its inter-character whitespace, matching the trainer distribution. */
+/* ---- shared ink-run finder over a line ----
+ * Returns the number of ink runs (<=96) and fills centers/widths.
+ * Used by both the run-based fallback segmenter and the pitch-grid
+ * segmenter (which only consumes centers + median width). */
+typedef struct {
+    int s[96], e[96];
+    int center[96];
+    int width[96];
+    int n;
+    int medw;   /* median run width */
+} runs_t;
+
+static int find_runs(const uint8_t *bin, int W, int H, runs_t *r) {
     int *col_dark = (int *)calloc((size_t)W, sizeof(int));
     if (!col_dark) return -1;
     for (int x = 0; x < W; ++x) {
@@ -237,29 +312,73 @@ static int segment_line_cnn(const uint8_t *bin, int W, int H,
         col_dark[x] = c;
     }
     int thr = H / 12; if (thr < 1) thr = 1;
-    int run_s[96], run_e[96]; int nrun = 0, in_run = 0, rs = 0;
+    int in_run = 0, rs = 0;
+    r->n = 0;
     for (int x = 0; x <= W; ++x) {
         int ink = (x < W && col_dark[x] >= thr);
         if (ink && !in_run) { in_run = 1; rs = x; }
         else if (!ink && in_run) {
-            if (nrun < 96) { run_s[nrun] = rs; run_e[nrun] = x; nrun++; }
+            if (r->n < 96) {
+                r->s[r->n] = rs; r->e[r->n] = x;
+                r->center[r->n] = (rs + x) / 2;
+                r->width[r->n] = x - rs;
+                r->n++;
+            }
             in_run = 0;
         }
     }
     free(col_dark);
-    if (nrun < 1) return 0;
-    /* estimate cell width as median run width + gap(~2px in gen) */
-    int w[96]; int nw=0;
-    for (int i=0;i<nrun && i<96;i++) w[nw++] = run_e[i]-run_s[i];
-    for (int i=1;i<nw;i++){ int k=w[i],j=i-1; while(j>=0&&w[j]>k){w[j+1]=w[j];j--;} w[j+1]=k; }
-    int medw = nw ? w[nw/2] : 8;
-    if (medw < 6) medw = 6;
+    if (r->n == 0) { r->medw = 8; return 0; }
+    int w[96]; int nw = 0;
+    for (int i = 0; i < r->n; ++i) w[nw++] = r->width[i];
+    for (int i = 1; i < nw; ++i) {
+        int k = w[i], j = i - 1;
+        while (j >= 0 && w[j] > k) { w[j+1] = w[j]; j--; }
+        w[j+1] = k;
+    }
+    r->medw = w[nw / 2];
+    if (r->medw < 6) r->medw = 6;
+    return r->n;
+}
+
+/* Debug helper: dump the 16x12 glyphs a given image produces.
+ * Enabled by MRZ_OCR_DUMP=<tag>. Writes ppm to /tmp/mrz_dump_<tag>_<l><c>.ppm */
+static void mrz_ocr_dump_glyphs(const char *tag, int line_idx,
+                                const float (*glyphs)[CNN_IN_H][CNN_IN_W],
+                                int nchars, const mrz_ocr_rect_t *chars) {
+    const char *env = getenv("MRZ_OCR_DUMP");
+    if (!env || env[0] == 0 || strcmp(env, "0") == 0) return;
+    char name[256];
+    for (int c = 0; c < nchars; ++c) {
+        snprintf(name, sizeof(name), "/tmp/mrz_dump_%s_l%d_c%02d_r%d_w%d.ppm",
+                 tag, line_idx, c, chars[c].y, chars[c].w);
+        FILE *f = fopen(name, "wb");
+        if (!f) continue;
+        fprintf(f, "P6\n16 12\n255\n");
+        for (int y = 0; y < CNN_IN_H; ++y)
+            for (int x = 0; x < CNN_IN_W; ++x) {
+                uint8_t v = (uint8_t)(glyphs[c][y][x] * 255.0f);
+                fputc(v, f); fputc(v, f); fputc(v, f);
+            }
+        fclose(f);
+    }
+}
+
+/* ---- run-based fallback segmenter (original behaviour) ----
+ * One window per ink run, width medw+8 centred on the run. Kept as
+ * the fallback when the pitch grid cannot be fitted. */
+static int segment_line_cnn(const uint8_t *bin, int W, int H,
+                            mrz_ocr_rect_t *chars, int max_chars) {
+    runs_t runs;
+    if (find_runs(bin, W, H, &runs) < 0) return -1;
+    if (runs.n < 1) return 0;
+    int medw = runs.medw;
     int cell = medw + 8;                 /* ~ full pitch */
     if (cell < medw + 4) cell = medw + 4;
     int n = 0;
-    for (int i = 0; i < nrun && i < 96; ++i) {
+    for (int i = 0; i < runs.n; ++i) {
         if (n >= max_chars) break;
-        int c = (run_s[i] + run_e[i]) / 2;
+        int c = runs.center[i];
         int half = cell / 2;
         int x0 = c - half;
         int ww = cell;
@@ -272,50 +391,177 @@ static int segment_line_cnn(const uint8_t *bin, int W, int H,
     }
     return n;
 }
-/* ---- whole-row decode with syntax mask + checksum beam + "<" tail ---- */
-static void decode_row(const cnn_t *net,
-                       const float (*glyphs)[CNN_IN_H][CNN_IN_W],
-                       int n, int line_idx, char *dest, int *conf_avg,
-                       const mrz_ocr_rect_t *chars) {
-    float feats_stk[CNN_BATCH_MAX * CNN_FLAT];
-    float probs_stk[CNN_BATCH_MAX * CNN_OUT];
-    cnn_row_features_batch(net, glyphs, n, feats_stk);
-    cnn_fc_batch(net, feats_stk, n, probs_stk);
 
+/* ---- pitch-grid segmenter (primary) ----
+ * TD3 lines are exactly 44 monospaced cells. Instead of trusting each
+ * ink run to be one character (fragile: one noise run shifts every
+ * later window; one merged run loses characters), we fit the global
+ * grid parameters:
+ *
+ *   pitch L  — median of consecutive run-center differences (plausible
+ *              range only), autocorrelation fallback;
+ *   phase c0 — exhaustive scan over [0, L), scored by weighted ink at
+ *              the window edges (edges must sit in the inter-glyph
+ *              gaps).
+ *
+ * Window POSITIONS come from the fitted grid; window WIDTH stays
+ * medw+8 (the distribution the CNN was trained on). When no good grid
+ * exists the caller falls back to the run-based segmenter. */
+static int segment_line_grid(const uint8_t *bin, int W, int H,
+                             mrz_ocr_rect_t *chars, int max_chars) {
+    runs_t runs;
+    if (find_runs(bin, W, H, &runs) < 0) return -1;
+    int nrun = runs.n;
+    if (nrun < 2) return -1;              /* not enough structure to fit */
+    int medw = runs.medw;
+    int cell = medw + 8;
+    if (cell < medw + 4) cell = medw + 4;
+    if (max_chars < 44) return -1;        /* grid mode needs all 44 slots */
+
+    /* column projection, computed once and shared by pitch search and
+     * phase scoring */
+    int *col = (int *)calloc((size_t)W, sizeof(int));
+    if (!col) return -1;
+    for (int x = 0; x < W; ++x)
+        for (int y = 0; y < H; ++y) col[x] += bin[y * W + x] ? 1 : 0;
+
+    /* --- pitch estimate --- */
+    int Lmin = W / 52; if (Lmin < 10) Lmin = 10;
+    int Lmax = W / 32; if (Lmax < Lmin + 2) Lmax = Lmin + 2;
+    int diffs[95]; int nd = 0;
+    for (int i = 1; i < nrun; ++i) {
+        int d = runs.center[i] - runs.center[i-1];
+        if (d >= Lmin && d <= Lmax) diffs[nd++] = d;
+    }
+    int L0 = 0;
+    if (nd > 0) {
+        for (int i = 1; i < nd; ++i) {
+            int k = diffs[i], j = i - 1;
+            while (j >= 0 && diffs[j] > k) { diffs[j+1] = diffs[j]; j--; }
+            diffs[j+1] = k;
+        }
+        L0 = diffs[nd / 2];
+    }
+    if (L0 < Lmin || L0 > Lmax) {
+        /* Autocorrelation of the column projection. */
+        double best = -1; int bestL = (Lmin + Lmax) / 2;
+        for (int L = Lmin; L <= Lmax; ++L) {
+            double acc = 0;
+            for (int x = 0; x + L < W; ++x) acc += (double)col[x] * col[x + L];
+            if (acc > best) { best = acc; bestL = L; }
+        }
+        L0 = bestL;
+    }
+    int Lcand[4]; int nL = 0;
+    Lcand[nL++] = L0;
+    if (L0 - 1 >= Lmin) Lcand[nL++] = L0 - 1;
+    if (L0 + 1 <= Lmax) Lcand[nL++] = L0 + 1;
+
+    /* --- phase search ---
+     * The TRUE grid places every window edge inside an inter-glyph
+     * gap. Cost = weighted ink near the 88 window edges (both edges,
+     * +-2 px, distance-weighted); the true phase minimises it and the
+     * weights break the zero-plateau towards the gap centre. An
+     * earlier "ink in the middle half" metric was actively WRONG: a
+     * 3-4 px shifted grid pulls strokes into the middle half and
+     * scores HIGHER than the aligned one. */
+    static const int wt[5] = {1, 2, 3, 2, 1};
+    int best_c0 = -1, best_L = 0, best_cost = 0;
+    for (int li = 0; li < nL; ++li) {
+        int L = Lcand[li];
+        if (L <= 0) continue;
+        for (int c0 = 0; c0 < L; ++c0) {
+            if (c0 + 43 * L > W - 1 + cell) continue;
+            int cost = 0;
+            for (int k = 0; k < 44; ++k) {
+                int cx = c0 + k * L;
+                int edges[2] = { cx - cell / 2, cx + cell / 2 - 1 };
+                for (int e = 0; e < 2; ++e)
+                    for (int dx = -2; dx <= 2; ++dx) {
+                        int x = edges[e] + dx;
+                        if (x < 0 || x >= W) continue;
+                        cost += wt[dx + 2] * col[x];
+                    }
+            }
+            if (best_c0 < 0 || cost < best_cost) {
+                best_cost = cost; best_c0 = c0; best_L = L;
+            }
+        }
+    }
+    free(col);
+    if (best_c0 < 0) return -1;
+
+    int n = 0;
+    for (int k = 0; k < 44; ++k) {
+        int cx = best_c0 + k * best_L;
+        int x0 = cx - cell / 2;
+        int ww = cell;
+        if (x0 < 0) { ww += x0; x0 = 0; }
+        if (x0 + ww > W) ww = W - x0;
+        if (ww < 4) ww = 4;
+        chars[n].x = x0; chars[n].w = ww;
+        chars[n].y = 0; chars[n].h = H;
+        n++;
+    }
+    return n;
+}
+
+/* ---- whole-line decode: syntax mask + protections + checksum beam ----
+ * `probs` holds n rows of softmaxed class probabilities (possibly
+ * TTA-averaged by the caller). Glyphs are needed for the ink gate. */
+static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
+                       int n, int line_idx, char *dest, int *conf_avg,
+                       const float *probs) {
     int total = n < 44 ? n : 44;
-    top2_t t2[44];
+    top3_t t3[44];
     int allow[37];
     for (int c = 0; c < n && c < 44; ++c) {
         fill_allow(allow, line_idx, c);
-        top2_of(probs_stk + c * CNN_OUT, allow,
-                &t2[c].cand[0], &t2[c].cand[1],
-                &t2[c].p0, &t2[c].p1);
+        top3_of(probs + c * CNN_OUT, allow, &t3[c]);
     }
 
-    /* Physical ink-energy gate + slot whitelist (C-side deterministic
-     * protection). '<' is the lowest-ink glyph in OCR-B; a patch that
-     * is classified as X/R/T but carries far less ink than a real X/R/T
-     * cannot be one (scale-3 '<' is a thin 6-col slash, ink~42 vs X~86).
-     * Threshold 60 cleanly separates them across all scales. */
+    /* patch ink per cell (relative '<' gate statistic) */
     float patch_ink[44];
     for (int c = 0; c < n && c < 44; ++c) {
         float ink = 0.0f;
-        for (int _y = 0; _y < CNN_IN_H; ++_y)
-            for (int _x = 0; _x < CNN_IN_W; ++_x)
-                ink += glyphs[c][_y][_x];
+        for (int y = 0; y < CNN_IN_H; ++y)
+            for (int x = 0; x < CNN_IN_W; ++x)
+                ink += glyphs[c][y][x];
         patch_ink[c] = ink;
-        dest[c] = MRZ_OCR_GLYPHS[t2[c].cand[0]].ch;
+        dest[c] = MRZ_OCR_GLYPHS[t3[c].cand[0]].ch;
     }
     if (n < 44) dest[n] = '\0'; else dest[44] = '\0';
 
-    /* (a) Ink gate: X and R carry ~2.5x the ink of '<' (X~92, R~100 vs
-     * <~36 at to_16; scale3 X~86). If the model says X/R but the patch
-     * is light (can't actually be an X/R), it is '<'. T/I/L/M are NOT
-     * gated -- their ink is too close to '<' to be safe. */
-    for (int c = 0; c < total; ++c) {
-        char ch0 = dest[c];
-        if (ch0 == 'X' || ch0 == 'R') {
-            if (patch_ink[c] < 60.0f) dest[c] = '<';
+    /* (a) Ink gate: '<' is the lowest-ink OCR-B glyph. If the model
+     * says X/R but the patch carries far less ink than the line's
+     * confident letters, it cannot be X/R. The threshold is RELATIVE
+     * (0.55 x median ink of confident letter cells, p0 >= 0.85) so it
+     * follows contrast/resolution instead of a hand-tuned constant;
+     * falls back to the historical absolute 60 when the line has too
+     * few confident letters. T/I/L/M are NOT gated (ink too close to
+     * '<' to be safe). */
+    {
+        float letter_ink[44]; int nl = 0;
+        for (int c = 0; c < total; ++c) {
+            int g = t3[c].cand[0];
+            if (g >= 10 && g <= 35 && t3[c].p[0] >= 0.85f)
+                letter_ink[nl++] = patch_ink[c];
+        }
+        float gate = -1.0f;
+        if (nl >= 5) {
+            for (int i = 1; i < nl; ++i) {
+                float k = letter_ink[i]; int j = i - 1;
+                while (j >= 0 && letter_ink[j] > k) { letter_ink[j+1] = letter_ink[j]; j--; }
+                letter_ink[j+1] = k;
+            }
+            gate = 0.55f * letter_ink[nl / 2];
+        }
+        for (int c = 0; c < total; ++c) {
+            char ch0 = dest[c];
+            if (ch0 == 'X' || ch0 == 'R') {
+                float thr = (gate > 0.0f) ? gate : 60.0f;
+                if (patch_ink[c] < thr) dest[c] = '<';
+            }
         }
     }
 
@@ -327,26 +573,12 @@ static void decode_row(const cnn_t *net,
             dest[c] = '<';
     }
 
-    /* (c) Slot whitelist already applied via fill_allow (col1 '<', col20
-     * M/F/<, check-digit columns numeric, col42/43 digit or '<').
-     * Tail filler locking is handled below by the lock-run block
-     * (>=5 consecutive '<' on Line 1). */
-
-    /* Trailing "<" filler whitelist: ICAO 9303 guarantees that once a
-     * MRZ field enters the filler region, all remaining positions of
-     * that field are '<' (line 2 keeps two numeric check digits at the
-     * very end). So as soon as we see a run of >=3 '<' we lock the rest
-     * of the line (excluding line2's final two check positions) to '<'
-     * instead of trusting low-confidence model outputs like 8/2/0. */
-    int lt = mrz_ocr_glyph_index('<');
-    /* Lock-run only on Line 1: once we've seen >=5 consecutive '<' the
-     * remaining name-field positions are guaranteed '<' by ICAO 9303.
-     * Line 2 may legally contain long '<' runs in the personal-number
-     * field but its tail is free-form in these synthetic cases, so we
-     * only lock Line 1. */
-    int locked = -1;
-    int run = 0;
+    /* (c) Trailing "<" filler lock on Line 1: once >=5 consecutive '<'
+     * the rest of the name field is guaranteed filler by ICAO 9303.
+     * Line 2's tail keeps two numeric check digits, so only Line 1
+     * locks. */
     if (line_idx == 0) {
+        int locked = -1, run = 0;
         for (int c = 0; c < total; ++c) {
             if (dest[c] == '<') { run++; if (run >= 5) locked = c - run + 1; }
             else run = 0;
@@ -356,36 +588,58 @@ static void decode_row(const cnn_t *net,
                 dest[c] = '<';
     }
 
-    /* Line-2 checksum beam search: flip at most 2 low-confidence
-     * positions to their 2nd candidate until checksums validate. */
+    /* (d) Line-2 checksum beam search: candidates sorted by margin
+     * (p0-p1 ascending = least confident first); flips try top-3
+     * candidates per position, then pairs over the 6 least confident
+     * positions. Every column participates via the composite check
+     * digit, so no column is excluded a priori. */
     if (line_idx == 1 && total == 44) {
         char best[45];
         memcpy(best, dest, 44); best[44] = 0;
         int ok = line2_checksum_ok(best);
         if (!ok) {
-            int idxs[44], picks = 0;
+            int idxs[44]; float marg[44]; int picks = 0;
             for (int c = 0; c < 44; ++c) {
-                if (t2[c].cand[0] != t2[c].cand[1]) {
-                    if (c == 9 || c == 19 || c == 27 || c == 42 || c == 43 ||
-                        (c >= 13 && c <= 18) || (c >= 21 && c <= 26))
-                        idxs[picks++] = c;
+                if (t3[c].cand[0] != t3[c].cand[1]) {
+                    idxs[picks] = c;
+                    marg[picks] = t3[c].p[0] - t3[c].p[1];
+                    picks++;
                 }
             }
-            if (picks > 8) picks = 8;
-            for (int a = 0; a < picks && !ok; ++a) {
-                char t[45];
-                memcpy(t, dest, 44); t[44] = 0;
-                t[idxs[a]] = MRZ_OCR_GLYPHS[t2[idxs[a]].cand[1]].ch;
-                if (line2_checksum_ok(t)) { memcpy(best, t, 44); ok = 1; break; }
+            for (int a = 1; a < picks; ++a) {
+                int ki = idxs[a]; float km = marg[a];
+                int j = a - 1;
+                while (j >= 0 && marg[j] > km) { idxs[j+1] = idxs[j]; marg[j+1] = marg[j]; j--; }
+                idxs[j+1] = ki; marg[j+1] = km;
             }
-            for (int a = 0; a < picks && !ok; ++a)
-                for (int b = a + 1; b < picks && !ok; ++b) {
+            if (picks > 10) picks = 10;
+            int npair = picks < 6 ? picks : 6;
+            for (int a = 0; a < picks && !ok; ++a) {
+                for (int k = 1; k < 3 && !ok; ++k) {
+                    int g = t3[idxs[a]].cand[k];
+                    if (k > 1 && g == t3[idxs[a]].cand[1]) continue;
+                    if (g == t3[idxs[a]].cand[0]) continue;
                     char t[45];
                     memcpy(t, dest, 44); t[44] = 0;
-                    t[idxs[a]] = MRZ_OCR_GLYPHS[t2[idxs[a]].cand[1]].ch;
-                    t[idxs[b]] = MRZ_OCR_GLYPHS[t2[idxs[b]].cand[1]].ch;
-                    if (line2_checksum_ok(t)) { memcpy(best, t, 44); ok = 1; break; }
+                    t[idxs[a]] = MRZ_OCR_GLYPHS[g].ch;
+                    if (line2_checksum_ok(t)) { memcpy(best, t, 44); ok = 1; }
                 }
+            }
+            for (int a = 0; a < npair && !ok; ++a)
+                for (int b = a + 1; b < npair && !ok; ++b)
+                    for (int ka = 1; ka < 3 && !ok; ++ka)
+                        for (int kb = 1; kb < 3 && !ok; ++kb) {
+                            int ga = t3[idxs[a]].cand[ka];
+                            int gb = t3[idxs[b]].cand[kb];
+                            if (ga == t3[idxs[a]].cand[0] || gb == t3[idxs[b]].cand[0]) continue;
+                            if (ka > 1 && ga == t3[idxs[a]].cand[1]) continue;
+                            if (kb > 1 && gb == t3[idxs[b]].cand[1]) continue;
+                            char t[45];
+                            memcpy(t, dest, 44); t[44] = 0;
+                            t[idxs[a]] = MRZ_OCR_GLYPHS[ga].ch;
+                            t[idxs[b]] = MRZ_OCR_GLYPHS[gb].ch;
+                            if (line2_checksum_ok(t)) { memcpy(best, t, 44); ok = 1; }
+                        }
             memcpy(dest, best, 44);
             if (n < 44) dest[n] = '\0'; else dest[44] = '\0';
         }
@@ -393,10 +647,69 @@ static void decode_row(const cnn_t *net,
 
     int sum = 0;
     for (int c = 0; c < total; ++c)
-        sum += (int)((t2[c].p0 > 0 ? t2[c].p0 : 0.0f) * 100);
+        sum += (int)((t3[c].p[0] > 0 ? t3[c].p[0] : 0.0f) * 100);
     *conf_avg = total > 0 ? sum / total : 0;
 }
 
+/* ---- band tilt estimation ----
+ * Score = energy of the ink-pixel row projection after rotating the
+ * band content by -alpha; maximised when the two text lines are
+ * horizontal. Only ink pixels are visited, so the sweep over
+ * -4..+4 deg in 0.5 deg steps is cheap. */
+static double estimate_band_skew(const uint8_t *bin, int W, int H) {
+    if (W < 32 || H < 16) return 0.0;
+    double cx = (W - 1) / 2.0, cy = (H - 1) / 2.0;
+    double best_score = -1.0, score0 = -1.0, best_deg = 0.0;
+    int *proj = (int *)malloc(sizeof(int) * (size_t)(H + 4));
+    if (!proj) return 0.0;
+    for (int deg4 = -8; deg4 <= 8; ++deg4) {
+        double deg = deg4 * 0.5;
+        double rad = deg * M_PI / 180.0;
+        double s = sin(rad), c = cos(rad);
+        memset(proj, 0, sizeof(int) * (size_t)(H + 4));
+        for (int y = 0; y < H; ++y) {
+            for (int x = 0; x < W; ++x) {
+                if (!bin[y * W + x]) continue;
+                double yr = cy - s * (x - cx) + c * (y - cy);
+                int yi = (int)(yr + 0.5);
+                if (yi >= 0 && yi < H) proj[yi]++;
+            }
+        }
+        double score = 0;
+        for (int y = 0; y < H; ++y) score += (double)proj[y] * proj[y];
+        if (deg == 0.0) score0 = score;
+        if (score > best_score) { best_score = score; best_deg = deg; }
+    }
+    free(proj);
+    if (best_deg == 0.0) return 0.0;
+    /* require a clear win over no-rotation before touching the band */
+    if (best_score <= score0 * 1.05) return 0.0;
+    return best_deg;
+}
+
+/* Rotate the band content by -deg about its center (inverse-map,
+ * nearest neighbour, white fill). After this the text lines are
+ * horizontal and the normal split/segment stages apply. */
+static void rotate_band(const uint8_t *src, int W, int H, double deg,
+                        uint8_t *dst) {
+    double rad = deg * M_PI / 180.0;
+    double c = cos(rad), s = sin(rad);
+    double cx = (W - 1) / 2.0, cy = (H - 1) / 2.0;
+    for (int y = 0; y < H; ++y) {
+        for (int x = 0; x < W; ++x) {
+            double dx = x - cx, dy = y - cy;
+            /* dst pixel samples src rotated by +deg (inverse of the
+             * content transform R(-deg) used by the estimator). */
+            double sx = cx + c * dx - s * dy;
+            double sy = cy + s * dx + c * dy;
+            int ix = (int)lround(sx), iy = (int)lround(sy);
+            dst[y * W + x] = (ix >= 0 && ix < W && iy >= 0 && iy < H)
+                                 ? src[iy * W + ix] : 255;
+        }
+    }
+}
+
+/* ---- top-level pipeline ---- */
 mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                                        mrz_ocr_result_t *out) {
     if (!img || !out) return MRZ_OCR_ERR_LOAD;
@@ -404,101 +717,169 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
     int W = img->width, H = img->height;
     if (W <= 0 || H <= 0) return MRZ_OCR_ERR_LOAD;
 
+    const char *tm = getenv("MRZ_OCR_TIMING");
+    struct timespec _t0, _t1;
+    double _ms_gray = 0, _ms_band = 0, _ms_resample = 0, _ms_decode = 0;
+    if (tm && tm[0] && strcmp(tm, "0")) clock_gettime(CLOCK_MONOTONIC, &_t0);
+
+    /* Heap workspaces (the CNN weights alone are ~41 KB — keeping the
+     * whole pipeline off the stack matters for embedded thread stacks). */
     size_t n = (size_t)W * H;
     uint8_t *gray = (uint8_t *)malloc(n);
+    uint8_t *bin = NULL, *band_gray = NULL, *band_bin = NULL, *rot = NULL;
+    uint8_t *line_pixels = NULL;
+    cnn_t *net = NULL;
+    float (*glyphs)[CNN_IN_H][CNN_IN_W] = NULL;
+    float (*glyphs_tta)[CNN_IN_H][CNN_IN_W] = NULL;
+    float *feats = NULL, *probs = NULL, *probs_tta = NULL;
     if (!gray) return MRZ_OCR_ERR_LOAD;
-    face_to_grayscale(img, gray);
-    /* Otsu threshold for band/lines/segment only. */
-    int t = 127;
-    {
-        size_t hist[256] = {0};
-        for (size_t i = 0; i < n; ++i) hist[gray[i]]++;
-        double sum = 0;
-        for (int i = 0; i < 256; ++i) sum += (double)i * hist[i];
-        double sumB = 0;
-        int wB = 0;
-        double maxVar = -1;
-        for (int i = 0; i < 256; ++i) {
-            wB += (int)hist[i];
-            if (wB == 0) continue;
-            int wF = (int)n - wB;
-            if (wF == 0) break;
-            sumB += (double)i * hist[i];
-            double mB = sumB / wB, mF = (sum - sumB) / wF;
-            double v = (double)wB * wF * (mB - mF) * (mB - mF);
-            if (v > maxVar) { maxVar = v; t = i; }
-        }
-        if (hist[0] > 0 && hist[255] == 0) t = 127;
-        if (t == 0 && hist[255] > 0) t = 127;
-    }
-    uint8_t *bin = (uint8_t *)malloc(n);
-    if (!bin) { free(gray); return MRZ_OCR_ERR_LOAD; }
-    for (size_t i = 0; i < n; ++i) bin[i] = (gray[i] < t) ? 1 : 0;
 
+    mrz_ocr_status_t status = MRZ_OCR_OK;
+    face_to_grayscale(img, gray);
+
+    /* 1. Global Otsu -> coarse bin map for band location. Polarity is
+     * normalised first (white-on-black scans would otherwise mark the
+     * background as ink everywhere downstream). */
+    int t = mrz_ocr_otsu(gray, (int)n);
+    {
+        size_t dark = 0;
+        for (size_t i = 0; i < n; ++i) if (gray[i] < t) dark++;
+        if (dark * 2 > n) {
+            for (size_t i = 0; i < n; ++i) gray[i] = (uint8_t)(255 - gray[i]);
+            t = 255 - t;
+        }
+    }
+    bin = (uint8_t *)malloc(n);
+    if (!bin) { status = MRZ_OCR_ERR_LOAD; goto cleanup; }
+    for (size_t i = 0; i < n; ++i) bin[i] = (gray[i] < t) ? 1 : 0;
+    if (tm && tm[0] && strcmp(tm, "0")) { clock_gettime(CLOCK_MONOTONIC, &_t1); _ms_gray = (_t1.tv_sec-_t0.tv_sec)*1e3+(_t1.tv_nsec-_t0.tv_nsec)/1e6; _t0=_t1; }
+
+    /* 2. Locate the MRZ band. */
     mrz_ocr_rect_t band;
     if (mrz_ocr_locate_band(bin, W, H, &band) != 0) {
-        free(bin); free(gray); return MRZ_OCR_ERR_NO_BAND;
+        status = MRZ_OCR_ERR_NO_BAND; goto cleanup;
     }
     int bx = band.x, by = band.y, bw = band.w, bh = band.h;
     out->band_x = bx; out->band_y = by; out->band_w = bw; out->band_h = bh;
     if (bw < MRZ_OCR_GLYPH_W * 5 || bh < MRZ_OCR_GLYPH_H) {
-        free(bin); free(gray); return MRZ_OCR_ERR_BAD_GEOMETRY;
+        status = MRZ_OCR_ERR_BAD_GEOMETRY; goto cleanup;
     }
-    uint8_t *band_pixels = (uint8_t *)malloc((size_t)bw * bh);
-    if (!band_pixels) { free(bin); free(gray); return MRZ_OCR_ERR_LOAD; }
+
+    /* 3. Band-local refine: crop the band's grayscale, Otsu inside the
+     * band only (a global threshold over a full passport page can be
+     * dominated by the photo / background), estimate + remove tilt. */
+    band_gray = (uint8_t *)malloc((size_t)bw * bh);
+    band_bin = (uint8_t *)malloc((size_t)bw * bh);
+    if (!band_gray || !band_bin) { status = MRZ_OCR_ERR_LOAD; goto cleanup; }
     for (int y = 0; y < bh; ++y)
-        memcpy(band_pixels + y * bw, bin + (by + y) * W + bx, bw);
+        memcpy(band_gray + y * bw, gray + (by + y) * W + bx, bw);
+    {
+        int tb = mrz_ocr_otsu(band_gray, bw * bh);
+        for (int i = 0; i < bw * bh; ++i) band_bin[i] = (band_gray[i] < tb) ? 1 : 0;
+        double deg = estimate_band_skew(band_bin, bw, bh);
+        if (deg != 0.0) {
+            rot = (uint8_t *)malloc((size_t)bw * bh);
+            if (!rot) { status = MRZ_OCR_ERR_LOAD; goto cleanup; }
+            rotate_band(band_gray, bw, bh, deg, rot);
+            memcpy(band_gray, rot, (size_t)bw * bh);
+            for (int i = 0; i < bw * bh; ++i) band_bin[i] = (band_gray[i] < tb) ? 1 : 0;
+        }
+    }
+    if (tm && tm[0] && strcmp(tm, "0")) { clock_gettime(CLOCK_MONOTONIC, &_t1); _ms_band=(_t1.tv_sec-_t0.tv_sec)*1e3+(_t1.tv_nsec-_t0.tv_nsec)/1e6; _t0=_t1; }
 
+    /* 4. Split the two TD3 lines on the deskewed band bin map. */
     mrz_ocr_rect_t lines[2];
-    if (mrz_ocr_split_lines(band_pixels, bw, bh, lines) != 0) {
-        free(band_pixels); free(bin); free(gray); return MRZ_OCR_ERR_BAD_LINES;
+    if (mrz_ocr_split_lines(band_bin, bw, bh, lines) != 0) {
+        status = MRZ_OCR_ERR_BAD_LINES; goto cleanup;
     }
-    cnn_t net;
-    cnn_default_init(&net);
 
-    for (int li = 0; li < 2; ++li) {
-        int base = (li == 0) ? lines[0].y : lines[1].y;
-        int line_h = (li == 0) ? lines[0].h : lines[1].h;
-        if (line_h <= 0) continue;
-        uint8_t *line_pixels = (uint8_t *)malloc((size_t)bw * line_h);
-        if (!line_pixels) { free(band_pixels); free(bin); free(gray); return MRZ_OCR_ERR_LOAD; }
-        for (int y = 0; y < line_h; ++y)
-            memcpy(line_pixels + y * bw, band_pixels + (base + y) * bw, bw);
-
-        mrz_ocr_rect_t chars[64];
-        int nchars = segment_line_cnn(line_pixels, bw, line_h, chars, 64);
-        if (nchars < 30) { free(line_pixels); free(band_pixels); free(bin); free(gray); return MRZ_OCR_ERR_BAD_LINES; }
-        if (nchars > 44) nchars = 44;
-        /* one reusable 3x3-smooth scratch buffer for the whole line */
-        int max_box = 0;
-        for (int c = 0; c < nchars; ++c) {
-            int b = chars[c].w * chars[c].h;
-            if (b > max_box) max_box = b;
-        }
-        uint8_t *sm_scratch = (uint8_t *)malloc((size_t)(max_box > 0 ? max_box : 1));
-        if (!sm_scratch) { free(line_pixels); free(band_pixels); free(bin); free(gray); return MRZ_OCR_ERR_LOAD; }
-        /* pre-extract each glyph from the ORIGINAL grayscale band */
-        float glyphs[44][CNN_IN_H][CNN_IN_W];
-        for (int c = 0; c < nchars; ++c) {
-            resample_char_gray(gray, W, H,
-                               bx + chars[c].x, by + base + chars[c].y,
-                               chars[c].w, chars[c].h,
-                               sm_scratch, max_box, glyphs[c]);
-        }
-        free(sm_scratch);
-        char *dest = (li == 0) ? out->line1 : out->line2;
-        int *conf = (li == 0) ? &out->line1_avg_conf : &out->line2_avg_conf;
-        decode_row(&net, glyphs, nchars, li, dest, conf, chars);
-        if (li == 0) out->line1_len = nchars; else out->line2_len = nchars;
-        free(line_pixels);
+    net = (cnn_t *)malloc(sizeof(cnn_t));
+    glyphs = (float (*)[CNN_IN_H][CNN_IN_W])malloc(44 * sizeof(*glyphs));
+    glyphs_tta = (float (*)[CNN_IN_H][CNN_IN_W])malloc(44 * sizeof(*glyphs));
+    feats = (float *)malloc((size_t)44 * CNN_FLAT * sizeof(float));
+    probs = (float *)malloc((size_t)44 * CNN_OUT * sizeof(float));
+    probs_tta = (float *)malloc((size_t)44 * CNN_OUT * sizeof(float));
+    if (!net || !glyphs || !glyphs_tta || !feats || !probs || !probs_tta) {
+        status = MRZ_OCR_ERR_LOAD; goto cleanup;
     }
-    free(band_pixels);
-    free(bin);
-    free(gray);
-    return MRZ_OCR_OK;
+    cnn_default_init(net);
+    {
+        const char *tta_env = getenv("MRZ_OCR_TTA");
+        int tta = (tta_env && tta_env[0] && strcmp(tta_env, "0") != 0);
+
+        for (int li = 0; li < 2; ++li) {
+            int base = (li == 0) ? lines[0].y : lines[1].y;
+            int line_h = (li == 0) ? lines[0].h : lines[1].h;
+            if (line_h <= 0) continue;
+            line_pixels = (uint8_t *)malloc((size_t)bw * line_h);
+            if (!line_pixels) { status = MRZ_OCR_ERR_LOAD; goto cleanup; }
+            for (int y = 0; y < line_h; ++y)
+                memcpy(line_pixels + y * bw, band_bin + (base + y) * bw, bw);
+
+            mrz_ocr_rect_t chars[44];
+            /* Primary: fit the 44-cell pitch grid (robust to spurious
+             * or merged ink runs). Fallback: one window per run. */
+            int nchars = segment_line_grid(line_pixels, bw, line_h, chars, 44);
+            if (nchars <= 0)
+                nchars = segment_line_cnn(line_pixels, bw, line_h, chars, 44);
+            if (nchars < 30) {
+                free(line_pixels); line_pixels = NULL;
+                status = MRZ_OCR_ERR_BAD_LINES; goto cleanup;
+            }
+            if (nchars > 44) nchars = 44;
+            /* pre-extract each glyph from the deskewed BAND grayscale */
+            for (int c = 0; c < nchars; ++c) {
+                resample_char_gray(band_gray, bw, bh,
+                                   chars[c].x, base + chars[c].y,
+                                   chars[c].w, chars[c].h,
+                                   NULL, 0, glyphs[c]);
+            }
+            if (tm && tm[0] && strcmp(tm, "0")) { clock_gettime(CLOCK_MONOTONIC, &_t1); _ms_resample += (_t1.tv_sec-_t0.tv_sec)*1e3+(_t1.tv_nsec-_t0.tv_nsec)/1e6; _t0=_t1; }
+
+            cnn_row_features_batch(net, glyphs, nchars, feats);
+            cnn_fc_batch(net, feats, nchars, probs);
+            if (tta) {
+                /* +-1px horizontal shift TTA: average the softmax
+                 * outputs over three window placements. */
+                for (int c = 0; c < nchars; ++c)
+                    for (int o = 0; o < CNN_OUT; ++o) probs_tta[c * CNN_OUT + o] = probs[c * CNN_OUT + o];
+                for (int sh = -1; sh <= 1; sh += 2) {
+                    for (int c = 0; c < nchars; ++c) {
+                        resample_char_gray(band_gray, bw, bh,
+                                           chars[c].x + sh, base + chars[c].y,
+                                           chars[c].w, chars[c].h,
+                                           NULL, 0, glyphs_tta[c]);
+                    }
+                    cnn_row_features_batch(net, glyphs_tta, nchars, feats);
+                    cnn_fc_batch(net, feats, nchars, probs);
+                    for (int c = 0; c < nchars; ++c)
+                        for (int o = 0; o < CNN_OUT; ++o)
+                            probs_tta[c * CNN_OUT + o] += probs[c * CNN_OUT + o];
+                }
+                for (int c = 0; c < nchars; ++c)
+                    for (int o = 0; o < CNN_OUT; ++o)
+                        probs[c * CNN_OUT + o] = probs_tta[c * CNN_OUT + o] / 3.0f;
+            }
+
+            char *dest = (li == 0) ? out->line1 : out->line2;
+            int *conf = (li == 0) ? &out->line1_avg_conf : &out->line2_avg_conf;
+            decode_row((const float (*)[CNN_IN_H][CNN_IN_W])glyphs, nchars, li, dest, conf, probs);
+            if (li == 0) out->line1_len = nchars; else out->line2_len = nchars;
+            mrz_ocr_dump_glyphs("img", li, glyphs, nchars, chars);
+            free(line_pixels); line_pixels = NULL;
+            if (tm && tm[0] && strcmp(tm, "0")) { clock_gettime(CLOCK_MONOTONIC, &_t1); _ms_decode += (_t1.tv_sec-_t0.tv_sec)*1e3+(_t1.tv_nsec-_t0.tv_nsec)/1e6; _t0=_t1; }
+        }
+    }
+
+cleanup:
+    free(probs_tta); free(probs); free(feats);
+    free(glyphs_tta); free(glyphs); free(net);
+    free(line_pixels);
+    free(rot); free(band_bin); free(band_gray);
+    free(bin); free(gray);
+    if (tm && tm[0] && strcmp(tm, "0")) {
+        fprintf(stderr, "TIMING gray=%.2fms band+deskew=%.2fms resample=%.2fms decode=%.2fms\n",
+                _ms_gray, _ms_band, _ms_resample, _ms_decode);
+    }
+    return status;
 }
-
-/* Debug helper: dump the 16x12 glyphs a given image produces.
- * Enabled by MRZ_OCR_DUMP=<tag>. Writes ppm to /tmp/mrz_dump_<tag>_<l><c>.ppm */
-#if 0
-#endif

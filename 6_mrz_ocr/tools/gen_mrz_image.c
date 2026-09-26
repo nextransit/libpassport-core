@@ -9,8 +9,19 @@
  *   vgap=<int>            vertical gap between two lines (default 6)
  *   margin=<int>          outer margin (default 12)
  *   noise=<float>         pixel noise probability 0..1 (default 0)
+ *   noise-seed=<int>      deterministic noise seed. When given, the
+ *                         noise is reproducible for a given corpus
+ *                         record (required for regression baselines).
+ *                         When omitted, falls back to time^pid.
  *   skew=<int>            tilt the band by -N..N pixels across the row
  *                         (default 0)
+ *   rot=<float>           rotate the whole band by degrees (real
+ *                         scanner tilt, default 0; range +-8)
+ *   illum=<int>           illumination-gradient amplitude 0..200:
+ *                         background dims linearly across the image
+ *                         (scan shading, default 0)
+ *   blur=<0|1|2>          3x3 binomial blur passes (simulates defocus
+ *                         / anti-aliased strokes, default 0)
  *   invert=<0|1>          render ink=white-on-black instead of
  *                         black-on-white (default 0)
  *
@@ -41,7 +52,49 @@ static float get_float(const char *name, const char *kv) {
     return (float)atof(kv + strlen(name) + 1);
 }
 
-static void put_ink(uint8_t *img, int W, int H, int x, int y, int s,
+/* 3x3 binomial blur on a single-channel buffer (weights 1-2-1). */
+static void blur3(uint8_t *g, int W, int H) {
+    uint8_t *out = (uint8_t *)malloc((size_t)W * H);
+    if (!out) return;
+    static const int w[3][3] = {{1, 2, 1}, {2, 4, 2}, {1, 2, 1}};
+    for (int y = 0; y < H; ++y)
+        for (int x = 0; x < W; ++x) {
+            int acc = 0, wsum = 0;
+            for (int dy = -1; dy <= 1; ++dy)
+                for (int dx = -1; dx <= 1; ++dx) {
+                    int yy = y + dy, xx = x + dx;
+                    if (yy < 0 || yy >= H || xx < 0 || xx >= W) continue;
+                    acc += g[yy * W + xx] * w[dy + 1][dx + 1];
+                    wsum += w[dy + 1][dx + 1];
+                }
+            out[y * W + x] = (uint8_t)(acc / wsum);
+        }
+    memcpy(g, out, (size_t)W * H);
+    free(out);
+}
+
+/* Rotate a single-channel buffer by deg about its center
+ * (inverse-map nearest neighbour, background fill). */
+static void rotate_gray(uint8_t *g, int W, int H, double deg, uint8_t bg) {
+    double rad = deg * M_PI / 180.0;
+    double c = cos(rad), s = sin(rad);
+    double cx = (W - 1) / 2.0, cy = (H - 1) / 2.0;
+    uint8_t *out = (uint8_t *)malloc((size_t)W * H);
+    if (!out) return;
+    for (int y = 0; y < H; ++y)
+        for (int x = 0; x < W; ++x) {
+            double dx = x - cx, dy = y - cy;
+            double sx = cx + c * dx + s * dy;
+            double sy = cy - s * dx + c * dy;
+            int ix = (int)lround(sx), iy = (int)lround(sy);
+            out[y * W + x] = (ix >= 0 && ix < W && iy >= 0 && iy < H)
+                                 ? g[iy * W + ix] : bg;
+        }
+    memcpy(g, out, (size_t)W * H);
+    free(out);
+}
+
+static void put_ink(uint8_t *img, int W, int H, int x, int y,
                     int invert, uint8_t v) {
     if (x < 0 || y < 0 || x >= W || y >= H) return;
     img[y * W + x] = invert ? (uint8_t)(255 - v) : v;
@@ -61,7 +114,7 @@ static void draw_glyph(uint8_t *img, int W, int H, int ox, int oy,
                     put_ink(img, W, H,
                             ox + x * scale + dx,
                             oy + y * scale + dy,
-                            scale, invert, 0);
+                            invert, 0);
         }
 }
 
@@ -75,17 +128,27 @@ int main(int argc, char **argv) {
     const char *l1 = argv[2];
     const char *l2 = argv[3];
     int scale = 4, hgap = 2, vgap = 6, margin = 12, skew = 0, invert = 0;
-    float noise = 0;
+    int noise_seed = -1, illum = 0, blur = 0;
+    float noise = 0, rot = 0;
     for (int i = 4; i < argc; ++i) {
         int v;
         float f;
-        if ((v = get_int("scale", argv[i])) >= 0) scale = v;
-        else if ((v = get_int("hgap", argv[i])) >= 0) hgap = v;
-        else if ((v = get_int("vgap", argv[i])) >= 0) vgap = v;
-        else if ((v = get_int("margin", argv[i])) >= 0) margin = v;
-        else if ((v = get_int("skew", argv[i])) >= -1000 && get_int("skew", argv[i]) <= 1000) skew = v;
-        else if ((v = get_int("invert", argv[i])) >= 0) invert = v;
-        else if ((f = get_float("noise", argv[i])) >= 0) noise = f;
+        /* NOTE: every branch must first match its KEY. A bare
+         * "get_int(name, kv) >= lo && <= hi" range test also matches
+         * the -1 sentinel of ANY other key and swallows the rest of
+         * the chain (the historical bug that silently disabled
+         * noise/invert/... in every corpus rendered before 2026-09). */
+        if (strncmp(argv[i], "scale", 5) == 0 && (v = get_int("scale", argv[i])) >= 0) scale = v;
+        else if (strncmp(argv[i], "hgap", 4) == 0 && (v = get_int("hgap", argv[i])) >= 0) hgap = v;
+        else if (strncmp(argv[i], "vgap", 4) == 0 && (v = get_int("vgap", argv[i])) >= 0) vgap = v;
+        else if (strncmp(argv[i], "margin", 6) == 0 && (v = get_int("margin", argv[i])) >= 0) margin = v;
+        else if (strncmp(argv[i], "skew", 4) == 0 && (v = get_int("skew", argv[i])) >= -1000 && v <= 1000) skew = v;
+        else if (strncmp(argv[i], "invert", 6) == 0 && (v = get_int("invert", argv[i])) >= 0) invert = v;
+        else if (strncmp(argv[i], "noise-seed", 10) == 0 && (v = get_int("noise-seed", argv[i])) >= 0) noise_seed = v;
+        else if (strncmp(argv[i], "illum", 5) == 0 && (v = get_int("illum", argv[i])) >= 0) illum = v;
+        else if (strncmp(argv[i], "blur", 4) == 0 && (v = get_int("blur", argv[i])) >= 0) blur = v;
+        else if (strncmp(argv[i], "noise", 5) == 0 && (f = get_float("noise", argv[i])) >= 0) noise = f;
+        else if (strncmp(argv[i], "rot", 3) == 0 && (f = get_float("rot", argv[i])) >= -8.0f && f <= 8.0f) rot = f;
     }
     int n1 = (int)strlen(l1);
     int n2 = (int)strlen(l2);
@@ -100,18 +163,22 @@ int main(int argc, char **argv) {
 
     face_image_t *img = face_image_new(band_w, band_h);
     if (!img) return 2;
-    /* Fill with background. */
-    uint8_t bg = invert ? 0 : 255;
-    for (int i = 0; i < band_w * band_h; ++i) {
-        img->pixels[i*3 + 0] = bg;
-        img->pixels[i*3 + 1] = bg;
-        img->pixels[i*3 + 2] = bg;
-    }
     /* Build a 1-channel scratch buffer of the band so we can add noise
-     * to the ink properly. */
+     * to the ink properly. Background carries an illumination gradient
+     * (scan shading): brightest at top-left, dims by `illum` toward the
+     * bottom-right corner. */
     uint8_t *gray = (uint8_t *)malloc((size_t)band_w * band_h);
     if (!gray) { face_image_free(img); return 2; }
-    memset(gray, bg, (size_t)band_w * band_h);
+    uint8_t bg = invert ? 0 : 255;
+    for (int y = 0; y < band_h; ++y)
+        for (int x = 0; x < band_w; ++x) {
+            float t = 0.5f * (float)x / (float)band_w
+                    + 0.5f * (float)y / (float)band_h;
+            int v = (int)((float)bg - (float)illum * t);
+            if (v < 0) v = 0;
+            if (v > 255) v = 255;
+            gray[y * band_w + x] = (uint8_t)v;
+        }
 
     for (int li = 0; li < 2; ++li) {
         const char *line = (li == 0) ? l1 : l2;
@@ -124,9 +191,17 @@ int main(int argc, char **argv) {
             draw_glyph(gray, band_w, band_h, x, row_y, line[i], scale, invert);
         }
     }
-    /* Add noise. */
+    /* Defocus / anti-aliased strokes. */
+    for (int p = 0; p < blur; ++p) blur3(gray, band_w, band_h);
+    /* Real scanner tilt. */
+    if (rot != 0.0f) rotate_gray(gray, band_w, band_h, (double)rot, bg);
+    /* Add noise (deterministic when noise-seed is given — required for
+     * reproducible corpora and regression baselines). */
     if (noise > 0) {
-        srand((unsigned)(time(NULL) ^ getpid()));
+        if (noise_seed >= 0)
+            srand((unsigned)noise_seed);
+        else
+            srand((unsigned)(time(NULL) ^ getpid()));
         for (int i = 0; i < band_w * band_h; ++i) {
             float r = (float)rand() / (float)RAND_MAX;
             if (r < noise) {

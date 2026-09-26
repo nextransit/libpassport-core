@@ -70,6 +70,11 @@ const char *mrz_ocr_strerror(mrz_ocr_status_t s);
  * implementation detail; not part of the public OCR API. */
 typedef struct { int x, y, w, h; } mrz_ocr_rect_t;
 
+/* Shared Otsu threshold over a grayscale buffer (single
+ * implementation for both backends and for the band-local
+ * refinement pass). */
+int mrz_ocr_otsu(const uint8_t *gray, int n);
+
 int mrz_ocr_locate_band(const uint8_t *bin, int W, int H,
                         mrz_ocr_rect_t *out);
 int mrz_ocr_split_lines(const uint8_t *bin, int W, int H,
