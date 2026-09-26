@@ -1070,30 +1070,51 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
                 return
             x, y, w, h = r["x"], r["y"], r["w"], r["h"]
             crop = img.crop((x, y, x + w, y + h))
-            tmp = Path(self._loc_imgtk_path) if False else None  # noqa
             import tempfile
             with tempfile.NamedTemporaryFile(
                     suffix=".ppm", delete=False) as tf:
                 tmp_path = Path(tf.name)
             try:
                 crop.save(tmp_path)
-                proc = subprocess.run(
-                    [str(MRZ_TOOL), str(tmp_path)],
+                # Pipeline: mrz_ocr_tool reads the cropped PPM and
+                # produces line1/line2/conf1/conf2/ok. mrz_tool only
+                # accepts the 44-char strings (not PPM) so we feed it
+                # the OCR output to get parsed fields and check digits.
+                ocr_proc = subprocess.run(
+                    [str(ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_tool"),
+                     str(tmp_path)],
                     text=True, capture_output=True, timeout=20)
+                ocr_kv = {}
+                for ln in (ocr_proc.stdout or "").splitlines():
+                    ln = ln.strip()
+                    if not ln or ":" not in ln:
+                        continue
+                    k, _, v = ln.partition(":")
+                    ocr_kv[k.strip()] = v.strip()
+                line1 = ocr_kv.get("result.line1", "")
+                line2 = ocr_kv.get("result.line2", "")
+                ok = ocr_kv.get("result.ok", "FAIL").upper() == "OK"
+                if line1 and line2:
+                    decode_proc = subprocess.run(
+                        [str(MRZ_TOOL), "decode", line1, line2],
+                        text=True, capture_output=True, timeout=10)
+                else:
+                    decode_proc = subprocess.CompletedProcess(
+                        args=[], returncode=2, stdout="",
+                        stderr="mrz_ocr_tool returned empty MRZ lines")
             finally:
                 try:
                     tmp_path.unlink()
                 except OSError:
                     pass
-            # Parse mrz_tool stdout: each field on its own line.
-            kv = {}
-            for ln in (proc.stdout or "").splitlines():
+            # Parse mrz_tool decode output (same key=value protocol).
+            kv = dict(ocr_kv)
+            for ln in (decode_proc.stdout or "").splitlines():
                 ln = ln.strip()
                 if not ln or ":" not in ln:
                     continue
                 k, _, v = ln.partition(":")
                 kv[k.strip()] = v.strip()
-            ok = kv.get("result.ok", "FAIL").upper() == "OK"
             _chip(f"  {"PASS" if ok else "FAIL"}  ",
                   "ok" if ok else "fail")
             self.loc_status.config(
@@ -1106,7 +1127,8 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
                 f"置信度 {r['confidence']:.2f}",
                 f"依据 : {r.get('evidence', '-')}",
                 "",
-                f"mrz_tool rc : {proc.returncode}",
+                f"mrz_ocr_tool rc : {ocr_proc.returncode}   "
+                f"mrz_tool rc : {decode_proc.returncode}",
                 f"result.ok   : {kv.get('result.ok', '-')}",
                 f"result.name : {kv.get('result.name', '-')}",
                 f"result.doc  : {kv.get('result.doc',  '-')}",
@@ -1124,11 +1146,16 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
                 f"{kv.get('result.check_exp',  '-')} / "
                 f"{kv.get('result.check_comp', '-')}",
                 "",
-                "--- raw mrz_tool output ---",
-                proc.stdout or "",
+                "--- raw mrz_ocr_tool output ---",
+                ocr_proc.stdout or "",
             ]
-            if proc.stderr:
-                lines += ["", "[stderr]", proc.stderr]
+            if ocr_proc.stderr:
+                lines += ["", "[stderr]", ocr_proc.stderr]
+            lines += ["",
+                "--- raw mrz_tool decode output ---",
+                decode_proc.stdout or ""]
+            if decode_proc.stderr:
+                lines += ["", "[stderr]", decode_proc.stderr]
             self._loc_set_text("\n".join(lines))
             # Refresh the annotated preview so the MRZ box is visible.
             try:
@@ -1831,26 +1858,97 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
             from passport_pipeline import PIC_DIR
             path = PIC_DIR / name
             self.ocr_preview_meta.set(f"{name}\n{path}")
-            self._preview_img_pil = None
-            self._update_preview_image()
-            self.ocr_diff_text.configure(state="normal")
-            self.ocr_diff_text.delete("1.0", "end")
-            self.ocr_diff_text.insert("end", f"{name}\n", ("hdr",))
             rec = next((r for r in getattr(self, "_ocr_last", {}).get("photo", [])
                         if r.get("file") == name), None)
-            if rec:
-                for k, v in (("判定", rec.get("grade")),
-                             ("定位", f"MRZ x={rec['loc']['mrz']['x']} "
-                                      f"y={rec['loc']['mrz']['y']} "
-                                      f"w={rec['loc']['mrz']['w']} "
-                                      f"h={rec['loc']['mrz']['h']}"
-                                      if rec.get("loc") and rec["loc"].get("mrz")
-                                      else "未定位"),
-                             ("OCR 校验", "通过" if rec.get("verified") else "未通过"),
-                             ("耗时", f"{rec.get('ms', 0):.0f} ms"),
-                             ("说明", rec.get("reason") or "")):
-                    self.ocr_diff_text.insert("end", f"  {k}: {v}\n", ("lab",))
-            self.ocr_diff_text.configure(state="disabled")
+            try:
+                from PIL import Image
+                pil = Image.open(path).convert("RGB")
+                loc = (rec or {}).get("loc") if rec else None
+                if loc and self._loc_annotate is not None:
+                    try:
+                        pil_show = self._loc_annotate(pil, loc, scale=1.0)
+                    except Exception:
+                        pil_show = pil
+                else:
+                    pil_show = pil
+                self._preview_img_pil = pil_show
+                self._preview_w, self._preview_h = pil_show.size
+                self._preview_img_path = path
+                self._preview_last_pm = {
+                    "conf1": (rec or {}).get("conf1", 0) or 0,
+                    "conf2": (rec or {}).get("conf2", 0) or 0,
+                    "band":  (rec or {}).get("band", "") or "",
+                    "line1": (rec or {}).get("line1", "") or "",
+                    "line2": (rec or {}).get("line2", "") or "",
+                }
+                self._update_preview_image()
+            except Exception as e:
+                self.ocr_diff_text.configure(state="normal")
+                self.ocr_diff_text.delete("1.0", "end")
+                self.ocr_diff_text.insert("end",
+                    f"无法加载 {path}: {e}", ("mm",))
+                self.ocr_diff_text.configure(state="disabled")
+                return
+            tw = self.ocr_diff_text
+            tw.configure(state="normal")
+            tw.delete("1.0", "end")
+            tw.insert("end", f"样本  : {name}\n", "hdr")
+            tw.insert("end", f"路径  : {path}\n", "lab")
+            if rec is None:
+                tw.insert("end", "\n（未找到识别结果，请先点击 ▶ 开始识别）",
+                          "lab")
+                tw.configure(state="disabled")
+                return
+            grade = rec.get("grade", "?")
+            ok_chip = "okline" if grade == "PASS" else "mm"
+            tw.insert("end",
+                f"判定  : {'PASS  ✅' if grade == 'PASS' else grade + '  ⚠️'}\n",
+                ok_chip)
+            tw.insert("end",
+                f"耗时  : {rec.get('ms', 0):.0f} ms\n", "lab")
+            tw.insert("end",
+                f"OCR校验: {'通过' if rec.get('verified') else '未通过'}\n",
+                "lab")
+            tw.insert("end", "\n护照定位 (photo / data / mrz):\n", "hdr")
+            loc = rec.get("loc") or {}
+            for k_zh, k_en in (("照片区", "photo"),
+                               ("数据区", "data"),
+                               ("MRZ 区", "mrz")):
+                r = loc.get(k_en)
+                if r:
+                    tw.insert("end",
+                        f"  {k_zh}: x={r['x']} y={r['y']} "
+                        f"w={r['w']} h={r['h']}   "
+                        f"置信度 {r['confidence']:.2f}\n", "lab")
+                else:
+                    tw.insert("end", f"  {k_zh}: 未定位\n", "mm")
+            tw.insert("end", "\nMRZ 识别结果:\n", "hdr")
+            fields = rec.get("fields") or {}
+            if fields:
+                for k_zh, k_en in (
+                        ("姓名", "name"), ("证件号", "doc"),
+                        ("国籍", "nat"), ("出生", "dob"),
+                        ("有效期", "exp"), ("性别", "sex")):
+                    val = fields.get(k_en, "-")
+                    tw.insert("end", f"  {k_zh}: {val}\n", "lab")
+            else:
+                tw.insert("end",
+                    "  （passport_pipeline 未返回解析字段）\n", "lab")
+            c1 = rec.get("conf1", 0) or 0
+            c2 = rec.get("conf2", 0) or 0
+            tw.insert("end", "\n置信率:\n", "hdr")
+            tw.insert("end", f"  line1 conf={c1}% "
+                f"({'PASS' if c1 >= 70 else 'WARN' if c1 >= 40 else 'FAIL'})\n",
+                "lab")
+            tw.insert("end", f"  line2 conf={c2}% "
+                f"({'PASS' if c2 >= 70 else 'WARN' if c2 >= 40 else 'FAIL'})\n",
+                "lab")
+            tw.insert("end",
+                f"\n原始 line1 (44): {rec.get('line1', '-')}\n", "lab")
+            tw.insert("end",
+                f"原始 line2 (44): {rec.get('line2', '-')}\n", "lab")
+            tw.insert("end", f"\n说明: {rec.get('reason', '')}\n", "lab")
+            tw.configure(state="disabled")
             return
         cid, m = kind, name
         rec = next((r for r in self._ocr_corpus["records"]
@@ -1977,7 +2075,9 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
         threading.Thread(target=worker, daemon=True).start()
 
     def _ocr_populate_photos(self, results):
-        """Render photo-recognition results into detail/summary/metrics."""
+        """Render photo-recognition results into detail/summary/metrics,
+        then auto-select the first row so the right pane shows the photo
+        + region overlay + MRZ result immediately."""
         self.ocr_detail.configure(columns=("file", "grade", "verified", "ms",
                                            "reason"))
         for c, anc in [("file", "w"), ("grade", "center"),
@@ -2010,6 +2110,16 @@ class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
                         "✓" if rec.get("verified") else "—",
                         f"{rec['ms']:.0f}", rec.get("reason") or ""))
             self._ocr_detail_map[iid] = ("photo", rec["file"])
+        # Auto-select first photo row so the right pane refreshes.
+        if results:
+            try:
+                first = self.ocr_detail.get_children()
+                if first:
+                    self.ocr_detail.selection_set(first[0])
+                    self.ocr_detail.focus(first[0])
+                    self._ocr_on_detail_select()
+            except tk.TclError:
+                pass
         self.ocr_summary.configure(columns=("grade", "n", "verified"))
         for c in ("grade", "n", "verified"):
             self.ocr_summary.heading(c, text={"grade": "判定",
