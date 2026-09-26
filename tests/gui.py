@@ -59,6 +59,120 @@ SAMPLE_MRZ = (
     "L898902C36UTO6908061F9406236ZE184226B<<<<<18\n"
 )
 
+# ---------------------------------------------------------------------------
+# Cyber-tech theme system (.impeccable.md)
+#
+# Two brand themes are registered into ttkbootstrap so every ttk widget
+# (Notebook, buttons, progress bars, Treeviews, scrollbars, entries) follows
+# the palette in one switch:
+#
+#   cyber-dark  -- deep space blue-black (#0a0e14) + neon cyan accent
+#   cyber-light -- cool paper white + electronic blue accent
+#
+# Semantic colours (success green / fail red / in-flight violet) keep their
+# MEANING across both modes while each mode gets harmonised values. The
+# "tk" dict extends the 16 ttkbootstrap keys with tokens for the non-ttk
+# widgets (canvas, Text tags, chips, CTA buttons) that need manual recolour.
+# ---------------------------------------------------------------------------
+THEME_PREF_FILE = Path(__file__).resolve().parent / ".gui_theme.json"
+
+CYBER_THEMES = {
+    "cyber-dark": {
+        "mode": "dark",
+        "colors": {
+            "primary":   "#00e5ff",
+            "secondary": "#2e86ff",
+            "success":   "#2ee6a8",
+            "info":      "#2e86ff",
+            "warning":   "#ffb454",
+            "danger":    "#ff5c7a",
+            "light":     "#1c2530",
+            "dark":      "#060a10",
+            "bg":        "#0a0e14",
+            "fg":        "#dce3ec",
+            "selectbg":  "#0f2a33",
+            "selectfg":  "#7df3ff",
+            "border":    "#223041",
+            "inputfg":   "#e8eef6",
+            "inputbg":   "#111827",
+            "active":    "#16202c",
+        },
+        "tk": {
+            "card": "#0d1117", "code": "#0a0e14",
+            "dim": "#8b98a9", "violet": "#b388ff",
+            "cta_bg": "#00e5ff", "cta_fg": "#04252b", "cta_hover": "#4dedff",
+            "ghost_bg": "#111827", "ghost_fg": "#7df3ff",
+            "ghost_hover": "#16202c", "ghost_border": "#1e4a5a",
+            "canvas": "#0d1117", "canvas_border": "#1e4a5a",
+            "chip_idle":  ("#00e5ff", "#0f2a33"),
+            "chip_ok":    ("#2ee6a8", "#0f3325"),
+            "chip_run":   ("#b388ff", "#251a3d"),
+            "chip_fail":  ("#ff5c7a", "#3a1620"),
+            "chip_dim":   ("#6a737d", "#1a1d22"),
+            "tag_ok":     ("#0d3a2a", "#7eeac2"),
+            "tag_fail":   ("#43131f", "#ffaabb"),
+            "tag_warn":   ("#3d2f08", "#ffd479"),
+            "tag_match":  ("#2ee6a8", None),
+            "tag_mm":     ("#ffaabb", "#43131f"),
+            "tag_plain":  ("#c9d4e0", "#0a0e14"),
+        },
+    },
+    "cyber-light": {
+        "mode": "light",
+        "colors": {
+            "primary":   "#0b5cad",
+            "secondary": "#2e86ff",
+            "success":   "#027a48",
+            "info":      "#2e86ff",
+            "warning":   "#b58a00",
+            "danger":    "#b42318",
+            "light":     "#ffffff",
+            "dark":      "#14213a",
+            "bg":        "#f4f6fa",
+            "fg":        "#1a2433",
+            "selectbg":  "#d5ecf7",
+            "selectfg":  "#0b3a52",
+            "border":    "#d0d5dd",
+            "inputfg":   "#111827",
+            "inputbg":   "#ffffff",
+            "active":    "#e9edf3",
+        },
+        "tk": {
+            "card": "#ffffff", "code": "#ffffff",
+            "dim": "#5c6773", "violet": "#6c2bd9",
+            "cta_bg": "#0b5cad", "cta_fg": "#ffffff", "cta_hover": "#2e86ff",
+            "ghost_bg": "#ffffff", "ghost_fg": "#0b5cad",
+            "ghost_hover": "#e9edf3", "ghost_border": "#b9d3ea",
+            "canvas": "#eef1f6", "canvas_border": "#9fc3dd",
+            "chip_idle":  ("#0b5cad", "#e6f0fa"),
+            "chip_ok":    ("#027a48", "#d1fadf"),
+            "chip_run":   ("#6c2bd9", "#ede4ff"),
+            "chip_fail":  ("#b42318", "#fee4e2"),
+            "chip_dim":   ("#667085", "#eaecf0"),
+            "tag_ok":     ("#c8e6c9", "#1b5e20"),
+            "tag_fail":   ("#ffcdd2", "#b71c1c"),
+            "tag_warn":   ("#fff3cd", "#8a6d00"),
+            "tag_match":  ("#027a48", None),
+            "tag_mm":     ("#b42318", "#ffe4e6"),
+            "tag_plain":  ("#1a2433", "#ffffff"),
+        },
+    },
+}
+
+
+def _load_theme_pref():
+    try:
+        return json.loads(THEME_PREF_FILE.read_text()).get("theme")
+    except Exception:
+        return None
+
+
+def _save_theme_pref(name):
+    try:
+        THEME_PREF_FILE.write_text(json.dumps({"theme": name}))
+    except Exception:
+        pass
+
 
 class PassportGUI(Window if HAS_TTKB else tk.Tk):
     def __init__(self, themename="darkly"):
@@ -525,6 +639,11 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         # Double-click opens the full-resolution viewer; single-click
         # keeps the existing thumbnail preview in the right pane.
         self.ocr_case_list.bind("<Double-Button-1>", self._ocr_open_original)
+        # Photo mode: single-click on a list row immediately runs
+        # process_image() on that single photo, so the user gets the
+        # full pipeline (locate -> OCR -> decode -> grade) without
+        # having to also press ▶ 开始识别.
+        self.ocr_case_list.bind("<Button-1>", self._ocr_on_list_click)
 
         # Middle = metrics card + summary + detail.
         middle = ttk.Frame(body); body.add(middle, weight=2)
@@ -894,9 +1013,15 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                         [str(MRZ_TOOL), "decode", line1, line2],
                         text=True, capture_output=True, timeout=10)
                 else:
+                    # OCR returned no MRZ text. Surface a clear explanation
+                    # so the user understands why decode was skipped and
+                    # can decide to swap in a higher-resolution sample.
                     decode_proc = subprocess.CompletedProcess(
                         args=[], returncode=2, stdout="",
-                        stderr="mrz_ocr_tool returned empty MRZ lines")
+                        stderr=("mrz_ocr_tool 未识别出 MRZ 两行 "
+                                f"(line1={line1!r}, line2={line2!r}). "
+                                "常见原因：合成样本 / 低分辨率照片 / "
+                                "MRZ 区被裁切过窄。"))
             finally:
                 try:
                     tmp_path.unlink()
@@ -1082,7 +1207,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             tw.insert("end", f"{err}\n", "lab")
         tw.configure(state="disabled")
         # Persist the parsed result so the next single-sample preview /
-        # confidence header picks it up.
+        # confidence header picks it up. Whole-image OCR means the band
+        # coordinates are absolute (no crop offset).
         cid = f"_picked:{os.path.basename(path)}"
         self._ocr_last = getattr(self, "_ocr_last", {})
         self._ocr_last[cid] = {
@@ -1091,6 +1217,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 "line2": kv.get("result.line2", ""),
                 "conf1": c1, "conf2": c2,
                 "band":  kv.get("band.x band.y band.w band.h", ""),
+                "crop_offset": (0, 0),
                 "ok":    ok, "ms": proc_ms,
             }
         }
@@ -1270,9 +1397,13 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             self._preview_img_pil = Image.open(img_path).convert("RGB")
             self._preview_w, self._preview_h = self._preview_img_pil.size
             # Cache last-known band / conf so the diff pane can show
-            # them alongside the per-char comparison.
+            # them alongside the per-char comparison. Whole-image bench
+            # so the band is already in absolute coordinates.
             last = getattr(self, "_ocr_last", {}).get(cid, {}) or {}
             pm = last.get("cnn") or last.get("traditional") or {}
+            if pm and "crop_offset" not in pm:
+                pm = dict(pm)
+                pm["crop_offset"] = (0, 0)
             self._preview_last_pm = pm
             self._update_preview_image()
         except Exception:
@@ -1331,14 +1462,20 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                          int(dw * 0.96), int(dh * 0.40))
             mrz_box   = (int(dw * 0.04), int(dh * 0.62),
                          int(dw * 0.96), int(dh * 0.96))
-            # If the OCR tool returned a band, snap MRZ box to it.
-            band_raw = (getattr(self, "_preview_last_pm", {}) or {}).get("band", "")
+            # If the OCR tool returned a band, snap MRZ box to it. The
+            # band may live in crop-local coordinates (passport_pipeline
+            # runs OCR on the cropped MRZ band), so add crop_offset.
+            pm_box = getattr(self, "_preview_last_pm", {}) or {}
+            band_raw = pm_box.get("band", "")
+            cx, cy = pm_box.get("crop_offset", (0, 0)) or (0, 0)
             if band_raw:
                 try:
                     bx, by, bw, bh = (int(float(x)) for x in band_raw.split())
+                    # Convert crop-local -> absolute -> preview pixels.
+                    abx, aby = bx + cx, by + cy
                     sx = dw / iw; sy = dh / ih
-                    mrz_box = (int(bx * sx), int(by * sy),
-                               int((bx + bw) * sx), int((by + bh) * sy))
+                    mrz_box = (int(abx * sx), int(aby * sy),
+                               int((abx + bw) * sx), int((aby + bh) * sy))
                 except Exception:
                     pass
             # Neon cyan / violet / green with translucent alpha so the
@@ -1443,6 +1580,104 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         tw.insert("end", rec["line2"] + "\n", "match")
         tw.insert("end", "（运行测试后在此显示 Pred 与字符级比对）", "lab")
         tw.configure(state="disabled")
+
+    def _ocr_on_list_click(self, _evt=None):
+        """Photo-mode single-click: run the full pipeline for the
+        selected photo and stream results to the right pane. No-op
+        for corpus cases (the corpus bench needs ▶ 开始测试)."""
+        if not self.ocr_photo_mode.get():
+            return
+        sel = self.ocr_case_list.selection()
+        if not sel:
+            return
+        name = sel[0]
+        # Avoid re-running if the same row is clicked twice in a row.
+        last = getattr(self, "_ocr_last_one", None)
+        if last == name:
+            return
+        self._ocr_last_one = name
+        self.ocr_run_btn.configure(state="disabled")
+        # Render the image immediately so the right pane shows
+        # something while we wait for the worker.
+        from passport_pipeline import PIC_DIR
+        path = PIC_DIR / name
+        try:
+            from PIL import Image
+            pil = Image.open(path).convert("RGB")
+            self._preview_img_pil = pil
+            self._preview_w, self._preview_h = pil.size
+            self._preview_img_path = path
+            self._preview_last_pm = {}
+            self.ocr_preview_meta.set(f"{name}\n{path}")
+            self._update_preview_image()
+        except Exception as e:
+            messagebox.showerror("加载失败", f"{path}: {e}")
+            return
+        self.ocr_diff_text.configure(state="normal")
+        self.ocr_diff_text.delete("1.0", "end")
+        self.ocr_diff_text.insert("end",
+            f"样本 : {name}\n状态 : 运行中…", ("lab",))
+        self.ocr_diff_text.configure(state="disabled")
+
+        def worker():
+            try:
+                from passport_pipeline import process_image, CNN
+                rec = process_image(path, tool=CNN)
+            except Exception as e:
+                self.after(0, lambda e=e:
+                           self._ocr_render_single_photo_failed(name, e))
+                return
+            self.after(0, lambda rec=rec:
+                       self._ocr_render_single_photo_result(name, rec))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _ocr_render_single_photo_result(self, name, rec):
+        """Insert the single-photo result row and select it so the
+        right pane repaints with the photo + region overlay + MRZ
+        details. Mirrors what batch mode does after _ocr_populate_photos."""
+        # Ensure _ocr_last['photo'] is populated so _ocr_on_detail_select
+        # can find the rec.
+        self._ocr_last = getattr(self, "_ocr_last", {})
+        existing = self._ocr_last.get("photo", [])
+        # Replace any previous entry for the same file (re-run scenario).
+        self._ocr_last["photo"] = [r for r in existing if r.get("file") != name] + [rec]
+        # Insert a detail row tagged with the grade so the chip colour
+        # matches the verdict (PASS green / SUSPECT amber / REJECT red).
+        grade = rec.get("grade", "REJECT")
+        iid = name
+        if not self.ocr_detail.exists(iid):
+            self.ocr_detail.insert("", "end", iid=iid, tags=(grade,),
+                values=(name, grade,
+                        "✓" if rec.get("verified") else "—",
+                        f"{rec.get('ms', 0):.0f}",
+                        rec.get("reason") or ""))
+        else:
+            self.ocr_detail.item(iid, tags=(grade,),
+                values=(name, grade,
+                        "✓" if rec.get("verified") else "—",
+                        f"{rec.get('ms', 0):.0f}",
+                        rec.get("reason") or ""))
+        self._ocr_detail_map[iid] = ("photo", name)
+        self.ocr_detail.selection_set(iid)
+        self.ocr_detail.focus(iid)
+        # Re-render the right pane (thumbnail + overlay + diff text).
+        self._ocr_on_detail_select()
+        self.ocr_run_btn.configure(state="normal")
+
+    def _ocr_render_single_photo_failed(self, name, err):
+        """Surface worker errors in the right pane and re-enable the
+        run button so the user can try again."""
+        tw = self.ocr_diff_text
+        tw.configure(state="normal")
+        tw.delete("1.0", "end")
+        tw.insert("end", f"样本 : {name}\n", "hdr")
+        tw.insert("end", f"异常 : {err}\n", "mm")
+        tw.configure(state="disabled")
+        try:
+            self.ocr_run_btn.configure(state="normal")
+        except tk.TclError:
+            pass
 
     def _ocr_on_case_select(self, _evt=None):
         sel = self.ocr_case_list.selection()
@@ -1663,12 +1898,23 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 self._preview_img_path = path
                 # Cache confidence header from the rec (set by
                 # passport_pipeline: result.conf1 / conf2 if present).
+                # The OCR was run on the cropped MRZ band, so the band
+                # coordinates are local to the crop. Recover the crop
+                # offset from the OCR record so the overlay can place
+                # the MRZ rectangle in the correct absolute location.
+                crop = ((rec or {}).get("ocr") or {}).get("crop") or {}
+                try:
+                    crop_offset = (int(crop.get("x", 0)),
+                                   int(crop.get("y", 0)))
+                except Exception:
+                    crop_offset = (0, 0)
                 self._preview_last_pm = {
                     "conf1": (rec or {}).get("conf1", 0) or 0,
                     "conf2": (rec or {}).get("conf2", 0) or 0,
                     "band":  (rec or {}).get("band", "") or "",
                     "line1": (rec or {}).get("line1", "") or "",
                     "line2": (rec or {}).get("line2", "") or "",
+                    "crop_offset": crop_offset,
                 }
                 self._update_preview_image()
             except Exception as e:
