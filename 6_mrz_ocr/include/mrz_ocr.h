@@ -79,6 +79,8 @@ int mrz_ocr_otsu(const uint8_t *gray, int n);
 double mrz_estimate_band_skew(const uint8_t *bin, int W, int H);
 void mrz_rotate_band(const uint8_t *src, int W, int H, double deg,
                      uint8_t fill, uint8_t *dst);
+void mrz_normalize_local_contrast(const uint8_t *gray, int W, int H,
+                                  uint8_t *out);
 
 int mrz_ocr_locate_band(const uint8_t *bin, int W, int H,
                         mrz_ocr_rect_t *out);

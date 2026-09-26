@@ -733,6 +733,25 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
     }
     if (tm && tm[0] && strcmp(tm, "0")) { clock_gettime(CLOCK_MONOTONIC, &_t1); _ms_band=(_t1.tv_sec-_t0.tv_sec)*1e3+(_t1.tv_nsec-_t0.tv_nsec)/1e6; _t0=_t1; }
 
+    /* 4b. Local-contrast normalisation against illumination gradients.
+     * OPT-IN (MRZ_OCR_LOCAL_NORM=1): off by default.  A/B on the 1380
+     * eval corpus shows it raises char-level accuracy a hair (95.6->
+     * 97.6 / 98.9->99.1 / cksum 94.6->97.1) but LOWERS realistic
+     * full-match (45.0%->37.9%) and adds ~0.5 ms -- it is NOT the
+     * path to the realistic 45->85% full-match goal. Kept for field
+     * A/B; do not flip the default without a full-match win. */
+    {
+        const char *ln_env = getenv("MRZ_OCR_LOCAL_NORM");
+        int ln = (ln_env && ln_env[0] && strcmp(ln_env, "0") != 0);
+        if (ln) {
+            uint8_t *norm = (uint8_t *)malloc((size_t)bw * bh);
+            if (!norm) { status = MRZ_OCR_ERR_LOAD; goto cleanup; }
+            mrz_normalize_local_contrast(band_gray, bw, bh, norm);
+            memcpy(band_gray, norm, (size_t)bw * bh);
+            free(norm);
+        }
+    }
+
     /* 4. Split the two TD3 lines on the deskewed band bin map. */
     mrz_ocr_rect_t lines[2];
     if (mrz_ocr_split_lines(band_bin, bw, bh, lines) != 0) {
