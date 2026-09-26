@@ -75,6 +75,11 @@ typedef struct { int x, y, w, h; } mrz_ocr_rect_t;
  * refinement pass). */
 int mrz_ocr_otsu(const uint8_t *gray, int n);
 
+/* Shared geometry layer (see src/mrz_geom.c). */
+double mrz_estimate_band_skew(const uint8_t *bin, int W, int H);
+void mrz_rotate_band(const uint8_t *src, int W, int H, double deg,
+                     uint8_t fill, uint8_t *dst);
+
 int mrz_ocr_locate_band(const uint8_t *bin, int W, int H,
                         mrz_ocr_rect_t *out);
 int mrz_ocr_split_lines(const uint8_t *bin, int W, int H,

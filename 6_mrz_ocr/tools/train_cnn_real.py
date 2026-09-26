@@ -30,12 +30,16 @@ ap.add_argument("--val-frac", type=float, default=0.15)
 ap.add_argument("--workdir", default="/tmp/mrz_real_glyphs")
 ap.add_argument("--mix-synthetic", type=int, default=0,
                 help="blend N synthetic v2-renderer samples per class")
+ap.add_argument("--mix-hard-slices", default="",
+                help=".npz from tools/export_hard_slices.py; upsample the "
+                     "real misclassified 16x12 patches into TRAIN data")
 ap.add_argument("--max-images", type=int, default=0,
                 help="subsample the corpus to N images (0 = all); "
                      "deterministic pick, keeps the loop fast")
 a = ap.parse_args()
 
 ROOT = Path(a.workdir)
+SRC = Path(__file__).resolve().parents[1]   # 6_mrz_ocr checkout root
 GLYPHS = list("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ<")
 GI = {c: i for i, c in enumerate(GLYPHS)}
 
@@ -131,6 +135,24 @@ if a.mix_synthetic > 0:
     Xtr = torch.cat([Xtr, torch.from_numpy(Xsyn.reshape(-1,1,12,16))])
     Ytr = torch.cat([Ytr, torch.from_numpy(Ysyn.astype(np.int64))])
     print(f"mixed {Xsyn.shape[0]} synthetic -> train {Xtr.shape[0]}", flush=True)
+
+if a.mix_hard_slices:
+    # Upsample the REAL misclassified patches exported by
+    # tools/export_hard_slices.py (eval corpus). These are exactly the
+    # inputs the current weights get wrong, so they focus the next
+    # training run on the failure distribution instead of blind noise.
+    d = np.load(SRC / a.mix_hard_slices)
+    Xh = torch.from_numpy(d['X'].astype(np.float32).reshape(-1,1,12,16))
+    Yh = torch.from_numpy(d['Y'].astype(np.int64))
+    # 30% weight: keep the base train set dominant, hard slices ~30%.
+    n_hard = max(int(0.3 * len(Xtr)), len(Xh))
+    reps = (n_hard + len(Xh) - 1) // len(Xh)
+    Xh = Xh.repeat(reps, 1, 1, 1)[:n_hard]
+    Yh = Yh.repeat(reps)[:n_hard]
+    Xtr = torch.cat([Xtr, Xh])
+    Ytr = torch.cat([Ytr, Yh])
+    print(f"mixed {n_hard} hard slices (30% weight) -> train {Xtr.shape[0]}",
+          flush=True)
 
 C1,C2,C3,HID=8,16,4,64
 cl = nn.Sequential()

@@ -10,7 +10,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../3_face_recognition
                  ${CMAKE_CURRENT_BINARY_DIR}/face_build)
 
 find_library(M_LIB m)
-add_library(mrz_ocr STATIC src/template.c src/mrz_ocr.c src/mrz_ocr_cnn.c src/cnn.c)
+add_library(mrz_ocr STATIC src/template.c src/mrz_geom.c src/mrz_ocr.c src/mrz_ocr_cnn.c src/cnn.c)
 target_include_directories(mrz_ocr PUBLIC include src)
 target_link_libraries(mrz_ocr PUBLIC face ${M_LIB})
 
