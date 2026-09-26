@@ -18,6 +18,19 @@ import os, subprocess, sys, threading, time, json, re, hashlib, tkinter as tk
 from tkinter import filedialog, messagebox
 from pathlib import Path
 
+# ---- Visual-pass 3.0: CustomTkinter core -------------------------
+# ctk is the modern, rounded, anti-aliased dark-friendly toolkit. We keep
+# the ttkbackend for widgets ctk does not provide (Notebook, Treeview,
+# Progressbar, PanedWindow) so the visual upgrade is additive, not a
+# rewrite.
+try:
+    import customtkinter as ctk
+    from customtkinter import CTkFont
+    HAS_CTK = True
+except ImportError:
+    HAS_CTK = False
+    CTkFont = None  # type: ignore[assignment]
+
 try:
     import ttkbootstrap as ttk
     from ttkbootstrap import Window
@@ -60,9 +73,18 @@ SAMPLE_MRZ = (
 )
 
 
-class PassportGUI(Window if HAS_TTKB else tk.Tk):
+class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
     def __init__(self, themename="darkly"):
-        if HAS_TTKB:
+        # ctk takes precedence; it auto-configures DPI scaling and uses a
+        # neutral dark palette that we override per .impeccable.md.
+        if HAS_CTK:
+            try:
+                ctk.set_appearance_mode("dark")
+                ctk.set_default_color_theme("dark-blue")
+            except Exception:
+                pass
+            super().__init__()
+        elif HAS_TTKB:
             super().__init__(themename=themename)
         else:
             super().__init__()
@@ -72,6 +94,18 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self._set_window_icon()
         self._build_menu()
         self._apply_theme_proof_styles()
+        # Visual-pass 3.0: brand root colour (deep space black) so the
+        # window chrome blends with the canvas.
+        if HAS_CTK:
+            try:
+                self.configure(fg_color="#0a0e14")
+            except tk.TclError:
+                pass
+        else:
+            try:
+                self.configure(bg="#0a0e14")
+            except tk.TclError:
+                pass
         self._nfc_key_entries = {}
         self._nfc_dg1_lbs = {}
         self._nfc_prog_lbs = {}
@@ -107,20 +141,25 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self.ocr_progress = ttk.Progressbar(sbar, length=180,
                                             mode="determinate", maximum=100)
         self.ocr_progress.pack(side="left", padx=8, pady=2)
-        # Visual-pass 2.0: status bar becomes a chip strip. One ttk.Label
-        # per tool, each carries its own colour and dot, replacing the
-        # previous flat "mrz_tool=OK ac_tool=OK ..." string.
-        chip_frame = ttk.Frame(sbar)
-        chip_frame.pack(side="right", fill="x")
+        # Visual-pass 3.0: status bar becomes a ctk chip strip. Five chips
+        # report per-tool presence with neon green/red dots.
+        chip_frame = ctk.CTkFrame(sbar, fg_color="transparent")
+        chip_frame.pack(side="right", fill="x", padx=4, pady=2)
         self._status_chip_labels = {}
+        pal = self._pal
+        chip_palette = pal["chip"]
         for label, path in (("MRZ", MRZ_TOOL), ("AC", AC_TOOL),
                             ("FACE", FACE_TOOL),
                             ("GEN", GEN_SAMP), ("NFC", NFC_TOOL)):
             ok = path.exists()
-            lb = ttk.Label(
+            chosen = chip_palette["ok"] if ok else chip_palette["fail"]
+            lb = ctk.CTkLabel(
                 chip_frame, text=f" ● {label} ",
-                anchor="center", padding=(6, 2),
-                font=self._pal["font_ui_bold"])
+                fg_color=chosen["bg"], text_color=chosen["fg"],
+                font=ctk.CTkFont(family=pal["font_ui_bold"][0],
+                                 size=pal["font_ui_bold"][1],
+                                 weight="bold"),
+                corner_radius=4, padx=2)
             lb.pack(side="right", padx=2, pady=2)
             self._status_chip_labels[label] = (lb, ok)
         # Keep the legacy self.status StringVar so any pre-existing binding
@@ -272,6 +311,22 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             "font_ui_bold": (ui_family, 10, "bold"),
             "font_mono": (mono_family, 10),
             "font_mono_sm": (mono_family, 9),
+            # CTK-aware fields; only used when HAS_CTK.
+            "ctk": {
+                "fg_color":   card,         # card surface
+                "bg_color":   "#0a0e14",    # root window background
+                "top_fg":     "#0d1117",    # elevated card
+                "entry_bg":   code,         # code surface
+                "border":     border,
+                "primary":    "#2e86ff",    # brand electric blue (upgraded per spec)
+                "primary_h":  "#3d97ff",
+                "accent":     "#00e5ff",
+                "success":    "#2ee6a8",
+                "danger":     "#ff5c7a",
+                "text":       "#e6edf3",
+                "text_dim":   "#8b949e",
+                "hover":      "#1f2933",
+            } if HAS_CTK else None,
         }
 
     def _refresh_tk_theme(self):
@@ -298,23 +353,33 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         # was inheriting the platform default bg; pin to window bg + dim chip.
         w = getattr(self, "nfc_badge", None)
         if w is not None:
+            chosen = chip["dim"]
             try:
-                w.configure(bg=pal["bg"], fg=chip["dim"]["fg"],
-                            font=pal["font_ui_bold"])
-            except tk.TclError:
-                pass
-        # BAC state-machine chips: reset every known badge to the dim chip
-        # palette; _nfc_show() will recolour them on the next render pass.
+                w.configure(fg_color=chosen["bg"], text_color=chosen["fg"])
+            except (tk.TclError, ValueError):
+                try:
+                    w.configure(bg=chosen["bg"], fg=chosen["fg"])
+                except tk.TclError:
+                    pass
+        # BAC state-machine chips: reset every known badge to the idle
+        # chip palette; _nfc_show() will recolour them on the next render.
         for _title, _var, lb in getattr(self, "_nfc_states", []):
+            chosen = chip["idle"]
             try:
-                lb.configure(bg=pal["bg"], fg=chip["idle"]["fg"],
-                             font=pal["font_ui_bold"])
-            except tk.TclError:
-                pass
-        # DG1 / SOD / read-progress labels live in dicts of tk.Label refs.
+                lb.configure(fg_color=chosen["bg"], text_color=chosen["fg"])
+            except (tk.TclError, ValueError):
+                try:
+                    lb.configure(bg=chosen["bg"], fg=chosen["fg"])
+                except tk.TclError:
+                    pass
+        # DG1 / SOD / read-progress labels: under CTK, dicts hold None
+        # placeholders because the chips are stored inline. The plain tk
+        # build still keeps tk.Label refs; the no-op check below stays.
         for d in ("_nfc_dg1_lbs", "_nfc_prog_lbs"):
             dd = getattr(self, d, None) or {}
             for w in dd.values():
+                if w is None:
+                    continue
                 try:
                     w.configure(bg=pal["bg"], fg=pal["fg"],
                                 font=pal["font_mono_sm"])
@@ -329,26 +394,35 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 except tk.TclError:
                     pass
         # Status-bar tool chips: OK=green dot, MISSING=red dot, both with
-        # contrast-safe chip backgrounds that survive light/dark themes.
+        # contrast-safe chip backgrounds. Dual-mode: ctk uses fg_color /
+        # text_color; tk fallback uses foreground/background.
         for _label, (lb, ok) in getattr(self, "_status_chip_labels", {}).items():
+            chosen = chip["ok"] if ok else chip["fail"]
             try:
-                if ok:
-                    lb.configure(foreground=chip["ok"]["fg"],
-                                 background=chip["ok"]["bg"])
-                else:
-                    lb.configure(foreground=chip["fail"]["fg"],
-                                 background=chip["fail"]["bg"])
+                lb.configure(fg_color=chosen["bg"], text_color=chosen["fg"])
             except tk.TclError:
-                pass
+                try:
+                    lb.configure(foreground=chosen["fg"],
+                                 background=chosen["bg"])
+                except tk.TclError:
+                    pass
+        # Run-button accent. Under CTK, nfc_run_btn is a CTkButton (no bg);
+        # under legacy tk, all three are tk.Button and accept bg/fg.
         for n in ("ocr_run_btn", "loc_run_btn", "nfc_run_btn"):
             w = getattr(self, n, None)
-            if w is not None:
-                try:
+            if w is None:
+                continue
+            try:
+                if HAS_CTK:
+                    w.configure(fg_color=pal["primary"],
+                                hover_color=pal["accent"],
+                                text_color="#ffffff")
+                else:
                     w.configure(bg=pal["primary"], fg="white",
                                 activebackground=pal["primary"],
                                 activeforeground="white")
-                except tk.TclError:
-                    pass
+            except (tk.TclError, ValueError):
+                pass
         w = getattr(self, "ocr_preview_label", None)
         if w is not None:
             try:
@@ -358,10 +432,16 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         for d in ("_nfc_key_entries", "_nfc_dg1_lbs", "_nfc_prog_lbs"):
             dd = getattr(self, d, None) or {}
             for w in dd.values():
+                if w is None:
+                    continue
                 try:
-                    w.configure(bg=pal["field"], fg=pal["field_fg"],
-                                readonlybackground=pal["field"])
-                except tk.TclError:
+                    if HAS_CTK:
+                        w.configure(fg_color=pal["code"],
+                                    text_color=pal["field_fg"])
+                    else:
+                        w.configure(bg=pal["field"], fg=pal["field_fg"],
+                                    readonlybackground=pal["field"])
+                except (tk.TclError, ValueError):
                     pass
 
     def _set_window_icon(self):
@@ -378,6 +458,75 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                                    ROOT / "tests" / "assets" / "app_icon_32.png")))
         except tk.TclError:
             pass  # headless environment
+
+    # ---- CTK card primitive ----------------------------------------
+    # Replaces ttk.LabelFrame with a flat card: CTkFrame (rounded) holding
+    # a CTkLabel header. Used by every tab builder that opts into ctk.
+    def _ctk_card(self, parent, title: str, padding: int = 8):
+        """Return (frame, body_frame) where frame is the rounded card and
+        body_frame is the inner content area below the title row."""
+        c = self._pal["ctk"]
+        outer = ctk.CTkFrame(
+            parent, fg_color=c["fg_color"],
+            corner_radius=10, border_width=1, border_color=c["border"])
+        outer.pack(fill="x", padx=6, pady=4, anchor="n")
+        # Title: small caps style with letter-spacing via extra spaces.
+        ctk.CTkLabel(
+            outer, text=f"  {title.upper()}  ",
+            font=ctk.CTkFont(family=self._pal["font_ui"][0], size=10,
+                             weight="bold"),
+            text_color=c["text_dim"], fg_color="transparent",
+            anchor="w").pack(fill="x", padx=padding, pady=(padding, 2))
+        body = ctk.CTkFrame(outer, fg_color="transparent")
+        body.pack(fill="both", expand=True, padx=padding, pady=(0, padding))
+        return outer, body
+
+    def _ctk_entry(self, parent, textvariable, **kw):
+        c = self._pal["ctk"]
+        return ctk.CTkEntry(
+            parent, textvariable=textvariable,
+            fg_color=c["entry_bg"], border_color=c["border"],
+            text_color=c["accent"],
+            font=ctk.CTkFont(family=self._pal["font_mono_sm"][0],
+                             size=self._pal["font_mono_sm"][1]),
+            height=28, corner_radius=6, **kw)
+
+    def _ctk_btn_primary(self, parent, text, command=None, **kw):
+        c = self._pal["ctk"]
+        return ctk.CTkButton(
+            parent, text=text, command=command,
+            fg_color=c["primary"], hover_color=c["primary_h"],
+            text_color="#ffffff",
+            font=ctk.CTkFont(family=self._pal["font_ui_bold"][0],
+                             size=self._pal["font_ui_bold"][1],
+                             weight=self._pal["font_ui_bold"][2]
+                             if len(self._pal["font_ui_bold"]) > 2 else "bold"),
+            corner_radius=6, height=30, **kw)
+
+    def _ctk_btn_ghost(self, parent, text, command=None, **kw):
+        c = self._pal["ctk"]
+        return ctk.CTkButton(
+            parent, text=text, command=command,
+            fg_color=c["hover"], hover_color=c["top_fg"],
+            text_color=c["text"],
+            font=ctk.CTkFont(family=self._pal["font_ui"][0],
+                             size=self._pal["font_ui"][1]),
+            corner_radius=6, height=28, **kw)
+
+    def _ctk_chip(self, parent, kind: str, textvariable=None, text=None):
+        """Render a brand-aligned chip. kind in chip/idle/ok/run/fail/dim."""
+        chip = self._pal["chip"][kind]
+        kwargs = dict(
+            text_color=chip["fg"], fg_color=chip["bg"],
+            font=ctk.CTkFont(family=self._pal["font_ui_bold"][0],
+                             size=self._pal["font_ui_bold"][1],
+                             weight="bold"),
+            corner_radius=4, height=22, padx=2)
+        if textvariable is not None:
+            kwargs["textvariable"] = textvariable
+        else:
+            kwargs["text"] = text
+        return ctk.CTkLabel(parent, **kwargs)
 
     def _build_menu(self):
         menubar = tk.Menu(self)
@@ -1243,107 +1392,148 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
     # ---------------- NFC tab ----------------
     def _build_nfc_tab(self):
         f = self.tab_nfc
-
-        # ---- Top: compact control bar (backend + script + run) ----
-        top = ttk.Frame(f); top.pack(fill="x", padx=4, pady=2)
-        ttk.Label(top, text="后端:").pack(side="left")
+        # ---- Top: ctk-rounded control bar -----------------------------
+        top = ctk.CTkFrame(f, fg_color=self._pal["ctk"]["fg_color"],
+                           corner_radius=10, border_width=1,
+                           border_color=self._pal["ctk"]["border"])
+        top.pack(fill="x", padx=6, pady=(8, 4))
+        ctk.CTkLabel(top, text="后端:",
+                     text_color=self._pal["ctk"]["text_dim"],
+                     font=ctk.CTkFont(family=self._pal["font_ui"][0],
+                                      size=self._pal["font_ui"][1])
+                     ).pack(side="left", padx=(10, 4), pady=6)
         self.nfc_backend_var = tk.StringVar(value="Mock 卡片")
-        ttk.Combobox(top, textvariable=self.nfc_backend_var, state="readonly",
-                     values=("Mock 卡片", "真实读卡器"), width=10,
-                     style="Field.TCombobox").pack(side="left")
-        ttk.Label(top, text="脚本:").pack(side="left", padx=(8, 2))
+        ctk.CTkOptionMenu(
+            top, variable=self.nfc_backend_var,
+            values=("Mock 卡片", "真实读卡器"),
+            fg_color=self._pal["ctk"]["entry_bg"],
+            button_color=self._pal["ctk"]["primary"],
+            button_hover_color=self._pal["ctk"]["primary_h"],
+            text_color=self._pal["ctk"]["text"],
+            dropdown_fg_color=self._pal["ctk"]["top_fg"],
+            dropdown_text_color=self._pal["ctk"]["text"],
+            dropdown_hover_color=self._pal["ctk"]["hover"],
+            width=140, height=28, corner_radius=6).pack(side="left")
+        ctk.CTkLabel(top, text="脚本:",
+                     text_color=self._pal["ctk"]["text_dim"],
+                     font=ctk.CTkFont(family=self._pal["font_ui"][0],
+                                      size=self._pal["font_ui"][1])
+                     ).pack(side="left", padx=(14, 4))
         self.nfc_script_var = tk.StringVar(
             value=str(ROOT / "4_nfc_reader" / "data" / "script_happy.json"))
-        ttk.Entry(top, textvariable=self.nfc_script_var, width=52,
-                  style="Field.TEntry").pack(
-            side="left", fill="x", expand=True)
-        ttk.Button(top, text="浏览…",
-                   command=self._nfc_pick_script).pack(side="left")
-        self.nfc_run_btn = tk.Button(top, text="▶ 开始执行", bg="#0b5cad",
-                                     fg="white", relief="flat", cursor="hand2",
-                                     font=("TkDefaultFont", 10, "bold"),
-                                     command=self._nfc_run)
-        self.nfc_run_btn.pack(side="left", padx=(6, 0))
+        self._ctk_entry(top, self.nfc_script_var).pack(
+            side="left", fill="x", expand=True, padx=(0, 6))
+        self._ctk_btn_ghost(top, "浏览…",
+                            command=self._nfc_pick_script).pack(side="left")
+        self.nfc_run_btn = self._ctk_btn_primary(
+            top, "▶ 开始执行", command=self._nfc_run, width=140)
+        self.nfc_run_btn.pack(side="left", padx=(8, 8))
 
-        # ---- MRZ compact row ----
-        mrz = ttk.Frame(f); mrz.pack(fill="x", padx=4, pady=1)
-        ttk.Label(mrz, text="line1:").pack(side="left")
-        self.nfc_mrz1_var = tk.StringVar(value=SAMPLE_MRZ.splitlines()[0])
-        ttk.Entry(mrz, textvariable=self.nfc_mrz1_var, width=46,
-                  font=("Menlo", 9), style="Field.TEntry").pack(side="left", padx=(2, 6))
-        ttk.Label(mrz, text="line2:").pack(side="left")
-        self.nfc_mrz2_var = tk.StringVar(value=SAMPLE_MRZ.splitlines()[1])
-        ttk.Entry(mrz, textvariable=self.nfc_mrz2_var, width=46,
-                  font=("Menlo", 9), style="Field.TEntry").pack(side="left", padx=(2, 6))
-        ttk.Button(mrz, text="从 OCR 填充",
-                   command=self._nfc_fill_mrz_from_ocr).pack(side="left", padx=2)
-        ttk.Button(mrz, text="内置样例",
-                   command=self._nfc_fill_mrz_sample).pack(side="left")
-        self.nfc_badge_var = tk.StringVar(value="")
-        # Visual-pass 2.0: chip-style badge with explicit bg so it never
-        # falls back to the platform default (the historical white square).
+        # ---- MRZ compact row (rounded) ---------------------------------
+        mrz = ctk.CTkFrame(f, fg_color=self._pal["ctk"]["fg_color"],
+                           corner_radius=10, border_width=1,
+                           border_color=self._pal["ctk"]["border"])
+        mrz.pack(fill="x", padx=6, pady=4)
         pal = self._pal
-        self.nfc_badge = tk.Label(
-            mrz, textvariable=self.nfc_badge_var,
-            bg=pal["bg"], fg=pal["chip"]["dim"]["fg"],
-            font=pal["font_ui_bold"], padx=8, pady=2)
-        self.nfc_badge.pack(side="left", padx=8)
+        ctk.CTkLabel(mrz, text="MRZ L1:",
+                     text_color=pal["ctk"]["text_dim"]).pack(side="left",
+                                                              padx=(10, 4), pady=6)
+        self.nfc_mrz1_var = tk.StringVar(value=SAMPLE_MRZ.splitlines()[0])
+        self._ctk_entry(mrz, self.nfc_mrz1_var, width=520).pack(
+            side="left", padx=(0, 10))
+        ctk.CTkLabel(mrz, text="L2:",
+                     text_color=pal["ctk"]["text_dim"]).pack(side="left",
+                                                              padx=(0, 4))
+        self.nfc_mrz2_var = tk.StringVar(value=SAMPLE_MRZ.splitlines()[1])
+        self._ctk_entry(mrz, self.nfc_mrz2_var, width=520).pack(
+            side="left", padx=(0, 10))
+        self._ctk_btn_ghost(mrz, "从 OCR 填充",
+                            command=self._nfc_fill_mrz_from_ocr).pack(
+                                side="left", padx=4)
+        self._ctk_btn_ghost(mrz, "内置样例",
+                            command=self._nfc_fill_mrz_sample).pack(
+                                side="left", padx=4)
+        self.nfc_badge_var = tk.StringVar(value="")
+        self.nfc_badge = self._ctk_chip(mrz, "dim", textvariable=self.nfc_badge_var)
+        self.nfc_badge.pack(side="left", padx=10)
 
         self.nfc_status_var = tk.StringVar(value="")
-        ttk.Label(f, textvariable=self.nfc_status_var,
-                  font=("TkDefaultFont", 9)).pack(anchor="w", padx=4)
+        ctk.CTkLabel(f, textvariable=self.nfc_status_var,
+                     text_color=pal["ctk"]["text_dim"],
+                     font=ctk.CTkFont(family=pal["font_mono_sm"][0],
+                                      size=pal["font_mono_sm"][1])
+                     ).pack(anchor="w", padx=12, pady=(0, 4))
 
         # ---- Middle: splitter (state machine | APDU trace + inspect) ----
         body = ttk.PanedWindow(f, orient="horizontal")
-        body.pack(fill="both", expand=True, padx=4, pady=2)
-
+        body.pack(fill="both", expand=True, padx=6, pady=4)
         left = ttk.Frame(body)
         body.add(left, weight=1)
-        self._nfc_build_state_panel(left)
-        self._nfc_build_keys_panel(left)
-
         right = ttk.Frame(body)
         body.add(right, weight=2)
+        self._nfc_build_state_panel(left)
+        self._nfc_build_keys_panel(left)
         self._nfc_build_trace_panel(right)
 
-        # ---- Bottom: results cards ----
-        bottom = ttk.Frame(f); bottom.pack(fill="x", padx=4, pady=2)
-        cards = ttk.Frame(bottom); cards.pack(fill="x")
+        # ---- Bottom: results cards ------------------------------------
+        bottom = ctk.CTkFrame(f, fg_color="transparent")
+        bottom.pack(fill="x", padx=6, pady=(0, 6))
+        cards = ctk.CTkFrame(bottom, fg_color="transparent")
+        cards.pack(fill="x")
         self._nfc_build_dg1_card(cards)
         self._nfc_build_sod_card(cards)
         self._nfc_build_progress_card(cards)
         self._nfc_build_adv_panel(bottom)
 
     def _nfc_build_state_panel(self, parent):
-        lab = ttk.LabelFrame(parent, text="密码学与认证状态机")
-        lab.pack(fill="both", expand=True, padx=2, pady=2)
+        outer, body = self._ctk_card(parent, "密码学与认证状态机")
         pal = self._pal
         chip = pal["chip"]
         self._nfc_states = []
         for title in ("① MRZ 因子校验", "② 基础密钥派生 Kseed/Kenc/Kmac",
                       "③ 相互认证 (BAC)", "④ Secure Messaging Ready"):
-            row = ttk.Frame(lab); row.pack(fill="x", padx=6, pady=2)
-            ttk.Label(row, text=title, anchor="w").pack(side="left")
-            var = tk.StringVar(value=" PENDING ")
-            lb = tk.Label(
-                row, textvariable=var,
-                bg=pal["bg"], fg=chip["idle"]["fg"],
-                font=pal["font_ui_bold"], padx=6, pady=1)
-            lb.pack(side="right")
-            self._nfc_states.append((title, var, lb))
+            row = ctk.CTkFrame(body, fg_color="transparent")
+            row.pack(fill="x", padx=4, pady=2)
+            ctk.CTkLabel(
+                row, text=title, anchor="w",
+                text_color=pal["ctk"]["text"],
+                font=ctk.CTkFont(family=pal["font_ui"][0],
+                                 size=pal["font_ui"][1])
+                ).pack(side="left")
+            var = tk.StringVar(value="  ARMED  ")
+            chip_lb = self._ctk_chip(row, "idle", textvariable=var)
+            chip_lb.pack(side="right")
+            self._nfc_states.append((title, var, chip_lb))
 
     def _nfc_build_keys_panel(self, parent):
-        lab = ttk.LabelFrame(parent, text="会话密钥（点击复制）")
-        lab.pack(fill="x", padx=2, pady=2)
+        outer, body = self._ctk_card(parent, "会话密钥（点击复制）")
         self._nfc_key_vars = {}
+        pal = self._pal
         for name in ("Kseed", "Kenc", "Kmac", "KSenc", "KSmac"):
-            row = ttk.Frame(lab); row.pack(fill="x", padx=4, pady=1)
-            ttk.Label(row, text=name, width=6).pack(side="left")
+            row = ctk.CTkFrame(body, fg_color="transparent")
+            row.pack(fill="x", padx=4, pady=2)
+            ctk.CTkLabel(
+                row, text=name, width=60, anchor="w",
+                text_color=pal["ctk"]["accent"],
+                font=ctk.CTkFont(family=pal["font_mono_sm"][0],
+                                 size=pal["font_mono_sm"][1],
+                                 weight="bold")
+                ).pack(side="left")
             var = tk.StringVar(value="—")
-            en = tk.Entry(row, textvariable=var, width=34, font=("Menlo", 9),
-                          state="readonly", readonlybackground="#f7f7f7",
-                          fg="#111827")
-            en.pack(side="left", padx=2)
+            en = ctk.CTkEntry(
+                row, textvariable=var,
+                fg_color=pal["ctk"]["entry_bg"],
+                border_color=pal["ctk"]["border"],
+                text_color=pal["ctk"]["accent"],
+                font=ctk.CTkFont(family=pal["font_mono_sm"][0],
+                                 size=pal["font_mono_sm"][1]),
+                height=26, corner_radius=6, state="readonly")
+            en.pack(side="left", fill="x", expand=True, padx=(4, 4))
+            self._ctk_btn_ghost(
+                row, "复制",
+                command=lambda n=name, v=var: self._nfc_copy_key(n, v),
+                width=56).pack(side="right")
+            self._nfc_key_vars[name] = var
             self._nfc_key_entries[name] = en
             ttk.Button(row, text="复制", width=4,
                        command=lambda n=name, v=var: self._nfc_copy_key(n, v)
@@ -1383,49 +1573,78 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self.nfc_trace.bind("<<TreeviewSelect>>", self._nfc_on_trace_select)
 
     def _nfc_build_dg1_card(self, parent):
-        card = ttk.LabelFrame(parent, text="DG1 持证人信息")
-        card.pack(side="left", fill="both", expand=True, padx=2, pady=2)
+        outer, body = self._ctk_card(parent, "DG1 持证人信息")
+        outer.pack(side="left", fill="both", expand=True, padx=4, pady=4,
+                   anchor="n")
+        pal = self._pal
         self._nfc_dg1_vars = {}
-        for row, (key, label) in enumerate(
+        body.grid_columnconfigure(1, weight=1)
+        for r, (key, label) in enumerate(
                 [("name", "姓名"), ("doc", "证件号"), ("nat", "国籍"),
                  ("dob", "出生日期"), ("exp", "有效期")]):
-            ttk.Label(card, text=label + ":").grid(
-                row=row, column=0, sticky="e", padx=(6, 2))
+            ctk.CTkLabel(
+                body, text=label + ":", anchor="e",
+                text_color=pal["ctk"]["text_dim"],
+                font=ctk.CTkFont(family=pal["font_ui"][0],
+                                 size=pal["font_ui"][1])
+                ).grid(row=r, column=0, sticky="e", padx=(4, 4), pady=2)
             var = tk.StringVar(value="—")
-            lb = tk.Label(card, textvariable=var, font=("Menlo", 9, "bold"))
-            lb.grid(
-                row=row, column=1, sticky="w", padx=(2, 6))
-            self._nfc_dg1_lbs[key] = lb
+            ctk.CTkLabel(
+                body, textvariable=var, anchor="w",
+                text_color=pal["ctk"]["text"],
+                font=ctk.CTkFont(family=pal["font_mono_sm"][0],
+                                 size=pal["font_mono_sm"][1],
+                                 weight="bold")
+                ).grid(row=r, column=1, sticky="w", padx=(0, 8), pady=2)
+            self._nfc_dg1_lbs[key] = None
             self._nfc_dg1_vars[key] = var
 
     def _nfc_build_sod_card(self, parent):
-        card = ttk.LabelFrame(parent, text="SOD 被动认证 (Passive Auth)")
-        card.pack(side="left", fill="both", expand=True, padx=2, pady=2)
+        outer, body = self._ctk_card(parent, "SOD 被动认证 (Passive Auth)")
+        outer.pack(side="left", fill="both", expand=True, padx=4, pady=4,
+                   anchor="n")
+        pal = self._pal
         self._nfc_sod_sha = tk.StringVar(value="—")
         self._nfc_sod_rsa = tk.StringVar(value="—")
-        ttk.Label(card, text="DG1 SHA-256:").grid(
-            row=0, column=0, sticky="e", padx=(6, 2))
-        tk.Label(card, textvariable=self._nfc_sod_sha,
-                 font=("Menlo", 9)).grid(row=0, column=1, sticky="w")
-        ttk.Label(card, text="RSA 验签:").grid(
-            row=1, column=0, sticky="e", padx=(6, 2))
-        tk.Label(card, textvariable=self._nfc_sod_rsa,
-                 font=("Menlo", 9)).grid(row=1, column=1, sticky="w")
+        body.grid_columnconfigure(1, weight=1)
+        ctk.CTkLabel(
+            body, text="DG1 SHA-256:", anchor="e",
+            text_color=pal["ctk"]["text_dim"]).grid(
+                row=0, column=0, sticky="e", padx=(4, 4), pady=2)
+        ctk.CTkLabel(
+            body, textvariable=self._nfc_sod_sha, anchor="w",
+            text_color=pal["ctk"]["accent"],
+            font=ctk.CTkFont(family=pal["font_mono_sm"][0],
+                             size=pal["font_mono_sm"][1])
+            ).grid(row=0, column=1, sticky="w", padx=(0, 8), pady=2)
+        ctk.CTkLabel(
+            body, text="RSA 验签:", anchor="e",
+            text_color=pal["ctk"]["text_dim"]).grid(
+                row=1, column=0, sticky="e", padx=(4, 4), pady=2)
+        ctk.CTkLabel(
+            body, textvariable=self._nfc_sod_rsa, anchor="w",
+            text_color=pal["ctk"]["accent"],
+            font=ctk.CTkFont(family=pal["font_mono_sm"][0],
+                             size=pal["font_mono_sm"][1])
+            ).grid(row=1, column=1, sticky="w", padx=(0, 8), pady=2)
 
     def _nfc_build_progress_card(self, parent):
-        card = ttk.LabelFrame(parent, text="读取进度")
-        card.pack(side="left", fill="both", expand=True, padx=2, pady=2)
+        outer, body = self._ctk_card(parent, "读取进度")
+        outer.pack(side="left", fill="both", expand=True, padx=4, pady=4,
+                   anchor="n")
+        pal = self._pal
         self._nfc_prog_vars = {}
         for i, ef in enumerate(("EF.COM", "EF.DG1", "EF.DG2", "EF.SOD")):
             r, c = divmod(i, 2)
-            var = tk.StringVar(value="—")
-            lb = tk.Label(card, textvariable=var,
-                          font=("TkDefaultFont", 9, "bold"))
-            lb.grid(row=r, column=c * 2, sticky="e", padx=(6, 2))
-            self._nfc_prog_lbs[ef] = lb
-            ttk.Label(card, text=ef).grid(row=r, column=c * 2 + 1,
-                                          sticky="w", padx=(0, 10))
-            self._nfc_prog_vars[ef] = (var, lb)
+            var = tk.StringVar(value=" — ")
+            chip_lb = self._ctk_chip(body, "idle", textvariable=var)
+            chip_lb.grid(row=r, column=c * 2, sticky="e", padx=(4, 4), pady=4)
+            ctk.CTkLabel(
+                body, text=ef,
+                text_color=pal["ctk"]["text_dim"]).grid(
+                    row=r, column=c * 2 + 1, sticky="w", padx=(0, 10), pady=4)
+            self._nfc_prog_lbs[ef] = None
+            self._nfc_prog_vars[ef] = (var, chip_lb)
 
     def _nfc_build_adv_panel(self, parent):
         self._adv_open = tk.BooleanVar(value=False)
@@ -1530,14 +1749,13 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self.nfc_status_var.set(
             f"\u2713 全部成功（{rc}）" if ok else f"\u2717 异常退出 (rc={rc})")
         chip = self._pal["chip"]
-        if ok:
-            self.nfc_badge_var.set(" ✓ BAC PASS ")
-            self.nfc_badge.configure(bg=chip["ok"]["bg"],
-                                     fg=chip["ok"]["fg"])
-        else:
-            self.nfc_badge_var.set(" ✗ BAC FAIL ")
-            self.nfc_badge.configure(bg=chip["fail"]["bg"],
-                                     fg=chip["fail"]["fg"])
+        chosen = chip["ok"] if ok else chip["fail"]
+        self.nfc_badge_var.set(" ✓ BAC PASS " if ok else " ✗ BAC FAIL ")
+        try:
+            self.nfc_badge.configure(fg_color=chosen["bg"],
+                                     text_color=chosen["fg"])
+        except tk.TclError:
+            self.nfc_badge.configure(bg=chosen["bg"], fg=chosen["fg"])
         kv = {}
         trace = []
         for ln in stdout.splitlines():
@@ -1566,12 +1784,12 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         ]
         for title, var, lb in self._nfc_states:
             good = dict(states).get(title, False)
-            if good:
-                var.set(" ✓ PASS ")
-                lb.configure(bg=chip["ok"]["bg"], fg=chip["ok"]["fg"])
-            else:
-                var.set(" ✗ FAIL ")
-                lb.configure(bg=chip["fail"]["bg"], fg=chip["fail"]["fg"])
+            chosen = chip["ok"] if good else chip["fail"]
+            var.set(" ✓ PASS " if good else " ✗ FAIL ")
+            try:
+                lb.configure(fg_color=chosen["bg"], text_color=chosen["fg"])
+            except tk.TclError:
+                lb.configure(bg=chosen["bg"], fg=chosen["fg"])
 
         # ---- 密钥卡片 ----
         for name in ("Kseed", "Kenc", "Kmac", "KSenc", "KSmac"):
@@ -1644,12 +1862,12 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         for ef, (var, lb) in self._nfc_prog_vars.items():
             got = {"EF.COM": False, "EF.DG1": bool(dg1_lines),
                    "EF.DG2": False, "EF.SOD": sod_ok}[ef]
-            if got:
-                var.set(" ✓ ")
-                lb.configure(bg=chip["ok"]["bg"], fg=chip["ok"]["fg"])
-            else:
-                var.set(" — ")
-                lb.configure(bg=chip["idle"]["bg"], fg=chip["idle"]["fg"])
+            chosen = chip["ok"] if got else chip["idle"]
+            var.set(" ✓ " if got else " — ")
+            try:
+                lb.configure(fg_color=chosen["bg"], text_color=chosen["fg"])
+            except tk.TclError:
+                lb.configure(bg=chosen["bg"], fg=chosen["fg"])
 
     @staticmethod
     def _fmt_date(yymmdd):
