@@ -1281,7 +1281,22 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                     ocr_kv[k.strip()] = v.strip()
                 line1 = ocr_kv.get("result.line1", "")
                 line2 = ocr_kv.get("result.line2", "")
-                ok = ocr_kv.get("result.ok", "FAIL").upper() == "OK"
+                # The OCR binary uses `result.ok` as a status field: it
+                # is the literal string "OK" on success, or an English
+                # error message ("could not split into two lines",
+                # "image too small", ...) on failure. Treat anything
+                # other than "OK" as a hard OCR failure and skip
+                # mrz_tool decode entirely so we don't surface the
+                # cryptic `bad MRZ length` secondary error.
+                raw_ok = (ocr_kv.get("result.ok", "") or "").strip()
+                ok = raw_ok.upper() == "OK" and bool(line1) and bool(line2)
+                if not ok:
+                    # When OCR failed, line1/line2 are empty. We pass
+                    # raw_ok to mrz_tool decode as the (empty) MRZ so
+                    # its own failure message is informative, but the
+                    # real cause is the OCR step.
+                    line1 = ""
+                    line2 = ""
                 # Surface mrz_ocr_tool's stderr in the report so the user
                 # can see why the OCR step failed (empty / bad image).
                 self._loc_last_ocr_err = (ocr_proc.stderr or "").strip()
