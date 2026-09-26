@@ -6,16 +6,16 @@ Corpus: 1380 images (660 realistic). Metrics: char accuracy over all lines; full
 
 | method | pipeline OK | ms p50 | line1 acc | line2 acc | full match | cksum valid |
 |--------|-------------|--------|-----------|-----------|------------|-------------|
-| traditional | 1380/1380 (100.0%) | 5.4 | 63.58% | 42.60% | 0.00% | 2.75% |
-| cnn | 1380/1380 (100.0%) | 7.1 | 95.63% | 98.87% | 71.45% | 94.64% |
+| traditional | 1380/1380 (100.0%) | 4.9 | 63.58% | 42.60% | 0.00% | 2.75% |
+| cnn | 1380/1380 (100.0%) | 6.5 | 95.75% | 98.87% | 71.81% | 94.64% |
 
 ## Breakdown by profile
 | method | pipeline OK | ms p50 | line1 acc | line2 acc | full match | cksum valid |
 |--------|-------------|--------|-----------|-----------|------------|-------------|
-| clean | 100.0% | 5.1 | 82.72% | 68.70% | 0.00% | 5.28% |
-| clean | 100.0% | 6.8 | 98.52% | 99.99% | 95.69% | 100.00% |
-| realistic | 100.0% | 5.6 | 42.70% | 14.12% | 0.00% | 0.00% |
-| realistic | 100.0% | 7.4 | 92.47% | 97.64% | 45.00% | 88.79% |
+| clean | 100.0% | 4.7 | 82.72% | 68.70% | 0.00% | 5.28% |
+| clean | 100.0% | 6.3 | 98.53% | 99.99% | 95.69% | 100.00% |
+| realistic | 100.0% | 5.2 | 42.70% | 14.12% | 0.00% | 0.00% |
+| realistic | 100.0% | 6.8 | 92.71% | 97.64% | 45.76% | 88.79% |
 
 ## Top confusions (traditional)
 | gt->got | count |
@@ -44,16 +44,16 @@ Corpus: 1380 images (660 realistic). Metrics: char accuracy over all lines; full
 | E->F | 122 |
 | U->O | 102 |
 | I->T | 81 |
-| P->F | 67 |
 | <->S | 64 |
 | F->E | 55 |
 | O->U | 43 |
 | <->H | 43 |
-| P->B | 40 |
-| P->< | 32 |
+| P->< | 39 |
+| P->B | 32 |
 | T->I | 31 |
 | <->X | 23 |
-| P->R | 23 |
+| <->D | 22 |
+| R->< | 21 |
 
 ## Worst columns (traditional)
 | line1 col | errors | line2 col | errors |
@@ -68,7 +68,7 @@ Corpus: 1380 images (660 realistic). Metrics: char accuracy over all lines; full
 | line1 col | errors | line2 col | errors |
 |-----------|--------|-----------|--------|
 | 2 | 140 | 0 | 46 |
-| 0 | 111 | 2 | 45 |
-| 3 | 106 | 40 | 43 |
-| 5 | 103 | 41 | 41 |
-| 4 | 101 | 32 | 33 |
+| 3 | 106 | 2 | 45 |
+| 5 | 103 | 40 | 43 |
+| 4 | 101 | 41 | 41 |
+| 6 | 98 | 32 | 33 |
