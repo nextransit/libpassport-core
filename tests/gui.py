@@ -872,9 +872,17 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self.ocr_preview_meta.set(
             f"id={cid}  scale={rec['scale']}  noise={rec['noise']}  "
             f"skew={rec['skew']}\n{rec['image']}")
+        # Stash the absolute path so the viewer / region overlay can find it.
+        self._preview_img_path = img_path
         try:
             from PIL import Image
             self._preview_img_pil = Image.open(img_path).convert("RGB")
+            self._preview_w, self._preview_h = self._preview_img_pil.size
+            # Cache last-known band / conf so the diff pane can show
+            # them alongside the per-char comparison.
+            last = getattr(self, "_ocr_last", {}).get(cid, {}) or {}
+            pm = last.get("cnn") or last.get("traditional") or {}
+            self._preview_last_pm = pm
             self._update_preview_image()
         except Exception:
             self._preview_img_pil = None
@@ -885,19 +893,95 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         im = getattr(self, "_preview_img_pil", None)
         if im is None:
             return
-        w = self.ocr_preview_label.winfo_width()
-        h = self.ocr_preview_label.winfo_height()
+        # Use the requested display size; if the label hasn't been laid
+        # out yet (rare under real Tk, common in headless probes) fall
+        # back to the label's requested width/height or 320x180 so the
+        # region overlay still paints. Wrap winfo_* calls defensively.
+        w, h = 0, 0
+        for src in (lambda: (self.ocr_preview_label.winfo_width(),
+                             self.ocr_preview_label.winfo_height()),
+                    lambda: (self.ocr_preview_label.winfo_reqwidth(),
+                             self.ocr_preview_label.winfo_reqheight())):
+            try:
+                w, h = src()
+                break
+            except tk.TclError:
+                continue
         if w <= 1 or h <= 1:
-            return
-        im2 = im.copy()
-        im2.thumbnail((max(1, w - 6), max(1, h - 6)))
+            w, h = 320, 180
+        iw, ih = self._preview_w, self._preview_h
+        # Scale-thumbnail keeping aspect ratio so the photo fits the
+        # preview pane. The Tk label uses the actual displayed size
+        # (w x h) minus a small margin; we map image -> display coords
+        # uniformly.
+        margin = 4
+        tw, th = max(1, w - margin), max(1, h - margin)
+        scale = min(tw / iw, th / ih)
+        dw, dh = int(iw * scale), int(ih * scale)
+        ox = (w - dw) // 2
+        oy = (h - dh) // 2
+        # Resize the original pixels to the displayed size; we then
+        # paint the overlay rectangles directly in pixel space (dw x dh)
+        # which simplifies the mapping vs the original iw x ih space.
+        im2 = im.resize((dw, dh))
         try:
-            from PIL import ImageTk
-            photo = ImageTk.PhotoImage(im2)
+            from PIL import Image, ImageDraw, ImageTk
+            overlay = im2.copy()
+            drw = ImageDraw.Draw(overlay, "RGBA")
+            # Region rectangles (proportional to displayed image):
+            #   photo  = left 25%, top 10%, width 25%, height 70%
+            #   data   = top 10%, left 25%, width 50%, height 25%
+            #   mrz    = bottom 30%, full width (overrides data on the
+            #            bottom edge, which is the real passport layout)
+            # Colours match .impeccable.md neon palette.
+            photo_box = (int(dw * 0.04), int(dh * 0.08),
+                         int(dw * 0.30), int(dh * 0.78))
+            data_box  = (int(dw * 0.30), int(dh * 0.08),
+                         int(dw * 0.96), int(dh * 0.40))
+            mrz_box   = (int(dw * 0.04), int(dh * 0.62),
+                         int(dw * 0.96), int(dh * 0.96))
+            # If the OCR tool returned a band, snap MRZ box to it.
+            band_raw = (getattr(self, "_preview_last_pm", {}) or {}).get("band", "")
+            if band_raw:
+                try:
+                    bx, by, bw, bh = (int(float(x)) for x in band_raw.split())
+                    sx = dw / iw; sy = dh / ih
+                    mrz_box = (int(bx * sx), int(by * sy),
+                               int((bx + bw) * sx), int((by + bh) * sy))
+                except Exception:
+                    pass
+            # Neon cyan / violet / green with translucent alpha so the
+            # underlying image stays visible.
+            drw.rectangle(photo_box, outline=(0, 229, 255, 255), width=2)
+            drw.rectangle(data_box,  outline=(179, 136, 255, 255), width=2)
+            drw.rectangle(mrz_box,   outline=(46, 230, 168, 255), width=2)
+            # Small chip tags so the user can identify each region.
+            def tag(box, label, fill):
+                x0, y0, x1, y1 = box
+                pad = 2
+                tag_w = max(28, len(label) * 7 + 8)
+                ty = max(0, y0 - 12)
+                drw.rectangle((x0, ty, x0 + tag_w, ty + 12),
+                              fill=fill)
+                drw.text((x0 + 4, ty + 1), label, fill=(0, 0, 0, 255))
+            tag(photo_box, "PHOTO", (0, 229, 255, 255))
+            tag(data_box,  "DATA",  (179, 136, 255, 255))
+            tag(mrz_box,   "MRZ",   (46, 230, 168, 255))
+            photo = ImageTk.PhotoImage(overlay)
         except Exception:
-            return
+            try:
+                from PIL import ImageTk
+                photo = ImageTk.PhotoImage(im2)
+            except Exception:
+                return
         self._preview_imgs["_current"] = photo
         self.ocr_preview_label.configure(image=photo, text="")
+        # Stash the on-screen rectangle so other widgets (diff pane)
+        # can reference consistent proportions if needed.
+        self._preview_layout = {"scale": scale, "ox": ox, "oy": oy,
+                                "dw": dw, "dh": dh,
+                                "photo": photo_box, "data": data_box,
+                                "mrz": mrz_box}
 
     def _render_diff_block(self, tw, label, gt, pred):
         """Append one aligned GT/Pred block with per-char highlighting."""
@@ -928,6 +1012,20 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         tw = self.ocr_diff_text
         tw.configure(state="normal")
         tw.delete("1.0", "end")
+        # Confidence header: one line per block, mirroring the layout
+        # expected by the PPM benchmark output (conf1 / conf2 0..100).
+        pm = getattr(self, "_preview_last_pm", None) or {}
+        for label, gt, pred in blocks:
+            tag = "okline" if gt == pred else "lab"
+            conf = pm.get("conf1") if "line1" in label else (
+                   pm.get("conf2") if "line2" in label else None)
+            if conf is None:
+                tw.insert("end", f"{label}  conf=n/a\n", tag)
+            else:
+                grade = "PASS" if conf >= 70 else ("WARN" if conf >= 40 else "FAIL")
+                tw.insert("end",
+                          f"{label}  conf={conf}% ({grade})\n", tag)
+            tw.insert("end", "\n", "lab")
         for label, gt, pred in blocks:
             self._render_diff_block(tw, label, gt, pred)
         tw.configure(state="disabled")
@@ -936,6 +1034,18 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         tw = self.ocr_diff_text
         tw.configure(state="normal")
         tw.delete("1.0", "end")
+        # Show last-known confidence (if any) above the GT lines so the
+        # user can compare expected vs predicted structure immediately.
+        pm = getattr(self, "_preview_last_pm", None) or {}
+        c1 = pm.get("conf1")
+        c2 = pm.get("conf2")
+        if c1 is not None or c2 is not None:
+            tw.insert("end", "最近一次识别置信率:\n", "hdr")
+            tw.insert("end",
+                f"  line1 conf={c1 if c1 is not None else 'n/a'}%   "
+                f"line2 conf={c2 if c2 is not None else 'n/a'}%\n",
+                "lab")
+            tw.insert("end", "\n", "lab")
         tw.insert("end", "line1 (GT)\n", "hdr")
         tw.insert("end", rec["line1"] + "\n", "match")
         tw.insert("end", "line2 (GT)\n", "hdr")
@@ -1604,8 +1714,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self._adv_frame = ttk.LabelFrame(parent, text="高级密码学参数")
         self._adv_frame.pack(fill="x", padx=2, pady=2)
         head = ttk.Frame(self._adv_frame); head.pack(fill="x")
-        ttk.Button(head, text="展开 / 折叠",
-                   command=self._nfc_toggle_adv).pack(side="left", padx=4)
+        self._adv_toggle_btn = ttk.Button(
+            head, text="展开", command=self._nfc_toggle_adv)
+        self._adv_toggle_btn.pack(side="left", padx=4)
         # wrap="none" keeps hex lines intact, but the previous height=4
         # without scrollbars clipped long C-APDU/R-APDU strings at the
         # right edge with no way to reach them. Give the panel both
@@ -1637,12 +1748,23 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         body = getattr(self, "_adv_text_body", None)
         if body is None:
             return
+        btn = getattr(self, "_adv_toggle_btn", None)
         if self._adv_open.get():
             body.pack_forget()
             self._adv_open.set(False)
+            if btn is not None:
+                try:
+                    btn.configure(text="展开")
+                except tk.TclError:
+                    pass
         else:
             body.pack(fill="x", padx=4, pady=2)
             self._adv_open.set(True)
+            if btn is not None:
+                try:
+                    btn.configure(text="折叠")
+                except tk.TclError:
+                    pass
 
     def _nfc_copy_key(self, name, var):
         val = var.get()
