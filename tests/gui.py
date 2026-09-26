@@ -1353,11 +1353,18 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
     def _nfc_build_trace_panel(self, parent):
         insp = ttk.LabelFrame(parent, text="报文透视（Raw / Decrypted / MAC）")
         insp.pack(fill="x", side="bottom", padx=2, pady=2)
-        self.nfc_inspect = tk.Text(insp, height=7, font=("Menlo", 9),
-                                   wrap="none", bg="#fafafa", fg="#111827")
+        pal = self._pal
+        self.nfc_inspect = tk.Text(
+            insp, height=7, font=("Menlo", 9), wrap="none",
+            bg=pal["code"], fg=pal["fg"],
+            insertbackground=pal.get("accent", pal["primary"]))
         yi = ttk.Scrollbar(insp, orient="vertical",
                            command=self.nfc_inspect.yview)
-        self.nfc_inspect.configure(yscrollcommand=yi.set)
+        xi = ttk.Scrollbar(insp, orient="horizontal",
+                           command=self.nfc_inspect.xview)
+        self.nfc_inspect.configure(yscrollcommand=yi.set,
+                                   xscrollcommand=xi.set)
+        xi.pack(side="bottom", fill="x")
         self.nfc_inspect.pack(side="left", fill="both", expand=True)
         yi.pack(side="right", fill="y")
 
@@ -1434,18 +1441,42 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         head = ttk.Frame(self._adv_frame); head.pack(fill="x")
         ttk.Button(head, text="展开 / 折叠",
                    command=self._nfc_toggle_adv).pack(side="left", padx=4)
-        self.nfc_adv_text = tk.Text(self._adv_frame, height=4,
-                                    font=("Menlo", 9), wrap="none",
-                                    bg="#f7f7f7", fg="#111827")
-        self.nfc_adv_text.pack(fill="x", padx=4, pady=2)
-        self.nfc_adv_text.pack_forget()
+        # wrap="none" keeps hex lines intact, but the previous height=4
+        # without scrollbars clipped long C-APDU/R-APDU strings at the
+        # right edge with no way to reach them. Give the panel both
+        # axes of scrolling and a sensible starting height.
+        pal = self._pal
+        body = ttk.Frame(self._adv_frame)
+        self._adv_text_body = body
+        # Create the Text widget FIRST, then bind the scrollbars to its
+        # xview/yview. The previous order raised AttributeError because
+        # lambdas captured ``self.nfc_adv_text`` before it existed.
+        self.nfc_adv_text = tk.Text(
+            body, height=8, font=("Menlo", 9), wrap="none",
+            bg=pal["code"], fg=pal["fg"],
+            insertbackground=pal.get("accent", pal["primary"]),
+            undo=True, maxundo=-1)
+        adv_yscroll = ttk.Scrollbar(body, orient="vertical",
+                                    command=self.nfc_adv_text.yview)
+        adv_xscroll = ttk.Scrollbar(body, orient="horizontal",
+                                    command=self.nfc_adv_text.xview)
+        self.nfc_adv_text.configure(yscrollcommand=adv_yscroll.set,
+                                    xscrollcommand=adv_xscroll.set)
+        adv_xscroll.pack(side="bottom", fill="x")
+        self.nfc_adv_text.pack(side="left", fill="both", expand=True)
+        adv_yscroll.pack(side="right", fill="y")
+        body.pack(fill="x", padx=4, pady=2)
+        body.pack_forget()
 
     def _nfc_toggle_adv(self):
+        body = getattr(self, "_adv_text_body", None)
+        if body is None:
+            return
         if self._adv_open.get():
-            self.nfc_adv_text.pack_forget()
+            body.pack_forget()
             self._adv_open.set(False)
         else:
-            self.nfc_adv_text.pack(fill="x", padx=4, pady=2)
+            body.pack(fill="x", padx=4, pady=2)
             self._adv_open.set(True)
 
     def _nfc_copy_key(self, name, var):
