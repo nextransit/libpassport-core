@@ -523,9 +523,17 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
     int total = n < 44 ? n : 44;
     top3_t t3[44];
     int allow[37];
+    static int dbg = -1;
+    if (dbg < 0) { const char *e = getenv("MRZ_OCR_TOPK"); dbg = (e && e[0] && strcmp(e,"0")!=0) ? 1 : 0; }
     for (int c = 0; c < n && c < 44; ++c) {
         fill_allow(allow, line_idx, c);
         top3_of(probs + c * CNN_OUT, allow, &t3[c]);
+        if (dbg) {
+            fprintf(stderr, "TOPK L%d c%02d: %c(%.3f) %c(%.3f) %c(%.3f)\n", line_idx,
+                    c, MRZ_OCR_GLYPHS[t3[c].cand[0]].ch, t3[c].p[0],
+                    MRZ_OCR_GLYPHS[t3[c].cand[1]].ch, t3[c].p[1],
+                    MRZ_OCR_GLYPHS[t3[c].cand[2]].ch, t3[c].p[2]);
+        }
     }
 
     /* patch ink per cell (relative '<' gate statistic) */
@@ -734,7 +742,14 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
         if (deg != 0.0) {
             rot = (uint8_t *)malloc((size_t)bw * bh);
             if (!rot) { status = MRZ_OCR_ERR_LOAD; goto cleanup; }
-            mrz_rotate_band(band_gray, bw, bh, deg, 255, rot);
+            /* Bilinear deskew is OPT-IN (MRZ_OCR_BILINEAR=1). On the
+             * current (nearest-neighbour-trained) weights it raises
+             * char/cksum but LOWERS full-match, i.e. it changes the
+             * input distribution and only pays off after a
+             * distribution-matched retrain. Default = NN stays. */
+            const char *bl_env = getenv("MRZ_OCR_BILINEAR");
+            int bl = (bl_env && bl_env[0] && strcmp(bl_env, "0") != 0);
+            mrz_rotate_band(band_gray, bw, bh, deg, 255, bl, rot);
             memcpy(band_gray, rot, (size_t)bw * bh);
             for (int i = 0; i < bw * bh; ++i) band_bin[i] = (band_gray[i] < tb) ? 1 : 0;
         }

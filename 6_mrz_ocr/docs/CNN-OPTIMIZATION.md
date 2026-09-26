@@ -294,3 +294,27 @@ gate:`MRZ_OCR_LOCAL_NORM=1`。
      P/I/A/V 候选,不依赖 beam);
   b) 高位 rot 的 deskew 残差补偿(双线分离后按行再估一次斜)。
 - 验收口径不变:realistic full-match,45%->85%。
+
+### 7.7 top-k oracle 与双线性 deskew A/B(2026-09-26,决定性证据)
+
+新增 `MRZ_OCR_TOPK=1` 调试输出(每字符 top-3 + 概率)后,对
+high-rot/模糊图直接观察:很多错误字符的 **GT 根本不在 top-3 里**
+(例:img_0078 rot=3 blur=2, col2 GT=H 但 top3=K/M/O,
+col9 GT=Q 但 top3=U/O/M, 且最高概率仅 ~0.32-0.48)。
+
+含义:
+- 错误发生在**输入 patch 特征被破坏**(旋转锯齿/模糊/光照)的阶段,
+  不在解码重排阶段——beam/mask 只能从已有候选里选,GT 不在候选
+  时无能为力;
+- 这也解释了为何 NORM/hard-slices/重训推字符精度但 full-match 不动:
+  它们改善的是"候选排序",不是"把 GT 请进候选"。
+
+**双线性 deskew A/B(`MRZ_OCR_BILINEAR=1`,默认 NN):**
+- 带当前(NN 训练)权重:字符/ck sum 升(line1 95.75->95.79,cksum
+  94.64->95.43)但 realistic full-match 45.76->44.85;
+- **分布匹配重训后**(BL dump 训练 + BL 推理):line1 97.36,cksum
+  96.52,但 full-match 70.51 < NN 基线 71.81。
+- 结论:双线性提升 patch 质量方向正确,但**仍不足以把 GT 带进 top-3
+  的失败集里**;full-match 的下一步是特征级(候选集内包含 GT),不是
+  插值/归一化/重排的微调。gate 保留供现场 A/B,默认 NN(与已部署
+  权重分布一致)。

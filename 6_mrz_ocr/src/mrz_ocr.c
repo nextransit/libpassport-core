@@ -393,7 +393,7 @@ mrz_ocr_status_t mrz_ocr_recognise(const face_image_t *img,
     if (deg != 0.0) {
         rot = (uint8_t *)malloc((size_t)band.w * band.h);
         if (!rot) { free(bin); free(band_pixels); return MRZ_OCR_ERR_LOAD; }
-        mrz_rotate_band(band_pixels, band.w, band.h, deg, 0, rot);
+        mrz_rotate_band(band_pixels, band.w, band.h, deg, 0, 0, rot);   /* legacy: NN keeps 0/1 */
         band_work = rot;
     }
 
