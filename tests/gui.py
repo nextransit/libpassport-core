@@ -101,6 +101,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self.status = tk.StringVar(value=self._status_text())
         sbar = ttk.Frame(self)
         sbar.pack(fill="x", side="bottom")
+        self._status_bar = sbar
         self.ocr_status_var = tk.StringVar(value="就绪")
         ttk.Label(sbar, textvariable=self.ocr_status_var, anchor="w",
                   padding=4).pack(side="left")
@@ -190,8 +191,16 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             pass
 
     def _switch_theme(self, name):
-        st = ttk.Style()
-        st.theme_use(name)
+        # Friendly aliases so the menu can offer "light" / "dark"
+        # without forcing users to memorise ttkbootstrap theme names.
+        if name in ("dark", "dark_default"):
+            name = "darkly"
+        elif name in ("light", "light_default"):
+            name = "cosmo"
+        try:
+            ttk.Style().theme_use(name)
+        except tk.TclError:
+            pass
         self._theme_name = name
         self._apply_theme_proof_styles()
         self._pal = self._theme_palette()
@@ -387,9 +396,17 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         filem.add_command(label="退出", command=self.destroy)
         menubar.add_cascade(label="文件", menu=filem)
         viewm = tk.Menu(menubar, tearoff=0)
-        for name in ("darkly", "cyborg", "cosmo", "journal"):
-            viewm.add_command(label=name,
-                              command=lambda n=name: self._switch_theme(n))
+        viewm.add_command(label="☀️  浅色主题",
+                          command=lambda: self._switch_theme("light"))
+        viewm.add_command(label="🌙  深色主题",
+                          command=lambda: self._switch_theme("dark"))
+        viewm.add_separator()
+        advm = tk.Menu(viewm, tearoff=0)
+        for name in ("darkly", "cyborg", "superhero", "cosmo",
+                     "journal", "flatly"):
+            advm.add_command(label=name,
+                             command=lambda n=name: self._switch_theme(n))
+        viewm.add_cascade(label="其它 (ttkbootstrap)", menu=advm)
         menubar.add_cascade(label="视图", menu=viewm)
         helpm = tk.Menu(menubar, tearoff=0)
         helpm.add_command(label="关于",
@@ -455,6 +472,20 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             relief="flat", cursor="hand2", bd=0,
             font=("TkDefaultFont", 10, "bold"), padx=14, pady=4)
         self.ocr_run_btn.pack(side="right", padx=4, pady=2)
+        # Direct-image recognition: pick a JPG/PNG file, render its
+        # thumbnail in the right pane, then call mrz_ocr_tool and
+        # mrz_tool and stream the result through the diff pane. This
+        # is the "I just want to OCR one image" path; the corpus bench
+        # stays the "stress test many cases" path.
+        self.ocr_pick_btn = tk.Button(
+            row1, text="🖼️ 直接识别图片", command=self._ocr_pick_and_recognize,
+            bg="#2e86ff", fg="white",
+            activebackground="#3d97ff", activeforeground="white",
+            disabledforeground="#9cc3ee",
+            highlightbackground="#2e86ff", highlightthickness=1,
+            relief="flat", cursor="hand2", bd=0,
+            font=("TkDefaultFont", 10, "bold"), padx=14, pady=4)
+        self.ocr_pick_btn.pack(side="right", padx=4, pady=2)
 
         row2 = ttk.Frame(ctrl); row2.pack(fill="x", padx=8, pady=(0, 6))
         ttk.Button(row2, text="全选",
@@ -666,17 +697,43 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                   relief="flat", cursor="hand2", bd=0,
                   font=("TkDefaultFont", 10, "bold"), padx=12, pady=3)
         self.loc_run_btn.pack(side="left", padx=4)
+        # MRZ-only quick action: locate MRZ band, crop it, feed it to
+        # mrz_tool, and dump the parsed fields + check digits on the
+        # right-hand info pane. Same accent colour so users learn one
+        # affordance and reuse it across tabs.
+        self.loc_mrz_btn = tk.Button(
+            row, text="🆔 MRZ 识别", command=self._loc_mrz_recognize,
+            bg="#2e86ff", fg="white",
+            activebackground="#3d97ff", activeforeground="white",
+            disabledforeground="#9cc3ee",
+            highlightbackground="#2e86ff", highlightthickness=1,
+            relief="flat", cursor="hand2", bd=0,
+            font=("TkDefaultFont", 10, "bold"), padx=12, pady=3)
+        self.loc_mrz_btn.pack(side="left", padx=4)
         self.loc_status = ttk.Label(row, text="", foreground="#666")
         self.loc_status.pack(side="left", padx=8)
+        # MRZ result chip: PASS green / FAIL red, sits at the top of the
+        # info pane so it stays in the user's natural reading path.
+        self._loc_mrz_chip_var = tk.StringVar(value="  IDLE  ")
 
         body = ttk.Frame(f); body.pack(fill="both", expand=True, padx=4, pady=(4, 6))
         self.loc_canvas = tk.Canvas(body, width=760, height=440, bg="#222",
                                     highlightthickness=1, highlightbackground="#555")
         self.loc_canvas.pack(side="left", fill="both", expand=True)
-        self.loc_info = tk.Text(body, width=52, height=20, font=("Menlo", 9),
+        # Side panel: MRZ result chip at the top, detail Text below.
+        side = ttk.Frame(body)
+        side.pack(side="left", padx=(6, 0), fill="y")
+        pal = self._pal
+        chip = pal["chip"]["dim"]
+        self.loc_mrz_chip = tk.Label(
+            side, textvariable=self._loc_mrz_chip_var,
+            bg=chip["bg"], fg=chip["fg"],
+            font=pal["font_ui_bold"], padx=10, pady=3)
+        self.loc_mrz_chip.pack(anchor="w", pady=(0, 4))
+        self.loc_info = tk.Text(side, width=52, height=20, font=("Menlo", 9),
                                 state="disabled", wrap="none",
                                 bg="#fbfbfb", fg="#111827", relief="solid", bd=1)
-        self.loc_info.pack(side="left", padx=(6, 0), fill="y")
+        self.loc_info.pack(fill="both", expand=True)
 
     def _loc_pick(self):
         path = filedialog.askopenfilename(
@@ -767,6 +824,263 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             self.loc_status.config(text=f"定位失败: {e}", foreground="#b71c1c")
             self._loc_set_text(f"错误: {e}")
 
+    # ---- MRZ-only quick action (locator tab) -------------------------
+    def _loc_mrz_recognize(self):
+        """Locate the MRZ band on the currently selected image, crop
+        it, hand it to mrz_tool, and display the parsed fields plus a
+        pass/fail chip on the right-hand info pane.
+        """
+        pal = self._pal
+        chip = pal["chip"]
+        def _chip(text, kind):
+            self._loc_mrz_chip_var.set(text)
+            c = chip[kind]
+            try:
+                self.loc_mrz_chip.configure(bg=c["bg"], fg=c["fg"])
+            except tk.TclError:
+                try:
+                    self.loc_mrz_chip.configure(
+                        background=c["bg"], foreground=c["fg"])
+                except tk.TclError:
+                    pass
+        try:
+            self.loc_mrz_btn.configure(state="disabled")
+            self.loc_status.config(text="MRZ 识别中…", foreground="#666")
+            _chip("  RUN  ", "run")
+            from PIL import Image
+            path = self._loc_resolve_path()
+            img = Image.open(path).convert("RGB")
+            loc = self._loc_locator(img)
+            r = loc.get("mrz")
+            if not r:
+                _chip("  FAIL  ", "fail")
+                self.loc_status.config(
+                    text="未定位到 MRZ 区", foreground="#b71c1c")
+                self._loc_set_text(
+                    f"样本: {os.path.basename(path)}\n"
+                    f"无法定位 MRZ 区。请先点击“定位区域”确认区域，"
+                    f"或换一张更清晰的护照图。")
+                return
+            x, y, w, h = r["x"], r["y"], r["w"], r["h"]
+            crop = img.crop((x, y, x + w, y + h))
+            tmp = Path(self._loc_imgtk_path) if False else None  # noqa
+            import tempfile
+            with tempfile.NamedTemporaryFile(
+                    suffix=".ppm", delete=False) as tf:
+                tmp_path = Path(tf.name)
+            try:
+                crop.save(tmp_path)
+                proc = subprocess.run(
+                    [str(MRZ_TOOL), str(tmp_path)],
+                    text=True, capture_output=True, timeout=20)
+            finally:
+                try:
+                    tmp_path.unlink()
+                except OSError:
+                    pass
+            # Parse mrz_tool stdout: each field on its own line.
+            kv = {}
+            for ln in (proc.stdout or "").splitlines():
+                ln = ln.strip()
+                if not ln or ":" not in ln:
+                    continue
+                k, _, v = ln.partition(":")
+                kv[k.strip()] = v.strip()
+            ok = kv.get("result.ok", "FAIL").upper() == "OK"
+            _chip(f"  {"PASS" if ok else "FAIL"}  ",
+                  "ok" if ok else "fail")
+            self.loc_status.config(
+                text=("MRZ ✓ 通过" if ok else "MRZ ✗ 失败"),
+                foreground="#1b5e20" if ok else "#b71c1c")
+            # Render a structured report in the info pane.
+            lines = [
+                f"样本 : {os.path.basename(path)}",
+                f"区域 : x={x} y={y} w={w} h={h}   "
+                f"置信度 {r['confidence']:.2f}",
+                f"依据 : {r.get('evidence', '-')}",
+                "",
+                f"mrz_tool rc : {proc.returncode}",
+                f"result.ok   : {kv.get('result.ok', '-')}",
+                f"result.name : {kv.get('result.name', '-')}",
+                f"result.doc  : {kv.get('result.doc',  '-')}",
+                f"result.nat  : {kv.get('result.nat',  '-')}",
+                f"result.dob  : {kv.get('result.dob',  '-')}",
+                f"result.exp  : {kv.get('result.exp',  '-')}",
+                f"result.sex  : {kv.get('result.sex',  '-')}",
+                "",
+                f"line1 (44)  : {kv.get('result.line1', '-')}",
+                f"line2 (44)  : {kv.get('result.line2', '-')}",
+                "",
+                f"check_digit : "
+                f"{kv.get('result.check_doc',  '-')} / "
+                f"{kv.get('result.check_dob',  '-')} / "
+                f"{kv.get('result.check_exp',  '-')} / "
+                f"{kv.get('result.check_comp', '-')}",
+                "",
+                "--- raw mrz_tool output ---",
+                proc.stdout or "",
+            ]
+            if proc.stderr:
+                lines += ["", "[stderr]", proc.stderr]
+            self._loc_set_text("\n".join(lines))
+            # Refresh the annotated preview so the MRZ box is visible.
+            try:
+                disp = self._loc_annotate(img, loc, scale=1.0)
+                disp.thumbnail((max(self.loc_canvas.winfo_width() - 4, 320),
+                                max(self.loc_canvas.winfo_height() - 4, 220)))
+                from PIL import ImageTk
+                self._loc_imgtk = ImageTk.PhotoImage(disp)
+                self.loc_canvas.delete("all")
+                self.loc_canvas.create_image(
+                    2, 2, image=self._loc_imgtk, anchor="nw")
+            except Exception:
+                pass
+        except Exception as e:
+            _chip("  FAIL  ", "fail")
+            self.loc_status.config(text=f"MRZ 失败: {e}",
+                                   foreground="#b71c1c")
+            self._loc_set_text(f"错误: {e}")
+        finally:
+            try:
+                self.loc_mrz_btn.configure(state="normal")
+            except tk.TclError:
+                pass
+
+    # ---- direct-image recognition (jpg/png on demand) ---------------
+    def _ocr_pick_and_recognize(self):
+        """Open a file picker for a single JPG/PNG/PPM, render its
+        thumbnail in the right pane, then run mrz_ocr_tool + mrz_tool
+        and stream the parsed fields + chip status into the diff pane."""
+        path = filedialog.askopenfilename(
+            title="选择护照图片直接识别",
+            filetypes=[("Image", "*.png *.jpg *.jpeg *.ppm *.bmp"),
+                       ("All", "*.*")])
+        if not path:
+            return
+        # Render thumbnail first so the user has immediate visual feedback.
+        try:
+            from PIL import Image
+            self._preview_img_pil = Image.open(path).convert("RGB")
+            self._preview_w, self._preview_h = self._preview_img_pil.size
+            self._preview_img_path = Path(path)
+            self._preview_last_pm = {}  # no OCR result yet
+            self._update_preview_image()
+        except Exception as e:
+            messagebox.showerror("加载失败", f"无法读取 {path}: {e}")
+            return
+        # Reset the diff pane and stream a "running" header.
+        self.ocr_diff_text.configure(state="normal")
+        self.ocr_diff_text.delete("1.0", "end")
+        self.ocr_diff_text.insert(
+            "end", f"样本 : {os.path.basename(path)}\n", ("hdr",))
+        self.ocr_diff_text.insert("end", "状态 : 运行中…\n\n", ("lab",))
+        self.ocr_diff_text.configure(state="disabled")
+        self.ocr_preview_meta.set(
+            f"{os.path.basename(path)}  ({self._preview_w}×"
+            f"{self._preview_h})\n{path}")
+        self.ocr_pick_btn.configure(state="disabled")
+        try:
+            self.ocr_run_btn.configure(state="disabled")
+        except tk.TclError:
+            pass
+
+        def worker():
+            err = None
+            kv = {}
+            proc_ms = 0.0
+            try:
+                from pathlib import Path as _P
+                t0 = time.time()
+                proc = subprocess.run(
+                    [str(ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_tool"), path],
+                    text=True, capture_output=True, timeout=20)
+                proc_ms = (time.time() - t0) * 1000
+                for ln in (proc.stdout or "").splitlines():
+                    ln = ln.strip()
+                    if not ln or ":" not in ln:
+                        continue
+                    k, _, v = ln.partition(":")
+                    kv[k.strip()] = v.strip()
+            except Exception as e:  # noqa: BLE001
+                err = e
+            self.after(0, lambda: self._ocr_render_picked_result(
+                path, kv, proc_ms, err))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _ocr_render_picked_result(self, path, kv, proc_ms, err):
+        """Paint the picked-image OCR result into the diff pane and
+        enable the picker / run buttons again."""
+        tw = self.ocr_diff_text
+        tw.configure(state="normal")
+        tw.delete("1.0", "end")
+        chip = self._pal["chip"]
+        ok = kv.get("result.ok", "FAIL").upper() == "OK"
+        c1 = int(kv.get("result.conf1", "0") or 0)
+        c2 = int(kv.get("result.conf2", "0") or 0)
+        # Confidence header (parity with corpus diff pane).
+        line1_conf = (f"line1 conf={c1}% ("
+                      f"{'PASS' if c1 >= 70 else 'WARN' if c1 >= 40 else 'FAIL'})")
+        line2_conf = (f"line2 conf={c2}% ("
+                      f"{'PASS' if c2 >= 70 else 'WARN' if c2 >= 40 else 'FAIL'})")
+        ok_tag = "okline" if ok else "lab"
+        tw.insert("end",
+                  f"样本  : {os.path.basename(path)}\n", "hdr")
+        tw.insert("end",
+                  f"耗时  : {proc_ms:.0f} ms\n", "lab")
+        tw.insert("end",
+                  f"判定  : {'PASS  ✅' if ok else 'FAIL  ❌'}\n", ok_tag)
+        tw.insert("end",
+                  f"{line1_conf}    {line2_conf}\n\n", "lab")
+        # Parsed fields + raw stdout/stderr for forensic look.
+        fields = [
+            ("line1",  kv.get("result.line1", "-")),
+            ("line2",  kv.get("result.line2", "-")),
+            ("name",   kv.get("result.name",  "-")),
+            ("doc",    kv.get("result.doc",   "-")),
+            ("nat",    kv.get("result.nat",   "-")),
+            ("dob",    kv.get("result.dob",   "-")),
+            ("exp",    kv.get("result.exp",   "-")),
+            ("sex",    kv.get("result.sex",   "-")),
+            ("band",   kv.get("band.x band.y band.w band.h", "-")),
+        ]
+        tw.insert("end", "字段解析:\n", "hdr")
+        for k, v in fields:
+            tw.insert("end", f"  {k:6} : {v}\n", "lab")
+        if err is not None:
+            tw.insert("end", "\n[error]\n", "mm")
+            tw.insert("end", f"{err}\n", "lab")
+        tw.configure(state="disabled")
+        # Persist the parsed result so the next single-sample preview /
+        # confidence header picks it up.
+        cid = f"_picked:{os.path.basename(path)}"
+        self._ocr_last = getattr(self, "_ocr_last", {})
+        self._ocr_last[cid] = {
+            "cnn": {
+                "line1": kv.get("result.line1", ""),
+                "line2": kv.get("result.line2", ""),
+                "conf1": c1, "conf2": c2,
+                "band":  kv.get("band.x band.y band.w band.h", ""),
+                "ok":    ok, "ms": proc_ms,
+            }
+        }
+        # Re-render the right-side preview so the region overlay uses
+        # the freshly fetched band/conf.
+        self._preview_last_pm = self._ocr_last[cid]["cnn"]
+        try:
+            self._update_preview_image()
+        except tk.TclError:
+            pass
+        # Restore buttons.
+        try:
+            self.ocr_pick_btn.configure(state="normal")
+        except tk.TclError:
+            pass
+        try:
+            self.ocr_run_btn.configure(state="normal")
+        except tk.TclError:
+            pass
+
     def _ocr_set_sashes(self):
         body = getattr(self, "_ocr_body", None)
         if body is None:
@@ -808,14 +1122,61 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                     w = max(w, f.measure(str(v[idx])))
             tree.column(c, width=min(cap, max(minw, w + pad)))
 
-    def _set_status_bar(self, msg, pct=None):
+    def _set_status_bar(self, msg, pct=None, done=None, total=None):
+        """Update the bottom status bar with text + Progressbar.
+
+        pct=None -> indeterminate spinning bar (no percentage chip)
+        pct=0..100 -> determinate bar with a percentage chip
+        done/total -> also paint "d/t" into the chip when available
+        """
         self.ocr_status_var.set(msg)
+        chip = self._pal["chip"]
         if pct is None:
             self.ocr_progress.configure(mode="indeterminate")
             self.ocr_progress.start(12)
+            self._ocr_paint_progress_chip("  ...  ", chip["dim"]["bg"],
+                                          chip["dim"]["fg"])
         else:
+            pct = max(0.0, min(100.0, float(pct)))
             self.ocr_progress.stop()
-            self.ocr_progress.configure(mode="determinate", value=float(pct))
+            self.ocr_progress.configure(mode="determinate", value=pct)
+            if pct >= 100:
+                kind = "ok"
+            elif pct >= 40:
+                kind = "idle"
+            else:
+                kind = "run"
+            counter = ""
+            if done is not None and total is not None and total > 0:
+                counter = f" {done}/{total}  {pct:.0f}% "
+            else:
+                counter = f" {pct:.0f}% "
+            label = "  DONE  " if pct >= 100 else "  RUN  "
+            self._ocr_paint_progress_chip(label + counter,
+                                          chip[kind]["bg"],
+                                          chip[kind]["fg"])
+
+    def _ocr_paint_progress_chip(self, text, bg, fg):
+        """Repaint the progress chip for both ttk and CTK backends."""
+        parent = getattr(self, "_status_bar", None)
+        if parent is None:
+            return
+        existing = getattr(self, "_progress_chip", None)
+        if existing is not None:
+            try:
+                existing.destroy()
+            except tk.TclError:
+                pass
+            self._progress_chip = None
+        if not text:
+            return
+        try:
+            lbl = tk.Label(parent, text=text, bg=bg, fg=fg,
+                           font=self._pal["font_ui_bold"], padx=6, pady=1)
+            lbl.pack(side="left", padx=4)
+            self._progress_chip = lbl
+        except tk.TclError:
+            pass
 
     def _ocr_method_toggle(self):
         if self.ocr_method_both.get():
@@ -1379,8 +1740,14 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                         self._set_status_bar(
                             f"正在识别 [{i}/{n}] {nm}  定位:"
                             f" {'MRZ' if (rec.get('loc') or {}).get('mrz') else '无'}"
-                            f" 判定: {rec['grade']}", 100.0 * i / n)))
+                            f" 判定: {rec['grade']}", 100.0 * i / n,
+                            done=i, total=n)))
+                # Final 100% bar when the photo pass completes.
                 self.after(0, lambda: self._ocr_populate_photos(results))
+                self.after(0, lambda n=len(results):
+                           self._set_status_bar(
+                               f"完成 {n} 张照片识别", 100,
+                               done=n, total=n))
             except Exception as e:  # noqa: BLE001
                 import traceback as _tb
                 _tb.print_exc()
