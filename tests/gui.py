@@ -1343,9 +1343,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 "[!] mrz_tool decode 返回非 0 (说明 OCR 出的两行不是合法 ICAO 字符，"
                 "常见原因：合成样本 / 低分辨率 / MRZ 区定位过窄)",
                 "",
-                _synth_hint(int(kv.get("result.conf1", "0") or 0),
-                              int(kv.get("result.conf2", "0") or 0),
-                              decode_proc.returncode == 0),
+                self._synth_hint(int(kv.get("result.conf1", "0") or 0),
+                                   int(kv.get("result.conf2", "0") or 0),
+                                   decode_proc.returncode == 0),
                 f"result.name : {kv.get('result.name', '-')}",
                 f"result.doc  : {kv.get('result.doc',  '-')}",
                 f"result.nat  : {kv.get('result.nat',  '-')}",
