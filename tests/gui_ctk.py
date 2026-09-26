@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
-"""passport_test_gui -- Tkinter GUI that exercises all 4 modules.
+"""passport_test_gui (CustomTkinter preview) -- exercises all 4 modules.
+
+Run from the project root with the bundled venv so that customtkinter
+is on the path:
+
+    ./.venv-ctk/bin/python tests/gui_ctk.py
+
+The script falls back to ``sys.executable`` if the venv is missing,
+but it will print a friendly hint instead of NameError when the
+customtkinter import fails.
 
 Tabs (in order):
 
@@ -75,19 +84,22 @@ SAMPLE_MRZ = (
 
 class PassportGUI(ctk.CTk if HAS_CTK else (Window if HAS_TTKB else tk.Tk)):
     def __init__(self, themename="darkly"):
+        # Fail fast: every UI builder below references ``ctk`` directly,
+        # so a missing module would explode mid-build with NameError.
+        if not HAS_CTK:
+            raise RuntimeError(
+                "tests/gui_ctk.py requires the customtkinter package. "
+                "Run it with the bundled venv: "
+                "./.venv-ctk/bin/python tests/gui_ctk.py "
+                "(or `pip install customtkinter` into your environment).")
         # ctk takes precedence; it auto-configures DPI scaling and uses a
         # neutral dark palette that we override per .impeccable.md.
-        if HAS_CTK:
-            try:
-                ctk.set_appearance_mode("dark")
-                ctk.set_default_color_theme("dark-blue")
-            except Exception:
-                pass
-            super().__init__()
-        elif HAS_TTKB:
-            super().__init__(themename=themename)
-        else:
-            super().__init__()
+        try:
+            ctk.set_appearance_mode("dark")
+            ctk.set_default_color_theme("dark-blue")
+        except Exception:
+            pass
+        super().__init__()
         self._theme_name = themename
         self.title("护照机测试机 - Passport Test Bench")
         self.geometry("1280x780")
@@ -2093,6 +2105,15 @@ def re_compile(pattern):
 
 
 def main():
+    if not HAS_CTK:
+        sys.stderr.write(
+            "[tests/gui_ctk.py] customtkinter is not importable.\n"
+            "  Activate the bundled venv and rerun:\n"
+            "      ./.venv-ctk/bin/python tests/gui_ctk.py\n"
+            "  Or install it into the active interpreter:\n"
+            "      python3 -m pip install --user customtkinter\n")
+        sys.stderr.flush()
+        sys.exit(2)
     app = PassportGUI()
     app.mainloop()
 
