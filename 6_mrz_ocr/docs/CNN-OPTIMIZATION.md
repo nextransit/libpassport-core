@@ -253,3 +253,23 @@ top-3 候选 + 置信裕度(p0-p1)升序 + 单位置翻转 + 双位置 2x2 联�
 - 训练:把 realistic 中置信 <0.8 或 Top-2 纠错的 16x12 字符 patch 落盘,
   按 30% 权重与 clean 混合重训;
 - 验收:以 1380 eval 的 realistic full-match 与 cksum 为唯一指标。
+
+### 7.5 光照梯度归一化 A/B(2026-09-26,默认 OFF)
+
+针对 realistic illum>=30 桶(失败率 55~100%)实现了共享层局部对比度归一化
+`mrz_normalize_local_contrast`(src/mrz_geom.c):逐列滑动窗口 p95 背景 +
+band 全局 p01 墨参考,滑动直方图 O(W*H),~0.5ms;输出极性 bg=255/ink=0,
+gate:`MRZ_OCR_LOCAL_NORM=1`。
+
+**A/B 结论(1380 eval):**
+- NORM ON 但**权重重训前**:illum>=40 桶 line1 78.37 vs 78.44、line2 96.58
+  vs 96.24——无差异(权重未适配归一化输入分布);
+- NORM ON + hard-slices 重训后:字符精度升(line1 95.63->97.60,line2
+  98.87->99.05,cksum 94.64->97.10),但 **realistic full-match 45.0%->
+  37.9% 反而降**,clean full-match 也从 95.7% 微降;
+- 因此 NORM 默认 OFF(产品验收只看 full-match),代码与 gate 保留供现场 A/B。
+
+**教训**:full-match 是占了"双行同时全对"的联合指标,字符精度升不等于
+整行可交付。前端归一化 + 重训的方向与 hard-slices 30% 权重一样,都提高
+单字、压低整行——真正能推 full-match 的路径还没找到,优先怀疑切分/deskew
+残留误差与低置信双字,而非单字分类器。
