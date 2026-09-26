@@ -491,7 +491,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self.ocr_case_list.pack(side="left", fill="both", expand=True)
         ysb.pack(side="right", fill="y")
         self.ocr_case_list.bind("<<TreeviewSelect>>", self._ocr_on_case_select)
-        self.ocr_case_list.bind("<Double-Button-1>", self._ocr_on_case_select)
+        # Double-click opens the full-resolution viewer; single-click
+        # keeps the existing thumbnail preview in the right pane.
+        self.ocr_case_list.bind("<Double-Button-1>", self._ocr_open_original)
 
         # Middle = metrics card + summary + detail.
         middle = ttk.Frame(body); body.add(middle, weight=2)
@@ -539,6 +541,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         ysb2.pack(side="right", fill="y")
         xsb2.pack(side="bottom", fill="x")
         self.ocr_detail.bind("<<TreeviewSelect>>", self._ocr_on_detail_select)
+        self.ocr_detail.bind("<Double-Button-1>", self._ocr_open_original_from_detail)
         self._ocr_detail_map = {}
 
         # Right = single-sample perspective (image + char-level diff).
@@ -964,6 +967,168 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             self._show_diff(blocks)
         else:
             self._show_gt_only(rec)
+
+    # ---- Full-size image viewer (double-click on case / detail row) ----
+    def _ocr_open_original_from_detail(self, _evt=None):
+        """Resolve the corpus record for the currently selected detail
+        row and pop the full-size viewer. Detail rows are keyed by
+        (case_id, method); the case_id is the first 8 chars of the row
+        iid (or the prefix before "::")."""
+        sel = self.ocr_detail.selection()
+        if not sel:
+            return
+        iid = sel[0]
+        cid = iid.split("::", 1)[0] if "::" in iid else iid[:8]
+        rec = next((r for r in self._ocr_corpus["records"]
+                    if r["id"] == cid), None)
+        if rec is None:
+            return
+        self._ocr_open_original(cid, rec)
+
+    def _ocr_open_original(self, cid=None, rec=None):
+        """Open a top-level window showing the original (unresized)
+        image with zoom controls (Fit / 1x / 2x / 4x) and a chip bar
+        reporting case metadata. Mirrors the CustomTkinter preview."""
+        if rec is None or cid is None:
+            sel = self.ocr_case_list.selection()
+            if not sel:
+                return
+            cid = sel[0]
+            rec = next((r for r in self._ocr_corpus["records"]
+                        if r["id"] == cid), None)
+            if rec is None:
+                return
+        from pathlib import Path as _P
+        from ocr_bench_runner import CORPUS_JSON  # type: ignore
+        img_path = _P(CORPUS_JSON).parent / rec["image"]
+        if not img_path.exists():
+            messagebox.showerror("原图缺失", f"找不到图片文件:\n{img_path}")
+            return
+        try:
+            from PIL import Image as _PILImage
+        except Exception:
+            messagebox.showerror("依赖缺失",
+                                 "原图查看器需要 Pillow: pip install pillow")
+            return
+        try:
+            full_pil = _PILImage.open(img_path).convert("RGB")
+        except Exception as e:
+            messagebox.showerror("加载失败", f"无法读取 {img_path.name}: {e}")
+            return
+        win = tk.Toplevel(self)
+        win.title(f"原图 · {cid}  ·  {img_path.name}")
+        pal = self._pal
+        try:
+            win.configure(bg=pal["ctk"]["bg_color"])
+        except tk.TclError:
+            try:
+                win.configure(bg=pal["bg"])
+            except tk.TclError:
+                pass
+        iw, ih = full_pil.size
+        try:
+            sw, sh = self.winfo_screenwidth(), self.winfo_screenheight()
+        except Exception:
+            sw, sh = 1440, 900
+        ww = min(max(iw + 80, 720), int(sw * 0.9))
+        wh = min(max(ih + 140, 540), int(sh * 0.9))
+        win.geometry(f"{ww}x{wh}")
+
+        # ---- Top metadata bar ----
+        top = ttk.Frame(win)
+        top.pack(fill="x", padx=8, pady=(8, 4))
+        ttk.Label(top, text=f"  原图 · {cid}  ",
+                  foreground=pal.get("accent", pal["primary"]),
+                  font=("TkDefaultFont", 11, "bold")).pack(
+                      side="left", padx=(0, 8))
+        chip = pal["chip"]["idle"]
+        for label, key in (("scale", "scale"), ("noise", "noise"),
+                           ("skew", "skew"), ("channel", "channel")):
+            v = rec.get(key, "-")
+            ttk.Label(top, text=f"  {label}={v}  ",
+                      foreground=chip["fg"], background=chip["bg"],
+                      font=("Menlo", 9, "bold")).pack(side="left", padx=4)
+        ttk.Label(top, text=f"  {iw}x{ih}  ",
+                  foreground="#888",
+                  font=("Menlo", 9)).pack(side="right", padx=8)
+
+        # ---- Zoom controls ----
+        bar = ttk.Frame(win)
+        bar.pack(fill="x", padx=8, pady=4)
+        status_var = tk.StringVar(value="zoom 1.0x")
+        ttk.Label(bar, textvariable=status_var,
+                  foreground="#888",
+                  font=("Menlo", 9)).pack(side="right", padx=8)
+        zoom_state = {"factor": 1.0}
+
+        # ---- Canvas + scrollbars ----
+        cf = ttk.Frame(win, relief="solid", borderwidth=1)
+        cf.pack(fill="both", expand=True, padx=8, pady=(0, 8))
+        canvas = tk.Canvas(cf, bg=pal["code"], highlightthickness=0)
+        xscroll = ttk.Scrollbar(cf, orient="horizontal",
+                                command=canvas.xview)
+        yscroll = ttk.Scrollbar(cf, orient="vertical",
+                                command=canvas.yview)
+        canvas.configure(xscrollcommand=xscroll.set,
+                         yscrollcommand=yscroll.set)
+        xscroll.pack(side="bottom", fill="x")
+        yscroll.pack(side="right", fill="y")
+        canvas.pack(side="left", fill="both", expand=True)
+        photo_ref = {"img": None}
+
+        def render(factor):
+            factor = max(0.1, min(factor, 8.0))
+            zoom_state["factor"] = factor
+            status_var.set(f"zoom {factor:.2f}x")
+            zw = max(1, int(iw * factor))
+            zh = max(1, int(ih * factor))
+            from PIL import Image as _PI, ImageTk as _IT
+            if factor == 1.0:
+                photo = _IT.PhotoImage(full_pil)
+            else:
+                method = _PI.LANCZOS if factor < 1.0 else _PI.BICUBIC
+                photo = _IT.PhotoImage(
+                    full_pil.resize((zw, zh), method))
+            photo_ref["img"] = photo
+            canvas.delete("all")
+            canvas.create_image(0, 0, image=photo, anchor="nw")
+            canvas.configure(scrollregion=(0, 0, zw, zh))
+
+        def fit_to_window():
+            canvas.update_idletasks()
+            cw = max(canvas.winfo_width(), 1)
+            ch = max(canvas.winfo_height(), 1)
+            render(min(cw / iw, ch / ih))
+
+        def set_zoom(f):
+            render(f)
+
+        for label, value in (("Fit", None), ("1x", 1.0),
+                             ("2x", 2.0), ("4x", 4.0)):
+            cmd = fit_to_window if value is None else (lambda v=value: set_zoom(v))
+            ttk.Button(bar, text=label, command=cmd, width=6).pack(
+                side="left", padx=2)
+
+        def on_wheel(evt):
+            if evt.state & 0x4 or evt.state & 0x0008:
+                delta = evt.delta if hasattr(evt, "delta") else 0
+                step = 1.1 if delta > 0 else 1 / 1.1
+                render(zoom_state["factor"] * step)
+                return "break"
+            if getattr(evt, "num", None) == 4:
+                canvas.yview_scroll(-3, "units")
+            elif getattr(evt, "num", None) == 5:
+                canvas.yview_scroll(3, "units")
+            else:
+                d = -1 if evt.delta > 0 else 1
+                canvas.yview_scroll(d * 3, "units")
+            return "break"
+        canvas.bind("<MouseWheel>", on_wheel)
+        canvas.bind("<Button-4>", on_wheel)
+        canvas.bind("<Button-5>", on_wheel)
+
+        canvas.update_idletasks()
+        fit_to_window()
 
     def _ocr_on_detail_select(self, _evt=None):
         sel = self.ocr_detail.selection()
