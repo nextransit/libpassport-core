@@ -1,0 +1,50 @@
+# Tkinter GUI Architecture & Modernization AI Skill
+name: python-tkinter-modern-gui-expert
+version: 2.1
+description: Enforces modern aesthetics, high-DPI scaling, thread safety, and responsive layouts for Python Tkinter applications (applies to tests/gui.py and tests/gui_ctk.py).
+
+## rules
+
+### dpi-awareness
+Enforce platform-aware DPI scaling BEFORE initialising Tk:
+```python
+if sys.platform.startswith("win"):
+    import ctypes
+    try:
+        ctypes.windll.shcore.SetProcessDpiAwareness(1)
+    except Exception:
+        pass
+```
+(Already injected at the top of tests/gui.py and tests/gui_ctk.py — keep it there on refactors.)
+
+### layout-hygiene
+- NEVER mix pack() and grid() within the same parent frame (TclError).
+- For every grid()-managed container, define rowconfigure/columnconfigure weights explicitly (0 for fixed headers/sidebars, 1 for stretchable data areas).
+- Long text fields (APDU dumps, hex streams, MRZ lines, logs) MUST live in scrolled text/canvas with wrap='none' or horizontal scrollbars.
+- Buttons grouped on a row MUST be packed inside a dedicated btn_frame (pack side="right") so they never squeeze/truncate the rest of the strip.
+
+### visual-hierarchy
+- Banish grey LabelFrame ridges; use dark card panels: bg/card #161F30 on #0B0F19 (dark) / #F2F4F7 on #FFFFFF (light). All colors come from `_theme_palette()` semantic keys (card, border, chip, console, metric, tag_*) — never hardcode hex in widgets.
+- Every monospaced data field (hex strings, checksums, OCR predictions, MRZ lines) MUST set font=('Menlo', N) on macOS / ('Consolas', N) on Windows.
+- Status indicators use coloured glyphs (●, ✔, ✖) with semantic tones, never raw dashes.
+- Theme switching must re-color EVERY widget: palette defaults must be dark/light-aware (never hardcoded dark when ttkbootstrap is absent), and recolor functions must walk the widget tree with `w.cget(key)` per option (customtkinter >= 6 `configure()` no longer returns the config dict).
+- DPI: preview images must use PIL `Image.LANCZOS`, diff terminal must use the palette "console" keys.
+
+### thread-safety-engine
+- NEVER call time.sleep(), socket/serial ops, subprocess, or heavy inference on the Tk event thread.
+- Background work: threading.Thread + queue.Queue, UI polls via root.after(50, check_queue); subprocess work must flush status via `self.after(0, ...)` + `update_idletasks()`.
+- High-frequency text insertions MUST be aggregated (ThrottledTextUpdater: 50ms batch flush), never per-message insert.
+
+## project-specific conventions (passport bench)
+- GUI entrypoints: tests/gui.py (native Tk mirror) and tests/gui_ctk.py (CustomTkinter product GUI, "Visual-pass 3.0"). Edit BOTH files in parallel for any UI change; gui_ctk is the product path.
+- Both define `_theme_palette()` returning semantic dicts (dark branch + light branch): keys bg/fg/field/field_fg/primary/accent/ok/err/warn/card/code/border/dim/chip{}/console{}/metric{}/tag_*; gui_ctk additionally `ctk{...}` (incl. warn key).
+- `_refresh_tk_theme()` recolors tk widgets; `_refresh_ctk_theme()` recolors CTk widgets (cget-based walk); `_apply_text_tag_palette()` recolors text-widget tags (ocr_diff_text, ocr_summary/ocr_detail rows, nfc_trace, ac_out). Keep the recolor sets complete: newly added dark-fg widgets MUST be registered in one of them.
+- Theme toggle: single menu entry + (gui.py) header seg label `_seg_toggle`; `_toggle_theme()` must switch concrete theme names ("cyber-dark"/"cyber-light" in gui.py, "dark"/"light" in gui_ctk), NOT friendly aliases that map back to the current theme; the toggle label always advertises the TARGET theme.
+- `.venv-ctk` has NO ttkbootstrap and NO torch (palette must not depend on ttk.Style().colors); system python3 has torch.
+- OCR pipeline lives in tests/passport_pipeline.py; real-photo GT in tests/real_gt.json (39-char ICAO composite formula); MRZ band locator fix: `2 * max_run_h` rule in 6_mrz_ocr/src/mrz_ocr.c.
+
+## verification checklist
+1. py_compile both gui files after any edit.
+2. Real-display smoke (nohup + log): toggle dark -> light -> dark; verify console/diff bg/fg, metric value colors, tag colors, menu/seg label sync.
+3. Light-theme scan: no widgets left with hardcoded dark bg (system tk.Menu is the only allowed exception).
+4. Resize window: rightmost table columns (SW, 耗时) always visible; preview keeps aspect ratio (LANCZOS).

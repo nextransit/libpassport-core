@@ -18,6 +18,16 @@ import os, subprocess, sys, threading, time, json, re, hashlib, tkinter as tk
 from tkinter import filedialog, messagebox
 from pathlib import Path
 
+# High-DPI awareness must be set before Tk initialises (Windows only;
+# macOS/Retina is handled natively). Prevents blurry controls/table
+# text on scaled displays.
+if sys.platform.startswith("win"):
+    import ctypes
+    try:
+        ctypes.windll.shcore.SetProcessDpiAwareness(1)
+    except Exception:
+        pass
+
 try:
     import ttkbootstrap as ttk
     from ttkbootstrap import Window
@@ -102,18 +112,18 @@ CYBER_THEMES = {
             "fg":        "#dce3ec",
             "selectbg":  "#0f2a33",
             "selectfg":  "#7df3ff",
-            "border":    "#223041",
+            "border":    "#21262D",
             "inputfg":   "#e8eef6",
             "inputbg":   "#111827",
             "active":    "#16202c",
         },
         "tk": {
-            "card": "#0d1117", "code": "#0a0e14",
+            "card": "#121620", "code": "#0a0e14",
             "dim": "#8b98a9", "violet": "#b388ff",
-            "cta_bg": "#00e5ff", "cta_fg": "#04252b", "cta_hover": "#4dedff",
-            "ghost_bg": "#111827", "ghost_fg": "#7df3ff",
-            "ghost_hover": "#16202c", "ghost_border": "#1e4a5a",
-            "canvas": "#0d1117", "canvas_border": "#1e4a5a",
+            "cta_bg": "#1F6FEB", "cta_fg": "#ffffff", "cta_hover": "#3a8bff",
+            "ghost_bg": "#30363D", "ghost_fg": "#C9D1D9",
+            "ghost_hover": "#3a434d", "ghost_border": "#30363D",
+            "canvas": "#121620", "canvas_border": "#21262D",
             "chip_idle":  ("#00e5ff", "#0f2a33"),
             "chip_ok":    ("#2ee6a8", "#0f3325"),
             "chip_run":   ("#b388ff", "#251a3d"),
@@ -182,6 +192,43 @@ def _save_theme_pref(name):
         THEME_PREF_FILE.write_text(json.dumps({"theme": name}))
     except Exception:
         pass
+
+
+class _Tooltip:
+    """Hover tooltip (overrideredirect Toplevel) showing a full path."""
+
+    def __init__(self, widget):
+        self.widget = widget
+        self.tip = None
+        self.text = ""
+        widget.bind("<Enter>", self._enter, add="+")
+        widget.bind("<Leave>", self._leave, add="+")
+
+    def set_text(self, text):
+        self.text = text or ""
+
+    def _enter(self, _e):
+        if not self.text:
+            return
+        try:
+            x = self.widget.winfo_rootx() + 12
+            y = self.widget.winfo_rooty() + self.widget.winfo_height() + 6
+            self.tip = tk.Toplevel(self.widget)
+            self.tip.wm_overrideredirect(True)
+            self.tip.wm_geometry(f"+{x}+{y}")
+            tk.Label(self.tip, text=self.text, bg="#21262D", fg="#C9D1D9",
+                     font=("Menlo", 9), padx=8, pady=4,
+                     justify="left").pack()
+        except tk.TclError:
+            self.tip = None
+
+    def _leave(self, _e):
+        if self.tip is not None:
+            try:
+                self.tip.destroy()
+            except tk.TclError:
+                pass
+            self.tip = None
 
 
 class _ThemedButton(tk.Frame):
@@ -266,7 +313,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         else:
             super().__init__()
         self._theme_name = "darkly"
-        self.title("护照机测试机 - Passport Test Bench")
+        self.title("PASSPORT TEST BENCH 护照机综合测试台 v2.4")
         self.geometry("1280x780")
         self._set_window_icon()
         self._register_cyber_themes()
@@ -301,6 +348,10 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self._build_mrz_tab()
         self._build_ac_tab()
         self._build_face_tab()
+        # Root window background: with no ttkbootstrap the Tk root defaults
+        # to the macOS system window colour (light grey in light appearance)
+        # which would flood the whole cockpit with a light backdrop.
+        self.configure(bg=self._pal["bg"])
         self._refresh_tk_theme()
         self._apply_text_tag_palette()
         self.status = tk.StringVar(value=self._status_text())
@@ -348,8 +399,11 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
     def _apply_theme_proof_styles(self):
         """Pin readable colors on input widgets. With ttkbootstrap the
         palette comes from the active theme (st.colors); otherwise fall back
-        to a light-field/dark-text scheme that survives macOS dark mode."""
+        to a dark-aware field/text scheme (no ttkbootstrap in .venv-ctk:
+        the old hardcoded #ffffff fallback left white Treeviews in dark
+        mode)."""
         st = ttk.Style()
+        dark = not self._is_light()
         try:
             c = st.colors
             if isinstance(c, dict):
@@ -363,9 +417,19 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 HEAD = getattr(c, "active", "#e9edf3")
                 SEL = getattr(c, "primary", "#0b5cad")
         except AttributeError:
-            FIELD, TEXT, HEAD, SEL = "#ffffff", "#111827", "#e9edf3", "#0b5cad"
+            if dark:
+                FIELD, TEXT, HEAD, SEL = "#14181e", "#d5dae2", "#161F30", "#1F6FEB"
+            else:
+                FIELD, TEXT, HEAD, SEL = "#f4f6fa", "#1a2433", "#FFFFFF", "#0b5cad"
         # Pin palette-derived border so Labelframe/Card uses a faint line.
         border = (self._pal.get("border") if hasattr(self, "_pal") else "#3A3B3C")
+        if not HAS_TTKB:
+            # macOS aqua ignores Heading/radiobutton backgrounds; clam
+            # lets every style element below render from our palette.
+            try:
+                st.theme_use("clam")
+            except tk.TclError:
+                pass
         try:
             st.configure("Data.Treeview", background=FIELD,
                          fieldbackground=FIELD, foreground=TEXT,
@@ -378,10 +442,17 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                          foreground=TEXT, padding=(6, 4), relief="flat")
             st.map("Data.Treeview.Heading", background=[("active", HEAD)])
             # Card-style container: replace the chunky native ridge with a
-            # 1px flat border tinted to the palette border colour.
-            st.configure("TLabelframe", bordercolor=border, borderwidth=1,
-                         relief="solid")
-            st.configure("TLabelframe.Label", foreground=TEXT, padding=(6, 2))
+            # 1px flat border tinted to the palette border colour. Also pin
+            # the container background: on macOS TLabelframe/TFrame default
+            # to the SYSTEM window colour (light grey in light appearance),
+            # which would punch big light panels into the dark cockpit.
+            st.configure("TLabelframe", background=FIELD, bordercolor=border,
+                         borderwidth=1, relief="solid")
+            st.configure("TLabelframe.Label", background=FIELD,
+                         foreground=TEXT, padding=(6, 2))
+            st.configure("TFrame", background=FIELD)
+            st.configure("TPanedwindow", background=FIELD,
+                         sashwidth=3, sashpad=0, sashrelief="flat")
             st.configure("Field.TEntry", fieldbackground=FIELD,
                          foreground=TEXT, insertcolor=TEXT, bordercolor=border)
             st.map("Field.TEntry",
@@ -392,6 +463,38 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             st.map("Field.TCombobox",
                    fieldbackground=[("readonly", FIELD)],
                    foreground=[("readonly", TEXT)])
+            # Notebook: theme the tab strip + content area so the deep
+            # cockpit background is not broken by native light tabs.
+            st.configure("TNotebook", background=FIELD, borderwidth=0)
+            st.configure("TNotebook.Tab", background=HEAD, foreground=TEXT,
+                         padding=(10, 4))
+            st.map("TNotebook.Tab",
+                   background=[("selected", FIELD), ("active", HEAD)],
+                   foreground=[("selected", TEXT)])
+            st.configure("TRadiobutton", background=FIELD, foreground=TEXT,
+                         indicatorbackground=FIELD, bordercolor=border)
+            st.map("TRadiobutton",
+                   background=[("active", HEAD)],
+                   foreground=[("active", TEXT), ("disabled", "#7c7c7c")],
+                   indicatorbackground=[("selected", SEL)])
+            st.configure("TCheckbutton", background=FIELD, foreground=TEXT,
+                         indicatorbackground=FIELD, bordercolor=border)
+            st.map("TCheckbutton",
+                   background=[("active", HEAD)],
+                   foreground=[("active", TEXT), ("disabled", "#7c7c7c")],
+                   indicatorbackground=[("selected", SEL)])
+            st.configure("TScrollbar", background=HEAD, troughcolor=FIELD,
+                         arrowcolor=TEXT, bordercolor=border, relief="flat")
+            st.configure("Vertical.TScrollbar", gripcount=0, background=HEAD,
+                         troughcolor=FIELD, arrowcolor=TEXT, bordercolor=border,
+                         relief="flat")
+            st.configure("Horizontal.TScrollbar", gripcount=0, background=HEAD,
+                         troughcolor=FIELD, arrowcolor=TEXT, bordercolor=border,
+                         relief="flat")
+            st.configure("TEntry", fieldbackground=FIELD, foreground=TEXT,
+                         insertcolor=TEXT, bordercolor=border)
+            st.configure("TCombobox", fieldbackground=FIELD, foreground=TEXT,
+                         bordercolor=border)
         except Exception:
             pass
 
@@ -432,7 +535,27 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self._apply_text_tag_palette()
         self._refresh_tk_theme()
         self._refresh_header()
+        self._update_theme_menu_label()
         _save_theme_pref(name)
+
+    def _is_light(self):
+        spec = CYBER_THEMES.get(self._theme_name)
+        if spec is not None:
+            return spec["mode"] != "dark"
+        return self._theme_name in ("cosmo", "journal", "flatly", "superhero")
+
+    def _toggle_theme(self):
+        self._switch_theme("cyber-dark" if self._is_light() else "cyber-light")
+
+    def _update_theme_menu_label(self):
+        viewm = getattr(self, "_viewm", None)
+        if viewm is None:
+            return
+        label = "🌙  深色主题" if not self._is_light() else "☀️  浅色主题"
+        try:
+            viewm.entryconfig(self._theme_toggle_idx, label=label)
+        except tk.TclError:
+            pass
 
     # ---------------- brand header + theme toggle ----------------
     def _build_header(self):
@@ -452,12 +575,10 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self._header_sub.pack(side="left", pady=7)
         seg = tk.Frame(h, bd=0, highlightthickness=0)
         seg.pack(side="right", padx=10, pady=5)
-        self._seg_dark = tk.Label(seg, text="🌙 深色", cursor="hand2")
-        self._seg_dark.pack(side="left", padx=1, ipadx=10, ipady=2)
-        self._seg_light = tk.Label(seg, text="☀️ 浅色", cursor="hand2")
-        self._seg_light.pack(side="left", padx=1, ipadx=10, ipady=2)
-        self._seg_dark.bind("<Button-1>", lambda e: self._switch_theme("cyber-dark"))
-        self._seg_light.bind("<Button-1>", lambda e: self._switch_theme("cyber-light"))
+        self._seg_frame = seg
+        self._seg_toggle = tk.Label(seg, text="☀️ 浅色", cursor="hand2")
+        self._seg_toggle.pack(side="left", padx=1, ipadx=10, ipady=2)
+        self._seg_toggle.bind("<Button-1>", lambda e: self._toggle_theme())
         # Provisional palette: _switch_theme (which owns the final one)
         # runs after the header exists.
         if not hasattr(self, "_pal"):
@@ -474,14 +595,12 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             self._theme_name in ("darkly", "cyborg")
         try:
             h.configure(bg=pal["bg"])
+            self._seg_frame.configure(bg=pal["bg"])
             self._header_title.configure(bg=pal["bg"], fg=pal["fg"])
             self._header_sub.configure(bg=pal["bg"], fg=pal["dim"])
-            for seg, active in ((self._seg_dark, dark),
-                                (self._seg_light, not dark)):
-                if active:
-                    seg.configure(bg=pal["cta_bg"], fg=pal["cta_fg"])
-                else:
-                    seg.configure(bg=pal["ghost_bg"], fg=pal["dim"])
+            seg = self._seg_toggle
+            seg.configure(text=("🌙 深色" if dark else "☀️ 浅色"),
+                          bg=pal["cta_bg"], fg=pal["cta_fg"])
         except tk.TclError:
             pass
 
@@ -534,8 +653,21 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         cfg(getattr(self, "ocr_diff_text", None), "match", pal["tag_match"])
         cfg(getattr(self, "ocr_diff_text", None), "mm", pal["tag_mm"])
         cfg(getattr(self, "ocr_diff_text", None), "okline", pal["tag_match"])
-        cfg(getattr(self, "nfc_trace", None), "sw_ok", pal["tag_ok"])
-        cfg(getattr(self, "nfc_trace", None), "sw_bad", pal["tag_fail"])
+        con = pal["console"]
+        for w, tag, spec in (
+                (getattr(self, "ocr_diff_text", None), "hdr",
+                 {"bg": None, "fg": con["pad"]}),
+                (getattr(self, "ocr_diff_text", None), "lab",
+                 {"bg": None, "fg": con["pad"]}),
+                (getattr(self, "ocr_diff_text", None), "pad",
+                 {"bg": None, "fg": con["pad"]}),
+                (getattr(self, "ocr_diff_text", None), "error",
+                 {"bg": con["error_bg"], "fg": con["error_fg"]})):
+            cfg(w, tag, spec)
+        cfg(getattr(self, "nfc_trace", None), "sw_ok",
+            {"bg": None, "fg": "#3FB950"})
+        cfg(getattr(self, "nfc_trace", None), "sw_bad",
+            {"bg": None, "fg": "#F85149"})
         # AC verdict tags (same tag names reused across report widgets).
         for name in ("ac_out", "ac_report"):
             w = getattr(self, name, None)
@@ -553,7 +685,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             c, t = spec["colors"], spec["tk"]
         else:
             c = t = None
-        if t is not None:
+        if spec is not None:
             dark = spec["mode"] == "dark"
         else:
             dark = (not HAS_TTKB) or self._theme_name in ("darkly", "cyborg")
@@ -599,6 +731,23 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 "tag_match": {"bg": None,              "fg": t["tag_match"][0]},
                 "tag_mm":    {"bg": t["tag_mm"][0],    "fg": t["tag_mm"][1]},
                 "tag_plain": {"bg": t["tag_plain"][1], "fg": t["tag_plain"][0]},
+                "console": {
+                    "bg": "#0B0F19" if dark else "#FFFFFF",
+                    "fg": "#E2E8F0" if dark else "#1a2433",
+                    "header": "#38BDF8" if dark else "#0b5cad",
+                    "pad": "#475569" if dark else "#94a3b8",
+                    "error_bg": "#EF4444" if dark else "#B42318",
+                    "error_fg": "#FFFFFF",
+                },
+                "metric": {
+                    "cases": "#E6EDF3" if dark else "#0b5cad",
+                    "mean": "#38BDF8" if dark else "#0b8fb0",
+                    "p95": "#38BDF8" if dark else "#0b5cad",
+                    "pass": "#3FB950" if dark else "#027a48",
+                    "l1": "#3FB950" if dark else "#027a48",
+                    "l2": "#3FB950" if dark else "#027a48",
+                    "full": "#3FB950" if dark else "#B45309",
+                },
                 "font_ui": (ui_family, 10),
                 "font_ui_bold": (ui_family, 10, "bold"),
                 "font_title": (ui_family, 12, "bold"),
@@ -610,20 +759,24 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         try:
             cc = st.colors
             if isinstance(cc, dict):
-                bg = cc.get("bg", "#14181e")
-                fg = cc.get("fg", "#d5dae2")
-                field = cc.get("inputbg", "#1f242c")
-                field_fg = cc.get("inputfg", "#e6ebf2")
+                bg = cc.get("bg", "#14181e" if dark else "#f4f6fa")
+                fg = cc.get("fg", "#d5dae2" if dark else "#1a2433")
+                field = cc.get("inputbg", "#1f242c" if dark else "#FFFFFF")
+                field_fg = cc.get("inputfg", "#e6ebf2" if dark else "#1a2433")
                 primary = cc.get("primary", "#0b5cad")
             else:
-                bg = getattr(cc, "bg", "#14181e")
-                fg = getattr(cc, "fg", "#d5dae2")
-                field = getattr(cc, "inputbg", "#1f242c")
-                field_fg = getattr(cc, "inputfg", "#e6ebf2")
+                bg = getattr(cc, "bg", "#14181e" if dark else "#f4f6fa")
+                fg = getattr(cc, "fg", "#d5dae2" if dark else "#1a2433")
+                field = getattr(cc, "inputbg", "#1f242c" if dark else "#FFFFFF")
+                field_fg = getattr(cc, "inputfg", "#e6ebf2" if dark else "#1a2433")
                 primary = getattr(cc, "primary", "#0b5cad")
         except AttributeError:
-            bg, fg, field, field_fg, primary = ("#14181e", "#d5dae2",
-                                                "#1f242c", "#e6ebf2", "#0b5cad")
+            if dark:
+                bg, fg, field, field_fg, primary = ("#14181e", "#d5dae2",
+                                                    "#1f242c", "#e6ebf2", "#0b5cad")
+            else:
+                bg, fg, field, field_fg, primary = ("#f4f6fa", "#1a2433",
+                                                    "#FFFFFF", "#1a2433", "#0b5cad")
         try:
             cc = ttk.Style().colors
             active_c = (cc.get("active", "#e9edf3") if isinstance(cc, dict)
@@ -633,15 +786,15 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         accent = "#00e5ff" if dark else primary
         # Visual-pass 2.0 semantic tokens, kept for the stock presets.
         if dark:
-            border = "#3A3B3C"
-            card = "#0d1117"
-            code = "#0a0e14"
-            chips = {"idle": ("#00e5ff", "#0f2a33"), "ok": ("#2ee6a8", "#0f3325"),
-                     "run": ("#b388ff", "#251a3d"), "fail": ("#ff5c7a", "#3a1620"),
+            border = "#21262D"
+            card = "#121620"
+            code = "#0B0F19"
+            chips = {"idle": ("#00F5FF", "#0f2a33"), "ok": ("#10B981", "#0f3325"),
+                     "run": ("#b388ff", "#251a3d"), "fail": ("#EF4444", "#3a1620"),
                      "dim": ("#6a737d", "#1a1d22")}
             tags = {"ok": ("#0d3a2a", "#7eeac2"), "fail": ("#43131f", "#ffaabb"),
-                    "warn": ("#3d2f08", "#ffd479"), "match": "#2ee6a8",
-                    "mm": ("#ffaabb", "#43131f"), "plain": ("#c9d4e0", "#0a0e14")}
+                    "warn": ("#3d2f08", "#F59E0B"), "match": "#10B981",
+                    "mm": ("#EF4444", "#FFFFFF"), "plain": ("#c9d4e0", "#0a0e14")}
         else:
             border = "#D0D5DD"
             card = "#F2F4F7"
@@ -660,11 +813,12 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             "card": card, "code": code, "border": border,
             "dim": "#9aa4b2" if dark else "#5c6773",
             "canvas": card, "canvas_border": border,
-            "cta_bg": primary, "cta_fg": "#ffffff",
-            "cta_hover": accent if not dark else "#2b7ed6",
-            "ghost_bg": field, "ghost_fg": accent,
-            "ghost_hover": active_c if not dark else "#16202c",
-            "ghost_border": border,
+            "cta_bg": "#1F6FEB" if dark else primary, "cta_fg": "#ffffff",
+            "cta_hover": "#3a8bff" if dark else "#2b7ed6",
+            "ghost_bg": "#30363D" if dark else field,
+            "ghost_fg": "#C9D1D9" if dark else accent,
+            "ghost_hover": "#3a434d" if dark else active_c,
+            "ghost_border": "#30363D" if dark else border,
             "chip": {k: {"fg": v[0], "bg": v[1]} for k, v in chips.items()},
             "tag_ok":    {"bg": tags["ok"][0],    "fg": tags["ok"][1]},
             "tag_fail":  {"bg": tags["fail"][0],  "fg": tags["fail"][1]},
@@ -672,6 +826,23 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             "tag_match": {"bg": None,             "fg": tags["match"]},
             "tag_mm":    {"bg": tags["mm"][0],    "fg": tags["mm"][1]},
             "tag_plain": {"bg": tags["plain"][1], "fg": tags["plain"][0]},
+            "console": {
+                "bg": "#0B0F19" if dark else "#FFFFFF",
+                "fg": "#E2E8F0" if dark else "#1a2433",
+                "header": "#38BDF8" if dark else "#0b5cad",
+                "pad": "#475569" if dark else "#94a3b8",
+                "error_bg": "#EF4444" if dark else "#B42318",
+                "error_fg": "#FFFFFF",
+            },
+            "metric": {
+                "cases": "#E6EDF3" if dark else "#0b5cad",
+                "mean": "#38BDF8" if dark else "#0b8fb0",
+                "p95": "#38BDF8" if dark else "#0b5cad",
+                "pass": "#3FB950" if dark else "#027a48",
+                "l1": "#3FB950" if dark else "#027a48",
+                "l2": "#3FB950" if dark else "#027a48",
+                "full": "#3FB950" if dark else "#B45309",
+            },
             "font_ui": (ui_family, 10),
             "font_ui_bold": (ui_family, 10, "bold"),
             "font_title": (ui_family, 12, "bold"),
@@ -684,7 +855,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         pal = self._pal
         chip = pal["chip"]
         # Text/code widgets: bg = field, fg = field_fg (already contrast-safe).
-        for n in ("ocr_diff_text", "loc_info", "nfc_inspect", "nfc_adv_text",
+        for n in ("loc_info", "nfc_inspect", "nfc_adv_text",
                   "mrz_text", "mrz_out", "ac_out", "face_out"):
             w = getattr(self, n, None)
             if w is not None:
@@ -755,7 +926,14 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         w = getattr(self, "ocr_preview_label", None)
         if w is not None:
             try:
-                w.configure(background=pal["canvas"])
+                w.configure(background=pal["canvas"],
+                            highlightbackground=pal["border"])
+            except tk.TclError:
+                pass
+        ml = getattr(self, "ocr_preview_meta_lb", None)
+        if ml is not None:
+            try:
+                ml.configure(bg=pal["card"], fg=pal["fg"])
             except tk.TclError:
                 pass
         for d in ("_nfc_key_entries", "_nfc_dg1_lbs", "_nfc_prog_lbs"):
@@ -766,6 +944,52 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                                 readonlybackground=pal["field"])
                 except tk.TclError:
                     pass
+        # Diff terminal (cockpit console) — re-theme from palette.
+        con = pal["console"]
+        for w, bg, fg in ((getattr(self, "_diff_term", None), pal["card"], None),
+                          (getattr(self, "_diff_tbar", None), pal["card"], con["header"])):
+            if w is not None:
+                try:
+                    kw = {"bg": bg}
+                    if fg:
+                        kw["fg"] = fg
+                    w.configure(**kw)
+                except tk.TclError:
+                    pass
+        t = getattr(self, "_diff_term", None)
+        if t is not None:
+            try:
+                t.configure(highlightbackground=pal["border"])
+            except tk.TclError:
+                pass
+        w = getattr(self, "ocr_diff_text", None)
+        if w is not None:
+            try:
+                w.configure(bg=con["bg"], fg=con["fg"],
+                            highlightbackground=pal["border"])
+            except tk.TclError:
+                pass
+        # KPI metric cards — re-theme frames + labels.
+        for cell, ttl, val, role in getattr(self, "_metric_cells", []):
+            try:
+                cell.configure(bg=pal["card"], highlightbackground=pal["border"])
+                ttl.configure(foreground=pal["dim"])
+                val.configure(foreground=pal["metric"][role])
+            except tk.TclError:
+                pass
+        # Root window + loc-page MRZ status chip — set once at construction
+        # is not enough; re-theme them on every switch so no large light
+        # (or dark) surface survives a theme toggle.
+        try:
+            self.configure(bg=pal["bg"])
+        except tk.TclError:
+            pass
+        w = getattr(self, "loc_mrz_chip", None)
+        if w is not None:
+            try:
+                w.configure(bg=chip["dim"]["bg"], fg=chip["dim"]["fg"])
+            except tk.TclError:
+                pass
 
     def _set_window_icon(self):
         """Use the app icon (tests/assets/app_icon.png) for the window
@@ -790,10 +1014,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         filem.add_command(label="退出", command=self.destroy)
         menubar.add_cascade(label="文件", menu=filem)
         viewm = tk.Menu(menubar, tearoff=0)
-        viewm.add_command(label="☀️  浅色主题",
-                          command=lambda: self._switch_theme("light"))
-        viewm.add_command(label="🌙  深色主题",
-                          command=lambda: self._switch_theme("dark"))
+        self._viewm = viewm
+        self._theme_toggle_idx = 0
+        viewm.add_command(label="☀️  浅色主题", command=self._toggle_theme)
         viewm.add_separator()
         advm = tk.Menu(viewm, tearoff=0)
         for name in ("darkly", "cyborg", "superhero", "cosmo",
@@ -860,8 +1083,10 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             style.theme_use("default")
         # Accent CTA: brand-filled flat button via the themed factory
         # (tk.Button, not ttk, so bg/fg render on macOS aqua).
+        btn_frame = ttk.Frame(row1)
+        btn_frame.pack(side="right", padx=4)
         self.ocr_run_btn = self._cta(
-            row1, "▶ 开始测试", self._ocr_run)
+            btn_frame, "⚡ 开始测试", self._ocr_run, padx=12, pady=4)
         self.ocr_run_btn.pack(side="right", padx=4, pady=2)
         # Direct-image recognition: pick a JPG/PNG file, render its
         # thumbnail in the right pane, then call mrz_ocr_tool and
@@ -869,16 +1094,16 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         # is the "I just want to OCR one image" path; the corpus bench
         # stays the "stress test many cases" path.
         self.ocr_pick_btn = self._cta(
-            row1, "🖼️ 直接识别图片", self._ocr_pick_and_recognize, kind="ghost")
+            btn_frame, "🖼 直接识别图片", self._ocr_pick_and_recognize, kind="ghost")
         self.ocr_pick_btn.pack(side="right", padx=4, pady=2)
 
         row2 = ttk.Frame(ctrl); row2.pack(fill="x", padx=8, pady=(0, 6))
-        ttk.Button(row2, text="全选",
-                   command=lambda: self._ocr_select_all(True)).pack(side="left", padx=2)
-        ttk.Button(row2, text="反选",
-                   command=lambda: self._ocr_select_all(False)).pack(side="left", padx=2)
-        ttk.Button(row2, text="清空选择",
-                   command=self._ocr_clear_sel).pack(side="left", padx=2)
+        self._cta(row2, "全选",
+                  lambda: self._ocr_select_all(True), kind="ghost").pack(side="left", padx=2)
+        self._cta(row2, "反选",
+                  lambda: self._ocr_select_all(False), kind="ghost").pack(side="left", padx=2)
+        self._cta(row2, "清空选择",
+                  self._ocr_clear_sel, kind="ghost").pack(side="left", padx=2)
         ttk.Label(row2, text="搜索案例 ID:").pack(side="left", padx=(14, 2))
         self.ocr_search_var = tk.StringVar()
         search = ttk.Entry(row2, textvariable=self.ocr_search_var, width=30,
@@ -947,7 +1172,14 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         for c, anc in [("id", "w"), ("method", "w"), ("ok", "center"),
                        ("ms", "center"), ("l1", "center"), ("l2", "center")]:
             self.ocr_detail.heading(c, text=c)
-            self.ocr_detail.column(c, width=90, anchor=anc)
+            if c == "id":
+                self.ocr_detail.column(c, width=120, anchor=anc)
+            elif c == "method":
+                self.ocr_detail.column(c, width=90, anchor=anc)
+            elif c in ("l1", "l2"):
+                self.ocr_detail.column(c, width=140, anchor=anc, stretch=True)
+            else:
+                self.ocr_detail.column(c, width=56, anchor=anc)
         self.ocr_detail.tag_configure("OK", background="#c8e6c9",
                                       foreground=self._pal["ok"])
         self.ocr_detail.tag_configure("FAIL", background="#ffcdd2",
@@ -969,30 +1201,54 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         preview = ttk.Frame(body); body.add(preview, weight=1)
         ttk.Label(preview, text="单样本透视").pack(anchor="w")
         self.ocr_preview_meta = tk.StringVar(value="（在左侧选择案例，或点击明细行）")
-        ttk.Label(preview, textvariable=self.ocr_preview_meta,
-                  wraplength=380, justify="left",
-                  font=("TkDefaultFont", 9)).pack(anchor="w")
-        self.ocr_preview_label = ttk.Label(preview, background=pal["canvas"],
-                                           anchor="center")
+        self.ocr_preview_meta_lb = tk.Label(
+            preview, textvariable=self.ocr_preview_meta,
+            bg=pal["card"], fg=pal["fg"], wraplength=380, justify="left",
+            anchor="w", font=("TkDefaultFont", 9))
+        self.ocr_preview_meta_lb.pack(anchor="w", fill="x")
+        self._ocr_meta_fullpath = ""
+        self._ocr_meta_tip = _Tooltip(self.ocr_preview_meta_lb)
+        self.ocr_preview_label = tk.Label(preview, bg=pal["canvas"],
+                                          fg=pal["fg"], anchor="center",
+                                          highlightthickness=1,
+                                          highlightbackground=pal["border"])
         self.ocr_preview_label.pack(fill="both", expand=True)
         self.ocr_preview_label.bind("<Configure>", self._update_preview_image)
         ttk.Label(preview, text="识别结果 · 字符级比对 (GT vs Pred)").pack(anchor="w")
-        self.ocr_diff_text = tk.Text(preview, height=11, width=48,
+        con = pal["console"]
+        term = tk.Frame(preview, bg=pal["card"], highlightthickness=1,
+                        highlightbackground=pal["border"])
+        term.pack(fill="both", expand=True)
+        self._diff_term = term
+        tbar = tk.Label(term, text="  DIGITAL COMPARATOR // 字符级检视",
+                        font=("Menlo", 9, "bold"), bg=pal["card"],
+                        fg=con["header"], anchor="w", pady=3)
+        tbar.pack(fill="x")
+        self._diff_tbar = tbar
+        self.ocr_diff_text = tk.Text(term, height=11, width=48,
                                      font=("Menlo", 10), wrap="none",
-                                     bg="#ffffff", fg="#111827")
-        self.ocr_diff_text.tag_configure("hdr", font=("TkDefaultFont", 9, "bold"),
-                                         foreground="#555")
-        self.ocr_diff_text.tag_configure("lab", foreground="#888")
-        self.ocr_diff_text.tag_configure("match", foreground="#2e7d32",
+                                     bg=con["bg"], fg=con["fg"], relief="flat",
+                                     padx=8, pady=6,
+                                     highlightthickness=1,
+                                     highlightbackground=pal["border"])
+        self.ocr_diff_text.tag_configure("hdr", font=("Menlo", 9, "bold"),
+                                         foreground=con["pad"])
+        self.ocr_diff_text.tag_configure("lab", foreground=con["pad"])
+        self.ocr_diff_text.tag_configure("match", foreground=pal["tag_match"]["fg"],
                                          font=("Menlo", 10, "bold"))
-        self.ocr_diff_text.tag_configure("mm", background="#ffebee",
-                                         foreground="#c62828",
+        self.ocr_diff_text.tag_configure("pad", foreground=con["pad"])
+        self.ocr_diff_text.tag_configure("mm", background=con["error_bg"],
+                                         foreground=con["error_fg"],
                                          font=("Menlo", 10, "bold"))
-        self.ocr_diff_text.tag_configure("okline", foreground="#2e7d32",
+        self.ocr_diff_text.tag_configure("error", background=con["error_bg"],
+                                         foreground=con["error_fg"],
+                                         font=("Menlo", 10, "bold"))
+        self.ocr_diff_text.tag_configure("okline",
+                                         foreground=pal["tag_match"]["fg"],
                                          font=("Menlo", 10))
-        d_y = ttk.Scrollbar(preview, orient="vertical",
+        d_y = ttk.Scrollbar(term, orient="vertical",
                             command=self.ocr_diff_text.yview)
-        d_x = ttk.Scrollbar(preview, orient="horizontal",
+        d_x = ttk.Scrollbar(term, orient="horizontal",
                             command=self.ocr_diff_text.xview)
         self.ocr_diff_text.configure(yscrollcommand=d_y.set,
                                      xscrollcommand=d_x.set)
@@ -1030,7 +1286,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
     def _ocr_mode_switch(self):
         """Toggle between corpus batch-test and passport-photo recognition."""
         if self.ocr_photo_mode.get():
-            self.ocr_run_btn.configure(text="▶ 开始识别")
+            self.ocr_run_btn.configure(text="⏳ 识别中…")
             from passport_pipeline import PIC_DIR as _PIC_DIR
             for iid in self.ocr_case_list.get_children():
                 self.ocr_case_list.delete(iid)
@@ -1043,7 +1299,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                                           tags=("clean",))
                 self._ocr_case_order.append(name)
         else:
-            self.ocr_run_btn.configure(text="▶ 开始测试")
+            self.ocr_run_btn.configure(text="⚡ 开始测试")
             self._ocr_load_corpus()
 
     def _build_loc_tab(self):
@@ -1080,8 +1336,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         cb.current(0)
         cb.bind("<<ComboboxSelected>>", self._loc_on_sample_selected)
         self.loc_sample_path = tk.StringVar()
-        ttk.Button(row, text="浏览文件…", command=self._loc_pick).pack(side="left", padx=4)
-        self.loc_run_btn = self._cta(row, "▶ 定位区域", self._loc_run,
+        ttk.Button(row, text="▤ 浏览文件…", command=self._loc_pick).pack(side="left", padx=4)
+        self.loc_run_btn = self._cta(row, "⚡ 定位区域", self._loc_run,
                                      padx=12, pady=3)
         self.loc_run_btn.pack(side="left", padx=4)
         # MRZ-only quick action: locate MRZ band, crop it, feed it to
@@ -1284,12 +1540,18 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             self.loc_status.config(text="MRZ 识别中…", foreground=self._pal["dim"])
             _chip("  RUN  ", "run")
             from PIL import Image
+            # Drive the bottom status bar through each pipeline stage so
+            # long OCR/decode runs stay visibly active (single-shot path
+            # previously never touched the progress bar).
+            self._set_status_bar("定位 MRZ 区…", 10)
+            self.update_idletasks()
             path = self._loc_resolve_path()
             img = Image.open(path).convert("RGB")
             loc = self._loc_locator(img)
             r = loc.get("mrz")
             if not r:
                 _chip("  FAIL  ", "fail")
+                self._set_status_bar("MRZ 定位失败", 0)
                 self.loc_status.config(
                     text="未定位到 MRZ 区", foreground=self._pal["err"])
                 self._loc_set_text(
@@ -1319,6 +1581,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 #   2) mrz_tool only accepts the 44-char strings, not
                 #      PPM, so feed it the OCR result to get the parsed
                 #      fields and check digits.
+                self._set_status_bar("MRZ OCR 识别中…", 50)
+                self.update_idletasks()
                 ocr_proc = subprocess.run(
                     [str(ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_tool"),
                      str(tmp_path)],
@@ -1354,6 +1618,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 if line1 and line2:
                     # mrz_tool decode accepts a single MRZ string of two
                     # newline-joined lines, not two positional args.
+                    self._set_status_bar("校验 MRZ 解码…", 85)
+                    self.update_idletasks()
                     decode_proc = subprocess.run(
                         [str(MRZ_TOOL), "decode",
                          f"{line1}\n{line2}"],
@@ -1387,6 +1653,10 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             self.loc_status.config(
                 text=("MRZ ✓ 通过" if ok else "MRZ ✗ 失败"),
                 foreground=self._pal["ok"] if ok else self._pal["err"])
+            if ok:
+                self._set_status_bar("MRZ 识别完成", 100, done=1, total=1)
+            else:
+                self._set_status_bar("MRZ 识别失败（详见报告）", 0)
             # Render a structured report in the info pane.
             lines = [
                 f"样本 : {os.path.basename(path)}",
@@ -1458,6 +1728,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 pass
         except Exception as e:
             _chip("  FAIL  ", "fail")
+            self._set_status_bar(f"MRZ 失败: {e}", 0)
             self.loc_status.config(text=f"MRZ 失败: {e}",
                                    foreground=self._pal["err"])
             self._loc_set_text(f"错误: {e}")
@@ -1498,7 +1769,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self.ocr_diff_text.configure(state="disabled")
         self.ocr_preview_meta.set(
             f"{os.path.basename(path)}  ({self._preview_w}×"
-            f"{self._preview_h})\n{path}")
+            f"{self._preview_h})")
+        self._ocr_meta_fullpath = str(path)
+        self._ocr_meta_tip.set_text(self._ocr_meta_fullpath)
         self.ocr_pick_btn.configure(state="disabled")
         try:
             self.ocr_run_btn.configure(state="disabled")
@@ -1509,6 +1782,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             err = None
             kv = {}
             proc_ms = 0.0
+            self.after(0, lambda: self._set_status_bar(
+                "MRZ OCR 识别中…", 50, done=0, total=1))
             try:
                 from pathlib import Path as _P
                 t0 = time.time()
@@ -1536,6 +1811,10 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         tw.configure(state="normal")
         tw.delete("1.0", "end")
         chip = self._pal["chip"]
+        if err:
+            self._set_status_bar(f"识别失败: {err}", 0)
+        else:
+            self._set_status_bar("识别完成", 100, done=1, total=1)
         ok = kv.get("result.ok", "FAIL").upper() == "OK"
         c1 = int(kv.get("result.conf1", "0") or 0)
         c2 = int(kv.get("result.conf2", "0") or 0)
@@ -1620,17 +1899,36 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         card = ttk.LabelFrame(parent, text="总体指标")
         card.pack(fill="x", pady=(0, 4))
         self.ocr_metrics = {}
-        for key, label in [("cases", "案例数"), ("mean", "Mean耗时"),
-                           ("p95", "P95耗时"), ("pass", "Pass率"),
-                           ("l1", "平均L1"), ("l2", "平均L2"),
-                           ("full", "全匹配")]:
-            cell = ttk.Frame(card); cell.pack(side="left", padx=12, pady=4)
-            ttk.Label(cell, text=label, foreground="#666",
-                      font=("TkDefaultFont", 9)).pack()
+        self._metric_cells = []
+        colors = self._pal["metric"]
+        specs = [("cases", "案例数"), ("mean", "Mean耗时"),
+                 ("p95", "P95耗时"), ("pass", "Pass率"),
+                 ("l1", "平均L1"), ("l2", "平均L2"),
+                 ("full", "全匹配")]
+        units = {"mean": "ms", "p95": "ms", "pass": "%",
+                 "l1": "%", "l2": "%"}
+        for i in range(len(specs)):
+            card.grid_columnconfigure(i, weight=1, uniform="metric_col")
+        for i, (key, label) in enumerate(specs):
+            cell = tk.Frame(card, bg=self._pal["card"], highlightthickness=1,
+                            highlightbackground=self._pal["border"])
+            cell.grid(row=0, column=i, sticky="nsew", padx=3, pady=4)
+            ttl = ttk.Label(cell, text=label, foreground=self._pal["dim"],
+                            font=("TkDefaultFont", 9))
+            ttl.pack(anchor="w", padx=8, pady=(4, 0))
             var = tk.StringVar(value="--")
-            ttk.Label(cell, textvariable=var,
-                      font=("TkDefaultFont", 11, "bold")).pack()
+            vrow = tk.Frame(cell, bg=self._pal["card"])
+            vrow.pack(anchor="w", padx=8, pady=(0, 4), fill="x")
+            val = ttk.Label(vrow, textvariable=var,
+                            foreground=colors[key],
+                            font=("Menlo", 15, "bold"))
+            val.pack(side="left")
+            if key in units:
+                ttk.Label(vrow, text=units[key], foreground="#6E7681",
+                          font=("Segoe UI", 9)).pack(
+                    side="left", anchor="s", padx=(3, 0), pady=(0, 2))
             self.ocr_metrics[key] = var
+            self._metric_cells.append((cell, ttl, val, key))
 
     def _fit_columns(self, tree, pad=16, minw=50, cap=340):
         """Auto-fit Treeview column widths from heading + content."""
@@ -1755,7 +2053,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         img_path = corpus_dir / rec["image"]
         self.ocr_preview_meta.set(
             f"id={cid}  scale={rec['scale']}  noise={rec['noise']}  "
-            f"skew={rec['skew']}\n{rec['image']}")
+            f"skew={rec['skew']}")
+        self._ocr_meta_fullpath = str(img_path)
+        self._ocr_meta_tip.set_text(self._ocr_meta_fullpath)
         # Stash the absolute path so the viewer / region overlay can find it.
         self._preview_img_path = img_path
         try:
@@ -1781,6 +2081,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         im = getattr(self, "_preview_img_pil", None)
         if im is None:
             return
+        from PIL import Image, ImageDraw, ImageTk
         # Use the requested display size; if the label hasn't been laid
         # out yet (rare under real Tk, common in headless probes) fall
         # back to the label's requested width/height or 320x180 so the
@@ -1811,21 +2112,35 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         # Resize the original pixels to the displayed size; we then
         # paint the overlay rectangles directly in pixel space (dw x dh)
         # which simplifies the mapping vs the original iw x ih space.
-        im2 = im.resize((dw, dh))
+        im2 = im.resize((dw, dh), Image.LANCZOS)
         try:
-            from PIL import Image, ImageDraw, ImageTk
             overlay = im2.copy()
             drw = ImageDraw.Draw(overlay, "RGBA")
+            # HUD corner brackets (cyan) before the region boxes.
+            _hu, _l = (0, 245, 255, 255), 14
+            drw.line((0, _l, 0, 0, _l, 0), fill=_hu, width=3)
+            drw.line((dw - _l, 0, dw, 0, dw, _l), fill=_hu, width=3)
+            drw.line((0, dh - _l, 0, dh, _l, dh), fill=_hu, width=3)
+            drw.line((dw - _l, dh, dw, dh, dw, dh - _l), fill=_hu, width=3)
             # Region rectangles (proportional to displayed image):
             #   photo  = left 25%, top 10%, width 25%, height 70%
             #   data   = top 10%, left 25%, width 50%, height 25%
             #   mrz    = bottom 30%, full width (overrides data on the
             #            bottom edge, which is the real passport layout)
             # Colours match .impeccable.md neon palette.
-            photo_box = (int(dw * 0.04), int(dh * 0.08),
-                         int(dw * 0.30), int(dh * 0.78))
-            data_box  = (int(dw * 0.30), int(dh * 0.08),
-                         int(dw * 0.96), int(dh * 0.40))
+            # A pre-cropped MRZ strip (e.g. a PPM fed to "直接识别图片")
+            # contains only the MRZ band: painting the speculative
+            # proportional PHOTO/DATA boxes over it would fabricate
+            # bogus regions. Full-page passport images keep the
+            # proportional layout boxes.
+            is_strip = ih < 260 or (iw / ih) > 3.0
+            if is_strip:
+                photo_box = data_box = None
+            else:
+                photo_box = (int(dw * 0.04), int(dh * 0.08),
+                             int(dw * 0.30), int(dh * 0.78))
+                data_box  = (int(dw * 0.30), int(dh * 0.08),
+                             int(dw * 0.96), int(dh * 0.40))
             mrz_box   = (int(dw * 0.04), int(dh * 0.62),
                          int(dw * 0.96), int(dh * 0.96))
             # If the OCR tool returned a band, snap MRZ box to it. The
@@ -1844,11 +2159,13 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                                int((abx + bw) * sx), int((aby + bh) * sy))
                 except Exception:
                     pass
-            # Neon cyan / violet / green with translucent alpha so the
-            # underlying image stays visible.
-            drw.rectangle(photo_box, outline=(0, 229, 255, 255), width=2)
-            drw.rectangle(data_box,  outline=(179, 136, 255, 255), width=2)
-            drw.rectangle(mrz_box,   outline=(46, 230, 168, 255), width=2)
+            # Emerald / amber / cyan (cockpit palette); translucent alpha
+            # so the underlying image stays visible.
+            if photo_box:
+                drw.rectangle(photo_box, outline=(16, 185, 129, 255), width=2)
+            if data_box:
+                drw.rectangle(data_box,  outline=(245, 158, 11, 255), width=2)
+            drw.rectangle(mrz_box,   outline=(0, 245, 255, 255), width=2)
             # Small chip tags so the user can identify each region.
             def tag(box, label, fill):
                 x0, y0, x1, y1 = box
@@ -1858,9 +2175,11 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 drw.rectangle((x0, ty, x0 + tag_w, ty + 12),
                               fill=fill)
                 drw.text((x0 + 4, ty + 1), label, fill=(0, 0, 0, 255))
-            tag(photo_box, "PHOTO", (0, 229, 255, 255))
-            tag(data_box,  "DATA",  (179, 136, 255, 255))
-            tag(mrz_box,   "MRZ",   (46, 230, 168, 255))
+            if photo_box:
+                tag(photo_box, "PHOTO", (16, 185, 129, 255))
+            if data_box:
+                tag(data_box,  "DATA",  (245, 158, 11, 255))
+            tag(mrz_box,   "MRZ",   (0, 245, 255, 255))
             photo = ImageTk.PhotoImage(overlay)
         except Exception:
             try:
@@ -1885,19 +2204,23 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         tw.insert("end", label + "\n", "hdr")
         tw.insert("end", "GT  : ", "lab")
         for i in range(n):
-            tw.insert("end", gt[i],
-                      "match" if gt[i] == pred[i] else "mm")
+            if gt[i] == pred[i]:
+                tag = "pad" if gt[i] == "<" else "match"
+            else:
+                tag = "mm"
+            tw.insert("end", gt[i], tag)
         tw.insert("end", "\nPRED: ", "lab")
         mism = []
         for i in range(n):
             if gt[i] != pred[i]:
                 mism.append(i)
-            tw.insert("end", pred[i],
-                      "match" if gt[i] == pred[i] else "mm")
+                tw.insert("end", pred[i], "error")
+            else:
+                tw.insert("end", pred[i], "pad" if pred[i] == "<" else "match")
         tw.insert("end", "\n     ")
         if mism:
             for i in range(n):
-                tw.insert("end", "^" if i in mism else " ", "mm")
+                tw.insert("end", "^" if i in mism else " ", "error")
             tw.insert("end", "\n")
         else:
             tw.insert("end", "（全部匹配）\n", "okline")
@@ -1950,7 +2273,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
     def _ocr_on_list_click(self, _evt=None):
         """Photo-mode single-click: run the full pipeline for the
         selected photo and stream results to the right pane. No-op
-        for corpus cases (the corpus bench needs ▶ 开始测试)."""
+        for corpus cases (the corpus bench needs ⚡ 开始测试)."""
         if not self.ocr_photo_mode.get():
             return
         sel = self.ocr_case_list.selection()
@@ -1974,7 +2297,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             self._preview_w, self._preview_h = pil.size
             self._preview_img_path = path
             self._preview_last_pm = {}
-            self.ocr_preview_meta.set(f"{name}\n{path}")
+            self.ocr_preview_meta.set(f"{name}")
+            self._ocr_meta_fullpath = str(path)
+            self._ocr_meta_tip.set_text(self._ocr_meta_fullpath)
             self._update_preview_image()
         except Exception as e:
             messagebox.showerror("加载失败", f"{path}: {e}")
@@ -2121,12 +2446,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         win.title(f"原图 · {cid}  ·  {img_path.name}")
         pal = self._pal
         try:
-            win.configure(bg=pal["ctk"]["bg_color"])
+            win.configure(bg=pal["bg"])
         except tk.TclError:
-            try:
-                win.configure(bg=pal["bg"])
-            except tk.TclError:
-                pass
+            pass
         iw, ih = full_pil.size
         try:
             sw, sh = self.winfo_screenwidth(), self.winfo_screenheight()
@@ -2232,6 +2554,20 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         canvas.update_idletasks()
         fit_to_window()
 
+    def _gt_for(self, name):
+        """Return (line1, line2) GT for a real photo if hand-labeled."""
+        try:
+            p = Path(__file__).parent / "real_gt.json"
+            if not p.exists():
+                return None
+            d = json.loads(p.read_text(encoding="utf-8"))
+            g = (d.get("gt") or {}).get(name)
+            if g and g.get("line1") and g.get("line2"):
+                return (g["line1"], g["line2"])
+        except Exception:
+            pass
+        return None
+
     def _ocr_on_detail_select(self, _evt=None):
         sel = self.ocr_detail.selection()
         if not sel:
@@ -2240,7 +2576,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         if kind == "photo":
             from passport_pipeline import PIC_DIR
             path = PIC_DIR / name
-            self.ocr_preview_meta.set(f"{name}\n{path}")
+            self.ocr_preview_meta.set(f"{name}")
+            self._ocr_meta_fullpath = str(path)
+            self._ocr_meta_tip.set_text(self._ocr_meta_fullpath)
             rec = next((r for r in getattr(self, "_ocr_last", {}).get("photo", [])
                         if r.get("file") == name), None)
             # Render the photo + region overlay (PHOTO/DATA/MRZ boxes)
@@ -2297,7 +2635,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             tw.insert("end", f"样本  : {name}\n", "hdr")
             tw.insert("end", f"路径  : {path}\n", "lab")
             if rec is None:
-                tw.insert("end", "\n（未找到识别结果，请先点击 ▶ 开始识别）",
+                tw.insert("end", "\n（未找到识别结果，请先点击 ⚡ 开始识别）",
                           "lab")
                 tw.configure(state="disabled")
                 return
@@ -2345,10 +2683,15 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             tw.insert("end", f"  line2 conf={c2}% "
                 f"({'PASS' if c2 >= 70 else 'WARN' if c2 >= 40 else 'FAIL'})\n",
                 "lab")
-            tw.insert("end",
-                f"\n原始 line1 (44): {rec.get('line1', '-')}\n", "lab")
-            tw.insert("end",
-                f"原始 line2 (44): {rec.get('line2', '-')}\n", "lab")
+            gt = self._gt_for(name)
+            l1 = rec.get("line1", "") or ""
+            l2 = rec.get("line2", "") or ""
+            if gt:
+                self._render_diff_block(tw, "Line1 咬合 (GT vs Pred)", gt[0], l1)
+                self._render_diff_block(tw, "Line2 咬合 (GT vs Pred)", gt[1], l2)
+            else:
+                tw.insert("end", f"\nLine1 (44): {l1}\n", "lab")
+                tw.insert("end", f"Line2 (44): {l2}\n", "lab")
             tw.insert("end", f"\n说明: {rec.get('reason', '')}\n", "lab")
             tw.configure(state="disabled")
             return
@@ -2537,8 +2880,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                         stats["verified"] if g == "PASS" else ""))
         m = self.ocr_metrics
         m["cases"].set(len(results))
-        m["mean"].set(f"{ms_sum / max(1, len(results)):.1f} ms")
-        m["pass"].set(f"{100.0 * stats['PASS'] / max(1, len(results)):.1f}%")
+        m["mean"].set(f"{ms_sum / max(1, len(results)):.1f}")
+        m["pass"].set(f"{100.0 * stats['PASS'] / max(1, len(results)):.1f}")
         for k in ("p95", "l1", "l2", "full"):
             m[k].set("--")
         self.ocr_run_btn.configure(state="normal")
@@ -2572,14 +2915,14 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             okc += a["ok"]; full += a["full_match"]
         total_n = sum(a["n"] for a in agg.values())
         self.ocr_metrics["cases"].set(str(payload["total_cases"]))
-        self.ocr_metrics["mean"].set(f"{mean:.1f} ms")
-        self.ocr_metrics["p95"].set(f"{p95:.1f} ms")
+        self.ocr_metrics["mean"].set(f"{mean:.1f}")
+        self.ocr_metrics["p95"].set(f"{p95:.1f}")
         self.ocr_metrics["pass"].set(
-            f"{100.0 * okc / total_n:.1f}%" if total_n else "0%")
+            f"{100.0 * okc / total_n:.1f}" if total_n else "0")
         self.ocr_metrics["l1"].set(
-            f"{100.0 * l1c / l1t:.2f}%" if l1t else "--")
+            f"{100.0 * l1c / l1t:.2f}" if l1t else "--")
         self.ocr_metrics["l2"].set(
-            f"{100.0 * l2c / l2t:.2f}%" if l2t else "--")
+            f"{100.0 * l2c / l2t:.2f}" if l2t else "--")
         self.ocr_metrics["full"].set(str(full))
         # Per-method summary.
         for m in methods:
@@ -2634,9 +2977,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         ttk.Entry(top, textvariable=self.nfc_script_var, width=52,
                   style="Field.TEntry").pack(
             side="left", fill="x", expand=True)
-        ttk.Button(top, text="浏览…",
-                   command=self._nfc_pick_script).pack(side="left")
-        self.nfc_run_btn = self._cta(top, "▶ 开始执行", self._nfc_run)
+        self._cta(top, "▤ 浏览…", self._nfc_pick_script,
+                  kind="ghost").pack(side="left")
+        self.nfc_run_btn = self._cta(top, "⚡ 开始执行", self._nfc_run)
         self.nfc_run_btn.pack(side="left", padx=(6, 0))
 
         # ---- MRZ compact row ----
@@ -2649,10 +2992,10 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self.nfc_mrz2_var = tk.StringVar(value=SAMPLE_MRZ.splitlines()[1])
         ttk.Entry(mrz, textvariable=self.nfc_mrz2_var, width=46,
                   font=("Menlo", 9), style="Field.TEntry").pack(side="left", padx=(2, 6))
-        ttk.Button(mrz, text="从 OCR 填充",
-                   command=self._nfc_fill_mrz_from_ocr).pack(side="left", padx=2)
-        ttk.Button(mrz, text="内置样例",
-                   command=self._nfc_fill_mrz_sample).pack(side="left")
+        self._cta(mrz, "从 OCR 填充",
+                  self._nfc_fill_mrz_from_ocr, kind="ghost").pack(side="left", padx=2)
+        self._cta(mrz, "内置样例",
+                  self._nfc_fill_mrz_sample, kind="ghost").pack(side="left")
         self.nfc_badge_var = tk.StringVar(value="")
         # Visual-pass 2.0: chip-style badge with explicit bg so it never
         # falls back to the platform default (the historical white square).
@@ -2709,19 +3052,20 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
     def _nfc_build_keys_panel(self, parent):
         lab = ttk.LabelFrame(parent, text="会话密钥（点击复制）")
         lab.pack(fill="x", padx=2, pady=2)
+        pal = self._pal
         self._nfc_key_vars = {}
         for name in ("Kseed", "Kenc", "Kmac", "KSenc", "KSmac"):
             row = ttk.Frame(lab); row.pack(fill="x", padx=4, pady=1)
             ttk.Label(row, text=name, width=6).pack(side="left")
             var = tk.StringVar(value="—")
             en = tk.Entry(row, textvariable=var, width=34, font=("Menlo", 9),
-                          state="readonly", readonlybackground="#f7f7f7",
-                          fg="#111827")
+                          state="readonly",
+                          readonlybackground=pal["field"], fg=pal["accent"])
             en.pack(side="left", padx=2)
             self._nfc_key_entries[name] = en
-            ttk.Button(row, text="复制", width=4,
-                       command=lambda n=name, v=var: self._nfc_copy_key(n, v)
-                       ).pack(side="left")
+            self._cta(row, "⧉ 复制",
+                      lambda n=name, v=var: self._nfc_copy_key(n, v),
+                      kind="ghost").pack(side="left")
             self._nfc_key_vars[name] = var
 
     def _nfc_build_trace_panel(self, parent):
@@ -2748,15 +3092,15 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             lab, columns=("i", "cmd", "hex", "sw", "ms"),
             show="headings", style="Data.Treeview")
         for c, w, t in [("i", 30, "#"), ("cmd", 150, "Cmd / Rsp"),
-                        ("hex", 260, "Hex 报文 (C → R)"), ("sw", 56, "SW"),
+                        ("hex", 340, "Hex 报文 (C → R)"), ("sw", 56, "SW"),
                         ("ms", 48, "耗时")]:
             self.nfc_trace.heading(c, text=t)
-            self.nfc_trace.column(c, width=w,
+            self.nfc_trace.column(c, width=w, stretch=(c == "hex"),
                                   anchor="center" if c in ("i", "sw", "ms") else "w")
-        self.nfc_trace.tag_configure("sw_ok", background="#e8f5e9",
-                                     foreground=self._pal["ok"])
-        self.nfc_trace.tag_configure("sw_bad", background="#ffebee",
-                                     foreground=self._pal["err"])
+        self.nfc_trace.tag_configure("sw_ok", foreground="#3FB950",
+                                     font=("Menlo", 10, "bold"))
+        self.nfc_trace.tag_configure("sw_bad", foreground="#F85149",
+                                     font=("Menlo", 10, "bold"))
         ysb = ttk.Scrollbar(lab, orient="vertical", command=self.nfc_trace.yview)
         self.nfc_trace.configure(yscrollcommand=ysb.set)
         self.nfc_trace.pack(side="left", fill="both", expand=True)
@@ -2773,7 +3117,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             ttk.Label(card, text=label + ":").grid(
                 row=row, column=0, sticky="e", padx=(6, 2))
             var = tk.StringVar(value="—")
-            lb = tk.Label(card, textvariable=var, font=("Menlo", 9, "bold"))
+            lb = tk.Label(card, textvariable=var, font=("Menlo", 9, "bold"),
+                          bg=self._pal["bg"], fg=self._pal["fg"])
             lb.grid(
                 row=row, column=1, sticky="w", padx=(2, 6))
             self._nfc_dg1_lbs[key] = lb
@@ -2787,11 +3132,13 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         ttk.Label(card, text="DG1 SHA-256:").grid(
             row=0, column=0, sticky="e", padx=(6, 2))
         tk.Label(card, textvariable=self._nfc_sod_sha,
-                 font=("Menlo", 9)).grid(row=0, column=1, sticky="w")
+                 font=("Menlo", 9),
+                 bg=self._pal["bg"], fg=self._pal["fg"]).grid(row=0, column=1, sticky="w")
         ttk.Label(card, text="RSA 验签:").grid(
             row=1, column=0, sticky="e", padx=(6, 2))
         tk.Label(card, textvariable=self._nfc_sod_rsa,
-                 font=("Menlo", 9)).grid(row=1, column=1, sticky="w")
+                 font=("Menlo", 9),
+                 bg=self._pal["bg"], fg=self._pal["fg"]).grid(row=1, column=1, sticky="w")
 
     def _nfc_build_progress_card(self, parent):
         card = ttk.LabelFrame(parent, text="读取进度")
@@ -2801,7 +3148,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             r, c = divmod(i, 2)
             var = tk.StringVar(value="—")
             lb = tk.Label(card, textvariable=var,
-                          font=("TkDefaultFont", 9, "bold"))
+                          font=("TkDefaultFont", 9, "bold"),
+                          bg=self._pal["bg"], fg=self._pal["fg"])
             lb.grid(row=r, column=c * 2, sticky="e", padx=(6, 2))
             self._nfc_prog_lbs[ef] = lb
             ttk.Label(card, text=ef).grid(row=r, column=c * 2 + 1,
@@ -2814,7 +3162,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self._adv_frame.pack(fill="x", padx=2, pady=2)
         head = ttk.Frame(self._adv_frame); head.pack(fill="x")
         self._adv_toggle_btn = ttk.Button(
-            head, text="展开", command=self._nfc_toggle_adv)
+            head, text="▾ 展开", command=self._nfc_toggle_adv)
         self._adv_toggle_btn.pack(side="left", padx=4)
         # wrap="none" keeps hex lines intact, but the previous height=4
         # without scrollbars clipped long C-APDU/R-APDU strings at the
@@ -2857,7 +3205,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             self._adv_open.set(False)
             if btn is not None:
                 try:
-                    btn.configure(text="展开")
+                    btn.configure(text="▾ 展开")
                 except tk.TclError:
                     pass
         else:
@@ -2865,7 +3213,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             self._adv_open.set(True)
             if btn is not None:
                 try:
-                    btn.configure(text="折叠")
+                    btn.configure(text="▴ 折叠")
                 except tk.TclError:
                     pass
 
@@ -3007,7 +3355,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         if trace:
             for i, t in enumerate(trace, 1):
                 sw = t.get("sw", "")
-                tag = "sw_ok" if sw == "9000" else "sw_bad"
+                tag = ("sw_ok" if sw == "9000"
+                   else "sw_bad" if sw else "")
                 cap = t.get("capdu", "")
                 rsp = t.get("rapdu", "")
                 hexmsg = f"{cap} → {rsp}"
@@ -3231,7 +3580,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                                    style="Field.TCombobox")
         face_ref_cb.pack(side="left", padx=2)
         face_ref_cb.current(0)
-        ttk.Button(ref, text="填入 -> 照片A",
+        ttk.Button(ref, text="⇥ 填入 照片A",
                    command=self._face_load_ref).pack(side="left", padx=4)
         ttk.Label(ref, text="（face_a / face_b / face_c 已预置，可直接点“比对”）",
                   foreground="#888").pack(side="left", padx=6)
@@ -3243,7 +3592,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             ttk.Entry(row, textvariable=var, width=46,
                       style="Field.TEntry").pack(
                           side="left", padx=2, fill="x", expand=True)
-            ttk.Button(row, text="浏览...", command=picker).pack(side="left")
+            ttk.Button(row, text="▤ 浏览...", command=picker).pack(side="left")
             return row
 
         self.face_a = tk.StringVar(value="")
@@ -3253,7 +3602,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
 
         # ---- Action + result strip ----
         action_row = ttk.Frame(f); action_row.pack(fill="x", padx=4, pady=2)
-        self.face_run_btn = self._cta(action_row, "▶ 比对", self._face_run)
+        self.face_run_btn = self._cta(action_row, "⚡ 比对", self._face_run)
         self.face_run_btn.pack(side="left", padx=(0, 8))
         # Score chip (tk.Label: 3-state color).
         self.face_score_chip = tk.Label(
