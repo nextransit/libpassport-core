@@ -64,11 +64,32 @@ _LINE2_DIGIT = {0, 1, 2, 3, 4, 5, 6, 7, 14, 15, 16, 17, 18, 19,
                 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43}
 
 
-def _find_band(gray):
-    """y0, y1 (pixel coords) of the MRZ band — bottom-third scan."""
+def _find_mrz_band(gray):
+    """Find y0, y1 of the MRZ band.
+
+    Two operating modes — auto-detected from the ink distribution:
+      - Pre-cropped strip: >70% of rows are ink rows; return the full
+        image (with a 4-px safety inset) so the inter-line gutter is
+        included in the band.
+      - Full passport page: only the bottom 1/3 has ink; use the
+        bottom-1/3 ink-group heuristic to find the two-line band.
+
+    The pre-cropped path was previously broken: the bottom-1/3 logic
+    returned only the bottom ink group, missing line1 and the gutter.
+    """
     import numpy as np
     H, W = gray.shape
-    bottom_start = int(H * 0.55)   # a bit higher to give the band room
+    if H == 0 or W == 0:
+        return 0, 0
+    rd = (gray < 128).sum(axis=1)
+    ink_rows = np.where(rd > W * 0.10)[0]
+    # Pre-cropped strip signature: most of the image is ink text.
+    if ink_rows.size > 0.7 * H:
+        first = max(0, int(ink_rows[0]) - 4)
+        last = min(H, int(ink_rows[-1]) + 4)
+        return first, last
+    # Otherwise: bottom-1/3 of a full passport page.
+    bottom_start = int(H * 0.55)
     sub = gray[bottom_start:, :]
     rd = (sub < 128).sum(axis=1)
     rows = np.where(rd > W * 0.10)[0]
@@ -242,7 +263,7 @@ def main(argv):
     # Whole-image 3x upscale; tesseract --psm 6 -l ocrb auto-locates
     # the two MRZ lines. _find_band is still computed for the band_box
     # metadata in the output contract.
-    y0, y1 = _find_band(gray)
+    y0, y1 = _find_mrz_band(gray)
     crop = img.resize((W * 3, H * 3), Image.LANCZOS)
 
     # IMPORTANT: the sandbox hides /tmp from the tesseract subprocess,
