@@ -5,7 +5,7 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 add_compile_options(-Wall -Wextra -Wpedantic)
 
-add_library(nfc STATIC src/nfc.c src/mock_json.c)
+add_library(nfc STATIC src/nfc.c src/mock_json.c src/crypto.c src/bac.c)
 target_include_directories(nfc PUBLIC include)
 
 # Force libc linkage so unresolved fopen in libnfc is resolved.

@@ -3,9 +3,11 @@
  * human-readable form.
  *
  * Usage:
- *   nfc_tool <mock-script.json>
+ *   nfc_tool <mock-script.json> [mrz_line1 mrz_line2]
  *
- * Exit codes:
+ * The MRZ (both 44-char lines) feeds the BAC key derivation. When
+ * omitted, the MRZ embedded in the script's top-level "mrz" field is
+ * used. Exit codes:
  *   0  success (BAC complete)
  *   1  protocol error
  *   2  script parse error / file missing
@@ -16,29 +18,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-static int hex_to_buf(const char *hex, uint8_t *out, size_t cap) {
-    size_t n = strlen(hex);
-    if (n % 2 != 0) return -1;
-    size_t bytes = n / 2;
-    if (bytes > cap) return -1;
-    for (size_t i = 0; i < bytes; ++i) {
-        char hi = hex[i*2], lo = hex[i*2+1];
-        int h = (hi >= '0' && hi <= '9') ? hi - '0' :
-                (hi >= 'a' && hi <= 'f') ? 10 + hi - 'a' :
-                (hi >= 'A' && hi <= 'F') ? 10 + hi - 'A' : -1;
-        int l = (lo >= '0' && lo <= '9') ? lo - '0' :
-                (lo >= 'a' && lo <= 'f') ? 10 + lo - 'a' :
-                (lo >= 'A' && lo <= 'F') ? 10 + lo - 'A' : -1;
-        if (h < 0 || l < 0) return -1;
-        out[i] = (uint8_t)((h << 4) | l);
-    }
-    return (int)bytes;
-}
-
 int main(int argc, char **argv) {
     setvbuf(stderr, NULL, _IONBF, 0);
-    if (argc != 2) {
-        fprintf(stderr, "usage: %s <mock-script.json>\n", argv[0]);
+    if (argc != 2 && argc != 4) {
+        fprintf(stderr, "usage: %s <mock-script.json> [mrz_line1 mrz_line2]\n",
+                argv[0]);
         return 2;
     }
     nfc_backend_t *be = nfc_backend_mock_from_json(argv[1]);
@@ -46,16 +30,55 @@ int main(int argc, char **argv) {
         fprintf(stderr, "failed to load script %s\n", argv[1]);
         return 2;
     }
-    nfc_result_t r = nfc_read_emrtd(be);
-    printf("result.ok       : %d\n", r.ok);
-    printf("result.step     : %s\n", nfc_step_name(r.step));
-    printf("result.detail   : %s\n", r.detail);
-    printf("result.dg1_mrz  : %s\n", r.dg1_mrz);
-    printf("result.sod_head : ");
+
+    const char *l1 = NULL, *l2 = NULL;
+    if (argc == 4) {
+        l1 = argv[2];
+        l2 = argv[3];
+    } else {
+        if (nfc_mock_get_mrz(be, &l1, &l2) != 0) {
+            fprintf(stderr, "no MRZ in script; pass one on the command line\n");
+            be->vt->destroy(be);
+            return 2;
+        }
+    }
+
+    nfc_result_t r = nfc_read_emrtd(be, l1, l2);
+    printf("result.ok        : %d\n", r.ok);
+    printf("result.step      : %s\n", nfc_step_name(r.step));
+    printf("result.detail    : %s\n", r.detail);
+    if (r.crypto_done) {
+        printf("result.mrz_info  : %s\n", r.mrz_info);
+        printf("result.kseed     : %s\n", r.kseed_hex);
+        printf("result.kenc      : %s\n", r.kenc_hex);
+        printf("result.kmac      : %s\n", r.kmac_hex);
+        printf("result.ksenc     : %s\n", r.ksenc_hex);
+        printf("result.ksmac     : %s\n", r.ksmac_hex);
+        printf("result.rnd_icc   : %s\n", r.rnd_icc_hex);
+        printf("result.auth1     : %s\n", r.auth1_hex);
+        printf("result.auth2     : %s\n", r.auth2_hex);
+    }
+    printf("result.dg1_mrz   : %s\n", r.dg1_mrz);
+    printf("result.sod_head  : ");
     for (int i = 0; i < r.sod_head_len; ++i) printf("%02X", r.sod_head[i]);
     printf("\n");
-    printf("mock.unexpected : %d\n", nfc_mock_unexpected_count(be));
-    printf("mock.remaining  : %d\n", nfc_mock_remaining(be));
+    printf("mock.unexpected  : %d\n", nfc_mock_unexpected_count(be));
+    printf("mock.remaining   : %d\n", nfc_mock_remaining(be));
+
+    /* Emit the per-APDU trace as a single JSON line for the GUI. */
+    printf("trace.json       : ");
+    printf("{\"steps\":[");
+    for (int i = 0; i < r.trace_count; ++i) {
+        nfc_trace_t *t = &r.trace[i];
+        if (i) printf(",");
+        printf("{\"name\":\"%s\",\"capdu\":\"%s\",\"rapdu\":\"%s\","
+               "\"sw\":\"%04X\",\"ms\":%u,\"plain\":\"%s\",\"mac_ok\":%d,"
+               "\"err\":%d}",
+               t->name, t->capdu, t->rapdu, t->sw, t->ms, t->plain,
+               t->mac_ok, t->err);
+    }
+    printf("]}\n");
+
     be->vt->destroy(be);
     return r.ok ? 0 : 1;
 }

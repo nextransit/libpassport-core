@@ -298,8 +298,91 @@ static int parse_entry(pstate_t *p, nfc_mock_entry_t *e) {
     return 0;
 }
 
+/* Skip a JSON value (object / array / string / number / literal).
+ * Leaves the cursor just past the value. */
+static void skip_value(pstate_t *p) {
+    int depth = 0;
+    int in_str = 0;
+    while (p->pos < p->len) {
+        char c = p->s[p->pos];
+        if (in_str) {
+            if (c == '\\' && p->pos + 1 < p->len) { p->pos += 2; continue; }
+            if (c == '"') in_str = 0;
+            p->pos++; continue;
+        }
+        if (c == '"') { in_str = 1; p->pos++; continue; }
+        if (c == '{' || c == '[') { depth++; p->pos++; continue; }
+        if (c == '}' || c == ']') {
+            if (depth == 0) break;
+            depth--; p->pos++; continue;
+        }
+        if (depth == 0 && (c == ',' || c == '}')) break;
+        p->pos++;
+    }
+}
+
+/* Parse a top-level key/value pair. `entries`/`count` are filled when the
+ * "entries" key is seen; `mrz1`/`mrz2`/`rnd`/`sod` capture the other
+ * script fields. Returns 0 on success. */
+static int parse_top_object(pstate_t *p, nfc_mock_entry_t **entries,
+                            size_t *count, char *mrz1, size_t m1cap,
+                            char *mrz2, size_t m2cap, uint8_t *rnd,
+                            uint8_t *sod, size_t *sod_len) {
+    if (!eat(p, '{')) { fprintf(stderr, "DBG: no top {\n"); return -1; }
+    while (1) {
+        char key[64];
+        if (parse_string(p, key, sizeof(key)) != 0) return -1;
+        if (!eat(p, ':')) return -1;
+        if (strcmp(key, "entries") == 0) {
+            if (!eat(p, '[')) return -1;
+            while (peek(p) == '{') {
+                nfc_mock_entry_t *tmp = (nfc_mock_entry_t *)
+                    realloc(*entries, (*count + 1) * sizeof(**entries));
+                if (!tmp) return -1;
+                *entries = tmp;
+                if (parse_entry(p, &(*entries)[*count]) != 0) {
+                    fprintf(stderr, "DBG: parse_entry failed at count=%zu\n",
+                            *count);
+                    return -1;
+                }
+                (*count)++;
+                if (peek(p) == ',') eat(p, ',');
+            }
+            if (!eat(p, ']')) return -1;
+        } else if (strcmp(key, "mrz") == 0) {
+            if (!eat(p, '{')) return -1;
+            while (1) {
+                char k[64];
+                if (parse_string(p, k, sizeof(k)) != 0) return -1;
+                if (!eat(p, ':')) return -1;
+                if (strcmp(k, "line1") == 0) {
+                    if (parse_string(p, mrz1, m1cap) != 0) return -1;
+                } else if (strcmp(k, "line2") == 0) {
+                    if (parse_string(p, mrz2, m2cap) != 0) return -1;
+                } else {
+                    skip_value(p);
+                }
+                if (!eat(p, ',')) break;
+            }
+            if (!eat(p, '}')) return -1;
+        } else if (strcmp(key, "rnd_icc") == 0) {
+            if (parse_hex_string(p, rnd, 8) != 8) return -1;
+        } else if (strcmp(key, "sod") == 0) {
+            int n = parse_hex_string(p, sod, 1024);
+            if (n < 0) return -1;
+            *sod_len = (size_t)n;
+        } else {
+            skip_value(p);
+        }
+        if (!eat(p, ',')) break;
+    }
+    if (!eat(p, '}')) return -1;
+    return 0;
+}
+
 nfc_backend_t *nfc_backend_mock_from_json(const char *path) {
     FILE *f = fopen(path, "rb");
+    if (!f) { fprintf(stderr, "cannot open %s\n", path); return NULL; }
     fseek(f, 0, SEEK_END);
     long n = ftell(f);
     fseek(f, 0, SEEK_SET);
@@ -311,34 +394,31 @@ nfc_backend_t *nfc_backend_mock_from_json(const char *path) {
     fclose(f);
 
     pstate_t st = { buf, 0, (size_t)n };
-    if (!eat(&st, '{')) { fprintf(stderr, "DBG: no top {\n"); free(buf); return NULL; }
-    char k[64];
-    if (parse_string(&st, k, sizeof(k)) != 0 || strcmp(k, "entries") != 0) {
-        fprintf(stderr, "DBG: missing entries key, got %s\n", k); free(buf); return NULL;
-    }
-    if (!eat(&st, ':')) { fprintf(stderr, "DBG: no : after entries\n"); free(buf); return NULL; }
-    if (!eat(&st, '[')) { fprintf(stderr, "DBG: no [ at pos %zu\n", st.pos); free(buf); return NULL; }
-
     nfc_mock_entry_t *arr = NULL;
-    size_t cap = 0, count = 0;
-    while (peek(&st) == '{') {
-        if (count == cap) {
-            size_t nc = cap ? cap * 2 : 8;
-            arr = (nfc_mock_entry_t *)realloc(arr, nc * sizeof(*arr));
-            cap = nc;
-        }
-        if (parse_entry(&st, &arr[count]) != 0) {
-            fprintf(stderr, "DBG: parse_entry failed at count=%zu pos=%zu\n", count, st.pos);
-            free(arr); free(buf); return NULL;
-        }
-        count++;
-        /* If a comma follows, consume it before the next iteration. */
-        if (peek(&st) == ',') eat(&st, ',');
+    size_t count = 0;
+    char mrz1[64] = {0}, mrz2[64] = {0};
+    uint8_t rnd[8] = {0};
+    uint8_t sod[1024];
+    size_t sod_len = 0;
+    if (parse_top_object(&st, &arr, &count, mrz1, sizeof(mrz1),
+                         mrz2, sizeof(mrz2), rnd, sod, &sod_len) != 0) {
+        free(arr); free(buf); return NULL;
     }
-    /* Skip any trailing cruft up to closing brace. */
-    while (st.pos < st.len && st.s[st.pos] != '}') st.pos++;
-    eat(&st, '}');
     free(buf);
-    if (count == 0) { free(arr); return NULL; }
-    return nfc_backend_mock_new(arr, count);
+
+    nfc_backend_t *be = nfc_backend_mock_new(arr, count);
+    free(arr);
+    if (!be) return NULL;
+    if (mrz2[0]) {
+        if (nfc_mock_set_mrz(be, mrz1, mrz2) != 0) {
+            be->vt->destroy(be);
+            return NULL;
+        }
+    }
+    if (rnd[0] || rnd[1] || rnd[2] || rnd[3] || rnd[4] || rnd[5] ||
+        rnd[6] || rnd[7])
+        nfc_mock_set_rnd_icc(be, rnd, 8);
+    if (sod_len > 0)
+        nfc_mock_set_sod(be, sod, (int)sod_len);
+    return be;
 }

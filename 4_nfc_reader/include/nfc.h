@@ -72,6 +72,25 @@ typedef struct {
     /* Diagnostic counters. */
     int unexpected_apdu;
     int replay_remaining;
+    /* Cryptographic state: the mock is a self-contained passport
+     * simulator. It derives the same Kenc/Kmac from the MRZ as the
+     * reader side, so a real BAC exchange (encryption + MAC) can be
+     * verified on both sides. */
+    char    mrz_line1[64];
+    char    mrz_line2[64];
+    uint8_t kenc[16];
+    uint8_t kmac[16];
+    uint8_t ksenc[16];
+    uint8_t ksmac[16];
+    uint8_t rnd_icc[8];
+    int     rnd_icc_fixed; /* script provided a fixed rndICC */
+    uint8_t kifd[16];    /* recovered from the reader during auth */
+    uint8_t kicc[16];    /* our own key contribution */
+    int     authed;      /* BAC mutual auth completed */
+    uint8_t dg1[1024];   /* plaintext DG1 (TLV 5A) */
+    int     dg1_len;
+    uint8_t sod[1024];   /* plaintext SOD */
+    int     sod_len;
 } nfc_mock_t;
 
 /* Construct a mock backend. The script is copied into the backend. */
@@ -82,9 +101,36 @@ nfc_backend_t *nfc_backend_mock_new(nfc_mock_entry_t *entries, size_t count);
  * external deps). Returns NULL on parse error. */
 nfc_backend_t *nfc_backend_mock_from_json(const char *path);
 
+/* Override the MRZ the mock uses (e.g. from an OCR result). Re-derives
+ * the BAC keys and re-wraps the DG1 payload. Returns 0 on success. */
+int nfc_mock_set_mrz(nfc_backend_t *b, const char *line1, const char *line2);
+
+/* Optional script overrides: fixed rndICC returned for GET CHALLENGE
+ * (deterministic tests) and a custom SOD blob. */
+int nfc_mock_set_rnd_icc(nfc_backend_t *b, const uint8_t rnd_icc[8], int len);
+int nfc_mock_set_sod(nfc_backend_t *b, const uint8_t *data, int len);
+
+/* Retrieve the MRZ currently configured in the mock (NULL if unset). */
+int nfc_mock_get_mrz(const nfc_backend_t *b, const char **line1,
+                     const char **line2);
+
 /* Read recorded script counters. */
 int nfc_mock_unexpected_count(const nfc_backend_t *b);
 int nfc_mock_remaining(const nfc_backend_t *b);
+
+/* ----- Per-APDU trace record (for GUI / verbose display) ----- */
+#define NFC_TRACE_MAX 16
+
+typedef struct {
+    char     name[24];        /* step label, e.g. "SELECT AID" */
+    char     capdu[160];      /* full C-APDU as hex (header+data+Le) */
+    char     rapdu[1024];     /* R-APDU data as hex */
+    uint16_t sw;              /* status word */
+    uint32_t ms;              /* round-trip time */
+    char     plain[512];      /* decrypted plaintext (hex) if SM/auth step */
+    int      mac_ok;          /* -1 n/a, 0 MAC mismatch, 1 MAC verified */
+    int      err;             /* 1 if this step failed */
+} nfc_trace_t;
 
 /* ----- High level eMRTD read-out API ----- */
 typedef enum {
@@ -109,10 +155,29 @@ typedef struct {
     /* First 16 bytes of SOD (PKD signature placeholder). */
     uint8_t  sod_head[16];
     int      sod_head_len;
+    /* ---- BAC cryptographic trace (for GUI / verbose display) ---- */
+    int      crypto_done;   /* 1 if the BAC crypto path was executed */
+    char     mrz_info[32];  /* 24-char MRZ_information */
+    char     kseed_hex[33]; /* Kseed (16 bytes as hex) */
+    char     kenc_hex[33];
+    char     kmac_hex[33];
+    char     ksenc_hex[33];
+    char     ksmac_hex[33];
+    char     rnd_icc_hex[17];
+    /* The E||M value the reader sent in MUTUAL AUTH and the verified
+     * response, for display. */
+    char     auth1_hex[81]; /* 40 bytes hex */
+    char     auth2_hex[81]; /* 40 bytes hex */
+    /* Per-APDU trace for the whole read sequence. */
+    int       trace_count;
+    nfc_trace_t trace[NFC_TRACE_MAX];
 } nfc_result_t;
 
-/* Drive the full BAC read sequence over the given backend. */
-nfc_result_t nfc_read_emrtd(nfc_backend_t *backend);
+/* Drive the full BAC read sequence over the given backend. The MRZ
+ * (both 44-char lines) is the input to the BAC key derivation; pass
+ * line2 == NULL to skip the cryptographic path (plain APDU replay). */
+nfc_result_t nfc_read_emrtd(nfc_backend_t *backend,
+                            const char *mrz_line1, const char *mrz_line2);
 
 const char *nfc_step_name(nfc_step_t s);
 
