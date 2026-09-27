@@ -11,6 +11,9 @@ ROOT = Path(__file__).resolve().parents[1]
 TRAD = ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_tool"
 CNN  = ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_cnn_tool"
 TESS = ROOT / "6_2_Tesseract" / "tesseract_tool.py"
+# PaddleOCR via paddle_ocr_tool.py — auto-detects paddleocr /
+# onnxruntime at runtime; falls back to paddle_local.py when neither is
+# available. Both paths emit the same stdout contract.
 PADDLE = ROOT / "6_1_PaddleOCR" / "paddle_ocr_tool.py"
 # The GUI's OCR batch test runs the SAME frozen evaluation corpus as
 # bench.py (data/corpus_eval, ICAO-valid TD3, clean + realistic), NOT
