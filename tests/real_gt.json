@@ -1,0 +1,36 @@
+{
+  "_comment": "Hand-labeled MRZ ground truth for 5 real photos from assets/pic (read from 3x-upscaled crops on 2026-09-26). Composite digits verified with the TRUE ICAO formula cd(L2[0:10]+L2[13:20]+L2[21:43]) — all pass. NOTE: the repo's own composite implementation (cd(L2[0:43])) FAILS on all 5, which is itself a confirmed bug (P0). Use this file for the real-photo eval gate: char-acc per line, line-exact, and true-ICAO validity of OCR output.",
+  "gt": {
+    "08806d29a6268e1f_0003.jpg": {
+      "line1": "PMCHEDE<MAIENFELD<<PIERRE<<<<<<<<<<<<<<<<<<<<",
+      "line2": "S2100023<6CHE7108019M2002293<<<<<<<<<<<<<<06",
+      "note": "Switzerland TD3, doc code PM; guilloche rainbow background; line height ~12px"
+    },
+    "1cce0f3fc387c893_0001.jpg": {
+      "line1": "PSPOLKOWALSKI<<JAN<<<<<<<<<<<<<<<<<<<<<<<<<<",
+      "line2": "ZC39917886POL8101028M2909185<<<<<<<<<<<<<<04",
+      "note": "Poland specimen TD3, doc code PS (col1 != '<' breaks strict mask); 432x295 -> line height ~8px, hardest resolution case"
+    },
+    "28a42952ba25584a_0078.png": {
+      "line1": "Q<CHNNGKELMPONBPJLBLO<<<<<<<<<<<<<<<<<<<<<<<",
+      "line2": "Q100547988CHN8410124F190717319204415<<<<<<<46",
+      "note": "China exit-entry permit specimen, doc code Q (excluded by strict mask col0 whitelist {P,I,A,V,C,<})"
+    },
+    "31611582cbf14d7f_0018.jpg": {
+      "line1": null,
+      "line2": "ZF40004998POL8101028M3203031<<<<<<<<<<<<<<00",
+      "note": "Poland specimen #2; only line2 legible by eye"
+    },
+    "41ab45d4bde758dc_0306.jpg": {
+      "line1": null,
+      "line2": "X110003442AZE7503153M230801030LJV5Z<<<<<<<86",
+      "note": "Azerbaijan; only line2 legible by eye"
+    }
+  },
+  "baseline_cnn_2026-09-26": {
+    "char_acc": 0.210,
+    "line_exact": "0/8",
+    "true_icao_valid_full_lines": "0/3",
+    "note": "mrz_ocr_cnn_tool v3 weights, default pipeline crop (margin=1.2h), strict mask ON. Best ablation: 2x LANCZOS + Sauvola(win25,k0.34) -> 31.0% char-acc, still 0/8 exact."
+  }
+}
