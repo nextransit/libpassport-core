@@ -258,9 +258,10 @@ static int is_check_digit_pos(int p) {
  *   expiry_date: 66..71 (6 chars), check digit at 72
  *   personal_no: 73..86 (14 chars), check digit at 87
  *   composite  : 88
- * Nationality (55..57), sex (65), and composite (88) are protected by
- * the composite check digit only and have a 1-in-10 detection rate per
- * single-char flip -- that's an MRZ-design property, not a decoder bug. */
+ * Nationality (55..57) and sex (65) carry no check digit at all --
+ * neither segment nor composite covers them; composite (88) has a
+ * 1-in-10 detection rate per single-char flip -- that's an MRZ-design
+ * property, not a decoder bug. */
 static int in_segment_range(int p) {
     if (p >= 45 && p < 54) return 1;  /* passport_no */
     if (p >= 58 && p < 64) return 1;  /* birth_date  */

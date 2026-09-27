@@ -56,7 +56,9 @@ typedef struct {
 /* Compute single check digit for a substring. weight cycle: 7,3,1. */
 int mrz_check_digit(const char *s, size_t n);
 
-/* Compute composite check digit over line 2's first 43 chars (line2 must point at line 2 of a TD3 record). */
+/* Compute composite check digit over line 2's doc-no/ck + birth/ck +
+ * expiry/ck + personal-no/ck spans (39 chars; nationality & sex excluded;
+ * line2 must point at line 2 of a TD3 record). */
 int mrz_td3_composite_check(const char *line2);
 
 /* Encode TD3 fields into a 2-line buffer.
