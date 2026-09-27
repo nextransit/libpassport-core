@@ -4,7 +4,7 @@ Runs `mrz_ocr_tool` (traditional) and/or `mrz_ocr_cnn_tool` on a
 list of corpus images, returns per-image and aggregate statistics.
 """
 from __future__ import annotations
-import json, subprocess, time, sys
+import json, os, subprocess, time, sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -16,6 +16,26 @@ TESS = ROOT / "6_2_Tesseract" / "tesseract_tool.py"
 # paddlex/onnxruntime when available, else falls back to paddle_local
 # (tesseract ocrb baseline). Same stdout contract on both paths.
 PADDLE = ROOT / "6_1_PaddleOCR" / "paddle_v6.py"
+
+# Interpreter that actually has paddlex/onnxruntime. The GUI launches
+# this runner with the OS python (sys.executable), which lacks paddlex;
+# without this probe paddle_v6 would silently fall back to the weaker
+# tesseract ocrb baseline. Probe order: /tmp/paddle_venv (dev venv),
+# then a generic .venv, then whatever python is running us.
+def _probe_paddle_python() -> str:
+    import os as _os
+    candidates = [
+        "/tmp/paddle_venv/bin/python",
+        str(ROOT / ".venv" / "bin" / "python"),
+        "/tmp/paddle_venv/bin/python3",
+    ]
+    for cand in candidates:
+        if _os.path.exists(cand):
+            return cand
+    return sys.executable
+
+
+PADDLE_PY = _probe_paddle_python()
 # The GUI's OCR batch test runs the SAME frozen evaluation corpus as
 # bench.py (data/corpus_eval, ICAO-valid TD3, clean + realistic), NOT
 # the historical 500-image free-form corpus (data/corpus). The old
@@ -77,11 +97,11 @@ def run_batch_paddle(images: list[tuple[str, Path]]) -> dict:
     same order, and paddle_v6 emits one stdout contract block per image
     (6 result lines + ms + blank). Returns {case_id: result_dict}.
     """
-    listfile = ROOT / "tests" / ".paddle_local_tmp" / "_batch.txt"
+    listfile = ROOT / "tests" / ".paddle_local_tmp" / f"_batch_{os.getpid()}.txt"
     listfile.parent.mkdir(parents=True, exist_ok=True)
     listfile.write_text("".join(f"{cid}\t{ip}\n" for cid, ip in images))
     proc = subprocess.Popen(
-        [sys.executable, str(PADDLE), "--batch", str(listfile)],
+        [PADDLE_PY, str(PADDLE), "--batch", str(listfile)],
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
     )
     results: dict = {}

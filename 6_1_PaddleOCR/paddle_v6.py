@@ -132,10 +132,29 @@ def _decode_one(rec, img_path):
     t0 = _t.perf_counter()
     if rec is None:
         # Fallback: no paddlex / no cached model -> tesseract ocrb.
+        # Capture paddle_local's stdout contract (it prints the same
+        # result.* lines) so we return a single clean result block
+        # instead of emitting a second empty one from the caller.
+        import io
+        import contextlib
         import paddle_local as _pl
-        rc = _pl.main([sys.argv[0], str(img_path)])
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc = _pl.main([sys.argv[0], str(img_path)])
         ms = (_t.perf_counter() - t0) * 1000.0
-        return rc == 0, "", "", 0, 0, "", "", ms
+        out = {}
+        for ln in buf.getvalue().splitlines():
+            if ":" not in ln:
+                continue
+            k, _, v = ln.partition(":")
+            out[k.strip()] = v.strip()
+        return (rc == 0,
+                out.get("result.line1", ""),
+                out.get("result.line2", ""),
+                int(out.get("result.conf1", "0") or 0),
+                int(out.get("result.conf2", "0") or 0),
+                out.get("band.x band.y band.w band.h", ""),
+                "", ms)
     try:
         img = Image.open(img_path).convert("L")
         gray = np.asarray(img)
