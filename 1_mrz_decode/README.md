@@ -58,9 +58,10 @@ ICAO 9303 weight cycle is 7, 3, 1 starting at position 0. Each MRZ char
 is mapped: `0-9 -> 0-9`, `A-Z -> 10-35`, `< -> 0`. The check digit of a
 field is `sum(value[i] * weight[i%3]) % 10`.
 
-The composite check digit is computed over line 2's first 43 chars
-(passport_no + ck1 + nationality + birth + ck2 + sex + expiry + ck3 +
-personal_no + ck4).
+The composite check digit is computed over the four fields that carry
+their own check digits: document number + ck, date of birth + ck, date
+of expiry + ck and personal number + ck (positions 0..9, 13..19 and
+21..42 of line 2, 39 chars in total). Nationality and sex are excluded.
 
 ## Known MRZ-design limitations (not bugs)
 
@@ -68,4 +69,5 @@ personal_no + ck4).
   cannot be detected by the check-digit mechanism.
 * The composite check digit is modulo 10; therefore a single-char
   flip in a composite-only-covered field has a 1-in-10 chance of
-  going undetected. This is a property of the MRZ specification.
+  going undetected. Nationality and sex are not covered by any check
+  digit. This is a property of the MRZ specification.

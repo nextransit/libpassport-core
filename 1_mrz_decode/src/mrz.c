@@ -47,19 +47,24 @@ int mrz_check_digit(const char *s, size_t n) {
 
 /* Compute the composite check digit over line 2 of a TD3 record.
  * Per ICAO 9303, the composite check digit is calculated over the
- * 43 data+segment-check characters of line 2 (positions 0..42 of l2),
- * i.e. passport_no(9) + ck1 + nationality(3) + birth(6) + ck2 + sex +
- * expiry(6) + ck3 + personal_no(14) + ck4.
+ * four fields that carry their own check digits: document number (9+ck),
+ * date of birth (6+ck), date of expiry (6+ck) and personal number (14+ck),
+ * i.e. positions 0..9 + 13..19 + 21..42 of l2 (39 chars). The nationality
+ * (positions 10..12) and sex (position 20) fields are excluded.
  * The function expects a buffer of at least MRZ_TD3_LINE_LEN + 1 chars,
  * where line 2 begins at index MRZ_TD3_LINE_LEN. */
 int mrz_td3_composite_check(const char *line2) {
     if (line2 == NULL) return -1;
+    static const size_t spans[3][2] = { {0, 10}, {13, 20}, {21, 43} };
     int sum = 0;
     static const int w[3] = { MRZ_W0, MRZ_W1, MRZ_W2 };
-    for (size_t i = 0; i < 43; ++i) {
-        int v = char_value(line2[i]);
-        if (v < 0) return -1;
-        sum += v * w[i % 3];
+    size_t k = 0;
+    for (size_t s = 0; s < 3; ++s) {
+        for (size_t i = spans[s][0]; i < spans[s][1]; ++i, ++k) {
+            int v = char_value(line2[i]);
+            if (v < 0) return -1;
+            sum += v * w[k % 3];
+        }
     }
     return sum % 10;
 }
@@ -176,20 +181,19 @@ mrz_status_t mrz_td3_encode(const mrz_td3_t *f, char *out_lines) {
         if (ck4 < 0) return MRZ_ERR_INVALID_CHAR;
         l2[42] = (char)('0' + ck4);
 
-        /* Build composite input: passport_no + ck1 + nat + bd + ck2 + sex +
-         * expiry + ck3 + personal_no + ck4 = 9+1+3+6+1+1+6+1+14+1 = 43 */
-        char comp[43];
+        /* Build composite input (ICAO 9303): document number + ck, date of
+         * birth + ck, date of expiry + ck, personal number + ck.
+         * Nationality and sex are excluded = 9+1+6+1+6+1+14+1 = 39 chars. */
+        char comp[39];
         memcpy(comp,       pn, 9);
         comp[9] = l2[9];
-        memcpy(comp + 10,  nat, 3);
-        memcpy(comp + 13,  bd, 6);
-        comp[19] = l2[19];
-        comp[20] = sx[0];
-        memcpy(comp + 21,  ed, 6);
-        comp[27] = l2[27];
-        memcpy(comp + 28,  per, 14);
-        comp[42] = l2[42];
-        int ck5 = mrz_check_digit(comp, 43);
+        memcpy(comp + 10,  bd, 6);
+        comp[16] = l2[19];
+        memcpy(comp + 17,  ed, 6);
+        comp[23] = l2[27];
+        memcpy(comp + 24,  per, 14);
+        comp[38] = l2[42];
+        int ck5 = mrz_check_digit(comp, 39);
         if (ck5 < 0) return MRZ_ERR_INVALID_CHAR;
         l2[43] = (char)('0' + ck5);
 
