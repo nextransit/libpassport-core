@@ -81,6 +81,13 @@ def _find_mrz_band(gray):
     H, W = gray.shape
     if H == 0 or W == 0:
         return 0, 0
+    # Robust pre-cropped strip signature: an MRZ strip is a wide, short
+    # image (W/H > 3, H < 400) regardless of ink coverage. The old
+    # ink-coverage test (>70% ink rows) failed on short-name samples
+    # whose line-1 is mostly '<' fillers (e.g. img_1237_x49_v0), which
+    # then fell into the bottom-1/3 branch and lost most of line 1.
+    if W > 3 * H and H < 400:
+        return 0, H
     rd = (gray < 128).sum(axis=1)
     ink_rows = np.where(rd > W * 0.10)[0]
     # Pre-cropped strip signature: most of the image is ink text.
