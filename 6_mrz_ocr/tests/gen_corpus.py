@@ -48,11 +48,16 @@ def check_digit_of(seg: str) -> str:
 
 def build_line2(pn: str, nat: str, bd: str, sex: str, ex: str,
                 pers: str) -> str:
-    """Assemble an ICAO-valid TD3 line 2 from its fields."""
+    """Assemble an ICAO-valid TD3 line 2 from its fields.
+
+    Per ICAO 9303 the composite check digit covers the four fields that
+    carry their own check digits (document number, date of birth, date
+    of expiry, personal number) and excludes nationality and sex."""
     l2 = (pn + check_digit_of(pn) + nat + bd + check_digit_of(bd) +
           sex + ex + check_digit_of(ex) + pers + check_digit_of(pers))
     assert len(l2) == 43, l2
-    l2 += check_digit_of(l2)
+    comp = l2[0:10] + l2[13:20] + l2[21:43]
+    l2 += check_digit_of(comp)
     assert len(l2) == 44
     return l2
 
@@ -74,7 +79,7 @@ def icao_valid(l1: str, l2: str) -> bool:
         return False
     if l2[9] != check_digit_of(l2[0:9]) or l2[19] != check_digit_of(l2[13:19]) \
        or l2[27] != check_digit_of(l2[21:27]) or l2[42] != check_digit_of(l2[28:42]) \
-       or l2[43] != check_digit_of(l2[0:43]):
+       or l2[43] != check_digit_of(l2[0:10] + l2[13:20] + l2[21:43]):
         return False
     if not (l2[13:19] + l2[21:27]).isdigit():
         return False

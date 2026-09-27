@@ -117,6 +117,7 @@ int mrz_ocr_locate_band(const uint8_t *bin, int W, int H, mrz_ocr_rect_t *out) {
     int top = -1;
     int min_run_h = 2;
     int max_gap = H / 8;
+    int max_run_h = 0;
     for (int y = 0; y < H; ++y) {
         if (row_dark[y] >= threshold) {
             if (top < 0) top = y;
@@ -124,14 +125,26 @@ int mrz_ocr_locate_band(const uint8_t *bin, int W, int H, mrz_ocr_rect_t *out) {
             if (top >= 0 && y - top >= min_run_h) {
                 run_top[n_runs] = top;
                 run_bot[n_runs] = y;
+                if (y - top > max_run_h) max_run_h = y - top;
                 n_runs++;
             }
             top = -1;
         }
     }
     if (top >= 0 && H - top >= min_run_h) {
-        run_top[n_runs] = top; run_bot[n_runs] = H; n_runs++;
+        run_top[n_runs] = top; run_bot[n_runs] = H;
+        if (H - top > max_run_h) max_run_h = H - top;
+        n_runs++;
     }
+    /* The inter-line gap of a TD3 record scales with the character
+     * height, not with the crop height. A TIGHT crop (caller has
+     * already located the MRZ, so H is small) makes H/8 under-shoot
+     * the real gap (~1.4x line height) and the two text lines stay
+     * separate runs -> the band degenerates to one line and both
+     * "lines" come out of the same physical line. Scale the merge
+     * gap by the tallest run found as well; on full-page inputs H/8
+     * dominates and behaviour is unchanged. */
+    if (2 * max_run_h > max_gap) max_gap = 2 * max_run_h;
     if (n_runs == 0) {
         /* No dense horizontal run anywhere (blank / uniform image).
          * Must bail BEFORE touching run_top[0]: the arrays are malloc'd

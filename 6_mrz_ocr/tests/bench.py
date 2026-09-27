@@ -37,7 +37,7 @@ def line2_checksum_ok(l2: str) -> bool:
                 check_digit(l2[13:19]) == int(l2[19]) and
                 check_digit(l2[21:27]) == int(l2[27]) and
                 check_digit(l2[28:42]) == int(l2[42]) and
-                check_digit(l2[0:43]) == int(l2[43]))
+                check_digit(l2[0:10] + l2[13:20] + l2[21:43]) == int(l2[43]))
     except ValueError:
         return False
 

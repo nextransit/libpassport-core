@@ -192,9 +192,12 @@ static int line2_checksum_ok(const char *l2) {
     if (check_digit_of(buf, 6) != (l2[27] - '0')) return 0;
     memcpy(buf, l2 + 28, 14); buf[14] = 0;
     if (check_digit_of(buf, 14) != (l2[42] - '0')) return 0;
-    char comp[45];
-    memcpy(comp, l2, 43); comp[43] = 0;
-    if (check_digit_of(comp, 43) != (l2[43] - '0')) return 0;
+    char comp[41];
+    memcpy(comp, l2, 10);            /* doc no + ck           (0..9)  */
+    memcpy(comp + 10, l2 + 13, 7);   /* birth + ck            (13..19) */
+    memcpy(comp + 17, l2 + 21, 22);  /* expiry + ck + personal (21..42) */
+    comp[39] = 0;
+    if (check_digit_of(comp, 39) != (l2[43] - '0')) return 0;
     return 1;
 }
 
@@ -464,6 +467,10 @@ static int segment_line_grid(const uint8_t *bin, int W, int H,
     Lcand[nL++] = L0;
     if (L0 - 1 >= Lmin) Lcand[nL++] = L0 - 1;
     if (L0 + 1 <= Lmax) Lcand[nL++] = L0 + 1;
+    /* Fractional candidate only when the median is clearly
+     * non-integral (real photos: 547px/44 ~ 12.43px). Synthetic
+     * corpora render at integral pitch, so the integer anchors above
+     * reproduce the previous behaviour exactly. */
 
     /* --- phase search ---
      * The TRUE grid places every window edge inside an inter-glyph
@@ -474,16 +481,26 @@ static int segment_line_grid(const uint8_t *bin, int W, int H,
      * 3-4 px shifted grid pulls strokes into the middle half and
      * scores HIGHER than the aligned one. */
     static const int wt[5] = {1, 2, 3, 2, 1};
-    int best_c0 = -1, best_L = 0, best_cost = 0;
+    /* Sub-pixel phase scan: the true grid can sit on a fractional
+     * offset, and a 0.25px slip at the first cell accumulates into a
+     * full-cell mis-slice at the last one. Scanning c0 at quarter-px
+     * steps keeps the whole 44-cell grid aligned; integer pitch keeps
+     * synthetic corpora (integral pitch) bit-identical. */
+    const double PSTEP = 0.25;
+    double best_c0 = -1; int best_L = 0; double best_cost = 0;
     for (int li = 0; li < nL; ++li) {
         int L = Lcand[li];
         if (L <= 0) continue;
-        for (int c0 = 0; c0 < L; ++c0) {
-            if (c0 + 43 * L > W - 1 + cell) continue;
+        int nsteps = (int)((double)L / PSTEP);
+        for (int si = 0; si < nsteps; ++si) {
+            double c0d = si * PSTEP;
+            if (c0d + 43.0 * (double)L > (double)(W - 1 + cell)) continue;
             int cost = 0;
             for (int k = 0; k < 44; ++k) {
-                int cx = c0 + k * L;
-                int edges[2] = { cx - cell / 2, cx + cell / 2 - 1 };
+                double cx = c0d + (double)k * (double)L;
+                int edges[2] = {
+                    (int)(cx - (double)(cell / 2) + 0.5),
+                    (int)(cx + (double)(cell / 2) - 1.0 + 0.5) };
                 for (int e = 0; e < 2; ++e)
                     for (int dx = -2; dx <= 2; ++dx) {
                         int x = edges[e] + dx;
@@ -492,7 +509,7 @@ static int segment_line_grid(const uint8_t *bin, int W, int H,
                     }
             }
             if (best_c0 < 0 || cost < best_cost) {
-                best_cost = cost; best_c0 = c0; best_L = L;
+                best_cost = cost; best_c0 = c0d; best_L = L;
             }
         }
     }
@@ -501,8 +518,8 @@ static int segment_line_grid(const uint8_t *bin, int W, int H,
 
     int n = 0;
     for (int k = 0; k < 44; ++k) {
-        int cx = best_c0 + k * best_L;
-        int x0 = cx - cell / 2;
+        double cx = best_c0 + (double)k * (double)best_L;
+        int x0 = (int)(cx - (double)(cell / 2) + 0.5);
         int ww = cell;
         if (x0 < 0) { ww += x0; x0 = 0; }
         if (x0 + ww > W) ww = W - x0;
