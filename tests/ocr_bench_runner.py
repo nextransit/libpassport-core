@@ -11,10 +11,11 @@ ROOT = Path(__file__).resolve().parents[1]
 TRAD = ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_tool"
 CNN  = ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_cnn_tool"
 TESS = ROOT / "6_2_Tesseract" / "tesseract_tool.py"
-# PaddleOCR via paddle_ocr_tool.py — auto-detects paddleocr /
-# onnxruntime at runtime; falls back to paddle_local.py when neither is
-# available. Both paths emit the same stdout contract.
-PADDLE = ROOT / "6_1_PaddleOCR" / "paddle_ocr_tool.py"
+# PaddleOCR via paddle_v6.py — Phase 3 PP-OCRv6 pure-rec decoder
+# (project-split rows, rec only, no det). Uses PP-OCRv6_medium_rec via
+# paddlex/onnxruntime when available, else falls back to paddle_local
+# (tesseract ocrb baseline). Same stdout contract on both paths.
+PADDLE = ROOT / "6_1_PaddleOCR" / "paddle_v6.py"
 # The GUI's OCR batch test runs the SAME frozen evaluation corpus as
 # bench.py (data/corpus_eval, ICAO-valid TD3, clean + realistic), NOT
 # the historical 500-image free-form corpus (data/corpus). The old
@@ -65,6 +66,56 @@ def run_one(tool: Path, image: Path) -> dict:
             "ms":    ms,
             "err":   r.stderr.strip() if r.returncode != 0 else ""}
 
+def run_batch_paddle(images: list[tuple[str, Path]]) -> dict:
+    """Batch-drive paddle_v6.py: one process decodes every image.
+
+    Reusing one paddlex model across all images is ~100x cheaper than
+    per-image subprocess spawns (each spawn would re-import paddlex and
+    reload the ONNX model, ~2s each — fatal for a 1380-image run).
+
+    Images is a list of (case_id, image_path). The listfile keeps the
+    same order, and paddle_v6 emits one stdout contract block per image
+    (6 result lines + ms + blank). Returns {case_id: result_dict}.
+    """
+    listfile = ROOT / "tests" / ".paddle_local_tmp" / "_batch.txt"
+    listfile.parent.mkdir(parents=True, exist_ok=True)
+    listfile.write_text("".join(f"{cid}\t{ip}\n" for cid, ip in images))
+    proc = subprocess.Popen(
+        [sys.executable, str(PADDLE), "--batch", str(listfile)],
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+    )
+    results: dict = {}
+    idx = 0
+    cur: dict | None = None
+    for line in proc.stdout:
+        line = line.rstrip("\n")
+        if not line or line.startswith("@@PROGRESS@"):
+            if cur is not None:
+                results[images[idx][0]] = cur
+                idx += 1
+                cur = None
+            continue
+        k, _, v = line.partition(":")
+        key = k.strip()
+        if key == "ms":
+            if cur is not None:
+                cur["ms"] = float(v.strip())
+        elif key == "result.ok":
+            cur = {"ok": v.strip() == "OK", "err": "",
+                   "line1": "", "line2": "",
+                   "conf1": 0, "conf2": 0, "band": "", "ms": 0.0}
+        elif key.startswith("result."):
+            if cur is not None:
+                cur[key[len("result."):]] = v.strip()
+                if key in ("result.conf1", "result.conf2"):
+                    cur[key[len("result."):]] = int(v.strip() or "0")
+        elif key == "band.x band.y band.w band.h":
+            if cur is not None:
+                cur["band"] = v.strip()
+    proc.wait()
+    return results
+
+
 def compare(gt: str, got: str) -> tuple[int, int, str]:
     """Return (correct_chars, total_chars, per_char_status_string).
 
@@ -103,11 +154,31 @@ def run(case_ids: list[str] | None, methods: list[str],
                 "full_match": 0,
                 "low_conf": 0}
             for m in methods}
+
+    # Paddle uses one long-lived process (paddlex model loaded once).
+    # Batch runs first; progress callbacks are emitted per-image here so
+    # the GUI bar moves during the (slow) paddle pass.
+    batch_paddle: dict = {}
+    paddle_fired: set = set()
+    if "paddle" in methods:
+        batch_paddle = run_batch_paddle(
+            [(rec["id"], DATA / rec["image"]) for rec in records])
+        if on_record:
+            done_n = 0
+            for cid, _ in [(rec["id"], rec["image"]) for rec in records]:
+                if cid in batch_paddle:
+                    done_n += 1
+                    paddle_fired.add(cid)
+                    on_record(done_n, len(records), cid)
+
     for rec in records:
         image_path = DATA / rec["image"]
         per_method = {}
         for m in methods:
-            r = run_one(METHODS[m][1], image_path)
+            if m == "paddle" and rec["id"] in batch_paddle:
+                r = batch_paddle[rec["id"]]
+            else:
+                r = run_one(METHODS[m][1], image_path)
             c1, t1, s1 = compare(rec["line1"], r["line1"])
             c2, t2, s2 = compare(rec["line2"], r["line2"])
             per_method[m] = {"raw": r,
@@ -129,7 +200,8 @@ def run(case_ids: list[str] | None, methods: list[str],
                         "scale": rec["scale"], "noise": rec["noise"],
                         "skew": rec["skew"],
                         "per_method": per_method})
-        if on_record:
+        if on_record and not (methods == ["paddle"]
+                               and rec["id"] in paddle_fired):
             on_record(len(results), len(records), rec["id"])
     return {"records": results, "agg": agg, "methods": methods,
             "total_cases": len(records)}
