@@ -29,6 +29,12 @@ double mrz_estimate_band_skew(const uint8_t *bin, int W, int H) {
     double best_score = -1.0, score0 = -1.0, best_deg = 0.0;
     int *proj = (int *)malloc(sizeof(int) * (size_t)(H + 4));
     if (!proj) return 0.0;
+    /* Coarse scan -4..+4 deg at 0.5 deg steps, then a fine scan
+     * +-0.5 deg around the coarse winner at 0.05 deg. The coarse
+     * grid alone leaves up to 0.25 deg of residual tilt, which over
+     * a 1500px line is ~6.5px of vertical wander and breaks the
+     * row-projection uniformity the pitch-grid segmenter relies on. */
+    double deg_coarse = 0.0, best_coarse = -1.0;
     for (int deg4 = -8; deg4 <= 8; ++deg4) {
         double deg = deg4 * 0.5;
         double rad = deg * M_PI / 180.0;
@@ -45,6 +51,23 @@ double mrz_estimate_band_skew(const uint8_t *bin, int W, int H) {
         double score = 0;
         for (int y = 0; y < H; ++y) score += (double)proj[y] * proj[y];
         if (deg == 0.0) score0 = score;
+        if (score > best_coarse) { best_coarse = score; deg_coarse = deg; }
+    }
+    for (int fi = -10; fi <= 10; ++fi) {
+        double deg = deg_coarse + fi * 0.05;
+        double rad = deg * M_PI / 180.0;
+        double s = sin(rad), c = cos(rad);
+        memset(proj, 0, sizeof(int) * (size_t)(H + 4));
+        for (int y = 0; y < H; ++y) {
+            for (int x = 0; x < W; ++x) {
+                if (!bin[y * W + x]) continue;
+                double yr = cy - s * (x - cx) + c * (y - cy);
+                int yi = (int)(yr + 0.5);
+                if (yi >= 0 && yi < H) proj[yi]++;
+            }
+        }
+        double score = 0;
+        for (int y = 0; y < H; ++y) score += (double)proj[y] * proj[y];
         if (score > best_score) { best_score = score; best_deg = deg; }
     }
     free(proj);
