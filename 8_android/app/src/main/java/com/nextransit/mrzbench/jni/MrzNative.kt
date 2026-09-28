@@ -32,4 +32,14 @@ object MrzNative {
      * var so `mrz_ocr_cnn.c` records its own per-stage breakdown.
      */
     external fun setProfiling(on: Boolean)
+
+    /**
+     * Toggle dual-line CNN forward parallelism in the recogniser
+     * (Step 2 of the A53 perf plan). When ON, the recogniser
+     * serialises the resample step on the main thread and then
+     * forks a worker that runs line 1's cnn forward while the
+     * main thread runs line 0. Disjoint scratchpad halves keep
+     * the bump allocator race-free. Default is OFF (sequential).
+     */
+    @JvmStatic external fun setParallel(on: Boolean)
 }

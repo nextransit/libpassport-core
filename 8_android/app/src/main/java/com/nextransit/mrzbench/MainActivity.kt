@@ -100,6 +100,8 @@ class MainActivity : AppCompatActivity() {
                 setStatus("host command: run backend=" + backend + " (n=" + backends.size + ")")
                 val profile = intent?.getStringExtra("profile") == "1"
                 com.nextransit.mrzbench.jni.MrzNative.setProfiling(profile)
+                val parallel = intent?.getStringExtra("parallel") == "1"
+                com.nextransit.mrzbench.jni.MrzNative.setParallel(parallel)
                 Toast.makeText(this@MainActivity, "RUN_BENCH " + backend, Toast.LENGTH_SHORT).show()
                 Log.i("MrzBench", "HeadlessRunner.run start backends=" + backends.size + " imgsDir=" + imgDir.absolutePath + " jsonpath=" + json.absolutePath)
                 HeadlessRunner.run(

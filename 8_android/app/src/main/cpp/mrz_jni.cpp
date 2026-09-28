@@ -142,4 +142,11 @@ Java_com_nextransit_mrzbench_jni_MrzNative_loadPpmInfo(
     return env->NewStringUTF(buf);
 }
 
-} // extern "C"
+JNIEXPORT void JNICALL
+Java_com_nextransit_mrzbench_jni_MrzNative_setParallel(JNIEnv *env, jobject, jboolean on) {
+    setenv("MRZ_OCR_PAR", on ? "1" : "0", 1);
+    LOGI("MRZ_OCR_PAR %s", on ? "ON (dual-line pthread forward)" : "OFF (sequential)");
+}
+
+ } // extern "C"
+
