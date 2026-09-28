@@ -25,4 +25,11 @@ object MrzNative {
 
     /** Load PPM header only (cheap, used to filter non-image files). */
     @JvmStatic external fun loadPpmInfo(path: String): String
+
+    /**
+     * Toggle per-image stage logging through __android_log_print under
+     * the "MrzNative" tag. Also flips the in-tree `MRZ_OCR_TIMING` env
+     * var so `mrz_ocr_cnn.c` records its own per-stage breakdown.
+     */
+    external fun setProfiling(on: Boolean)
 }
