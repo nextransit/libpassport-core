@@ -1,0 +1,21 @@
+# Build artefacts (matches root project conventions)
+build/
+*/build/
+**/build/
+.gradle/
+local.properties
+captures/
+
+# AGP / NDK CMake cache. Safe to regenerate; large and noisy.
+.cxx/
+
+# Editor backup files left over from `sed -i.bak` and similar.
+*.bak
+
+# NDK toolchain that may be installed beside the source tree.
+ndk/
+
+# Demo PPMs that are pre-rendered from 6_mrz_ocr/data/corpus_eval.
+# The host source remains the single source of truth; the assets/ copy
+# is rebuilt by tools/regen_demo_corpus.py.
+app/src/main/assets/corpus/img/

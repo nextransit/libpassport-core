@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Deep-space base + neon accents. Material3 component attrs are
+         overridden where the platform defaults leak light surfaces
+         (Switch, ProgressBar, Snackbar). -->
+    <style name="Theme.MrzBench" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:statusBarColor">@color/bg</item>
+        <item name="android:navigationBarColor">@color/bg</item>
+        <item name="colorPrimary">@color/neon_cyan</item>
+        <item name="colorOnPrimary">@color/bg</item>
+        <item name="colorPrimaryContainer">@color/card</item>
+        <item name="colorOnPrimaryContainer">@color/neon_cyan</item>
+        <item name="colorSecondary">@color/neon_purple</item>
+        <item name="colorOnSecondary">@color/bg</item>
+        <item name="colorTertiary">@color/neon_blue</item>
+        <item name="colorSurface">@color/card</item>
+        <item name="colorOnSurface">@color/text</item>
+        <item name="colorSurfaceVariant">@color/field</item>
+        <item name="colorOnSurfaceVariant">@color/text_dim</item>
+        <item name="colorOutline">@color/border</item>
+        <item name="colorError">@color/err</item>
+
+        <item name="android:textColorPrimary">@color/text</item>
+        <item name="android:textColorSecondary">@color/text_dim</item>
+        <item name="android:textColorHint">@color/text_mute</item>
+
+        <!-- Typography: monospaced for any data (matches
+             curses-tests/gui.py Menlo/Consolas rule). Body uses platform
+             sans for legibility. -->
+        <item name="fontFamily">sans-serif</item>
+        <item name="fontFamily">monospace</item>
+    </style>
+</resources>
