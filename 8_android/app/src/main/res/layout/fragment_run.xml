@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="14dp">
+
+        <!-- Corpus card -->
+        <include layout="@layout/card_header"
+            android:id="@+id/h_corpus" />
+        <LinearLayout
+            android:id="@+id/card_corpus"
+            style="@style/CyberCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <TextView
+                style="@style/Lbl"
+                android:text="@string/lbl_corpus_dir" />
+            <TextView
+                android:id="@+id/corpus_dir"
+                style="@style/ValMono"
+                android:text="— not loaded —" />
+
+            <TextView
+                style="@style/Lbl"
+                android:layout_marginTop="10dp"
+                android:text="@string/lbl_corpus_count" />
+            <TextView
+                android:id="@+id/corpus_count"
+                style="@style/ValMono"
+                android:text="0" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_pick_dir"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/btn_push"
+                android:textColor="@color/bg" />
+        </LinearLayout>
+
+        <!-- Backend card -->
+        <include layout="@layout/card_header"
+            android:id="@+id/h_backend"
+            android:layout_marginTop="14dp" />
+        <LinearLayout
+            android:id="@+id/card_backend"
+            style="@style/CyberCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/backend_group"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:selectionRequired="true"
+                app:singleSelection="true">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_backend_trad"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Template" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_backend_cnn"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="CNN" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_backend_both"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Both" />
+            </com.google.android.material.button.MaterialButtonToggleGroup>
+
+            <TextView
+                style="@style/Lbl"
+                android:layout_marginTop="10dp"
+                android:text="@string/lbl_subset" />
+            <TextView
+                android:id="@+id/subset_text"
+                style="@style/ValMono"
+                android:text="all" />
+        </LinearLayout>
+
+        <!-- Run card -->
+        <LinearLayout
+            android:id="@+id/card_run"
+            style="@style/CyberCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_run"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:backgroundTint="@color/neon_cyan"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.10"
+                android:text="@string/btn_run"
+                android:textAllCaps="true"
+                android:textColor="@color/bg" />
+
+            <com.google.android.material.progressindicator.LinearProgressIndicator
+                android:id="@+id/progress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:indeterminate="false"
+                android:max="100"
+                android:progress="0"
+                app:indicatorColor="@color/neon_cyan"
+                app:trackColor="@color/border"
+                app:trackThickness="3dp" />
+
+            <TextView
+                android:id="@+id/progress_text"
+                style="@style/ValMono"
+                android:layout_marginTop="6dp"
+                android:text="0 / 0" />
+        </LinearLayout>
+
+        <!-- Last metrics -->
+        <TextView
+            android:id="@+id/h_metrics"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="0.10"
+            android:text="LAST METRICS"
+            android:textAllCaps="true"
+            android:textColor="@color/text_dim"
+            android:textSize="11sp" />
+
+        <LinearLayout
+            android:id="@+id/card_metrics"
+            style="@style/CyberCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <GridLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:columnCount="2">
+
+                <include android:id="@+id/m_ok"
+                    layout="@layout/metric_cell" />
+                <include android:id="@+id/m_l1"
+                    layout="@layout/metric_cell" />
+                <include android:id="@+id/m_l2"
+                    layout="@layout/metric_cell" />
+                <include android:id="@+id/m_full"
+                    layout="@layout/metric_cell" />
+                <include android:id="@+id/m_ck"
+                    layout="@layout/metric_cell" />
+                <include android:id="@+id/m_ms"
+                    layout="@layout/metric_cell" />
+            </GridLayout>
+
+            <TextView
+                android:id="@+id/metrics_backend_tag"
+                style="@style/ValMono"
+                android:layout_marginTop="8dp"
+                android:text="—" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

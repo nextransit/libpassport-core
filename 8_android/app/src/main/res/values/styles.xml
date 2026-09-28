@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="CyberCard">
+        <item name="android:background">@drawable/bg_card</item>
+    </style>
+    <style name="Lbl">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:letterSpacing">0.10</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:textColor">@color/text_dim</item>
+        <item name="android:textSize">10sp</item>
+    </style>
+    <style name="ValMono">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:textColor">@color/text</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+</resources>

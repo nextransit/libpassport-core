@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Mrz Bench</string>
+    <string name="tab_run">Run</string>
+    <string name="tab_stream">Stream</string>
+    <string name="tab_compare">Compare</string>
+
+    <string name="lbl_backend">Backend</string>
+    <string name="lbl_subset">Subset</string>
+    <string name="lbl_corpus_dir">Corpus dir</string>
+    <string name="lbl_corpus_count">Records</string>
+    <string name="btn_run">Run batch</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="btn_push">Push corpus</string>
+    <string name="btn_compare">Import baseline</string>
+
+    <string name="k_metric_ok">Pipeline OK</string>
+    <string name="k_metric_l1">Line 1 acc</string>
+    <string name="k_metric_l2">Line 2 acc</string>
+    <string name="k_metric_full">Full match</string>
+    <string name="k_metric_cksum">Cksum valid</string>
+    <string name="k_metric_ms">ms p50 / p95</string>
+
+    <string name="h_stream_console">Per-image log</string>
+    <string name="h_compare_diff">On-device vs host diff</string>
+    <string name="h_compare_empty">No baseline imported yet</string>
+    <string name="h_run_corpus">Corpus</string>
+    <string name="h_run_native">Native backend</string>
+</resources>
