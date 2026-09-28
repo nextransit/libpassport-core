@@ -50,3 +50,7 @@ assets/
 
 # Pre-edit backups (kept as safety net during visual iteration)
 *.bak.pre-visual-pass-*
+skills/
+
+# PaddleOCR local tesseract scratch (band crops, tsv, batch lists)
+tests/.paddle_local_tmp/

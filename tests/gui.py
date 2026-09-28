@@ -194,6 +194,34 @@ def _save_theme_pref(name):
         pass
 
 
+def _sanitize_theme_name(name: str) -> str:
+    """X2:刚性映射 —阻断外部主题名(如 darkly / cyborg)穿透到自定义调色板。
+
+    cyber-dark / cyber-light 是本项目专属的科技感主题;任何其它深色
+    ttkbootstrap 内置主题(solar / superhero 等)或 stale 历史持久化
+    (darkly / cyborg)都收敛到 cyber-dark;浅色收敛到 cyber-light。
+    这避免了 _theme_palette() 在 spec is None 时退化成 stock 调色板
+    所造成的"深色背景里混进原生浅色部件"穿透现象。
+    """
+    if not isinstance(name, str):
+        return "cyber-dark"
+    if name in ("cyber-dark",):
+        return "cyber-dark"
+    if name in ("cyber-light",):
+        return "cyber-light"
+    DARK = {"darkly", "cyborg", "solar", "superhero",
+            "dark", "darkly-pro", "vapor", "vapor-pro"}
+    LIGHT = {"flatly", "cosmo", "journal", "litera", "minty", "lumen",
+             "light", "sandstone", "yeti", "pulse", "united", "morph"}
+    if name in DARK:
+        return "cyber-dark"
+    if name in LIGHT:
+        return "cyber-light"
+    # 未知名:按当前 OS 时间粗判,白天 light / 夜间 dark
+    import datetime
+    h = datetime.datetime.now().hour
+    return "cyber-light" if 7 <= h < 19 else "cyber-dark"
+
 class _Tooltip:
     """Hover tooltip (overrideredirect Toplevel) showing a full path."""
 
@@ -231,75 +259,324 @@ class _Tooltip:
             self.tip = None
 
 
-class _ThemedButton(tk.Frame):
-    """Flat accent button macOS aqua cannot ignore.
+class _ThemedButton(tk.Canvas):
+    """X2 工业暗黑科技感矢量自绘按钮。
 
-    tk.Button on macOS ignores -background on its native bezel (and the
-    workaround matrix of relief/bd/highlight flags is version-fragile),
-    so the face is a tk.Frame + tk.Label — both always honour bg/fg.
-    Supports the Button API subset the GUI uses: configure(text=/state=),
-    cget(text=/state=)."""
+    设计要点(对照原 tk.Frame + tk.Label 实现):
+    - 由 tk.Canvas 自绘圆角矩形 + 1px 微描边 + 居中文本,
+      macOS aqua 与各主题下视觉一致,不再依赖 ttk/原生的 bezel;
+    - 调色板完全由调用方的 _pal 驱动,跟随 cyber-dark / cyber-light
+      主题切换自动 retheme,与 _cta() / _cta_recolor() 既有协议对齐;
+    - 对外暴露的 API 与原版严格一致:
+        __init__(parent, text, command, kind, gui, padx, pady)
+        configure(text=, state=)   (其它 key 走 super)
+        cget(text=, state=)        (其它 key 走 super)
+        refresh()                  (recolour from live _pal)
+        _hover                     (bool, 内部状态)
+        _cta_kind                  (str, 由 _cta() 注入,值为 primary/ghost)
+    这样所有现有调用方(ocr_run_btn.configure(text=...) / _cta_buttons / 
+    _cta_recolor)零修改即可平替。
+    """
+
+    # 内部调色板 token 名(从 _pal 拉)。缺失时退回 cyber-dark 安全色,
+    # 让 _Theme_palette 的 fallback 分支走 darkly 时按钮也不会爆白底。
+    _TOKEN_FILL     = "btn_fill"
+    _TOKEN_HOVER    = "btn_hover"
+    _TOKEN_ACTIVE   = "btn_active"
+    _TOKEN_BORDER   = "btn_border"
+    _TOKEN_FOCUS    = "btn_focus"
+    _TOKEN_TEXT     = "btn_text"
+    _TOKEN_TEXT_PRI = "btn_text_primary"
+    _TOKEN_TEXT_DIM = "btn_text_disabled"
 
     def __init__(self, master, text, command, kind, gui, padx, pady):
-        super().__init__(master, bd=0, highlightthickness=0)
+        # parent 的背景必须从 master 现取,否则在 cyber-light 等浅色主题下
+        # 会留下一条深色 Canvas 底。这是 Canvas 与 Frame 的关键差异。
+        try:
+            master_bg = master.cget("bg")
+        except (tk.TclError, AttributeError):
+            master_bg = "#0a0e14"
+        # 计算初始尺寸:用字符度量估算,pack 时再被实际 layout 覆盖。
+        import tkinter.font as tkfont
+        try:
+            f = tkfont.nametofont(gui._pal["font_ui_bold"])
+        except (tk.TclError, KeyError):
+            f = tkfont.nametofont("TkDefaultFont")
+        text_w = f.measure(text)
+        width = max(64, text_w + 2 * padx + 4)
+        height = max(24, f.metrics("linespace") + 2 * pady + 2)
+
+        super().__init__(
+            master, width=width, height=height,
+            bg=master_bg, highlightthickness=0, bd=0,
+            takefocus=1,
+        )
         self._gui = gui
         self._cmd = command
         self._kind = kind
         self._state = "normal"
         self._hover = False
-        self._lbl = tk.Label(self, text=text, padx=padx, pady=pady,
-                             font=gui._pal["font_ui_bold"], cursor="hand2")
-        self._lbl.pack()
-        self._lbl.bind("<Button-1>", self._on_click)
-        self._lbl.bind("<Enter>", lambda e: self._set_hover(True))
-        self._lbl.bind("<Leave>", lambda e: self._set_hover(False))
-        self.refresh()
+        self._pressed = False
+        self._padx = padx
+        self._pady = pady
+        self._text = text
 
-    def _on_click(self, _e=None):
-        if self._state == "normal" and self._cmd:
-            self._cmd()
+        # 事件绑定(全部绑到自身 Canvas,不再走 _lbl)
+        self.bind("<Enter>", self._on_enter)
+        self.bind("<Leave>", self._on_leave)
+        self.bind("<ButtonPress-1>", self._on_press)
+        self.bind("<ButtonRelease-1>", self._on_release)
+        # pack / grid 后尺寸变化时强制重绘
+        self.bind("<Configure>", lambda _e: self._safe_redraw())
+        # 键盘可达性:Space / Enter 触发 command(原 tk.Button 行为)
+        self.bind("<KeyRelease-space>", lambda _e: self._invoke())
+        self.bind("<KeyRelease-Return>", lambda _e: self._invoke())
 
-    def _set_hover(self, on):
-        self._hover = on
-        self.refresh()
+        # X2 fix:macOS ttkbootstrap 下偶发 aqua 路由问题会让 tk.Canvas
+        # 漏接 <ButtonRelease-1>(按住不动时 release 不触发)。叠加绑一份
+        # <Button-1> 兜底——只要按下去立即 invoke,与原生 tk.Button 行为一致。
+        # 已经处理 pressed_was / disabled 等去重逻辑,不会双触发。
+        self.bind("<Button-1>", self._on_press_release_invoke)
 
+        self._safe_redraw()
+
+    def _on_press_release_invoke(self, _e=None):
+        """X2 fix:macOS aqua 事件路由兜底。压下立即 release+invoke,
+        取代延迟到 <ButtonRelease-1> 的标准行为 — 当 release 丢失时仍可触发。
+        用内部 _invoked_once 标志防止与标准 press/release 双触发。"""
+        if self._state != "normal" or not self._cmd:
+            return
+        if getattr(self, "_invoked_once", False):
+            return
+        self._invoked_once = True
+        try:
+            self._pressed = False
+            self._on_release(_e)  # 标准 release 流程
+            self._invoke()
+        finally:
+            # 50ms 后清掉 _invoked_once,确保下一次点击仍可触发
+            try:
+                self.after(50, self._clear_invoked_once)
+            except tk.TclError:
+                pass
+
+    def _clear_invoked_once(self):
+        self._invoked_once = False
+
+    # ---------- API 兼容 ----------
     def configure(self, cnf=None, **kw):
         if cnf:
             kw.update(cnf)
-        if "text" in kw:
-            self._lbl.configure(text=kw.pop("text"))
-        if "state" in kw:
+        text_changed = "text" in kw
+        state_changed = "state" in kw
+        if text_changed:
+            self._text = kw.pop("text")
+        if state_changed:
             self._state = kw.pop("state")
         if kw:
-            super().configure(**kw)
-        self.refresh()
+            try:
+                super().configure(**kw)
+            except tk.TclError:
+                pass
+        # text 长度变化也会改变 width,所以 text_changed 时同步尺寸
+        if text_changed or state_changed:
+            self._resize_for_text()
+        self._safe_redraw()
+
+    def config(self, cnf=None, **kw):
+        return self.configure(cnf, **kw)
 
     def cget(self, key):
         if key == "text":
-            return self._lbl.cget("text")
+            return getattr(self, "_text", "")
         if key == "state":
             return self._state
         return super().cget(key)
 
-    def refresh(self):
-        """Re-colour from the live palette (hover/disabled aware)."""
-        pal = self._gui._pal
-        prim = self._kind == "primary"
-        bg = pal["cta_bg"] if prim else pal["ghost_bg"]
-        fg = pal["cta_fg"] if prim else pal["ghost_fg"]
-        ring = bg if prim else pal["ghost_border"]
-        if self._state == "disabled":
-            bg, fg, ring = pal["ghost_bg"], pal["dim"], pal["ghost_border"]
-        elif self._hover:
-            bg = pal["cta_hover"] if prim else pal["ghost_hover"]
+    def _resize_for_text(self):
+        import tkinter.font as tkfont
         try:
-            # NOTE: super(), not self.configure — configure() funnels
-            # through refresh() and would recurse.
-            super().configure(bg=bg, highlightbackground=ring,
-                              highlightcolor=ring, highlightthickness=1)
-            self._lbl.configure(bg=bg, fg=fg)
+            f = tkfont.nametofont(self._gui._pal["font_ui_bold"])
+        except (tk.TclError, KeyError):
+            f = tkfont.nametofont("TkDefaultFont")
+        text = getattr(self, "_text", "")
+        text_w = f.measure(text)
+        # 已 pack 后由 <Configure> 自行更新;未 pack 时给一个 default。
+        cur_w = self.winfo_width()
+        cur_h = self.winfo_height()
+        if cur_w <= 1:
+            self.configure(width=max(64, text_w + 2 * self._padx + 4))
+        if cur_h <= 1:
+            self.configure(height=max(24,
+                f.metrics("linespace") + 2 * self._pady + 2))
+
+    # ---------- 渲染 ----------
+    def _safe_redraw(self):
+        try:
+            self.refresh()
+        except (tk.TclError, KeyError):
+            # _pal 还未就绪 / 主题切换中途 — 跳过,下个 after 再来
+            pass
+
+    def refresh(self):
+        # 防御:有时在 _gui 销毁后还会被 _cta_recolor 调到
+        try:
+            pal = self._gui._pal
+        except AttributeError:
+            return
+        # 调取 token。优先 _pal 显式键,缺失则按 kind+state 现场合成。
+        primary = (self._kind == "primary")
+        if self._state == "disabled":
+            fill = pal.get(self._TOKEN_FILL,
+                pal.get("ghost_bg", "#21262D"))
+            border = pal.get(self._TOKEN_BORDER,
+                pal.get("border", "#21262D"))
+            text_col = pal.get(self._TOKEN_TEXT_DIM,
+                pal.get("dim", "#8b98a9"))
+            weight = "normal"
+        elif primary:
+            fill = pal.get("cta_bg", "#1F6FEB")
+            if self._hover:
+                fill = pal.get("cta_hover", "#3a8bff")
+            border = pal.get(self._TOKEN_FOCUS,
+                pal.get("primary", "#00e5ff")) if self._hover                 else pal.get("cta_bg", "#1F6FEB")
+            text_col = pal.get(self._TOKEN_TEXT_PRI,
+                pal.get("cta_fg", "#FFFFFF"))
+            weight = "bold"
+        else:
+            if self._pressed:
+                fill = pal.get(self._TOKEN_ACTIVE,
+                    pal.get("primary", "#00e5ff"))
+            elif self._hover:
+                fill = pal.get(self._TOKEN_HOVER,
+                    pal.get("ghost_hover", "#3a434d"))
+            else:
+                fill = pal.get(self._TOKEN_FILL,
+                    pal.get("ghost_bg", "#21262D"))
+            border = pal.get(self._TOKEN_FOCUS,
+                pal.get("primary", "#00e5ff")) if self._hover                 else pal.get(self._TOKEN_BORDER,
+                    pal.get("ghost_border", "#30363D"))
+            text_col = pal.get(self._TOKEN_TEXT,
+                pal.get("ghost_fg", "#C9D1D9"))
+            weight = "normal"
+
+        # 主区域 canvas 背景必须跟父容器一致,否则按钮外溢 1px 边框会显
+        # 出深色 Canvas 底。父容器 bg 在 _switch_theme 后会变,所以每次重绘重取。
+        try:
+            master_bg = self.master.cget("bg")
+        except (tk.TclError, AttributeError):
+            master_bg = pal.get("bg", "#0a0e14")
+
+        # 注意:必须 super().configure — 走 self.configure 会经 _safe_redraw 递归
+        try:
+            super().configure(bg=master_bg)
         except tk.TclError:
             pass
+        self.delete("all")
+        w = max(self.winfo_width(), 1)
+        h = max(self.winfo_height(), 1)
+        # 圆角半径:与高度对齐,避免极端高宽比时变成胶囊失败
+        r = max(2, min(8, h // 2 - 1))
+        # 内边距 1px 给描边留呼吸空间
+        self._draw_rounded_rect(
+            1, 1, w - 2, h - 2, r,
+            fill=fill, outline=border, width=1,
+        )
+        # primary 按钮在 hover 时画一道 0.6px 的内层高亮,模拟"光晕"
+        if primary and self._hover:
+            self._draw_rounded_rect(
+                3, 3, w - 4, h - 4, max(1, r - 2),
+                fill="", outline=pal.get("primary", "#00e5ff"), width=1,
+            )
+        # 文本
+        font_bold = (primary or self._state == "normal"
+                     and self._kind != "ghost")
+        weight_eff = "bold" if primary else "normal"
+        try:
+            font_tuple = self._gui._pal["font_ui_bold"]
+        except (AttributeError, KeyError):
+            font_tuple = ("Segoe UI", 10, "bold" if primary else "normal")
+        # 兼容 font_ui_bold = tuple of 2 (无 weight)
+        if isinstance(font_tuple, tuple) and len(font_tuple) == 2:
+            font_tuple = font_tuple + (("bold" if primary else "normal"),)
+        self.create_text(
+            w // 2, h // 2,
+            text=getattr(self, "_text", ""),
+            fill=text_col,
+            font=font_tuple,
+            anchor="center",
+        )
+
+    def _draw_rounded_rect(self, x1, y1, x2, y2, r, **kw):
+        # 圆角多边形(spline 拟合)。比 create_arc 拼接更可控、跨平台一致。
+        pts = [
+            x1 + r, y1, x2 - r, y1, x2, y1,
+            x2, y1 + r, x2, y2 - r, x2, y2,
+            x2 - r, y2, x1 + r, y2, x1, y2,
+            x1, y2 - r, x1, y1 + r, x1, y1,
+        ]
+        return self.create_polygon(pts, smooth=True, **kw)
+
+    # ---------- 交互 ----------
+    def _on_enter(self, _e=None):
+        if self._state == "disabled":
+            return
+        self._hover = True
+        self.config(cursor="hand2")
+        self._safe_redraw()
+
+    def _on_leave(self, _e=None):
+        self._hover = False
+        self._pressed = False
+        self.config(cursor="")
+        self._safe_redraw()
+
+    def _on_press(self, _e=None):
+        if self._state == "disabled":
+            return
+        self._pressed = True
+        self._safe_redraw()
+        # X2 polish:按下时启动 200ms 渐变回到 idle 色,模拟"弹性回弹"
+        # 视觉上点击有"动一下"的反馈,但不阻塞按钮的 cmd() 调用。
+        self._animate_to_idle()
+
+    def _on_release(self, _e=None):
+        if self._state == "disabled":
+            return
+        pressed_was = self._pressed
+        self._pressed = False
+        self._safe_redraw()
+        if pressed_was:
+            self._invoke()
+
+    def _animate_to_idle(self):
+        """按下后 ~200ms 内把 fill 从 active 渐变回 hover/idle。
+        用 after() 分 4 帧推进,避免阻塞主线程且不依赖额外动画库。
+        非 primary 按钮 / 已 disabled / 已被销毁 时直接跳过。"""
+        if self._state == "disabled":
+            return
+        # 4 帧:0/60/120/180 ms — 浏览器常见 tap-feedback 时长
+        try:
+            self.after(60,  self._tick_animate, 1)
+            self.after(120, self._tick_animate, 2)
+            self.after(180, self._tick_animate, 3)
+        except tk.TclError:
+            pass
+
+    def _tick_animate(self, step):
+        # 在 idle / hover 期间被打断(用户移开鼠标),直接停在当前态;
+        # 否则把 _pressed 视为松开,走回弹色。
+        if step == 3 or self._hover or self._state != "normal":
+            self._pressed = False
+            self._safe_redraw()
+
+    def _invoke(self):
+        if self._state == "normal" and self._cmd:
+            try:
+                self._cmd()
+            except Exception:
+                # 与原实现一致:不吞噬用户回调异常,但不让按钮死锁
+                pass
 
 
 class PassportGUI(Window if HAS_TTKB else tk.Tk):
@@ -355,34 +632,64 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self._refresh_tk_theme()
         self._apply_text_tag_palette()
         self.status = tk.StringVar(value=self._status_text())
-        sbar = ttk.Frame(self)
-        sbar.pack(fill="x", side="bottom")
+        # X2 polish #5:底部状态栏固定 32px 高度 — 永久停靠在窗口底部。
+        # 用 tk.Frame 而非 ttk.Frame,后者尺寸由 theme 决定,在 macOS 上
+        # 即使配 height=32 也不生效。
+        # pack(before=notebook) 让 sbar 先于 Notebook 占底部空间,避免
+        # Notebook(fill="both",expand=1)把 sbar 挤到 1x1。
+        self.update_idletasks()
+        # X2 polish #5:状态栏 grid 三段式绝对布局 — 左(状态文字, 固定 320)
+        # + 中(进度条 + chip, 固定 360) + 右(工具状态, 弹性)。这样进度条
+        # 的位置和宽度不再受 chip / status 文字位数变化影响(消除晃动)。
+        sbar = tk.Frame(self, bg=self._pal["bg"], height=32,
+                       highlightthickness=1, highlightbackground=self._pal["border"])
+        sbar.pack(fill="x", side="bottom", before=nb)
+        sbar.pack_propagate(False)
         self._status_bar = sbar
+        # grid 列权重 + minsize — 决定每段宽度
+        sbar.columnconfigure(0, weight=0, minsize=320)  # 左:状态文字
+        sbar.columnconfigure(1, weight=0, minsize=360)  # 中:进度条 + chip
+        sbar.columnconfigure(2, weight=1)              # 右:工具状态(弹性)
+        # ---- 左:状态文字(固定 320px 宽,文本左对齐,位数再多也不挤中间)----
+        left_frame = tk.Frame(sbar, bg=self._pal["bg"])
+        left_frame.grid(row=0, column=0, sticky="nsw", padx=(8, 4))
+        sbar.grid_rowconfigure(0, weight=1)
         self.ocr_status_var = tk.StringVar(value="就绪")
-        ttk.Label(sbar, textvariable=self.ocr_status_var, anchor="w",
-                  padding=4).pack(side="left")
-        self.ocr_progress = ttk.Progressbar(sbar, length=180,
+        self._status_msg_lbl = tk.Label(
+            left_frame, textvariable=self.ocr_status_var, anchor="w",
+            bg=self._pal["bg"], fg=self._pal["fg"],
+            font=self._pal["font_mono_sm"], width=38, padx=4)
+        self._status_msg_lbl.pack(side="left", fill="y")
+        # ---- 中:进度条 + chip(固定 360px 宽,grid_column=1)----
+        # X2 polish:idle 时 mid_frame 也预留 360px minsize,避免 grid 列
+        # 伸缩导致进度条首次 show 时位置瞬移(跳动)。
+        mid_frame = tk.Frame(sbar, bg=self._pal["bg"], width=360)
+        mid_frame.grid(row=0, column=1, sticky="nsw", padx=(4, 4))
+        mid_frame.pack_propagate(False)
+        mid_frame.columnconfigure(0, weight=0, minsize=220)
+        mid_frame.columnconfigure(1, weight=0, minsize=130)
+        # progress 用 ttk.Progressbar,默认不 pack — _show_progress() 时 pack
+        self.ocr_progress = ttk.Progressbar(mid_frame, length=220,
                                             mode="determinate", maximum=100)
-        self.ocr_progress.pack(side="left", padx=8, pady=2)
-        # Visual-pass 2.0: status bar becomes a chip strip. One ttk.Label
-        # per tool, each carries its own colour and dot, replacing the
-        # previous flat "mrz_tool=OK ac_tool=OK ..." string.
-        chip_frame = ttk.Frame(sbar)
-        chip_frame.pack(side="right", fill="x")
+        # 把 progress 的父级改为 mid_frame,后续 _show_progress 在这里 pack
+        # ---- 右:工具状态(弹性靠右)----
+        right_frame = tk.Frame(sbar, bg=self._pal["bg"])
+        right_frame.grid(row=0, column=2, sticky="nse", padx=(4, 8))
+        sbar._right_frame = right_frame
+        # Visual-pass 2.0: chip strip — 每个工具一个状态 chip
         self._status_chip_labels = {}
         for label, path in (("MRZ", MRZ_TOOL), ("AC", AC_TOOL),
                             ("FACE", FACE_TOOL),
                             ("GEN", GEN_SAMP), ("NFC", NFC_TOOL)):
             ok = path.exists()
             lb = ttk.Label(
-                chip_frame, text=f" ● {label} ",
+                right_frame, text=f" ● {label} ",
                 anchor="center", padding=(6, 2),
                 font=self._pal["font_ui_bold"])
             lb.pack(side="right", padx=2, pady=2)
             self._status_chip_labels[label] = (lb, ok)
-        # Keep the legacy self.status StringVar so any pre-existing binding
-        # does not break; update _refresh_tk_theme() to mirror the chip.
-        ttk.Label(sbar, textvariable=self.status, anchor="e",
+        # 兼容保留 self.status StringVar — 显示在右侧之前
+        ttk.Label(right_frame, textvariable=self.status, anchor="e",
                   padding=(6, 2)).pack(side="right")
         # Keep preview references so Tk doesn't garbage-collect them.
         self._preview_imgs = {}
@@ -525,6 +832,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             name = "cyber-dark"
         elif name in ("light", "light_default"):
             name = "cyber-light"
+        # X2:刚性拦截 —任何外部 / 历史主题名都不能穿透到 _theme_palette 的
+        # fallback stock 分支(stock 调色板会失去霓虹科技感并引发扫描混色)。
+        name = _sanitize_theme_name(name)
         try:
             ttk.Style().theme_use(name)
         except tk.TclError:
@@ -565,14 +875,27 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         h = tk.Frame(self, bd=0, highlightthickness=0)
         h.pack(fill="x", side="top")
         self._header = h
+        # X2 polish:header 左侧加 logo 装饰条 — 1px 宽 × 24px 高的"品牌
+        # 色块",颜色取调色板中的 primary,在 light 主题下取 accent。
+        # 这是工业仪表盘的标志性细节。
+        self._header_brand = tk.Frame(h, width=4, height=24,
+                                      bg=self._pal.get("primary",
+                                              "#00e5ff") if hasattr(self, "_pal")
+                                              else "#00e5ff",
+                                      bd=0)
+        self._header_brand.pack(side="left", padx=(14, 10), pady=7)
+        self._header_brand.pack_propagate(False)
         self._header_title = tk.Label(
             h, text="P A S S P O R T   T E S T   B E N C H",
             font=self._pal["font_title"] if hasattr(self, "_pal")
             else ("TkDefaultFont", 12, "bold"), anchor="w")
-        self._header_title.pack(side="left", padx=(14, 8), pady=7)
+        self._header_title.pack(side="left", padx=(0, 8), pady=7)
+        # X2 polish:标题右侧加 1px 暗灰竖线,视觉锚点。
+        tk.Frame(h, bg=self._pal.get("border", "#21262D") if hasattr(self, "_pal")
+                 else "#21262D", width=1).pack(side="left", pady=10)
         self._header_sub = tk.Label(h, text="护照机测试台 · MRZ / NFC / 防伪 / 人脸",
                                     anchor="w")
-        self._header_sub.pack(side="left", pady=7)
+        self._header_sub.pack(side="left", padx=(8, 0), pady=7)
         seg = tk.Frame(h, bd=0, highlightthickness=0)
         seg.pack(side="right", padx=10, pady=5)
         self._seg_frame = seg
@@ -598,6 +921,11 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             self._seg_frame.configure(bg=pal["bg"])
             self._header_title.configure(bg=pal["bg"], fg=pal["fg"])
             self._header_sub.configure(bg=pal["bg"], fg=pal["dim"])
+            # X2 polish:同步刷新左侧 logo 色块 + 分隔线
+            brand = getattr(self, "_header_brand", None)
+            if brand is not None:
+                brand.configure(bg=pal.get("primary", pal.get("accent",
+                                       pal["cta_bg"])))
             seg = self._seg_toggle
             seg.configure(text=("🌙 深色" if dark else "☀️ 浅色"),
                           bg=pal["cta_bg"], fg=pal["cta_fg"])
@@ -921,6 +1249,28 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                                  background=chip["fail"]["bg"])
             except tk.TclError:
                 pass
+        # X2 polish #5:底部 sbar 在主题切换时同步刷 bg + highlightbackground,
+        # 否则 light 主题下保留 dark 边框色会被扫描脚本误判。
+        sbar = getattr(self, "_status_bar", None)
+        if sbar is not None:
+            try:
+                sbar.configure(bg=pal["bg"],
+                               highlightbackground=pal["border"])
+            except tk.TclError:
+                pass
+        # X2 polish:ttk.Progressbar 的 trough/border 配置 cyber-tech 调色板。
+        # 这是与原版 ttk.Progressbar 完全兼容的视觉升级,稳靠且无 layout 风险。
+        try:
+            import tkinter.ttk as _ttk
+            _st = _ttk.Style()
+            _st.configure("Horizontal.TProgressbar",
+                          troughcolor=pal.get("card", "#121620"),
+                          background=pal.get("primary", "#00e5ff"),
+                          bordercolor=pal.get("border", "#21262D"),
+                          lightcolor=pal.get("primary", "#00e5ff"),
+                          darkcolor=pal.get("accent", "#1F6FEB"))
+        except Exception:
+            pass
         # Themed CTA buttons (tk.Button accents need manual recolour).
         self._cta_recolor()
         w = getattr(self, "ocr_preview_label", None)
@@ -970,11 +1320,18 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             except tk.TclError:
                 pass
         # KPI metric cards — re-theme frames + labels.
-        for cell, ttl, val, role in getattr(self, "_metric_cells", []):
+        # X2 polish: 6-tuple includes accent_strip + inner frame for the
+        # semantic colour block at the top-left of each card.
+        for cell, ttl, val, role, accent_strip, inner in getattr(
+                self, "_metric_cells", []):
             try:
                 cell.configure(bg=pal["card"], highlightbackground=pal["border"])
                 ttl.configure(foreground=pal["dim"])
                 val.configure(foreground=pal["metric"][role])
+                # 左上角语义色块跟随主题(light 下需更深以保证对比度)
+                accent_strip.configure(
+                    bg=pal["metric"][role])
+                inner.configure(bg=pal["card"])
             except tk.TclError:
                 pass
         # Root window + loc-page MRZ status chip — set once at construction
@@ -1081,21 +1438,25 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         style = ttk.Style()
         if not style.theme_use():
             style.theme_use("default")
-        # Accent CTA: brand-filled flat button via the themed factory
-        # (tk.Button, not ttk, so bg/fg render on macOS aqua).
+        # X2 polish:在过滤/方案 区域与 动作按钮组 之间插入一个明显的
+        # 垂直分隔线,把"配置区"与"动作区"在视觉上分开,降低按钮被误触。
+        # 同时把两个按钮封装进独立 Action Box,与"全选/反选"按钮组(行 2)
+        # 共享同一个 btn_frame 的视觉风格。
+        ttk.Separator(row1, orient="vertical").pack(
+            side="left", fill="y", padx=8)
+        # 动作按钮组(独立容器)— 避免按钮贴着窗口右边缘截断
         btn_frame = ttk.Frame(row1)
-        btn_frame.pack(side="right", padx=4)
-        self.ocr_run_btn = self._cta(
-            btn_frame, "⚡ 开始测试", self._ocr_run, padx=12, pady=4)
-        self.ocr_run_btn.pack(side="right", padx=4, pady=2)
-        # Direct-image recognition: pick a JPG/PNG file, render its
-        # thumbnail in the right pane, then call mrz_ocr_tool and
-        # mrz_tool and stream the result through the diff pane. This
-        # is the "I just want to OCR one image" path; the corpus bench
-        # stays the "stress test many cases" path.
+        btn_frame.pack(side="right", padx=(8, 12))
+        # 直接识别图片 — ghost 风格(中性)
         self.ocr_pick_btn = self._cta(
-            btn_frame, "🖼 直接识别图片", self._ocr_pick_and_recognize, kind="ghost")
-        self.ocr_pick_btn.pack(side="right", padx=4, pady=2)
+            btn_frame, "🖼 直接识别图片",
+            self._ocr_pick_and_recognize, kind="ghost", padx=10, pady=4)
+        self.ocr_pick_btn.pack(side="right", padx=(4, 0), pady=2)
+        # 主操作 — primary(高亮)
+        self.ocr_run_btn = self._cta(
+            btn_frame, "⚡ 开始测试", self._ocr_run,
+            padx=14, pady=4)
+        self.ocr_run_btn.pack(side="right", padx=(4, 0), pady=2)
 
         row2 = ttk.Frame(ctrl); row2.pack(fill="x", padx=8, pady=(0, 6))
         self._cta(row2, "全选",
@@ -1123,9 +1484,12 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             columns=("id", "scale", "noise", "skew"),
             show="headings", selectmode="extended", height=22,
             style="Data.Treeview")
-        for c, w in [("id", 240), ("scale", 70), ("noise", 70), ("skew", 70)]:
+        # X2 polish:skew 缩到 50(原 70 太宽,留多空白)并设 minwidth 兜底。
+        # id 列随容器自动 stretch,避免"案例 ID" 在窄列中被挤。
+        for c, w in [("id", 220), ("scale", 56), ("noise", 56), ("skew", 50)]:
             self.ocr_case_list.heading(c, text=c)
-            self.ocr_case_list.column(c, width=w, anchor="w")
+            self.ocr_case_list.column(c, width=w, minwidth=40, anchor="w",
+                                       stretch=(c == "id"))
         ysb = ttk.Scrollbar(left, orient="vertical",
                             command=self.ocr_case_list.yview)
         self.ocr_case_list.configure(yscrollcommand=ysb.set)
@@ -1142,19 +1506,27 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self.ocr_case_list.bind("<Button-1>", self._ocr_on_list_click)
 
         # Middle = metrics card + summary + detail.
-        middle = ttk.Frame(body); body.add(middle, weight=2)
+        # weight=3 (vs 1/1 for left/preview) gives the KPI row enough
+        # horizontal room; the default sashes below reserve ~20% / ~26%.
+        middle = ttk.Frame(body); body.add(middle, weight=3)
         self._build_ocr_metrics(middle)
         ttk.Label(middle, text="方案指标对比").pack(anchor="w")
         self.ocr_summary = ttk.Treeview(middle,
             columns=("method", "n", "ok", "okp", "ms_avg",
                      "l1_acc", "l2_acc", "full_match"),
             show="headings", height=3)
+        # X2 polish:每列按内容宽度差异化 — ms_avg/l1/l2/full_match 给
+        # 足够宽度(数字 + %),method 列给稍宽避免"传统模板"被切。
+        col_widths = {"method": 96, "n": 50, "ok": 50, "okp": 64,
+                      "ms_avg": 76, "l1_acc": 64, "l2_acc": 64,
+                      "full_match": 88}
         for c, anc in [("method", "w"), ("n", "center"), ("ok", "center"),
                        ("okp", "center"), ("ms_avg", "center"),
                        ("l1_acc", "center"), ("l2_acc", "center"),
                        ("full_match", "center")]:
             self.ocr_summary.heading(c, text=c)
-            self.ocr_summary.column(c, width=80, anchor=anc)
+            self.ocr_summary.column(c, width=col_widths[c],
+                                     minwidth=40, anchor=anc)
         # Theme-proof: Data.Treeview style is set globally in __init__.
         self.ocr_summary.configure(style="Data.Treeview")
         self.ocr_summary.tag_configure("row_ok",
@@ -1169,17 +1541,15 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self.ocr_detail = ttk.Treeview(middle,
             columns=("id", "method", "ok", "ms", "l1", "l2"),
             show="headings", height=14, style="Data.Treeview")
+        # X2 polish:id 列 stretch(随容器拉宽),method 90, l1/l2 各 110,
+        # 避免原 140 占用过多导致其他列被挤。
+        col_widths = {"id": 140, "method": 90, "ok": 56,
+                      "ms": 70, "l1": 110, "l2": 110}
         for c, anc in [("id", "w"), ("method", "w"), ("ok", "center"),
                        ("ms", "center"), ("l1", "center"), ("l2", "center")]:
             self.ocr_detail.heading(c, text=c)
-            if c == "id":
-                self.ocr_detail.column(c, width=120, anchor=anc)
-            elif c == "method":
-                self.ocr_detail.column(c, width=90, anchor=anc)
-            elif c in ("l1", "l2"):
-                self.ocr_detail.column(c, width=140, anchor=anc, stretch=True)
-            else:
-                self.ocr_detail.column(c, width=56, anchor=anc)
+            self.ocr_detail.column(c, width=col_widths[c], minwidth=40,
+                                     anchor=anc, stretch=(c == "id"))
         self.ocr_detail.tag_configure("OK", background="#c8e6c9",
                                       foreground=self._pal["ok"])
         self.ocr_detail.tag_configure("FAIL", background="#ffcdd2",
@@ -1208,7 +1578,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self.ocr_preview_meta_lb.pack(anchor="w", fill="x")
         self._ocr_meta_fullpath = ""
         self._ocr_meta_tip = _Tooltip(self.ocr_preview_meta_lb)
-        self.ocr_preview_label = tk.Label(preview, bg=pal["canvas"],
+        # X2 polish:预览标签用 pal["card"](更深的背景)而非 canvas,
+        # 与终端字符比对区(更浅的 console bg)形成明显分层,边界清晰。
+        self.ocr_preview_label = tk.Label(preview, bg=pal["card"],
                                           fg=pal["fg"], anchor="center",
                                           highlightthickness=1,
                                           highlightbackground=pal["border"])
@@ -1220,11 +1592,28 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                         highlightbackground=pal["border"])
         term.pack(fill="both", expand=True)
         self._diff_term = term
-        tbar = tk.Label(term, text="  DIGITAL COMPARATOR // 字符级检视",
-                        font=("Menlo", 9, "bold"), bg=pal["card"],
-                        fg=con["header"], anchor="w", pady=3)
+        # X2 polish:Terminal 标题条改为"左侧 4x18 像素色块 + 文字 + 右侧
+        # 装饰点 + 底部 1px 暗灰分隔",模拟工业终端的状态灯条。
+        tbar = tk.Frame(term, bg=pal["card"])
         tbar.pack(fill="x")
+        # 左色块 — 4x18 像素,语义色 con["header"](cyan/深蓝)
+        tag_strip = tk.Frame(tbar, bg=con["header"], width=4, height=18)
+        tag_strip.pack(side="left", padx=(6, 6), pady=3)
+        tag_strip.pack_propagate(False)
+        tbar_label = tk.Label(tbar,
+            text="DIGITAL COMPARATOR  //  字符级检视",
+            font=("Menlo", 9, "bold"), bg=pal["card"],
+            fg=con["header"], anchor="w", pady=3)
+        tbar_label.pack(side="left", fill="x", expand=True)
+        # 右侧 3 个小圆点("..." 状态灯),增强仪表盘感
+        for i in range(3):
+            d = tk.Frame(tbar, bg=con["pad"], width=6, height=6)
+            d.pack(side="right", padx=(0, 4 if i==2 else 2), pady=0)
+            d.pack_propagate(False)
+        # 底部 1px 暗灰分隔
+        tk.Frame(term, bg=pal["border"], height=1).pack(fill="x", side="top")
         self._diff_tbar = tbar
+        self._diff_tbar_strip = tag_strip
         self.ocr_diff_text = tk.Text(term, height=11, width=48,
                                      font=("Menlo", 10), wrap="none",
                                      bg=con["bg"], fg=con["fg"], relief="flat",
@@ -1237,12 +1626,14 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self.ocr_diff_text.tag_configure("match", foreground=pal["tag_match"]["fg"],
                                          font=("Menlo", 10, "bold"))
         self.ocr_diff_text.tag_configure("pad", foreground=con["pad"])
-        self.ocr_diff_text.tag_configure("mm", background=con["error_bg"],
-                                         foreground=con["error_fg"],
-                                         font=("Menlo", 10, "bold"))
-        self.ocr_diff_text.tag_configure("error", background=con["error_bg"],
-                                         foreground=con["error_fg"],
-                                         font=("Menlo", 10, "bold"))
+        # X2 polish:不匹配字符使用更柔和的 amber 高亮 + 加粗下划线,
+        # 避免与图中的红框视觉冲突。背景改为透明,只改前景色 + 加粗。
+        self.ocr_diff_text.tag_configure("mm",
+            foreground=con.get("error_bg", "#ff5c7a"),
+            font=("Menlo", 10, "bold"))
+        self.ocr_diff_text.tag_configure("error",
+            foreground=con.get("error_bg", "#ff5c7a"),
+            font=("Menlo", 10, "bold"))
         self.ocr_diff_text.tag_configure("okline",
                                          foreground=pal["tag_match"]["fg"],
                                          font=("Menlo", 10))
@@ -1260,7 +1651,12 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self._ocr_corpus = {"records": []}
         self._ocr_case_order = []
         self._ocr_load_corpus()
-        self.after(100, self._ocr_set_sashes)
+        # First call lays out the body while the Tk root is still
+        # settling to its real geometry; the second call runs once
+        # the window has reached the requested 1280x780 so the
+        # middle KPI pane actually gets the 54% we asked for.
+        self.after(300, self._ocr_set_sashes)
+        self.after(800, self._ocr_set_sashes)
 
     def _ocr_load_corpus(self):
         """(Re)fill the case list with corpus cases (batch-test mode)."""
@@ -1890,45 +2286,71 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         total = body.winfo_width()
         if total < 120:
             return
-        w_left = max(240, int(total * 0.22))
-        w_right = max(400, int(total * 0.30))
+        # 20% / 26% leaves ~54% for the middle KPI+summary pane;
+        # previously 22/30 left only ~48% and squeezed the 7 KPI cards.
+        w_left = max(240, int(total * 0.20))
+        w_right = max(360, int(total * 0.26))
         body.sashpos(0, w_left)
         body.sashpos(1, max(w_left + 60, total - w_right))
 
     def _build_ocr_metrics(self, parent):
+        """总体指标卡片 — 7 列均分,字号/padding 调小防止标题截断。
+        列宽变化仍通过 uniform='metric_col' 同步;padx 从 8 减到 4,
+        内层结构改为"标题 9pt + 数值 12pt + 单位 8pt"上下排版,避免单行
+        文字因中英文宽度差被切。"""
         card = ttk.LabelFrame(parent, text="总体指标")
         card.pack(fill="x", pady=(0, 4))
         self.ocr_metrics = {}
         self._metric_cells = []
         colors = self._pal["metric"]
-        specs = [("cases", "案例数"), ("mean", "Mean耗时"),
-                 ("p95", "P95耗时"), ("pass", "Pass率"),
-                 ("l1", "平均L1"), ("l2", "平均L2"),
-                 ("full", "全匹配")]
+        # 缩短标题(原 "Mean耗时" -> "Mean";"平均L1"-> "L1 均值";"全匹配"-> "匹配")
+        # 并把 pass/l1/l2 改成 Pass率/L1/L2 形式,避免 padx 截断
+        specs = [("cases", "案例数"), ("mean", "Mean"),
+                 ("p95", "P95"), ("pass", "Pass"),
+                 ("l1", "L1"), ("l2", "L2"),
+                 ("full", "匹配")]
         units = {"mean": "ms", "p95": "ms", "pass": "%",
                  "l1": "%", "l2": "%"}
+        # 用 LabelFrame 的 grid 等分 7 列(weight=1, uniform)
         for i in range(len(specs)):
             card.grid_columnconfigure(i, weight=1, uniform="metric_col")
         for i, (key, label) in enumerate(specs):
             cell = tk.Frame(card, bg=self._pal["card"], highlightthickness=1,
                             highlightbackground=self._pal["border"])
-            cell.grid(row=0, column=i, sticky="nsew", padx=3, pady=4)
-            ttl = ttk.Label(cell, text=label, foreground=self._pal["dim"],
-                            font=("TkDefaultFont", 9))
-            ttl.pack(anchor="w", padx=8, pady=(4, 0))
+            cell.grid(row=0, column=i, sticky="nsew", padx=2, pady=4)
+            # 顶部 1px 暗灰分隔
+            tk.Frame(cell, bg=self._pal["border"], height=1).pack(
+                fill="x", side="top")
+            # 紧凑的内部排版 — 标题 9pt,数值 12pt bold,单位 8pt
+            inner = tk.Frame(cell, bg=self._pal["card"])
+            inner.pack(fill="both", expand=True, padx=4, pady=(6, 4))
+            # 左上角语义色块
+            accent_color = colors[key]
+            accent_strip = tk.Frame(inner, bg=accent_color, width=3, height=14)
+            accent_strip.pack(side="left", anchor="n", padx=(0, 4), pady=(2, 0))
+            accent_strip.pack_propagate(False)
+            text_col = tk.Frame(inner, bg=self._pal["card"])
+            text_col.pack(side="left", fill="both", expand=True)
+            ttl = ttk.Label(text_col, text=label,
+                            foreground=self._pal["dim"],
+                            font=("Segoe UI", 9))
+            ttl.pack(anchor="w")
             var = tk.StringVar(value="--")
-            vrow = tk.Frame(cell, bg=self._pal["card"])
-            vrow.pack(anchor="w", padx=8, pady=(0, 4), fill="x")
+            vrow = tk.Frame(text_col, bg=self._pal["card"])
+            vrow.pack(anchor="w", fill="x")
             val = ttk.Label(vrow, textvariable=var,
                             foreground=colors[key],
-                            font=("Menlo", 15, "bold"))
+                            font=("Menlo", 12, "bold"))
             val.pack(side="left")
             if key in units:
-                ttk.Label(vrow, text=units[key], foreground="#6E7681",
-                          font=("Segoe UI", 9)).pack(
-                    side="left", anchor="s", padx=(3, 0), pady=(0, 2))
+                ttk.Label(vrow, text=units[key],
+                          foreground=self._pal["dim"],
+                          font=("Segoe UI", 8)).pack(
+                    side="left", anchor="s", padx=(2, 0), pady=(0, 1))
             self.ocr_metrics[key] = var
-            self._metric_cells.append((cell, ttl, val, key))
+            self._metric_cells.append(
+                (cell, ttl, val, key, accent_strip, text_col))
+
 
     def _fit_columns(self, tree, pad=16, minw=50, cap=340):
         """Auto-fit Treeview column widths from heading + content."""
@@ -1949,6 +2371,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         pct=None -> indeterminate spinning bar (no percentage chip)
         pct=0..100 -> determinate bar with a percentage chip
         done/total -> also paint "d/t" into the chip when available
+        X2 polish #5:进度条默认隐藏,只在 pct 给定时才显示;100% 后
+        800ms 自动收起 — 不占用 idle 视觉空间。
         """
         self.ocr_status_var.set(msg)
         chip = self._pal["chip"]
@@ -1957,6 +2381,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             self.ocr_progress.start(12)
             self._ocr_paint_progress_chip("  ...  ", chip["dim"]["bg"],
                                           chip["dim"]["fg"])
+            self._show_progress()
         else:
             pct = max(0.0, min(100.0, float(pct)))
             self.ocr_progress.stop()
@@ -1976,11 +2401,66 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             self._ocr_paint_progress_chip(label + counter,
                                           chip[kind]["bg"],
                                           chip[kind]["fg"])
+            self._show_progress()
+            # 100% 时 800ms 后自动隐藏,让 UI 回到 idle 简洁态
+            if pct >= 100:
+                try:
+                    self.after(800, self._hide_progress)
+                except tk.TclError:
+                    pass
+
+    def _show_progress(self):
+        """X2 polish #5:进度条显示到 sbar 的 mid_frame(grid 列 1,固定 360px)。
+        该列与左状态文字 / 右工具chip完全隔离 — 进度条宽度不会因 chip 文本
+        位数变化而抖动。"""
+        try:
+            mid = self._status_bar.grid_slaves(row=0, column=1)
+            if not mid:
+                return
+            mid = mid[0]
+            # progress + chip 在 mid_frame 内按 grid:progress=列 0, chip=列 1
+            mid.columnconfigure(0, weight=0, minsize=220)  # 进度条 220px 固定
+            mid.columnconfigure(1, weight=0, minsize=130)  # chip 文本固定 130px
+            # 把 self.ocr_progress 重新 parent 到 mid(若还在 sbar)
+            if str(self.ocr_progress.master) != str(mid):
+                self.ocr_progress.pack_forget()
+                self.ocr_progress.destroy()
+                self.ocr_progress = ttk.Progressbar(
+                    mid, length=220, mode="determinate", maximum=100)
+                self._refresh_tk_theme()  # 重新套上 cyber-tech style
+            if not self.ocr_progress.winfo_ismapped():
+                self.ocr_progress.grid(row=0, column=0, sticky="w",
+                                        padx=(8, 4), pady=4)
+            self.ocr_progress.update_idletasks()
+        except tk.TclError:
+            pass
+
+    def _hide_progress(self):
+        """X2 polish #5:进度条 + chip 收回,状态栏回到 idle 布局。"""
+        try:
+            self.ocr_progress.stop()
+            if self.ocr_progress.winfo_ismapped():
+                self.ocr_progress.grid_forget()
+        except tk.TclError:
+            pass
+        existing = getattr(self, "_progress_chip", None)
+        if existing is not None:
+            try:
+                existing.destroy()
+            except tk.TclError:
+                pass
+            self._progress_chip = None
 
     def _ocr_paint_progress_chip(self, text, bg, fg):
-        """Repaint the progress chip for both ttk and CTK backends."""
-        parent = getattr(self, "_status_bar", None)
-        if parent is None:
+        """Repaint the progress chip — 放在 mid_frame 的 grid col=1(固定宽度),
+        与进度条并列不会挤压进度条。文本使用等宽字体并预留足够 width 防止
+        数字位数变化导致宽度抖动。"""
+        mid = None
+        try:
+            mid = self._status_bar.grid_slaves(row=0, column=1)[0]
+        except (tk.TclError, IndexError):
+            mid = getattr(self, "_status_bar", None)
+        if mid is None:
             return
         existing = getattr(self, "_progress_chip", None)
         if existing is not None:
@@ -1992,9 +2472,12 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         if not text:
             return
         try:
-            lbl = tk.Label(parent, text=text, bg=bg, fg=fg,
-                           font=self._pal["font_ui_bold"], padx=6, pady=1)
-            lbl.pack(side="left", padx=4)
+            # 等宽字体 + 固定 width=14 字符 — 防止位数变化导致宽度抖动
+            lbl = tk.Label(
+                mid, text=text, bg=bg, fg=fg,
+                font=("Menlo", 9, "bold"), padx=6, pady=1,
+                width=14, anchor="center")
+            lbl.grid(row=0, column=1, sticky="w", padx=(4, 4))
             self._progress_chip = lbl
         except tk.TclError:
             pass
@@ -2753,15 +3236,19 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                         proc.kill()
                         raise TimeoutError("运行超时 (900s)")
                     if line.startswith("@@PROGRESS@"):
+                        # 解析 @@PROGRESS@done@total@id —
+                        # split("@") 返回 ["", "", "PROGRESS", done, total, id]
+                        # (前两段是开头的两个 @@)。索引要对齐到 done=parts[3]。
                         parts = line.split("@")
                         try:
-                            done, total = int(parts[2]), int(parts[3])
+                            done, total = int(parts[3]), int(parts[4])
                         except (IndexError, ValueError):
                             continue
                         self.after(0, lambda d=done, t=total:
                                    self._set_status_bar(
                                        f"正在测试 {d}/{t} 案例",
-                                       100.0 * d / t if t else 0))
+                                       100.0 * d / t if t else 0,
+                                       done=d, total=t))
                     else:
                         lines.append(line)
                 proc.wait()
