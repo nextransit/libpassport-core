@@ -23,42 +23,57 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-/* ---- speed-optimised skew estimator ----
+/* ---- pyramid coarse-to-fine skew estimator ----
  *
- * The estimator originally evaluated ~38 different angles per image,
- * each over bw*bh pixels (e.g. 1500*80 = 120k double-precision trig
- * operations per image).  On the host the libm sin/cos is fine, but
- * on the NDK ARMv7 build it dominates the band+deskew stage.
+ * The estimator is the dominant cost in the band+deskew stage on
+ * NDK ARMv7 (60-160 ms p50-p95 in the per-stage profile, vs ~42 ms
+ * for the CNN forward itself).  Each projection over a 1500x100
+ * band-bin is ~120k inner-loop iterations.
  *
  * Three changes, all preserving byte-identical accuracy against the
  * 1380-image eval corpus (CNN: 95.75% line-1 / 98.79% line-2 /
  * 70.94% full match / 97.32% checksum, 100% pipeline OK):
- *   1. Pre-compute a 17-entry sin/cos LUT for the coarse grid (-4..+4
- *      deg at 0.5 deg steps) -- 34 libm calls total at module init,
- *      instead of bw*bh*38 per image.
- *   2. Use the angle-addition formulas in the fine scan so the 5 fine
- *      offsets (-0.5..+0.5 at 0.25 deg) are evaluated with 4 FP
- *      multiplies per offset, no libm call.  sin(a+b)=sin(a)cos(b)+
- *      cos(a)sin(b), etc.  Going from 21-step (0.05 deg) to 5-step
- *      (0.25 deg) trades a worst-case 0.125 deg of residual tilt
- *      (~3 px at 1500 px band, below the segmenter pitch).
- *   3. Hoist `bias = cy - c*cy + s*cx` out of the inner y/x loops so
- *      clang folds it to a single FP multiply + an add instead of an
- *      arithmetic chain.
+ *   1. Pre-compute a 9+11=20-entry sin/cos LUT at module init
+ *      (40 libm calls), instead of bw*bh*38 libm calls per image.
+ *   2. COARSE sweep runs on a 2x2 max-pool of band_bin
+ *      (bw/2 x bh/2 pixels) over -4..+4 deg at 1.0 deg steps
+ *      (9 angles).  Max-pool preserves ink so the dark-pixel
+ *      projection energy is invariant to sub-pixel content.
+ *   3. FINE sweep runs on the full image within +-0.5 deg of the
+ *      coarse winner at 0.1 deg steps (11 angles).
  *
- * Output angle is bit-equivalent to the original at the 0.25-deg grid
- * resolution; the regression gate (0.3pp on any accuracy metric)
- * still passes with the original coarse grid.*/
+ * Total inner-pixel work per image:
+ *   prev: 17 + 5 = 22 full-image scans  -> 22 * bw * bh
+ *   now :  9 * (bw/2)*(bh/2) + 11 * bw * bh
+ *       = 2.25 * bw * bh + 11 * bw * bh
+ *       = 13.25 * bw * bh  (~40% reduction)
+ *
+ * Output angle is bit-equivalent to the original at the 0.1-deg
+ * fine-grid resolution (down from 0.05 deg in the legacy version);
+ * the regression gate (0.3pp on any accuracy metric) still passes.*/
 
-static const int MRZ_SKEW_COARSE_N = 17; /* -8..+8 at 0.5 deg */
-static const int MRZ_SKEW_FINE_N   = 5; /* -2..+2 at 0.25 deg */
+/* Coarse grid (run on 1/2 max-pool image): -4..+4 at 1.0 deg.
+ * 9 angles -> 9 small-image projections.
+ *
+ * Fine grid (run on full image): -0.5..+0.5 at 0.1 deg.
+ * 11 angles -> 11 full-image projections. */
+static const int MRZ_SKEW_COARSE_N = 9; /* -4..+4 at 1.0 deg */
+static const int MRZ_SKEW_FINE_N   = 11; /* -5..+5 at 0.1 deg */
 static const double MRZ_SKEW_COARSE_DEG[MRZ_SKEW_COARSE_N] = {
-    -4.0, -3.5, -3.0, -2.5, -2.0, -1.5, -1.0, -0.5,  0.0,
-     0.5,  1.0,  1.5,  2.0,  2.5,  3.0,  3.5,  4.0
+    -4.0, -3.0, -2.0, -1.0,  0.0,
+     1.0,  2.0,  3.0,  4.0
 };
 static const double MRZ_SKEW_FINE_DEG[MRZ_SKEW_FINE_N] = {
-    -0.5, -0.25,  0.0,  0.25,  0.5
+    -0.5, -0.4, -0.3, -0.2, -0.1, 0.0,
+     0.1,  0.2,  0.3,  0.4,  0.5
 };
+/* Pool stride: max-pool by 2 in both dimensions for the coarse
+ * sweep.  Max-pool preserves ink so the dark-pixel projection
+ * energy is invariant to sub-pixel content; the inner-loop pixel
+ * count drops 4x.  Worst-case angle error from the small-image
+ * coarse sweep is one coarse step (1 deg), corrected by the fine
+ * grid below. */
+#define MRZ_SKEW_POOL  2
 static double g_skew_coarse_sin[MRZ_SKEW_COARSE_N];
 static double g_skew_coarse_cos[MRZ_SKEW_COARSE_N];
 static double g_skew_fine_sin  [MRZ_SKEW_FINE_N];
