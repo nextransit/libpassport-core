@@ -28,6 +28,7 @@ Stdout contract (identical to 6_mrz_ocr/build/mrz_ocr_tool):
 """
 from __future__ import annotations
 
+import os
 import sys
 import time
 from pathlib import Path
@@ -68,11 +69,14 @@ def _load_gray(path: Path):
     return np.asarray(img.convert("L")), img
 
 
-def _mrz_lines(gray, pad: int = 2):
-    """Locate the two MRZ lines (whole-page scan, bottom-preferring).
+def _mrz_line_candidates(gray, pad: int = 2):
+    """Ordered candidate MRZ line pairs, best first.
 
-    Returns (y0, y1, [(l1_top, l1_bot), (l2_top, l2_bot)]) or None.
-    Row boundaries are padded by `pad` px each side so glyph
+    Returns a list of (y0, y1, [(l1_top, l1_bot), (l2_top, l2_bot)])
+    tuples for multi-hypothesis recognition: the primary fingerprint
+    first, then alternates (lower pairs in the bottom third, single-
+    line halves) so a failed gate can fall through instead of emitting
+    garbage. Row boundaries are padded by `pad` px each side so glyph
     ascenders/descenders are never clipped (tight rows lose the
     top/bottom strokes and recognition collapses).
     """
@@ -81,7 +85,7 @@ def _mrz_lines(gray, pad: int = 2):
     rd = (gray < 128).sum(axis=1)
     rows = np.where(rd > W * 0.10)[0]
     if rows.size < 4:
-        return None
+        return []
     groups = []
     start = prev = int(rows[0])
     for r in rows[1:]:
@@ -111,6 +115,15 @@ def _mrz_lines(gray, pad: int = 2):
             for g in (top, bot)
         ]
 
+    out = []
+    seen = set()
+
+    def add(y0, y1, lines):
+        key = (y0, y1)
+        if key not in seen:
+            seen.add(key)
+            out.append((y0, y1, lines))
+
     # Case A: the whole image IS a bare MRZ band (synthetic corpus
     # images, tight crops): two tall lines covering >25% of the page.
     # On tight crops (GUI PPM path, wide aspect ratio >4) the band IS
@@ -124,33 +137,70 @@ def _mrz_lines(gray, pad: int = 2):
         top, bot = abs_groups[i - 1], abs_groups[i]
         if (top[1] - top[0]) > thr_a and (bot[1] - bot[0]) > thr_a:
             if pair_score(top, bot):
-                return top[0], bot[1], padded(top, bot)
+                add(top[0], bot[1], padded(top, bot))
 
-    # Case B: normal full page - two-line fingerprint in the bottom
-    # third only (data-region text above must not participate; e.g.
+    # Case B: normal full page - every two-line fingerprint pair in the
+    # bottom third (data-region text above must not participate; e.g.
     # b43dea2a has a 58/57px data block pair that mimics MRZ lines).
     bottom_start = int(H * 0.66)
     cands = [g for g in abs_groups if g[0] >= bottom_start]
     for i in range(len(cands) - 1, 0, -1):
         top, bot = cands[i - 1], cands[i]
         if pair_score(top, bot):
-            return top[0], bot[1], padded(top, bot)
+            add(top[0], bot[1], padded(top, bot))
 
     # Case C: single-line fallback: lowest band in the bottom third,
-    # else the lowest band on the page.
-    g = None
+    # else the lowest band on the page; split in half.
+    low_bottom = None
     for cand in reversed(abs_groups):
         if cand[0] >= bottom_start:
-            g = cand
+            low_bottom = cand
             break
-    if g is None and abs_groups:
-        g = abs_groups[-1]
-    if g is not None:
+    for g in (low_bottom, abs_groups[-1]):
+        if g is None:
+            continue
         h = g[1] - g[0]
+        # Sub-split: tight low-res rows often merge into one band (gap
+        # <= 4px). Blind half-cut then slices glyphs. Re-run the row
+        # projection inside the band and cut at the widest inter-line
+        # gap instead.
+        band_rd = rd[g[0]:g[1]]
+        low = np.where(band_rd > W * 0.10)[0]
+        subs = []
+        if low.size >= 4:
+            s_start = prev = int(low[0])
+            for r in low[1:]:
+                r = int(r)
+                if r - prev <= 4:
+                    prev = r
+                else:
+                    if prev - s_start >= 2:
+                        subs.append((s_start, prev))
+                    s_start = prev = r
+            if prev - s_start >= 2:
+                subs.append((s_start, prev))
+        if len(subs) >= 2:
+            gaps = [(subs[i + 1][0] - subs[i][1], i)
+                    for i in range(len(subs) - 1)]
+            gi = max(gaps)[1]
+            cut = (subs[gi][1] + subs[gi + 1][0]) // 2
+            if 0 < cut < h:
+                add(g[0], g[1],
+                    [(max(0, g[0] - pad), g[0] + cut + pad),
+                     (max(0, g[0] + cut - pad), g[1] + pad)])
+                continue
         half = h // 2
-        return g[0], g[1], [(max(0, g[0] - pad), g[0] + half + pad),
-                            (max(0, g[0] + half - pad), g[1] + pad)]
-    return None
+        if half < 1:
+            continue
+        add(g[0], g[1], [(max(0, g[0] - pad), g[0] + half + pad),
+                         (max(0, g[0] + half - pad), g[1] + pad)])
+    return out
+
+
+def _mrz_lines(gray, pad: int = 2):
+    """Primary line pair only (see _mrz_line_candidates)."""
+    cands = _mrz_line_candidates(gray, pad)
+    return cands[0] if cands else None
 
 
 def _rescale_line(pil_line, line_h: int):
@@ -169,6 +219,47 @@ def _rescale_line(pil_line, line_h: int):
         (max(1, int(round(w * 24.0 / h))), 24), Image.LANCZOS)
 
 
+def _deskew_strip(pil_line, max_deg: float = 1.5, step: float = 0.1):
+    """Rotate a single line strip so the glyph baseline is horizontal.
+
+    Projection-variance scan: binarise (Otsu), rotate by each candidate
+    angle, and score by the variance of the row-ink profile (text rows
+    produce sharp peaks only when horizontal). Identity image when the
+    best angle is < 0.3 deg (zero-cost path for already-straight
+    scans). Degrades gracefully when cv2 is unavailable.
+    """
+    try:
+        import numpy as np
+        import cv2
+        from PIL import Image
+    except Exception:
+        return pil_line
+    g = np.array(pil_line.convert("L"))
+    h, w = g.shape
+    if h < 8 or w < 64:
+        return pil_line
+    _, bw = cv2.threshold(g, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    best_a, best_s = 0.0, -1.0
+    for a10 in range(int(-max_deg * 10), int(max_deg * 10) + 1,
+                     max(1, int(step * 10))):
+        a = a10 / 10.0
+        if a == 0:
+            p = bw.sum(axis=1).astype(np.float64)
+        else:
+            m = cv2.getRotationMatrix2D((w / 2.0, h / 2.0), a, 1.0)
+            rot = cv2.warpAffine(bw, m, (w, h), borderValue=0)
+            p = rot.sum(axis=1).astype(np.float64)
+        s = p.var()
+        if s > best_s:
+            best_s, best_a = s, a
+    if abs(best_a) < 0.3:
+        return pil_line
+    m = cv2.getRotationMatrix2D((w / 2.0, h / 2.0), best_a, 1.0)
+    rot = cv2.warpAffine(np.array(pil_line.convert("L")), m, (w, h),
+                         borderValue=255)
+    return Image.fromarray(rot)
+
+
 def _init_api(tessdata_dir: Path, lang: str):
     from tesserocr import PyTessBaseAPI, PSM, OEM
     api = PyTessBaseAPI(path=str(tessdata_dir), lang=lang,
@@ -179,7 +270,7 @@ def _init_api(tessdata_dir: Path, lang: str):
     api.SetVariable("textord_no_rejects", "1")
     api.SetVariable("preserve_interword_spaces", "0")
     api.SetVariable("lstm_choice_mode", "2")
-    api.SetVariable("lstm_choice_iterations", "10")
+    api.SetVariable("lstm_choice_iterations", "50")
     return api
 
 
@@ -396,7 +487,19 @@ def main(argv: list[str]) -> int:
 
     tool_dir = Path(__file__).resolve().parent
     tessdata = tool_dir / "data"
-    lang = "ocrb" if (tessdata / "ocrb.traineddata").exists() else "eng"
+    lang = (os.environ.get("TESS_LANG")
+            or ("ocrb" if (tessdata / "ocrb.traineddata").exists() else "eng"))
+    # Dual-model arbitration: when the primary model fails the gate,
+    # retry the same band pair with the alternate model. ocrb and mrz
+    # have complementary error profiles (mrz uniquely recovers a
+    # distinct subset of real photos). TESS_NO_ALT=1 disables it.
+    alt = None
+    if os.environ.get("TESS_NO_ALT") != "1":
+        for cand_lang in ("mrz", "ocrb"):
+            if (cand_lang != lang
+                    and (tessdata / f"{cand_lang}.traineddata").exists()):
+                alt = cand_lang
+                break
 
     t0 = time.perf_counter()
     try:
@@ -406,8 +509,8 @@ def main(argv: list[str]) -> int:
         return 1
 
     H, W = gray.shape
-    found = _mrz_lines(gray)
-    if found is None:
+    cands = _mrz_line_candidates(gray)
+    if not cands:
         print(f"result.ok       : MRZ band not found")
         print(f"result.line1    : ")
         print(f"result.line2    : ")
@@ -415,8 +518,6 @@ def main(argv: list[str]) -> int:
         print(f"result.conf2    : 0")
         print(f"band.x band.y band.w band.h : 0 0 {W} {H}")
         return 1
-    y0, y1, lines = found
-    band_box = f"0 {y0} {W} {y1 - y0}"
 
     try:
         api = _init_api(tessdata, lang)
@@ -424,35 +525,6 @@ def main(argv: list[str]) -> int:
         print(f"result.ok       : tesseract init failed: {e}",
               file=sys.stderr)
         return 1
-
-    results = []
-    try:
-        for idx, (lt, lb) in enumerate(lines):
-            strip = img.crop((0, lt, W, lb))
-            strip = _rescale_line(strip, lb - lt)
-            text, confs, choices = _recognize_line(
-                api, strip, want_choices=(idx == 1))
-            line44, confs44 = _normalize(text, confs, len(results) + 1)
-            avg_conf = int(sum(confs44) / max(1, len(confs44)))
-            results.append((line44, avg_conf, confs44, choices))
-    except Exception as e:
-        print(f"result.ok       : OCR failed: {e}", file=sys.stderr)
-        return 1
-    finally:
-        try:
-            api.End()
-        except Exception:
-            pass
-
-    line1, conf1, _, _ = results[0]
-    line2, conf2, confs2, choices2 = results[1]
-    if not _composite_ok(line2):
-        line2 = _repair_line2(line2, confs2, choices2)
-    # Leading '<' with a letter behind it usually means the first glyph
-    # was misread ('<P...' for 'P<...'); swap the pair so the gate can
-    # re-evaluate with a valid doc code.
-    if len(line1) >= 2 and line1[0] == "<" and line1[1].isalpha():
-        line1 = line1[1] + "<" + line1[2:]
 
     # Gate (ICAO 9303 Part 7 doc codes, unbounded):
     # 1. first char must be an uppercase letter (P V A C D R I S T Q B
@@ -464,6 +536,21 @@ def main(argv: list[str]) -> int:
             return False
         if not (l1[0].isalpha() and l1[0].isupper()):
             return False
+        # Real MRZ line-2 has at most ~15 filler chars (doc number,
+        # dates, checks); an all-'<' line is an empty/garbage read.
+        # Tolerance 18 absorbs single-char flips (0-><) on real lines.
+        if l2.count("<") > 18:
+            return False
+        # Dates are unprotected by the composite for garbage reads
+        # (a fabricated line can pass the 1/7 checksum by chance), so
+        # validate ranges: YYMMDD with MM 01-12, DD 01-31.
+        b, e = l2[13:19], l2[21:27]
+        if not (b.isdigit() and e.isdigit()):
+            return False
+        if not (1 <= int(b[2:4]) <= 12 and 1 <= int(b[4:6]) <= 31):
+            return False
+        if not (1 <= int(e[2:4]) <= 12 and 1 <= int(e[4:6]) <= 31):
+            return False
         if l1[0] in "PVACDRISTQB":
             pass
         else:
@@ -472,7 +559,74 @@ def main(argv: list[str]) -> int:
                 return False
         return _composite_ok(l2)
 
-    ok = _is_valid(line1, line2)
+    def _run_candidate(api_obj, lines):
+        """Recognise + post-process one candidate band pair with the
+        given API. Returns (l1, l2, c1, c2, ok) or None."""
+        results = []
+        try:
+            for idx, (lt, lb) in enumerate(lines):
+                strip = img.crop((0, lt, W, lb))
+                strip = _rescale_line(strip, lb - lt)
+                strip = _deskew_strip(strip)
+                text, confs, choices = _recognize_line(
+                    api_obj, strip, want_choices=(idx == 1))
+                line44, confs44 = _normalize(text, confs, idx + 1)
+                avg_conf = int(sum(confs44) / max(1, len(confs44)))
+                results.append((line44, avg_conf, confs44, choices))
+        except Exception:
+            return None
+        if len(results) < 2:
+            return None
+        line1, conf1, _, _ = results[0]
+        line2, conf2, confs2, choices2 = results[1]
+        # Leading '<' with a letter behind it usually means the first
+        # glyph was misread ('<P...' for 'P<...'); swap the pair so the
+        # gate can re-evaluate with a valid doc code.
+        if len(line1) >= 2 and line1[0] == "<" and line1[1].isalpha():
+            line1 = line1[1] + "<" + line1[2:]
+        if not _composite_ok(line2):
+            line2 = _repair_line2(line2, confs2, choices2)
+        return line1, line2, conf1, conf2, _is_valid(line1, line2)
+
+    best = None
+    alt_api = None
+    used_lang = lang
+    for y0, y1, lines in cands:
+        res = _run_candidate(api, lines)
+        if res is None:
+            continue
+        line1, line2, conf1, conf2, ok = res
+        if best is None:
+            best = (line1, line2, conf1, conf2, y0, y1, ok)
+        if ok:
+            best = (line1, line2, conf1, conf2, y0, y1, True)
+            break
+        if alt is not None:
+            if alt_api is None:
+                try:
+                    alt_api = _init_api(tessdata, alt)
+                except Exception:
+                    alt = None
+            if alt_api is not None:
+                res2 = _run_candidate(alt_api, lines)
+                if res2 is not None and res2[4]:
+                    best = (res2[0], res2[1], res2[2], res2[3],
+                            y0, y1, True)
+                    used_lang = alt
+                    break
+
+    try:
+        api.End()
+    except Exception:
+        pass
+    if alt_api is not None:
+        try:
+            alt_api.End()
+        except Exception:
+            pass
+
+    line1, line2, conf1, conf2, y0, y1, ok = best
+    band_box = f"0 {y0} {W} {y1 - y0}"
     ms = int((time.perf_counter() - t0) * 1000)
     print(f"result.ok       : {'OK' if ok else 'unreadable'}")
     print(f"result.line1    : {line1}")
@@ -481,7 +635,7 @@ def main(argv: list[str]) -> int:
     print(f"result.conf2    : {conf2}")
     print(f"band.x band.y band.w band.h : {band_box}")
     if not ok:
-        print(f"// {ms} ms, lang={lang}", file=sys.stderr)
+        print(f"// {ms} ms, lang={used_lang}", file=sys.stderr)
     return 0 if ok else 1
 
 
