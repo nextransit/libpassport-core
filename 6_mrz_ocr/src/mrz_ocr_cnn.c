@@ -33,6 +33,7 @@
 #include <math.h>
 #include <string.h>
 #include <time.h>
+#include <pthread.h>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -688,9 +689,72 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
  * (src/mrz_geom.c): mrz_estimate_band_skew() / mrz_rotate_band().
  * They are used by both the CNN and legacy backends. */
 
+/* ---- Process-static workspace scratchpad ----
+ *
+ * The CNN backend needs ~1.3 MB of working buffers per image
+ * (gray + bin + band_gray + band_bin + rot + line_pixels + glyphs
+ * + feats + probs + cnn_t + overhead).  Allocating that on every
+ * call (12 malloc/free pairs in the original) was the largest
+ * source of jank on the NDK ARMv7 build.
+ *
+ * The safe alternative: a single process-static scratchpad
+ * (4 MB, 64-byte aligned) handed out by a bump allocator.
+ * The scratchpad is reset on every recogniser entry; the JNI
+ * dispatcher is single-threaded so two concurrent calls are not
+ * supported.  No free() in the hot path: the bump allocator
+ * only moves a pointer.
+ *
+ * pthread_once + a static guard initialise the scratchpad
+ * exactly once on the first call.  All pointers below are
+ * 64-byte aligned so they sit on cache-line boundaries
+ * (helpful for the cnn_t weight matrix read pattern).
+ */
+#define MRZ_SCRATCH_BYTES  (4u * 1024u * 1024u)
+static uint8_t  g_mrz_scratch[MRZ_SCRATCH_BYTES]
+                __attribute__((aligned(64)));
+static size_t   g_mrz_scratch_off = 0;
+static pthread_once_t g_mrz_scratch_once = PTHREAD_ONCE_INIT;
+static int      g_mrz_scratch_cnn_ready = 0;
+static cnn_t    g_mrz_scratch_cnn_template;  /* one-shot weights cache */
+
+static void mrz_scratch_init_once(void) {
+    g_mrz_scratch_off = 0;
+    if (!g_mrz_scratch_cnn_ready) {
+        cnn_default_init(&g_mrz_scratch_cnn_template);
+        g_mrz_scratch_cnn_ready = 1;
+    }
+}
+
+/* 64-byte aligned bump allocator. */
+static void *mrz_scratch_alloc(size_t need) {
+    pthread_once(&g_mrz_scratch_once, mrz_scratch_init_once);
+    size_t aligned = (need + 63u) & ~(size_t)63u;
+    if (g_mrz_scratch_off + aligned > MRZ_SCRATCH_BYTES) return NULL;
+    void *p = g_mrz_scratch + g_mrz_scratch_off;
+    g_mrz_scratch_off += aligned;
+    return p;
+}
+
+/* Reset for a fresh recogniser call.  O(1); no system calls. */
+static void mrz_scratch_reset(void) { g_mrz_scratch_off = 0; }
+
+/* Convenience: typed allocations for the ten safe fields. */
+static uint8_t *mrz_scratch_gray    (size_t n)              { return (uint8_t *)mrz_scratch_alloc(n); }
+static uint8_t *mrz_scratch_bin     (size_t n)              { return (uint8_t *)mrz_scratch_alloc(n); }
+static uint8_t *mrz_scratch_band_gray(size_t n)             { return (uint8_t *)mrz_scratch_alloc(n); }
+static uint8_t *mrz_scratch_band_bin (size_t n)             { return (uint8_t *)mrz_scratch_alloc(n); }
+static uint8_t *mrz_scratch_rot     (size_t n)              { return (uint8_t *)mrz_scratch_alloc(n); }
+static uint8_t *mrz_scratch_norm    (size_t n)              { return (uint8_t *)mrz_scratch_alloc(n); }
+static uint8_t *mrz_scratch_line    (size_t n)              { return (uint8_t *)mrz_scratch_alloc(n); }
+static float   *mrz_scratch_glyphs  (size_t n_floats)       { return (float *)mrz_scratch_alloc(n_floats * sizeof(float)); }
+static float   *mrz_scratch_feats   (size_t n_floats)       { return (float *)mrz_scratch_alloc(n_floats * sizeof(float)); }
+static float   *mrz_scratch_probs   (size_t n_floats)       { return (float *)mrz_scratch_alloc(n_floats * sizeof(float)); }
+static cnn_t   *mrz_scratch_cnn     (void)                  { return (cnn_t *)mrz_scratch_alloc(sizeof(cnn_t)); }
+
 /* ---- top-level pipeline ---- */
 mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                                        mrz_ocr_result_t *out) {
+    mrz_scratch_reset();   /* O(1) reset before any alloc */
     if (!img || !out) return MRZ_OCR_ERR_LOAD;
     memset(out, 0, sizeof(*out));
     int W = img->width, H = img->height;
@@ -704,7 +768,7 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
     /* Heap workspaces (the CNN weights alone are ~41 KB — keeping the
      * whole pipeline off the stack matters for embedded thread stacks). */
     size_t n = (size_t)W * H;
-    uint8_t *gray = (uint8_t *)malloc(n);
+    uint8_t *gray = mrz_scratch_gray(n);
     uint8_t *bin = NULL, *band_gray = NULL, *band_bin = NULL, *rot = NULL;
     uint8_t *line_pixels = NULL;
     cnn_t *net = NULL;
@@ -728,7 +792,7 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
             t = 255 - t;
         }
     }
-    bin = (uint8_t *)malloc(n);
+    bin = mrz_scratch_bin(n);
     if (!bin) { status = MRZ_OCR_ERR_LOAD; goto cleanup; }
     for (size_t i = 0; i < n; ++i) bin[i] = (gray[i] < t) ? 1 : 0;
     if (tm && tm[0] && strcmp(tm, "0")) { clock_gettime(CLOCK_MONOTONIC, &_t1); _ms_gray = (_t1.tv_sec-_t0.tv_sec)*1e3+(_t1.tv_nsec-_t0.tv_nsec)/1e6; _t0=_t1; }
@@ -747,8 +811,8 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
     /* 3. Band-local refine: crop the band's grayscale, Otsu inside the
      * band only (a global threshold over a full passport page can be
      * dominated by the photo / background), estimate + remove tilt. */
-    band_gray = (uint8_t *)malloc((size_t)bw * bh);
-    band_bin = (uint8_t *)malloc((size_t)bw * bh);
+    band_gray = mrz_scratch_band_gray((size_t)bw * bh);
+    band_bin  = mrz_scratch_band_bin ((size_t)bw * bh);
     if (!band_gray || !band_bin) { status = MRZ_OCR_ERR_LOAD; goto cleanup; }
     for (int y = 0; y < bh; ++y)
         memcpy(band_gray + y * bw, gray + (by + y) * W + bx, bw);
@@ -757,7 +821,7 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
         for (int i = 0; i < bw * bh; ++i) band_bin[i] = (band_gray[i] < tb) ? 1 : 0;
         double deg = mrz_estimate_band_skew(band_bin, bw, bh);
         if (deg != 0.0) {
-            rot = (uint8_t *)malloc((size_t)bw * bh);
+            rot = mrz_scratch_rot((size_t)bw * bh);
             if (!rot) { status = MRZ_OCR_ERR_LOAD; goto cleanup; }
             /* Bilinear deskew is OPT-IN (MRZ_OCR_BILINEAR=1). On the
              * current (nearest-neighbour-trained) weights it raises
@@ -784,11 +848,11 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
         const char *ln_env = getenv("MRZ_OCR_LOCAL_NORM");
         int ln = (ln_env && ln_env[0] && strcmp(ln_env, "0") != 0);
         if (ln) {
-            uint8_t *norm = (uint8_t *)malloc((size_t)bw * bh);
+            uint8_t *norm = mrz_scratch_norm((size_t)bw * bh);
             if (!norm) { status = MRZ_OCR_ERR_LOAD; goto cleanup; }
             mrz_normalize_local_contrast(band_gray, bw, bh, norm);
             memcpy(band_gray, norm, (size_t)bw * bh);
-            free(norm);
+            /* scratchpad: no free */
         }
     }
 
@@ -798,16 +862,21 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
         status = MRZ_OCR_ERR_BAD_LINES; goto cleanup;
     }
 
-    net = (cnn_t *)malloc(sizeof(cnn_t));
-    glyphs = (float (*)[CNN_IN_H][CNN_IN_W])malloc(44 * sizeof(*glyphs));
-    glyphs_tta = (float (*)[CNN_IN_H][CNN_IN_W])malloc(44 * sizeof(*glyphs));
-    feats = (float *)malloc((size_t)44 * CNN_FLAT * sizeof(float));
-    probs = (float *)malloc((size_t)44 * CNN_OUT * sizeof(float));
-    probs_tta = (float *)malloc((size_t)44 * CNN_OUT * sizeof(float));
+    net = mrz_scratch_cnn();
+    glyphs     = (float (*)[CNN_IN_H][CNN_IN_W])mrz_scratch_glyphs(44 * (CNN_IN_H * CNN_IN_W));
+    glyphs_tta = (float (*)[CNN_IN_H][CNN_IN_W])mrz_scratch_glyphs(44 * (CNN_IN_H * CNN_IN_W));
+    feats      = mrz_scratch_feats(44 * CNN_FLAT);
+    probs      = mrz_scratch_probs(44 * CNN_OUT);
+    probs_tta  = mrz_scratch_probs(44 * CNN_OUT);
     if (!net || !glyphs || !glyphs_tta || !feats || !probs || !probs_tta) {
         status = MRZ_OCR_ERR_LOAD; goto cleanup;
     }
-    cnn_default_init(net);
+    /* Populate weights from the static template (init once at module
+     * load via pthread_once).  The 140 KB memcpy is one per image,
+     * far cheaper than the 12 malloc/free pairs the bump allocator
+     * replaces. */
+    pthread_once(&g_mrz_scratch_once, mrz_scratch_init_once);
+    *net = g_mrz_scratch_cnn_template;
     {
         const char *tta_env = getenv("MRZ_OCR_TTA");
         int tta = (tta_env && tta_env[0] && strcmp(tta_env, "0") != 0);
@@ -816,7 +885,7 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
             int base = (li == 0) ? lines[0].y : lines[1].y;
             int line_h = (li == 0) ? lines[0].h : lines[1].h;
             if (line_h <= 0) continue;
-            line_pixels = (uint8_t *)malloc((size_t)bw * line_h);
+            line_pixels = mrz_scratch_line((size_t)bw * line_h);
             if (!line_pixels) { status = MRZ_OCR_ERR_LOAD; goto cleanup; }
             for (int y = 0; y < line_h; ++y)
                 memcpy(line_pixels + y * bw, band_bin + (base + y) * bw, bw);
@@ -828,7 +897,7 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
             if (nchars <= 0)
                 nchars = segment_line_cnn(line_pixels, bw, line_h, chars, 44);
             if (nchars < 30) {
-                free(line_pixels); line_pixels = NULL;
+                /* scratchpad: no free */ line_pixels = NULL;
                 status = MRZ_OCR_ERR_BAD_LINES; goto cleanup;
             }
             if (nchars > 44) nchars = 44;
@@ -871,17 +940,19 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
             decode_row((const float (*)[CNN_IN_H][CNN_IN_W])glyphs, nchars, li, dest, conf, probs);
             if (li == 0) out->line1_len = nchars; else out->line2_len = nchars;
             mrz_ocr_dump_glyphs("img", li, glyphs, nchars, chars);
-            free(line_pixels); line_pixels = NULL;
+            /* scratchpad: no free */ line_pixels = NULL;
             if (tm && tm[0] && strcmp(tm, "0")) { clock_gettime(CLOCK_MONOTONIC, &_t1); _ms_decode += (_t1.tv_sec-_t0.tv_sec)*1e3+(_t1.tv_nsec-_t0.tv_nsec)/1e6; _t0=_t1; }
         }
     }
 
 cleanup:
-    free(probs_tta); free(probs); free(feats);
-    free(glyphs_tta); free(glyphs); free(net);
-    free(line_pixels);
-    free(rot); free(band_bin); free(band_gray);
-    free(bin); free(gray);
+    /* scratchpad: no per-call frees.  The whole buffer is reset
+     * on the next recogniser entry (mrz_scratch_reset()). */
+    (void)probs_tta; (void)probs; (void)feats;
+    (void)glyphs_tta; (void)glyphs; (void)net;
+    (void)line_pixels;
+    (void)rot; (void)band_bin; (void)band_gray;
+    (void)bin; (void)gray;
     if (tm && tm[0] && strcmp(tm, "0")) {
         fprintf(stderr, "TIMING gray=%.2fms band+deskew=%.2fms resample=%.2fms decode=%.2fms\n",
                 _ms_gray, _ms_band, _ms_resample, _ms_decode);
