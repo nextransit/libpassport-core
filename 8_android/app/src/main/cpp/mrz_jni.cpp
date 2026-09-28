@@ -81,12 +81,26 @@ Java_com_nextransit_mrzbench_jni_MrzNative_recogniseString(
     mrz_ocr_init();
     mrz_ocr_result_t r;
     std::memset(&r, 0, sizeof(r));
+
+    // Optional per-stage profiler for the device. Enabled by setting
+    // MRZ_PROFILE=1 on the app process; we then read CLOCK_MONOTONIC
+    // around the recogniser call and additionally enable the in-tree
+    // MRZ_OCR_TM path by setting the env var before the call (no-op
+    // when the env var is already set).
+    const char *prof_env = getenv("MRZ_PROFILE");
+    bool prof = prof_env && prof_env[0] && strcmp(prof_env, "0") != 0;
+    if (prof) setenv("MRZ_OCR_TIMING", "1", 0);
+
     auto t0 = std::chrono::steady_clock::now();
     mrz_ocr_status_t st = (backend == 1)
             ? mrz_ocr_recognise_cnn(img, &r)
             : mrz_ocr_recognise(img, &r);
     auto t1 = std::chrono::steady_clock::now();
     double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+    if (prof) {
+        LOGI("MRZ_PROFILE backend=%d path=%s ms=%.3f", backend, path, ms);
+    }
 
     char buf[1024];
     if (st != MRZ_OCR_OK) {
@@ -105,6 +119,13 @@ Java_com_nextransit_mrzbench_jni_MrzNative_recogniseString(
     }
     face_image_free(img);
     return env->NewStringUTF(buf);
+}
+
+JNIEXPORT void JNICALL
+Java_com_nextransit_mrzbench_jni_MrzNative_setProfiling(JNIEnv *env, jobject, jboolean on) {
+    setenv("MRZ_PROFILE", on ? "1" : "0", 1);
+    setenv("MRZ_OCR_TIMING", on ? "1" : "0", 1);
+    LOGI("MRZ_PROFILE %s (also flipped MRZ_OCR_TIMING for cnn.c)", on ? "ON" : "OFF");
 }
 
 JNIEXPORT jstring JNICALL
