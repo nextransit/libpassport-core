@@ -3,65 +3,57 @@
 stdout contract. No paddleocr dependency.
 
 Implementation:
-  1. Locate MRZ band via row-projection (bottom-third scan)
-  2. 3x upscale (gives ~38px glyph height — comfortable for OCR-B)
-  3. Run tesseract --psm 6 -l ocrb on the full band; it auto-detects
-     the two MRZ lines and returns them in order
-  4. Apply ICAO ambiguity table (O<->0, I<->1, B<->8, S<->5, Z<->2)
-     using slot-domain heuristics:
-       - document type slot (line1[0])              → P/I/V/A/C/D/R
-       - issuing-state slot (line1[2..4])           → alpha-only
-       - date slots (line1[13..19] line1[21..27])   → digit-only
-       - composite check digits (line1[9], line2[9],
-                                line1[19], line2[19],
-                                line1[27], line2[27],
-                                line1[43], line2[43]) → digit-only
-  5. Normalise to 44-char ICAO whitelist and pad/trim
-  6. Confidence from tesseract TSV (mean per-symbol)
+  1. Locate the MRZ band via row-projection (_find_mrz_band)
+  2. Crop to that band and 3x upscale (gives comfortable OCR-B glyphs)
+  3. Run tesseract --psm 6 -l ocrb on the band; it auto-detects the
+     two MRZ lines and returns them in order (PSM 11 fallback when it
+     only found one line)
+  4. Normalise to the 44-char ICAO whitelist
+  5. TD3 slot enforcement (mrz_slots): Line 1 is alpha-only (stray
+     digits become letters); Line 2 digit slots become digits, the
+     alpha nationality field loses stray digits
+  6. Mod-10 checksum repair of Line 2 (mrz_checksum.repair_line2):
+      43/45-char reads get a checksum-guided insertion/deletion first,
+      then the four checked fields are repaired within an edit budget
+  7. Per-line confidence is a *structure-plausibility* score, not an
+     engine confidence: tesseract's OCR-B CLI reports 0.0 word
+     confidences for this model/whitelist, so we score how well the
+     raw text respects the TD3 slots (line 1) and how many of the five
+     TD3 checks pass after repair (line 2, minus a small per-edit
+     penalty)
+
+TD3 layout (this is the standard passport MRZ; earlier revisions of
+this file carried a TD1 layout with Line-1 digit slots at 13..43,
+which corrupted every name it touched):
+
+    line1  [0] doc type alpha      [1] '<'          [2..4] issuing alpha
+           [5..43] name alpha
+    line2  [0..8] passport_no alnum    [9] cd
+           [10..12] nationality alpha  [13..18] dob   [19] cd
+           [20] sex M/F/<              [21..26] expiry [27] cd
+           [28..41] personal_no alnum  [42] cd        [43] composite cd
 
 This is a *stand-in* decoder for environments where paddleocr isn't
 installed; for production accuracy install paddleocr (preferred) or
 use tesseract_tool.py directly. The CLI contract emitted is identical.
+Set MRZ_REPAIR=0 to disable the checksum repair pass (A/B testing).
 """
 from __future__ import annotations
 import os
-import re
 import subprocess
 import sys
-import tempfile
 import time
 from pathlib import Path
 
-LINE_LEN = 44
-DOC_TYPES = set("PIVACDR")
+from mrz_slots import (
+    ALPHA_L1, ALPHA_L2, DIGIT_L1, DIGIT_L2, DOC_TYPES, ICAO, LINE_LEN,
+    enforce_slots,
+)
+from mrz_checksum import compute_check_digit, repair_line2
 
-# ICAO ambiguous pairs (master -> candidate swap)
-AMBIG = {"O": "0", "0": "O", "I": "1", "1": "I", "B": "8", "8": "B",
-         "S": "5", "5": "S", "Z": "2", "2": "Z"}
+_REPAIR = os.environ.get("MRZ_REPAIR", "1") != "0"
 
-# ICAO MRZ slot layout — only digit or alpha is enforced here.
-# line1: [0] doc_type  [1] filler '<'
-#        [2..4]  issuing_state (alpha-3)          [5..13] name
-#        [14..19] dob YYMMDD                        [20] filler '<'
-#        [21] sex M/F/<                             [22..27] exp YYMMDD
-#        [28..42] personal_no
-#        [29] check_digit
-#        [30..42] composite
-#        [43] final_check_digit
-# line2: [0..6] passport_no   [7] check_digit
-#        [8..13] nationality (alpha-3)
-#        [14..19] dob YYMMDD                       [20] check_digit
-#        [21..27] expiry YYMMDD                     [28] check_digit
-#        [29..41] personal_no                       [42] check_digit
-#        [43] composite_check_digit
-_LINE1_ALPHA = set(range(2, 5)) | set(range(5, 14)) | {21}      # name + sex + state
-_LINE1_DIGIT = {13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 24, 25,
-                26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,
-                38, 39, 40, 41, 42, 43}
-_LINE2_ALPHA = set(range(8, 14))
-_LINE2_DIGIT = {0, 1, 2, 3, 4, 5, 6, 7, 14, 15, 16, 17, 18, 19,
-                20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
-                32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43}
+_WHITELIST = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<"
 
 
 def _find_mrz_band(gray):
@@ -129,92 +121,84 @@ def _find_mrz_band(gray):
     return int(H * 0.80), H
 
 
-def _tesseract_band(in_path, tmpdir):
-    """Run tesseract OCR-B on a single image and return (text, conf).
+def _tesseract_run(in_path, tmpdir, psm, tag):
+    """Run tesseract OCR-B on `in_path`; return (text, rc).
 
-    Returns the raw multi-line text (joined with '\n') and the mean
-    per-symbol confidence (0..100). Uses --psm 6 to let tesseract
-    auto-detect the two MRZ lines.
+    The CLI's per-word confidences are unusable with this ocrb model
+    (TSV and hOCR report 0.0 for every word), so the caller scores
+    structure plausibility instead (see _slot_score / _checks_score).
     """
-    base = Path(tmpdir) / "tess_out"
-    # PSM 6: assume a uniform block of text. Lets tesseract split the
-    # 2-line MRZ band into the two rows automatically. Tried 3/4/6/11/12;
-    # 6 and 4 gave the best MRZ results.
+    base = Path(tmpdir) / tag
     r = subprocess.run(
         ["tesseract", str(in_path), str(base),
-         "--psm", "6", "-l", "ocrb",
-         "-c", "tessedit_char_whitelist="
-              "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<"],
+         "--psm", str(psm), "-l", "ocrb",
+         "-c", f"tessedit_char_whitelist={_WHITELIST}"],
         capture_output=True, timeout=20,
     )
     txt_path = Path(str(base) + ".txt")
     text = txt_path.read_text() if txt_path.exists() else ""
-    # TSV confidence
-    conf = 0
-    tsv_path = Path(str(base) + ".tsv")
-    if tsv_path.exists():
-        confs = []
-        for ln in tsv_path.read_text().splitlines()[1:]:
-            cols = ln.split("\t")
-            if len(cols) >= 12:
-                try:
-                    c = int(cols[10])
-                    if c >= 0:
-                        confs.append(c)
-                except ValueError:
-                    pass
-        if confs:
-            conf = sum(confs) // len(confs)
-    return text, conf, r.returncode
+    return text, r.returncode
 
 
-def _enforce_slot(line, alpha_set, digit_set):
-    """Map ambiguous O/0 etc. to the canonical ICAO charset for the slot.
-
-    Strategy: for each position, if the slot is digit-only and the OCR
-    returned a letter, swap via AMBIG. Conversely for alpha-only slots.
-    Other glyphs ('<') are left as-is.
-    """
-    out = list(line)
-    for i, ch in enumerate(out):
-        if ch in "<" or not ch:
-            continue
-        swap = AMBIG.get(ch)
-        if swap is None:
-            continue
-        if i in digit_set and ch.isalpha():
-            out[i] = swap   # alpha in digit slot → swap to digit
-        elif i in alpha_set and ch.isdigit():
-            out[i] = swap   # digit in alpha slot → swap to alpha
-    return "".join(out)
+def _tesseract_band(in_path, tmpdir):
+    """PSM 6 pass over the band (auto two-row split)."""
+    return _tesseract_run(in_path, tmpdir, 6, "tess_out")
 
 
-def _norm_two_lines(text, conf):
-    """Parse tesseract output into two 44-char lines + per-line conf.
+def _work_dir(img_path):
+    """Repo-local scratch dir (the sandbox hides /tmp from tesseract)."""
+    argv_path = Path(img_path).resolve()
+    candidate = argv_path.parent
+    found = None
+    while candidate != candidate.parent:
+        if (candidate / "tests" / "ocr_bench_runner.py").exists():
+            found = candidate
+            break
+        candidate = candidate.parent
+    tmpdir = (found / "tests" / ".paddle_local_tmp") if found \
+        else Path.cwd() / ".paddle_local_tmp"
+    tmpdir.mkdir(parents=True, exist_ok=True)
+    return tmpdir
+
+
+def _clean(s):
+    """Uppercase + map non-ICAO chars to '<', preserving positions."""
+    return "".join(c if c in ICAO else "<" for c in (s or "").upper())
+
+
+def _pad(s):
+    if len(s) < LINE_LEN:
+        s = s + "<" * (LINE_LEN - len(s))
+    return s[:LINE_LEN]
+
+
+def _norm_two_lines(text):
+    """Parse tesseract output into two ICAO lines.
 
     Tesseract PSM 6 returns both MRZ rows; we classify each non-empty
     line by its first char:
       - line1 starts with P / I / V / A / C / D / R + '<'  (doc type)
       - line2 starts with a digit / 'L' / '<' (passport no.)
     If classification is unambiguous, lines are reordered so the
-    returned (line1, line2) tuple always satisfies the ICAO layout.
+    returned lines always satisfy the ICAO layout. Returns
+    (line1, line2, raw1): line1 is padded to 44 and slot-enforced,
+    line2 is left un-padded so the caller can checksum-align 43/45-char
+    reads before padding, and raw1 is the cleaned pre-enforcement
+    line 1 used for the plausibility score.
     """
-    allowed = set("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<")
-    allowed = set("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<")
-    # Pick the two longest lines
     raw_lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
     raw_lines.sort(key=len, reverse=True)
     a = raw_lines[0] if len(raw_lines) >= 1 else ""
     b = raw_lines[1] if len(raw_lines) >= 2 else ""
-    # Classify: line1 starts with a doc-type letter + '<', line2 starts
-    # with digit (passport no.). If tesseract emitted them reversed,
-    # swap so the output always matches the ICAO contract.
+
     def is_l1(s):
         s = s.upper()
-        return bool(s) and s[0] in "PIVACDR" and len(s) > 1 and s[1] == "<"
+        return bool(s) and s[0] in DOC_TYPES and len(s) > 1 and s[1] == "<"
+
     def is_l2(s):
         s = s.upper()
         return bool(s) and (s[0].isdigit() or s[0] == "L")
+
     if is_l1(b) and is_l2(a):
         line1, line2 = b, a
     elif is_l1(a) and is_l2(b):
@@ -222,29 +206,110 @@ def _norm_two_lines(text, conf):
     elif is_l1(a) and not is_l2(b):
         line1, line2 = a, b
     else:
-        # ambiguous — keep original order
         line1, line2 = a, b
-
-    def _clean(s):
-        s = s.upper()
-        s = "".join(c if c in allowed else "<" for c in s)
-        if len(s) < LINE_LEN:
-            s = s + "<" * (LINE_LEN - len(s))
-        return s[:LINE_LEN]
 
     line1 = _clean(line1)
     line2 = _clean(line2)
-    # Slot-enforce ICAO charset
-    line1 = _enforce_slot(line1, _LINE1_ALPHA, _LINE1_DIGIT)
-    line2 = _enforce_slot(line2, _LINE2_ALPHA, _LINE2_DIGIT)
-    # Force slot 1 of line1 to '<'
+    raw1 = line1
+    line1 = enforce_slots(_pad(line1), ALPHA_L1, DIGIT_L1)
     line1 = (line1[0] if line1 else "P") + "<" + line1[2:]
-    # Pad if short
-    if len(line1) < LINE_LEN:
-        line1 = line1 + "<" * (LINE_LEN - len(line1))
-    if len(line2) < LINE_LEN:
-        line2 = line2 + "<" * (LINE_LEN - len(line2))
-    return line1, line2, conf
+    return line1, line2, raw1
+
+
+def _repair_line2(line2):
+    """Checksum-align + repair a raw Line 2; returns (line, n_fixed)."""
+    if _REPAIR:
+        line, n, _rep, ok = repair_line2(line2)
+        if ok:
+            return enforce_slots(line, ALPHA_L2, set()), n
+    padded = enforce_slots(_pad(line2), set(), DIGIT_L2)
+    if _REPAIR:
+        line, n, _rep, _ok = repair_line2(padded)
+        return enforce_slots(line, ALPHA_L2, set()), n
+    return enforce_slots(padded, ALPHA_L2, set()), 0
+
+
+def _slot_score(line, alpha_set, digit_set):
+    """Plausibility 0..100: share of real chars in valid TD3 slots."""
+    real = [(i, c) for i, c in enumerate(line) if c not in "<"]
+    if not real:
+        return 0
+    ok = 0
+    for i, c in real:
+        if i in digit_set:
+            ok += c.isdigit()
+        elif i in alpha_set:
+            ok += c.isalpha()
+        else:
+            ok += 1
+    return int(round(100.0 * ok / len(real)))
+
+
+def _checks_score(line2, n_fixed):
+    """Plausibility 0..100 from the five TD3 checks on a 44-char line 2."""
+    if len(line2) != LINE_LEN:
+        return 0
+    n = 0
+    for start, end, cd in ((0, 9, 9), (13, 19, 19), (21, 27, 27),
+                           (28, 42, 42)):
+        n += compute_check_digit(line2[start:end]) == line2[cd]
+    body = line2[0:10] + line2[13:20] + line2[21:28] + line2[28:43]
+    n += compute_check_digit(body) == line2[43]
+    return max(0, int(round(100.0 * n / 5)) - 3 * n_fixed)
+
+
+def decode_image(img_path):
+    """Decode one image; shared by main() and paddle_ocr_tool.
+
+    Returns a dict: ok, line1, line2, conf1, conf2, band_box, err.
+    conf1/conf2 are structure-plausibility scores (0..100), not engine
+    confidences (see the module docstring, point 7).
+    """
+    try:
+        from PIL import Image
+        import numpy as np
+        img = Image.open(img_path).convert("RGB")
+        gray = np.asarray(img.convert("L"))
+    except Exception as e:
+        return {"ok": False, "line1": "", "line2": "", "conf1": 0,
+                "conf2": 0, "band_box": "", "err": f"cannot load image: {e}"}
+
+    H, W = gray.shape
+    y0, y1 = _find_mrz_band(gray)
+    if y1 <= y0:
+        y0, y1 = 0, H
+    crop = img.crop((0, y0, W, y1)).resize(
+        (W * 3, max(1, y1 - y0) * 3), Image.LANCZOS)
+    tmpdir = _work_dir(img_path)
+    band_path = tmpdir / "band.png"
+    crop.save(band_path)
+
+    text, rc = _tesseract_band(band_path, tmpdir)
+    err = ""
+    if rc != 0:
+        err = f"tesseract failed (rc={rc})"
+    elif len([ln for ln in text.splitlines() if ln.strip()]) < 2:
+        # PSM 6 dropped the second row: retry with PSM 11 (sparse text),
+        # which preserves both rows for clean strips.
+        t11, rc11 = _tesseract_run(band_path, tmpdir, 11, "tess_out_psm11")
+        if rc11 == 0:
+            n6 = len([ln for ln in text.splitlines() if ln.strip()])
+            n11 = len([ln for ln in t11.splitlines() if ln.strip()])
+            if n11 > n6:
+                text = t11
+
+    line1, line2, raw1 = _norm_two_lines(text)
+    line2, n_fixed = _repair_line2(line2)
+
+    conf1 = _slot_score(raw1, ALPHA_L1, DIGIT_L1)
+    conf2 = _checks_score(line2, n_fixed)
+    l1_real = sum(1 for c in line1 if c not in "<")
+    l2_real = sum(1 for c in line2 if c not in "<")
+    ok = (line1[0] in DOC_TYPES and line1[1] == "<"
+          and l1_real >= 5 and l2_real >= 5)
+    return {"ok": ok, "line1": line1, "line2": line2,
+            "conf1": conf1, "conf2": conf2,
+            "band_box": f"0 {y0} {W} {y1 - y0}", "err": err}
 
 
 def main(argv):
@@ -257,85 +322,19 @@ def main(argv):
         return 2
 
     t0 = time.perf_counter()
-    try:
-        from PIL import Image
-        import numpy as np
-        img = Image.open(img_path).convert("RGB")
-        gray = np.asarray(img.convert("L"))
-    except Exception as e:
-        print(f"result.ok       : cannot load image: {e}", file=sys.stderr)
+    d = decode_image(img_path)
+    ms = (time.perf_counter() - t0) * 1000.0
+    print(f"result.ok       : {'OK' if d['ok'] else 'unreadable'}")
+    print(f"result.line1    : {d['line1']}")
+    print(f"result.line2    : {d['line2']}")
+    print(f"result.conf1    : {d['conf1']}")
+    print(f"result.conf2    : {d['conf2']}")
+    print(f"band.x band.y band.w band.h : {d['band_box']}")
+    print(f"ms: {ms:.1f}")
+    if d["err"]:
+        print(f"paddle_local: {d['err']}", file=sys.stderr)
         return 1
-
-    H, W = gray.shape
-    # Whole-image 3x upscale; tesseract --psm 6 -l ocrb auto-locates
-    # the two MRZ lines. _find_band is still computed for the band_box
-    # metadata in the output contract.
-    y0, y1 = _find_mrz_band(gray)
-    crop = img.resize((W * 3, H * 3), Image.LANCZOS)
-
-    # IMPORTANT: the sandbox hides /tmp from the tesseract subprocess,
-    # so we put the work file inside the repo tree where it's visible.
-    # Use the project's top-level tests/ directory — that's where
-    # gui.py + ocr_bench_runner.py live and where the runner expects
-    # to find helper artefacts.
-    argv_path = Path(argv[1]).resolve()
-    # Walk up to find the project root (the dir that contains tests/).
-    candidate = argv_path.parent
-    found = None
-    while candidate != candidate.parent:
-        if (candidate / "tests" / "ocr_bench_runner.py").exists():
-            found = candidate
-            break
-        candidate = candidate.parent
-    if found is not None:
-        tmpdir = found / "tests" / ".paddle_local_tmp"
-    else:
-        tmpdir = Path.cwd() / ".paddle_local_tmp"
-    tmpdir.mkdir(parents=True, exist_ok=True)
-    band_path = tmpdir / "band.png"
-    crop.save(band_path)
-
-    text, conf, rc = _tesseract_band(band_path, tmpdir)
-    if rc != 0:
-        print(f"result.ok       : tesseract failed (rc={rc})", file=sys.stderr)
-        return 1
-    # Fallback: if PSM 6 returned a single line only (the second MRZ
-    # line was discarded), re-run with PSM 11 (sparse text) which
-    # preserves both rows for clean strips.
-    if len([ln for ln in text.splitlines() if ln.strip()]) < 2:
-        r2 = subprocess.run(
-            ["tesseract", str(band_path), str(Path(tmpdir) / "tess_out_psm11"),
-             "--psm", "11", "-l", "ocrb",
-             "-c", "tessedit_char_whitelist="
-                  "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<"],
-            capture_output=True, timeout=20,
-        )
-        if r2.returncode == 0:
-            base11 = Path(str(Path(tmpdir) / "tess_out_psm11") + ".txt")
-            if base11.exists():
-                text_psm11 = base11.read_text()
-                # Use PSM 11 if it returned more lines (>=2) than PSM 6.
-                lines_psm6 = [l for l in text.splitlines() if l.strip()]
-                lines_psm11 = [l for l in text_psm11.splitlines() if l.strip()]
-                if len(lines_psm11) > len(lines_psm6):
-                    text = text_psm11
-
-    line1, line2, mean_conf = _norm_two_lines(text, conf)
-
-    band_box = f"0 {y0} {W} {y1 - y0}"
-    l1_real = sum(1 for c in line1 if c not in "<")
-    l2_real = sum(1 for c in line2 if c not in "<")
-    ok = (len(line1) == LINE_LEN and len(line2) == LINE_LEN
-          and line1[0] in DOC_TYPES and line1[1] == "<"
-          and l1_real >= 5 and l2_real >= 5)
-
-    print(f"result.ok       : {'OK' if ok else 'unreadable'}")
-    print(f"result.line1    : {line1}")
-    print(f"result.line2    : {line2}")
-    print(f"result.conf1    : {mean_conf}")
-    print(f"result.conf2    : {mean_conf}")
-    print(f"band.x band.y band.w band.h : {band_box}")
-    return 0 if ok else 1
+    return 0 if d["ok"] else 1
 
 
 if __name__ == "__main__":

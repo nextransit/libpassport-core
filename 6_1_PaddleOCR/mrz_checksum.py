@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""mrz_checksum -- ICAO 9303 TD3 Mod-10 check-digit primitives for Line 2.
+"""mrz_checksum -- ICAO 9303 TD3 Mod-10 check-digit primitives + repair.
 
-The TD3 (standard passport) MRZ layout has two 44-character lines. Per
-the user's correction (this is a critical correction — Line 1 has
-NO check digits; all four local check digits and the composite check
-digit live in Line 2):
+The TD3 (standard passport) MRZ layout has two 44-character lines. Line 1
+has NO check digits; the four local check digits and the composite check
+digit all live in Line 2:
 
     Position  | Field              | Length | Notes
     --------  | -----------------  | ------  | -----
@@ -21,9 +20,9 @@ digit live in Line 2):
     43        | composite_check    |  1      | check over all four fields above
 
     The composite check digit is computed over (passport_no + cd_1) +
-    (DOB + cd_2) + (expiry + cd_3) + (personal_no + cd_4), treated as
-    four concatenated sub-fields of total length 9+1+6+1+6+1+14+1 = 39
-    characters, with weights cycling 7, 3, 1 across the whole 39.
+    (DOB + cd_2) + (expiry + cd_3) + (personal_no + cd_4), i.e. the
+    39-char string s[0:10] + s[13:20] + s[21:28] + s[28:43], with
+    weights cycling 7, 3, 1 across the whole 39.
 
 Mod-10 algorithm:
     1. Map each character to a digit:
@@ -34,29 +33,44 @@ Mod-10 algorithm:
     3. Sum all weighted digits.
     4. check_digit = sum mod 10.
 
-The reason this is *the* killer feature for MRZ OCR correction is
-that all three weights (7, 3, 1) are coprime with the modulus 10:
-    gcd(7,10) = gcd(3,10) = gcd(1,10) = 1.
-So a single-character ambiguity in a digit-only slot has a UNIQUE
-solution under Mod-10: when one position in a checked field is
-ambiguous, plugging each candidate into the congruence equation
-selects exactly one valid digit. No beam-search scoring needed.
+Repair strategy (line2_correct_with_checksums): for each failing field,
+enumerate plausible OCR-B confusions (mrz_slots.CONFUSE) at every position
+— single substitutions, then restricted two-substitution combinations —
+plus a "the data is right, the check glyph is misread" candidate. The
+per-field candidates are then combined globally (itertools.product over
+the four fields, each capped) and ranked by an empirical edit score:
+log10 of the smoothed (GT char, OCR char) count from mrz_confusions
+(measured on the training corpus), minus a small per-cost penalty, plus
+a bonus when the composite check verifies without a rewrite. This
+replaces the old first-match-wins solver that (a) could never fix
+digit->digit misreads such as 3<->8, (b) never questioned a misread
+check digit, and (c) silently made the wrong choice when two fields were
+both broken. The prior is essential because Mod-10 alone cannot
+discriminate: on passport_no / personal_no (weight phase aligned with
+the composite check) several coincidental edits verify just as well as
+the true confusion.
+
+repair_line2(raw) additionally aligns near-44 inputs: a 43-char line gets
+a checksum-guided single insertion (44 positions x ICAO chars), a
+45-char line a single deletion; the result must be fully check-valid.
 
 This module exposes:
-    char_to_digit(c)              — ICAO char -> 0..35
-    digit_to_char(d)              — 0..35 -> ICAO char
-    compute_check_digit(field)    — field str -> 1-char check
-    verify_mod10(field, check)    — bool
-    solve_ambiguity(field, check, candidates)
-                                — given a field with one unknown slot,
-                                  return the digit that satisfies Mod-10
-    line2_resolve_with_checksums(line2)
-                                — apply Mod-10 correction across
-                                  all five Line-2 checked fields;
-                                  returns the corrected line.
+    char_to_digit(c)              -- ICAO char -> 0..35
+    digit_to_char(d)              -- 0..35 -> ICAO char
+    compute_check_digit(field)    -- field str -> 1-char check
+    verify_mod10(field, check)    -- bool
+    solve_ambiguity(...)          -- classic single-slot solver
+    line2_correct_with_checksums(line2)  -- global Mod-10 repair
+    align_line2(raw)              -- 43/44/45 chars -> 44-char valid line
+    repair_line2(raw)             -- align + correct, returns full report
 """
 from __future__ import annotations
+import itertools
+import math
 from typing import Iterable, Optional
+
+from mrz_slots import ALPHA_L2, DIGIT_L2, ICAO, SEX, confusions
+from mrz_confusions import prior
 
 # Weight cycle: 7, 3, 1, 7, 3, 1, ...
 WEIGHTS = (7, 3, 1)
@@ -78,7 +92,7 @@ def char_to_digit(c: str) -> int:
     """Map a single ICAO character to its numeric value (0..35).
 
     '0'..'9' -> 0..9, 'A'..'Z' -> 10..35, '<' -> 0.
-    Anything else raises ValueError — caller is responsible for
+    Anything else raises ValueError -- caller is responsible for
     ICAO whitelist filtering.
     """
     try:
@@ -141,206 +155,306 @@ def solve_ambiguity(
 
 
 # ----------------------------------------------------------------------
-# Line 2 correction: apply Mod-10 across all five checked sub-fields.
+# Line 2 repair: global Mod-10 search across the four checked fields.
 # ----------------------------------------------------------------------
 
-# (slice, check_pos) tuples for the four local check digits.
+LINE_LEN = 44
+
+# (label, field_start, field_end, check_pos) for the four local checks.
 _LINE2_FIELDS = (
-    # (field_label,    field_slice,   check_pos)
-    ("passport_no",   slice(0, 9),   9),
-    ("date_of_birth", slice(13, 19), 19),
-    ("date_of_expiry", slice(21, 27), 27),
-    ("personal_no",   slice(28, 42), 42),
+    ("passport_no", 0, 9, 9),
+    ("date_of_birth", 13, 19, 19),
+    ("date_of_expiry", 21, 27, 27),
+    ("personal_no", 28, 42, 42),
 )
 
-# AMBIG candidates for digit-slot positions when OCR mis-reads.
-# These are the same visual confusions as the slot-enforcement table
-# in paddle_local.py: O<->0, I<->1, B<->8, S<->5, Z<->2.
-_DIGIT_AMBIG = {
-    "O": "0", "0": "O", "I": "1", "1": "I",
-    "B": "8", "8": "B", "S": "5", "5": "S",
-    "Z": "2", "2": "Z",
-}
+# Composite spans s[0:10] + s[13:20] + s[21:28] + s[28:43].
+_COMPOSITE_SLICES = ((0, 10), (13, 20), (21, 28), (28, 43))
 
 
-def _candidate_swaps(c: str) -> list:
-    """All valid ICAO digit candidates for an ambiguous OCR char.
+def _composite(s: str) -> str:
+    return "".join(s[a:b] for a, b in _COMPOSITE_SLICES)
 
-    For a digit-position slot, candidates are: the char itself, plus
-    its AMBIG swap (if it's a digit-or-alpha pair). Always includes
-    0-9 since the slot may need any digit to satisfy the check.
+
+def _line2_valid(s: str) -> bool:
+    """True iff all four local checks and the composite check verify."""
+    if len(s) != LINE_LEN:
+        return False
+    for _label, start, end, cpos in _LINE2_FIELDS:
+        if not verify_mod10(s[start:end], s[cpos]):
+            return False
+    return verify_mod10(_composite(s), s[43])
+
+
+def _confusion_cost(ch: str, target: str) -> int:
+    """Cost of explaining `ch` as `target` (3 = no known confusion)."""
+    for cand, cost in confusions(ch):
+        if cand == target:
+            return cost
+    return 3
+
+
+# Weight of one cost unit against the log-prior evidence of an edit.
+_EDIT_PENALTY = 0.5
+
+# Floor for the composite-check-digit rewrite penalty: the composite is a
+# single glyph and the empirical table is a weak proxy for it, so one
+# implausible pair (e.g. "0" read as "4") must not dominate the search.
+_CD_REWRITE_CAP = 1.5
+
+
+def _edit_score(old: str, new: str) -> float:
+    """Ranking evidence for explaining the observed `old` as `new`.
+
+    log10 likelihood ratio of "GT was `new` and got misread as `old`"
+    against "GT was `old` and was read correctly", minus a small
+    per-cost-unit penalty. Normalising by the diagonal keeps globally
+    common confusions (e.g. Z read as 2) from outweighing the local
+    evidence of a *specific* glyph: a coincidental edit that merely
+    satisfies Mod-10 has a low ratio, the true confusion a high one.
     """
-    out = [c]
-    if c in _DIGIT_AMBIG:
-        out.append(_DIGIT_AMBIG[c])
-    # Always include all 10 digits as candidates for digit-only slots —
-    # the Mod-10 solver will pick the right one if exactly one matches.
-    out.extend("0123456789")
-    # Dedupe while preserving order.
+    return (
+        math.log10(prior(new, old))
+        - math.log10(prior(old, old))
+        - _EDIT_PENALTY * _confusion_cost(old, new)
+    )
+
+
+def _field_options(s, start, end, check_pos, trusted):
+    """Candidate repairs that make one (field, check) pair verify.
+
+    Returns [(cost, ((abs_pos, new_char), ...)), ...] ordered by edit
+    score (empirical confusion prior, see _edit_score), capped at 8
+    options. An empty edit tuple means "already valid". Options contain
+    single edits, restricted two-edit combinations, and a "the check
+    glyph was misread" candidate.
+    """
+    field = s[start:end]
+    check = s[check_pos]
+    if verify_mod10(field, check):
+        return [(0, ())]
+
+    opts = []
+    edits = []  # (cost, pos, cand) plausible single edits in the field
+    for i in range(start, end):
+        ch = s[i]
+        for cand, cost in confusions(ch):
+            if cand == ch:
+                continue
+            edits.append((cost, i, cand))
+            trial = s[start:i] + cand + s[i + 1:end]
+            if verify_mod10(trial, check):
+                opts.append((cost, ((i, cand),)))
+
+    # Two substitutions. Enumerated even when single fixes exist: a
+    # coincidental single edit that merely satisfies Mod-10 can be beaten
+    # by the true two-edit explanation once _edit_score ranks the pair.
+    for (c1, i1, a1), (c2, i2, a2) in itertools.combinations(edits, 2):
+        if i1 == i2 or c1 + c2 > 4:
+            continue
+        trial = s[start:end]
+        trial = trial[:i1 - start] + a1 + trial[i1 - start + 1:]
+        trial = trial[:i2 - start] + a2 + trial[i2 - start + 1:]
+        if verify_mod10(trial, check):
+            opts.append((c1 + c2, ((i1, a1), (i2, a2))))
+
+    # "Data wins": rewrite the check glyph to the computed digit.
+    if check_pos not in trusted:
+        comp = compute_check_digit(field)
+        if comp != check:
+            opts.append((_confusion_cost(check, comp), ((check_pos, comp),)))
+
+    # Dedupe, best edit score first (true confusions beat coincidental
+    # Mod-10 fixes), then cap.
     seen = set()
-    return [x for x in out if not (x in seen or seen.add(x))]
+    uniq = []
+    for opt in sorted(opts, key=lambda o: -sum(
+            _edit_score(s[p], c) for p, c in o[1])):
+        key = tuple(opt[1])
+        if key in seen:
+            continue
+        seen.add(key)
+        uniq.append(opt)
+    return uniq[:8]
 
 
 def line2_correct_with_checksums(
     line2: str,
     *,
     trusted_check_positions: Optional[Iterable[int]] = None,
+    max_cost: int = 4,
 ) -> tuple:
-    """Run Mod-10 correction over Line 2.
-
-    For each of the four local check-digit fields (passport_no,
-    DOB, expiry, personal_no), this routine:
-      1. Verifies the local check digit against the field.
-      2. If invalid, enumerates candidate substitutions for each
-         digit-slot character (using AMBIG swap and the all-digits
-         fallback), then uses Mod-10 to pick the unique solution.
-      3. If a unique solution exists, applies it; otherwise leaves
-         the field untouched.
-    After the four local checks are resolved, the composite check
-    at position 43 is also verified (and corrected) using the
-    same principle across the concatenated fields.
+    """Run Mod-10 repair over Line 2.
 
     Args:
         line2: the 44-character Line 2 string (ICAO whitelist already
-            applied — characters outside the whitelist should have
-            been replaced upstream by paddle_local._norm_line).
-        trusted_check_positions: if provided, the check digits at
-            these positions are taken as ground truth and NOT
-            corrected (the user may want to skip them in noisy
-            OCR situations).
+            applied -- characters outside the whitelist should have
+            been replaced upstream).
+        trusted_check_positions: check digits at these positions are
+            taken as ground truth and never rewritten.
+        max_cost: total edit budget; combinations costing more are
+            rejected and the line is returned untouched.
 
     Returns:
-        (corrected_line2, n_corrected, report) where:
-          - corrected_line2: the 44-char string after Mod-10 fixes
-          - n_corrected: number of positions that were modified
-          - report: list[str], human-readable per-field action log
-            ("passport_no: pos 5 fixed 0->8", etc.)
+        (corrected_line2, n_corrected, report) where corrected_line2 is
+        fully check-valid whenever n_corrected > 0.
     """
-    if len(line2) != 44:
-        return line2, 0, [f"len != 44 (got {len(line2)}), skipped"]
+    if len(line2) != LINE_LEN:
+        return line2, 0, [f"len != {LINE_LEN} (got {len(line2)}), skipped"]
 
-    trusted = set(trusted_check_positions or [])
-    s = list(line2)
+    trusted = set(trusted_check_positions or ())
     report = []
-    n = 0
+    per_field = []
+    for label, start, end, cpos in _LINE2_FIELDS:
+        per_field.append((label, _field_options(line2, start, end, cpos, trusted)))
 
-    for label, fld_slice, check_pos in _LINE2_FIELDS:
-        field = "".join(s[fld_slice])  # ICAO whitelist str snapshot
-        check = s[check_pos]
-        if verify_mod10(field, check):
-            continue  # already correct
-        # Try to find the unique substitution. Walk every position in
-        # the field and, if the OCR char disagrees with the slot's
-        # known-good candidates, try the AMBIG swap and the all-digits
-        # set, looking for a (pos, candidate) pair that fixes the
-        # check. Try AMBIG first (cheapest), then the all-digit set.
-        found = None
-        # The cheapest search: try AMBIG swap at the position the
-        # OCR seems most likely wrong (i.e. where the AMBIG-swap
-        # candidate is a digit in a digit slot).
-        for i, c in enumerate(field):
-            if c in _DIGIT_AMBIG and _DIGIT_AMBIG[c] in "0123456789":
-                cand = _DIGIT_AMBIG[c]
-                cand_field = field[:i] + cand + field[i + 1:]
-                if verify_mod10(cand_field, check):
-                    # If multiple positions match, the AMBIG-swap at
-                    # the *first* such position wins (deterministic).
-                    if found is None:
-                        found = (i, cand)
-        # If AMBIG didn't find a unique fix, try each position with
-        # every digit 0..9 — the Mod-10 should land on exactly one.
-        if found is None:
-            for i in range(len(field)):
-                if field[i] in "0123456789":
-                    continue  # already a digit; skip trivial
-                for cand in "0123456789":
-                    cand_field = field[:i] + cand + field[i + 1:]
-                    if verify_mod10(cand_field, check):
-                        if found is None:
-                            found = (i, cand)
-                        else:
-                            # two solutions -> ambiguous, abandon
-                            found = None
-                            break
-                if found is None:
-                    break
-        if found is not None:
-            i, cand = found
-            old = field[i]
-            field_list = list(s)
-            field_list[fld_slice.start + i] = cand
-            s = field_list
-            report.append(f"{label}: pos {fld_slice.start + i} fixed {old}->{cand}")
-            n += 1
+    best = None  # (sort_key, trial_str, edits, needed_composite, comp_ok)
+    for combo in itertools.product(*(opts for _label, opts in per_field)):
+        total = sum(cost for cost, _ed in combo)
+        if total > max_cost:
+            continue
+        trial = list(line2)
+        edits = []
+        score = 0.0
+        for (label, _opts), (cost, ed) in zip(per_field, combo):
+            for pos, cand in ed:
+                score += _edit_score(trial[pos], cand)
+                edits.append((label, pos, trial[pos], cand))
+                trial[pos] = cand
+        t = "".join(trial)
+        needed = compute_check_digit(_composite(t))
+        comp_ok = t[43] == needed
+        if not comp_ok and 43 in trusted:
+            continue
+        if comp_ok:
+            score += 0.5  # bonus: no composite rewrite needed
         else:
-            report.append(f"{label}: no unique Mod-10 fix (kept)")
+            score += max(_edit_score(t[43], needed), -_CD_REWRITE_CAP)
+            total += _confusion_cost(t[43], needed)
+        sort_key = (-score, total, len(edits))
+        if best is None or sort_key < best[0]:
+            best = (sort_key, t, edits, needed, comp_ok)
 
-    # Composite check at position 43 — concatenate the four (field+cd)
-    # sub-fields into a 39-char string and verify cd against it.
-    composite = (
-        "".join(s[0:10]) + "".join(s[13:20]) +
-        "".join(s[21:28]) + "".join(s[28:43])
-    )
-    if 43 not in trusted and not verify_mod10(composite, s[43]):
-        # Try a single-slot correction across the composite field.
-        for i in range(len(composite)):
-            for cand in "0123456789":
-                if composite[i] == cand:
-                    continue
-                cand_composite = composite[:i] + cand + composite[i + 1:]
-                if verify_mod10(cand_composite, s[43]):
-                    # Map i back to s-position (since composite skips
-                    # pos 10..12 and 20).
-                    if i < 10:
-                        pos = i
-                    elif i < 10 + 7:
-                        pos = i + 3  # skip [10..12]
-                    elif i < 10 + 7 + 7:
-                        pos = i + 4  # skip [10..12] and [20]
-                    else:
-                        pos = i + 5  # skip [10..12], [20], [27]
-                    # 27 is the third check digit, which is in s.
-                    # We don't want to overwrite a check digit (43 is
-                    # the composite cd, not in the 39-char input).
-                    # But pos might land on check-digit positions 9, 19,
-                    # 27, 42 which are inside composite as well.
-                    if pos in {9, 19, 27, 42}:
-                        # Re-align: check digits are at s-pos 9, 19,
-                        # 27, 42 which map to composite offsets 9, 16,
-                        # 23, 37. We don't want to *change* check
-                        # digits from the composite; instead let the
-                        # local checks above handle them. Bail.
-                        continue
-                    s[pos] = cand
-                    report.append(f"composite: pos {pos} fixed {line2[pos]}->{cand}")
-                    n += 1
-                    break
-            else:
-                continue
-            break
-        else:
-            report.append("composite: no unique Mod-10 fix (kept)")
+    if best is None:
+        return line2, 0, ["no Mod-10 fix within budget (kept)"]
 
-    return "".join(s), n, report
+    _key, t, edits, needed, comp_ok = best
+    if not edits and comp_ok:
+        return line2, 0, ["all checks valid"]
+    s2 = list(t)
+    for label, pos, old, new in edits:
+        report.append(f"{label}: pos {pos} fixed {old}->{new}")
+    if not comp_ok:
+        s2[43] = needed
+        report.append(f"composite: pos 43 fixed {t[43]}->{needed}")
+    n = len(edits) + (0 if comp_ok else 1)
+    return "".join(s2), n, report
+
+
+def _domain_cost(pos: int, cand: str) -> int:
+    """How well `cand` fits the TD3 slot at `pos` (0 = fits, 1 = not)."""
+    if pos in DIGIT_L2:
+        return 0 if cand.isdigit() else 1
+    if pos in ALPHA_L2:
+        return 0 if cand.isalpha() else 1
+    if pos == 20:
+        return 0 if cand in SEX else 1
+    return 0
+
+
+def align_line2(raw: str) -> Optional[str]:
+    """Align a near-44-char line to a fully check-valid 44-char line.
+
+    Handles a single missing char (43 chars -> one insertion) and a
+    single spurious char (45 chars -> one deletion). Longer/shorter
+    inputs return None; the caller keeps its pad/trim path.
+    """
+    n = len(raw)
+    if n == LINE_LEN:
+        return raw
+    if n == LINE_LEN - 1:
+        hits = []
+        for pos in range(LINE_LEN):
+            for cand in sorted(ICAO):
+                trial = raw[:pos] + cand + raw[pos:]
+                if _line2_valid(trial):
+                    hits.append((_domain_cost(pos, cand), pos, cand, trial))
+        if hits:
+            hits.sort()
+            return hits[0][3]
+        return None
+    if n == LINE_LEN + 1:
+        hits = []
+        for pos in range(n):
+            trial = raw[:pos] + raw[pos + 1:]
+            if _line2_valid(trial):
+                dup = (pos > 0 and raw[pos - 1] == raw[pos]) or \
+                      (pos + 1 < n and raw[pos + 1] == raw[pos])
+                hits.append((0 if dup else 1, pos, trial))
+        if hits:
+            hits.sort()
+            return hits[0][2]
+        return None
+    return None
+
+
+def repair_line2(raw: str, **kwargs) -> tuple:
+    """Align + checksum-repair a raw Line 2 read.
+
+    Returns (line44_or_raw, n_fixed, report, fully_valid).
+    """
+    raw = "".join(c if c in ICAO else "<" for c in (raw or "").upper())
+    aligned = align_line2(raw)
+    if aligned is None:
+        return raw, 0, [f"cannot align len {len(raw)} to {LINE_LEN}"], False
+    line, n, report = line2_correct_with_checksums(aligned, **kwargs)
+    if len(line) == LINE_LEN and _line2_valid(line):
+        return line, n, report, True
+    return line, n, report, False
 
 
 # ----------------------------------------------------------------------
-# Self-test: ICAO 9303 §4.9 worked example (or close to it).
+# Self-test.
 # ----------------------------------------------------------------------
 if __name__ == "__main__":
-    # Synthetic check: a 9-char passport_no field whose Mod-10 must
-    # equal the documented check digit.
-    sample = "D23145890"  # 9 chars
+    # ICAO 9303 worked example for a 9-char passport_no field.
+    sample = "D23145890"
     cd = compute_check_digit(sample)
     assert cd == "7", f"expected 7, got {cd}"
 
-    # solve_ambiguity: force one bad char, the solver must pick the
-    # right digit (D in slot 1 should be replaced; we replace with '?'
-    # and ask which of {0..9} matches).
+    # solve_ambiguity: force one bad char, pick the right digit back.
     ambig = list(sample)
     ambig[1] = "?"
     field_marker = "".join(ambig)
     cand = solve_ambiguity(field_marker, "7", "0123456789", marker="?")
-    print(f"solve_ambiguity({field_marker!r}, '7', 0..9) -> {cand}")
-    assert cand is not None
+    assert cand == "2", f"expected 2, got {cand}"
+
+    # Build a valid synthetic TD3 line 2 and corrupt it the way the
+    # corpus actually showed: letters misread as their digit lookalike
+    # (O->0 count 448, Z->2 count 286 -- the reverse direction is rare),
+    # plus a misread composite digit. Pairs whose char-code delta is a
+    # multiple of 10 (L<->1, 6<->G, U<->0, T<->1) are checksum-invisible
+    # and intentionally not used here.
+    def _fld(v):
+        return v + compute_check_digit(v)
+
+    body = (_fld("L8SO92C34") + "UTO" + _fld("690806") + "F"
+            + _fld("940623") + _fld("ZE184226B<<<<<"))
+    line = body + compute_check_digit(_composite(body))
+    assert len(line) == 44 and _line2_valid(line), line
+
+    corrupt = list(line)
+    corrupt[3] = "0"    # O->0 in passport_no
+    corrupt[28] = "2"   # Z->2 in personal_no
+    corrupt[43] = "0" if line[43] != "0" else "1"
+    fixed, n, rep = line2_correct_with_checksums("".join(corrupt))
+    assert fixed == line, (fixed, line, rep)
+    assert _line2_valid(fixed)
+
+    # Length alignment: delete a checked char, reinsert it.
+    short = line[:14] + line[15:]
+    assert align_line2(short) == line
+    # Duplicate a checked char, drop it again.
+    long_ = line[:8] + line[8] + line[8:]
+    assert align_line2(long_) == line
     print("mrz_checksum self-test OK")

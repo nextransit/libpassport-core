@@ -1,123 +1,171 @@
 #!/usr/bin/env python3
-"""Phase 3 bench: project-split + pure-rec backends vs paddle_local baseline.
+"""MRZ decoder regression bench on corpus_eval + real photos.
 
-Each backend returns two 44-char lines; scored against corpus.json GT
-character-by-character (fixed-width ICAO lines, positional alignment).
+Scoring per record (fixed-width ICAO lines, positional alignment):
+    fmt   : both lines 44 chars, line1 doc-type shape, line2 alnum shape
+    L1/L2 : per-character accuracy vs GT
+    chk4  : all four local Mod-10 check digits of the decoded line2 pass
+    chk5  : chk4 + composite check digit (pos 43) passes
+    exact : decoded line1 AND line2 equal GT
+
+Usage (v6 needs paddlex, use the paddle venv):
+    /tmp/paddle_venv/bin/python tests/_phase3_bench.py --n 200
+    /tmp/paddle_venv/bin/python tests/_phase3_bench.py --n 0      # all 1380
+    python3 tests/_phase3_bench.py --n 100 --backend local        # tesseract
+    /tmp/paddle_venv/bin/python tests/_phase3_bench.py --real     # assets/pic
 """
-import sys, json, time, numpy as np
+from __future__ import annotations
+import argparse
+import contextlib
+import io
+import json
+import sys
+import time
 from pathlib import Path
-from PIL import Image
 
-ROOT = Path('/Users/zhouyong/Desktop/work/Decard/gitlab/passport')
-DATA = ROOT / '6_mrz_ocr/data/corpus_eval'
-sys.path.insert(0, str(ROOT / '6_1_PaddleOCR'))
-from paddle_local import _find_mrz_band, _norm_two_lines, LINE_LEN
+ROOT = Path(__file__).resolve().parents[1]
+DATA = ROOT / "6_mrz_ocr" / "data" / "corpus_eval"
+sys.path.insert(0, str(ROOT / "6_1_PaddleOCR"))
 
-N = 10
+LINE_LEN = 44
 
-def load_records():
-    d = json.load(open(DATA / 'corpus.json'))
-    return d['records'][:N]
+# Composite check input: passport(0..9) + dob(13..19) + expiry(21..27)
+# + personal(28..42) = 39 chars; cd at pos 43.
+_COMPOSITE = ((0, 10), (13, 20), (21, 28), (28, 43))
+_LOCAL_CHECKS = ((0, 9, 9), (13, 19, 19), (21, 27, 27), (28, 42, 42))
 
-def split_rows(gray):
-    """Project-split the band into L1 row / L2 row via the deepest gutter."""
-    y0, y1 = _find_mrz_band(gray)
-    band = gray[y0:y1]
-    H = band.shape[0]
-    rd = (band < 128).sum(axis=1)
-    mid_lo, mid_hi = int(H*0.25), int(H*0.75)
-    if mid_hi <= mid_lo:
-        split = H // 2
-    else:
-        split = int(mid_lo + np.argmin(rd[mid_lo:mid_hi]))
-    return band[:split], band[split:]
 
-def score(pred_l1, pred_l2, gt_l1, gt_l2):
-    ok = (len(pred_l1) == LINE_LEN and len(pred_l2) == LINE_LEN
-          and pred_l1[:1] in "PIVACDR" and pred_l1[1:2] == "<"
-          and (pred_l2[:1].isdigit() or pred_l2[:1] == "L"))
-    c1 = sum(a == b for a, b in zip(pred_l1, gt_l1))
-    c2 = sum(a == b for a, b in zip(pred_l2, gt_l2))
-    return ok, c1, c2
+def _checks(line2):
+    from mrz_checksum import verify_mod10
+    if len(line2) != LINE_LEN:
+        return 0, False
+    n_ok = sum(verify_mod10(line2[a:b], line2[c]) for a, b, c in _LOCAL_CHECKS)
+    comp = "".join(line2[a:b] for a, b in _COMPOSITE)
+    return n_ok, verify_mod10(comp, line2[43])
 
-# ---------- Backend 1: paddle_local baseline (subprocess, tesseract) ----------
-def backend_paddle_local(gray, path):
-    import subprocess
-    r = subprocess.run([sys.executable, str(ROOT/'6_1_PaddleOCR/paddle_local.py'), str(path)],
-                       capture_output=True, text=True)
-    l1 = l2 = ""
-    for ln in r.stdout.splitlines():
-        if ln.startswith("result.line1    : "): l1 = ln.split(": ", 1)[1]
-        if ln.startswith("result.line2    : "): l2 = ln.split(": ", 1)[1]
-    return l1, l2
 
-# ---------- Backend 2/3: paddlex pure rec (server / mobile en) ----------
-class PaddlexRec:
-    def __init__(self, model_name, model_dir, engine='onnxruntime'):
-        import paddlex
-        self.rec = paddlex.create_model(model_name=model_name, model_dir=model_dir,
-                                        device='cpu', engine=engine)
-    def rows(self, gray, path=None):
-        r1, r2 = split_rows(gray)
-        out = []
-        for row in (r1, r2):
-            im = Image.fromarray(row).resize((row.shape[1]*3, row.shape[0]*3), Image.LANCZOS)
-            o = list(self.rec.predict(np.asarray(im.convert('RGB'))))[0]
-            txt = (o.get('rec_text') or '').strip().upper()
-            txt = ''.join(c if c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<" else '' for c in txt)
-            out.append(txt[:LINE_LEN].ljust(LINE_LEN, '<'))
-        return out[0], out[1]
+def _fmt_ok(l1, l2):
+    def real(s):
+        return sum(1 for c in s if c != "<")
+    return (len(l1) == LINE_LEN and len(l2) == LINE_LEN
+            and l1[0] in "PIVACDR" and l1[1] == "<"
+            and real(l1) >= 5 and real(l2) >= 5)
 
-# ---------- Backend 4: EasyOCR whole-3x + ymid classification ----------
-class EasyBackend:
-    def __init__(self):
-        import easyocr
-        self.reader = easyocr.Reader(['en'], gpu=False, verbose=False)
-    def rows(self, gray, path=None):
-        img = Image.fromarray(gray).resize((gray.shape[1]*3, gray.shape[0]*3), Image.LANCZOS)
-        res = self.reader.readtext(np.asarray(img.convert('RGB')), detail=1, paragraph=False,
-                                   allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<')
-        cands = []
-        for bbox, txt, conf in res:
-            ys = [p[1] for p in bbox]
-            ymid = (min(ys) + max(ys)) // 2
-            cands.append((ymid, txt.strip().upper(), float(conf)))
-        cands.sort(key=lambda c: -len(c[1]))
-        l1s = [c for c in cands if c[1][:1] in "PIVACDR"]
-        l2s = [c for c in cands if (c[1][:1].isdigit() or c[1][:1] == "L")]
-        def norm(t):
-            t = ''.join(x if x in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<" else '' for x in t)
-            return t[:LINE_LEN].ljust(LINE_LEN, '<')
-        l1 = norm(l1s[0][1]) if l1s else "<"*LINE_LEN
-        l2 = norm(l2s[0][1]) if l2s else "<"*LINE_LEN
-        return l1, l2
 
-def run_backend(name, fn, recs):
-    accs = []
-    t0 = time.perf_counter()
-    for rec in recs:
-        img = Image.open(DATA / rec['image']).convert('L')
-        gray = np.asarray(img)
-        l1, l2 = fn(gray, DATA / rec['image'])
-        ok, c1, c2 = score(l1, l2, rec['line1'], rec['line2'])
-        accs.append((ok, c1, c2))
-    dt = time.perf_counter() - t0
-    n_ok = sum(a for a, _, _ in accs)
-    a1 = sum(c for _, c, _ in accs) / (N*LINE_LEN) * 100
-    a2 = sum(c for _, _, c in accs) / (N*LINE_LEN) * 100
-    print(f"{name:28s} OK={n_ok}/{N}  L1={a1:5.1f}%  L2={a2:5.1f}%  {dt:6.1f}s")
-    return accs
+def stratified(recs, n):
+    if not n or n >= len(recs):
+        return recs
+    groups = {}
+    for r in recs:
+        groups.setdefault(r.get("profile", "?"), []).append(r)
+    out = []
+    n_groups = len(groups)
+    per = max(1, n // n_groups)
+    for g in groups.values():
+        step = max(1, len(g) // per)
+        out.extend(g[::step][:per])
+    return out[:n] if n else out
 
-if __name__ == '__main__':
-    recs = load_records()
-    # Verify GT alignment is correct on record 0
-    print("GT sample:", recs[0]['line1'][:20], "|", recs[0]['line2'][:20])
-    print("-"*70)
-    run_backend("paddle_local(tesseract ocrb)", backend_paddle_local, recs)
-    print("Loading PP-OCRv5 server rec...", file=sys.stderr)
-    sr = PaddlexRec('PP-OCRv5_server_rec',
-                    '/Users/zhouyong/.paddlex/official_models/PP-OCRv5_server_rec_onnx')
-    run_backend("project-split + PP-OCRv5 server rec", sr.rows, recs)
-    print("Loading EasyOCR...", file=sys.stderr)
-    eb = EasyBackend()
-    run_backend("EasyOCR whole-3x ymid", eb.rows, recs)
+
+def load_records(n):
+    recs = json.load(open(DATA / "corpus.json"))["records"]
+    return stratified(recs, n)
+
+
+def load_real():
+    gt = json.load(open(ROOT / "tests" / "real_gt.json"))["gt"]
+    base = ROOT / "assets" / "pic"
+    out = []
+    for name, v in gt.items():
+        p = base / name
+        if p.exists():
+            out.append({"id": name, "image": str(p), "line1": v["line1"],
+                        "line2": v["line2"], "abs": True})
+    return out
+
+
+def run_v6(recs, *_, **__):
+    import paddle_v6
+    rec, mode = paddle_v6._get_rec()
+    if mode != "v6":
+        raise SystemExit("paddlex unavailable: run with /tmp/paddle_venv/bin/python")
+    out = []
+    for r in recs:
+        p = Path(r["image"]) if r.get("abs") else DATA / r["image"]
+        ok, l1, l2, c1, c2, band, err, ms = paddle_v6._decode_one(rec, p)
+        out.append((l1, l2, band, ms, err))
+    return out
+
+
+def run_local(recs, *_, **__):
+    import paddle_local
+    out = []
+    for r in recs:
+        p = Path(r["image"]) if r.get("abs") else DATA / r["image"]
+        buf = io.StringIO()
+        t0 = time.perf_counter()
+        with contextlib.redirect_stdout(buf):
+            paddle_local.main([sys.argv[0], str(p)])
+        ms = (time.perf_counter() - t0) * 1000.0
+        d = {}
+        for ln in buf.getvalue().splitlines():
+            if ": " in ln:
+                k, _, v = ln.partition(": ")
+                d[k.strip()] = v.strip()
+        out.append((d.get("result.line1", ""), d.get("result.line2", ""),
+                    d.get("band.x band.y band.w band.h", ""), ms, ""))
+    return out
+
+
+BACKENDS = {"v6": run_v6, "local": run_local}
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--n", type=int, default=200, help="sample size (0 = all)")
+    ap.add_argument("--backend", default="v6", choices=sorted(BACKENDS))
+    ap.add_argument("--real", action="store_true", help="use tests/real_gt.json")
+    ap.add_argument("--json", default="", help="dump per-record metrics")
+    args = ap.parse_args()
+
+    recs = load_real() if args.real else load_records(args.n)
+    if not recs:
+        print("no records", file=sys.stderr)
+        return 2
+
+    results = BACKENDS[args.backend](recs)
+    totals = dict(fmt=0, c1=0, c2=0, ex1=0, ex2=0, chk4=0, chk5=0)
+    rows = []
+    for r, (l1, l2, band, ms, err) in zip(recs, results):
+        gt1, gt2 = r["line1"], r["line2"]
+        fmt = _fmt_ok(l1, l2)
+        cc1 = sum(a == b for a, b in zip(l1, gt1))
+        cc2 = sum(a == b for a, b in zip(l2, gt2))
+        n4, c5 = _checks(l2)
+        totals["fmt"] += fmt
+        totals["c1"] += cc1
+        totals["c2"] += cc2
+        totals["ex1"] += (l1 == gt1)
+        totals["ex2"] += (l2 == gt2)
+        totals["chk4"] += (n4 == 4)
+        totals["chk5"] += (n4 == 4 and c5)
+        rows.append(dict(id=r["id"], fmt=bool(fmt), l1=l1, l2=l2, cc1=cc1,
+                         cc2=cc2, ex1=l1 == gt1, ex2=l2 == gt2, chk4=n4,
+                         chk5=bool(c5), ms=round(ms, 1), err=err))
+
+    n = len(recs)
+    dt = sum(r["ms"] for r in rows) / 1000.0
+    print(f"backend={args.backend}  n={n}  ({dt:.1f}s, {dt / n * 1000:.0f} ms/img)")
+    print(f"  fmt  : {totals['fmt']:4d}/{n}")
+    print(f"  L1   : {totals['c1'] / (n * LINE_LEN) * 100:5.2f}%  exact {totals['ex1']:4d}/{n}")
+    print(f"  L2   : {totals['c2'] / (n * LINE_LEN) * 100:5.2f}%  exact {totals['ex2']:4d}/{n}")
+    print(f"  chk4 : {totals['chk4']:4d}/{n} ({totals['chk4'] / n * 100:.1f}%)  "
+          f"chk5: {totals['chk5']:4d}/{n} ({totals['chk5'] / n * 100:.1f}%)")
+    if args.json:
+        json.dump(rows, open(args.json, "w"), indent=1)
+        print(f"  -> {args.json}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
