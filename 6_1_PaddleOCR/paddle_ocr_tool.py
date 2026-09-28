@@ -1,24 +1,40 @@
 #!/usr/bin/env python3
-"""paddle_ocr_tool -- PaddleOCR-backed MRZ recognizer.
+"""paddle_ocr_tool -- MRZ recognizer with two interchangeable back-ends.
 
-Tries to use the real PaddleOCR engine (PaddleOCR + onnxruntime) when
-it's installed in the active Python environment; falls back to
-paddle_local.py (pure-local Tesseract OCR-B based decoder) if
-paddleocr / onnxruntime are missing. Both paths emit the same stdout
-contract so the GUI can compare OCR back-ends side-by-side:
+Back-end selection is explicit (env MRZ_BACKEND, default "local"):
 
-    result.ok      : OK | <error message>
-    result.line1   : 44-char line (or empty)
-    result.line2   : 44-char line (or empty)
-    result.conf1   : 0..100
-    result.conf2   : 0..100
+  * local     : paddle_local.py — pure-local Tesseract OCR-B decoder.
+                Empirically more accurate on dense MRZ strips than the
+                PP-OCR det+rec path, which frequently collapses both
+                MRZ rows into a single region and loses Line 1.
+  * paddleocr : PaddleOCR det+rec (needs paddleocr + onnxruntime in the
+                active environment). Kept as a comparison back-end; it
+                is also used automatically when "local" yields nothing.
+
+Both paths emit the same stdout contract so the GUI can compare OCR
+back-ends side-by-side:
+
+    result.backend  : local | paddleocr
+    result.ok       : OK | unreadable | <error message>
+    result.line1    : 44-char line (or empty)
+    result.line2    : 44-char line (or empty)
+    result.conf1    : 0..100
+    result.conf2    : 0..100
     band.x band.y band.w band.h : "x y w h" in image coordinates
+
+Confidence comes from the selected back-end (tesseract TSV per-line
+means for "local", recognition scores for "paddleocr"); this file no
+longer overwrites it with a constant character-legality rate.
 """
 from __future__ import annotations
 import os
 import sys
 import time
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import paddle_local  # noqa: E402
 
 LINE_LEN = 44
 DOC_TYPES = set("PIVACDR")
@@ -35,7 +51,7 @@ def _have_paddleocr():
 
 
 def _get_ocr_paddle():
-    """Lazy-init PaddleOCR (production path)."""
+    """Lazy-init PaddleOCR (comparison path)."""
     from paddleocr import PaddleOCR
     return PaddleOCR(
         lang="en",
@@ -47,49 +63,13 @@ def _get_ocr_paddle():
     )
 
 
-def _find_mrz_band(gray):
-    """Locate the two MRZ lines in the bottom third of the image."""
-    import numpy as np
-    H, W = gray.shape
-    bottom_start = int(H * 0.66)
-    sub = gray[bottom_start:, :]
-    rd = (sub < 128).sum(axis=1)
-    rows = np.where(rd > W * 0.10)[0]
-    if rows.size < 4:
-        return int(H * 0.88), H
-    groups = []
-    start = prev = int(rows[0])
-    for r in rows[1:]:
-        r = int(r)
-        if r - prev <= 4:
-            prev = r
-        else:
-            groups.append((start, prev))
-            start = prev = r
-    groups.append((start, prev))
-    abs_groups = [(g[0] + bottom_start, g[1] + bottom_start)
-                  for g in groups if g[1] - g[0] >= 10]
-    if len(abs_groups) >= 2:
-        for i in range(len(abs_groups) - 1, 0, -1):
-            top, bot = abs_groups[i - 1], abs_groups[i]
-            if bot[0] - top[1] <= 30:
-                return top[0], bot[1]
-    if abs_groups:
-        return abs_groups[-1][0], abs_groups[-1][1]
-    return int(H * 0.88), H
-
-
-def _norm_line(s: str):
+def _pad_line(s: str) -> str:
     """Pad/trim a recognised line to exactly 44 ICAO chars."""
-    allowed = set("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<")
     s = (s or "").strip().upper()
-    s = "".join(c for c in s if c in allowed)
+    s = "".join(c for c in s if c in paddle_local.ICAO)
     if len(s) < LINE_LEN:
         s = s + "<" * (LINE_LEN - len(s))
-    s = s[:LINE_LEN]
-    in_set = sum(1 for c in s if c in allowed)
-    conf = min(100, int(100.0 * in_set / LINE_LEN))
-    return s, conf
+    return s[:LINE_LEN]
 
 
 def _predict_paddle(ocr, np_img):
@@ -110,19 +90,20 @@ def _pick_l1_l2(texts, scores):
     """
     if not texts:
         return "", "", 0, 0
-    # Combine (text, score), keep the two longest lines.
     pairs = [(t.strip(), float(s)) for t, s in zip(texts, scores)]
     pairs.sort(key=lambda p: len(p[0]), reverse=True)
     chosen = pairs[:2]
     if len(chosen) < 2:
         chosen.append(("", 0.0))
-    # Try to identify which is line1 (doc-type prefix) vs line2 (digit prefix)
     a, sa = chosen[0]
     b, sb = chosen[1]
+
     def is_l1(s):
-        return bool(s) and s[0] in "PIVACDR"
+        return bool(s) and s[0] in DOC_TYPES
+
     def is_l2(s):
         return bool(s) and (s[0].isdigit() or s[0] == "L")
+
     if is_l1(a) and is_l2(b):
         l1, sl1, l2, sl2 = a, sa, b, sb
     elif is_l1(b) and is_l2(a):
@@ -135,13 +116,12 @@ def _pick_l1_l2(texts, scores):
 
 
 def _run_paddle(img_path: Path):
-    """Production path: real PaddleOCR + onnxruntime.
+    """PaddleOCR det+rec path. Returns (l1, l2, c1, c2, band_box, err).
 
     PP-OCRv6's text detector frequently collapses both MRZ lines into
-    one (line2 only) on dense strips. We try multiple PSM-style splits:
+    one (line2 only) on dense strips. We try multiple splits:
     1. 3x whole-image det (best on strips where line1 has many '<' pads)
     2. 2x band split top/bottom (catches line1 cleanly)
-    3. Whole band 2x single pass (line2 fallback)
     The l1/l2 picking heuristic then sorts the union into the right
     slots by doc-type prefix.
     """
@@ -150,7 +130,8 @@ def _run_paddle(img_path: Path):
     img = Image.open(img_path).convert("RGB")
     gray = np.asarray(img.convert("L"))
     H, W = gray.shape
-    y0, y1 = _find_mrz_band(gray)
+    y0, y1 = paddle_local._find_mrz_band(gray)
+    band_box = f"0 {y0} {W} {y1 - y0}"
     band = img.crop((0, y0, W, y1))
 
     ocr = _get_ocr_paddle()
@@ -181,81 +162,15 @@ def _run_paddle(img_path: Path):
         if len(merged_texts) > n_lines:
             texts, scores = merged_texts, merged_scores
 
-    return _pick_l1_l2(texts, scores), (y0, y1, W, H)
+    l1, l2, c1, c2 = _pick_l1_l2(texts, scores)
+    return l1, l2, c1, c2, band_box, ""
 
 
 def _run_local(img_path: Path):
-    """Fallback path: pure-local Tesseract OCR-B based paddle_local.py."""
-    # Lazy import — paddle_local.py is in the same directory.
-    sys.path.insert(0, str(img_path.parent.parent / "6_1_PaddleOCR"))
-    import paddle_local
-    # Read stdout-style result by invoking paddle_local.main() in a
-    # subprocess-less way: re-use the helpers directly.
-    import numpy as np
-    from PIL import Image
-    img = Image.open(img_path).convert("RGB")
-    gray = np.asarray(img.convert("L"))
-    H, W = gray.shape
-    y0, y1 = paddle_local._find_band(gray)
-    crop = img.resize((W * 3, H * 3), Image.LANCZOS)
-    # paddle_local._tesseract_band expects a file path; emit through a
-    # tempfile in a subdir visible to the tesseract subprocess.
-    import tempfile, subprocess
-    with tempfile.TemporaryDirectory(prefix="/Users/zhouyong/.paddle_ocr_tool_tmp_") as td:
-        bp = Path(td) / "band.png"
-        crop.save(bp)
-        text, conf, rc = paddle_local._tesseract_band(bp, td)
-        if rc != 0:
-            return ("", "", 0, 0), (y0, y1, W, H)
-        # Fallback to PSM 11 when PSM 6 returned too few lines.
-        if len([ln for ln in text.splitlines() if ln.strip()]) < 2:
-            r2 = subprocess.run(
-                ["tesseract", str(bp), str(Path(td) / "tess_out_psm11"),
-                 "--psm", "11", "-l", "ocrb",
-                 "-c", "tessedit_char_whitelist="
-                      "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<"],
-                capture_output=True, timeout=20,
-            )
-            if r2.returncode == 0:
-                base = Path(str(Path(td) / "tess_out_psm11") + ".txt")
-                if base.exists():
-                    text_psm11 = base.read_text()
-                    if len([ln for ln in text_psm11.splitlines() if ln.strip()]) > \
-                       len([ln for ln in text.splitlines() if ln.strip()]):
-                        text = text_psm11
-        # Use paddle_local._norm_two_lines semantics by re-implementing
-        # here (it's package-private).
-        allowed = set("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<")
-        raw_lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
-        raw_lines.sort(key=len, reverse=True)
-        a = raw_lines[0] if raw_lines else ""
-        b = raw_lines[1] if len(raw_lines) > 1 else ""
-        def is_l1(s):
-            return bool(s) and s[0] in "PIVACDR" and len(s) > 1 and s[1] == "<"
-        def is_l2(s):
-            return bool(s) and (s[0].isdigit() or s[0] == "L")
-        if is_l1(b) and is_l2(a):
-            l1, l2 = b, a
-        elif is_l1(a) and is_l2(b):
-            l1, l2 = a, b
-        else:
-            l1, l2 = a, b
-        l1 = "".join(c if c in allowed else "<" for c in l1.upper())
-        l2 = "".join(c if c in allowed else "<" for c in l2.upper())
-        if len(l1) < LINE_LEN:
-            l1 = l1 + "<" * (LINE_LEN - len(l1))
-        l1 = l1[:LINE_LEN]
-        if l1 and l1[1] != "<":
-            l1 = l1[0] + "<" + l1[2:]
-        if len(l2) < LINE_LEN:
-            l2 = l2 + "<" * (LINE_LEN - len(l2))
-        l2 = l2[:LINE_LEN]
-        # Slot-enforce (alpha/digit)
-        from paddle_local import (_enforce_slot, _LINE1_ALPHA, _LINE1_DIGIT,
-                                  _LINE2_ALPHA, _LINE2_DIGIT)
-        l1 = _enforce_slot(l1, _LINE1_ALPHA, _LINE1_DIGIT)
-        l2 = _enforce_slot(l2, _LINE2_ALPHA, _LINE2_DIGIT)
-        return (l1, l2, conf, conf), (y0, y1, W, H)
+    """Tesseract OCR-B path (paddle_local.decode_image)."""
+    d = paddle_local.decode_image(str(img_path))
+    return (d["line1"], d["line2"], d["conf1"], d["conf2"],
+            d["band_box"], d["err"])
 
 
 def main(argv):
@@ -268,33 +183,36 @@ def main(argv):
         return 2
 
     t0 = time.perf_counter()
-    # Primary path: paddle_local (pure-local tesseract OCR-B based
-    # decoder). It's empirically more accurate on dense MRZ strips
-    # than PP-OCRv6's text detector, which frequently collapses
-    # both MRZ lines into a single region and loses line1 entirely.
-    # If paddle_local isn't importable (rare), we fall back to a
-    # paddleocr-only pass.
-    backend = "paddle_local"
-    (line1, line2, conf1, conf2), (y0, y1, W, H) = _run_local(img_path)
-    if not (line1 or line2) and _have_paddleocr():
-        # paddle_local produced nothing usable — try paddleocr as
-        # last-resort.
+    backend = os.environ.get("MRZ_BACKEND", "local").lower()
+    if backend not in ("local", "paddleocr"):
+        backend = "local"
+    err = ""
+    if backend == "local":
+        line1, line2, conf1, conf2, band_box, err = _run_local(img_path)
+        if not (line1 or line2) and _have_paddleocr():
+            # local produced nothing usable — last-resort paddleocr pass.
+            try:
+                line1, line2, conf1, conf2, band_box, err = \
+                    _run_paddle(img_path)
+                backend = "paddleocr"
+            except Exception as e:
+                err = f"{backend} error: {e}"
+    else:
         try:
-            (line1, line2, conf1, conf2), _ = _run_paddle(img_path)
-            backend = "paddleocr"
+            line1, line2, conf1, conf2, band_box, err = _run_paddle(img_path)
         except Exception as e:
-            print(f"result.ok       : {backend} error: {e}",
-                  file=sys.stderr)
-            return 1
+            line1 = line2 = band_box = ""
+            conf1 = conf2 = 0
+            err = f"{backend} error: {e}"
+        if not (line1 or line2):
+            line1, line2, conf1, conf2, band_box, err2 = _run_local(img_path)
+            err = err or err2
+            backend = "local"
 
-    line1, conf1 = _norm_line(line1)
-    line2, conf2 = _norm_line(line2)
-
-    band_box = f"0 {y0} {W} {y1 - y0}"
+    line1, line2 = _pad_line(line1), _pad_line(line2)
     l1_real = sum(1 for c in line1 if c not in "<")
     l2_real = sum(1 for c in line2 if c not in "<")
-    ok = (len(line1) == LINE_LEN and len(line2) == LINE_LEN
-          and line1[0] in DOC_TYPES and line1[1] == "<"
+    ok = (line1[0] in DOC_TYPES and line1[1] == "<"
           and l1_real >= 5 and l2_real >= 5)
 
     print(f"result.backend  : {backend}")
@@ -304,6 +222,8 @@ def main(argv):
     print(f"result.conf1    : {conf1}")
     print(f"result.conf2    : {conf2}")
     print(f"band.x band.y band.w band.h : {band_box}")
+    if err:
+        print(f"paddle_ocr_tool: {err}", file=sys.stderr)
     return 0 if ok else 1
 
 
