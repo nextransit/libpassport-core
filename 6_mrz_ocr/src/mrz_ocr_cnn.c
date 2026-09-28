@@ -932,67 +932,260 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
         const char *tta_env = getenv("MRZ_OCR_TTA");
         int tta = (tta_env && tta_env[0] && strcmp(tta_env, "0") != 0);
 
-        for (int li = 0; li < 2; ++li) {
-            int base = (li == 0) ? lines[0].y : lines[1].y;
-            int line_h = (li == 0) ? lines[0].h : lines[1].h;
-            if (line_h <= 0) continue;
-            line_pixels = mrz_scratch_line((size_t)bw * line_h);
-            if (!line_pixels) { status = MRZ_OCR_ERR_LOAD; goto cleanup; }
-            for (int y = 0; y < line_h; ++y)
-                memcpy(line_pixels + y * bw, band_bin + (base + y) * bw, bw);
+        /* Step 2 fork:
+         *   default (sequential)  -> single loop, cache-hot
+         *   MRZ_OCR_PAR=1         -> serialise resample, then
+         *                            fork a worker for line 1's
+         *                            CNN forward while the main
+         *                            thread runs line 0.
+         * The sequential path keeps the original cache-hot
+         * pattern (resample -> cnn -> decode back-to-back) so
+         * the L1 cache stays warm on the just-written glyph
+         * buffer; splitting resample and cnn into separate
+         * passes was measurably slower on A53 (~+5 ms p50). */
+        const char *par_env = getenv("MRZ_OCR_PAR");
+        int do_par = par_env && par_env[0] && strcmp(par_env, "0") != 0;
+        if (do_par) {
+            /* Workspace for line 0/1 (chars from segmenter, line
+             * pixels, base offset, line height). */
+            static mrz_ocr_rect_t chars0[44], chars1[44];
+            mrz_ocr_rect_t *chars_l[2]    = { chars0, chars1 };
+            int nchars_l[2]                = { 0, 0 };
+            int line_h_l[2]                = { 0, 0 };
+            int base_l[2]                  = { 0, 0 };
+            uint8_t *line_pixels_l[2]     = { NULL, NULL };
+            /* Per-line glyph buffers live in disjoint scratchpad
+             * halves.  Save the addresses in static globals so
+             * the worker thread + main thread can both see them. */
+            static float (*glyphs0_keep)[CNN_IN_H][CNN_IN_W];
+            static float (*glyphs1_keep)[CNN_IN_H][CNN_IN_W];
 
-            mrz_ocr_rect_t chars[44];
-            /* Primary: fit the 44-cell pitch grid (robust to spurious
-             * or merged ink runs). Fallback: one window per run. */
-            int nchars = segment_line_grid(line_pixels, bw, line_h, chars, 44);
-            if (nchars <= 0)
-                nchars = segment_line_cnn(line_pixels, bw, line_h, chars, 44);
-            if (nchars < 30) {
-                /* scratchpad: no free */ line_pixels = NULL;
-                status = MRZ_OCR_ERR_BAD_LINES; goto cleanup;
-            }
-            if (nchars > 44) nchars = 44;
-            /* pre-extract each glyph from the deskewed BAND grayscale */
-            for (int c = 0; c < nchars; ++c) {
-                resample_char_gray(band_gray, bw, bh,
-                                   chars[c].x, base + chars[c].y,
-                                   chars[c].w, chars[c].h,
-                                   NULL, 0, glyphs[c]);
-            }
-            if (tm && tm[0] && strcmp(tm, "0")) { clock_gettime(CLOCK_MONOTONIC, &_t1); _ms_resample += (_t1.tv_sec-_t0.tv_sec)*1e3+(_t1.tv_nsec-_t0.tv_nsec)/1e6; _t0=_t1; }
+            /* Pass 1: serialise the resample step into the
+             * per-half glyphs_keep buffers so the second pass
+             * below doesn't redo the work. */
+            for (int li = 0; li < 2; ++li) {
+                mrz_scratch_select_half(li);
+                base_l[li]   = (li == 0) ? lines[0].y : lines[1].y;
+                line_h_l[li] = (li == 0) ? lines[0].h : lines[1].h;
+                if (line_h_l[li] <= 0) continue;
+                line_pixels_l[li] = mrz_scratch_line((size_t)bw * line_h_l[li]);
+                if (!line_pixels_l[li]) { status = MRZ_OCR_ERR_LOAD; goto cleanup; }
+                for (int y = 0; y < line_h_l[li]; ++y)
+                    memcpy(line_pixels_l[li] + y * bw,
+                           band_bin + (base_l[li] + y) * bw, bw);
 
-            cnn_row_features_batch(net, glyphs, nchars, feats);
-            cnn_fc_batch(net, feats, nchars, probs);
-            if (tta) {
-                /* +-1px horizontal shift TTA: average the softmax
-                 * outputs over three window placements. */
+                int nchars = segment_line_grid(line_pixels_l[li], bw,
+                                              line_h_l[li], chars_l[li], 44);
+                if (nchars <= 0)
+                    nchars = segment_line_cnn(line_pixels_l[li], bw,
+                                              line_h_l[li], chars_l[li], 44);
+                if (nchars < 30) {
+                    status = MRZ_OCR_ERR_BAD_LINES; goto cleanup;
+                }
+                if (nchars > 44) nchars = 44;
+                nchars_l[li] = nchars;
+                float (*glyphs_l)[CNN_IN_H][CNN_IN_W] =
+                    (float (*)[CNN_IN_H][CNN_IN_W])mrz_scratch_glyphs(44 * (CNN_IN_H * CNN_IN_W));
+                if (li == 0) glyphs0_keep = glyphs_l;
+                else          glyphs1_keep = glyphs_l;
                 for (int c = 0; c < nchars; ++c)
-                    for (int o = 0; o < CNN_OUT; ++o) probs_tta[c * CNN_OUT + o] = probs[c * CNN_OUT + o];
-                for (int sh = -1; sh <= 1; sh += 2) {
-                    for (int c = 0; c < nchars; ++c) {
-                        resample_char_gray(band_gray, bw, bh,
-                                           chars[c].x + sh, base + chars[c].y,
-                                           chars[c].w, chars[c].h,
-                                           NULL, 0, glyphs_tta[c]);
+                    resample_char_gray(band_gray, bw, bh,
+                                       chars_l[li][c].x,
+                                       base_l[li] + chars_l[li][c].y,
+                                       chars_l[li][c].w, chars_l[li][c].h,
+                                       NULL, 0, glyphs_l[c]);
+            }
+            if (tm && tm[0] && strcmp(tm, "0")) {
+                clock_gettime(CLOCK_MONOTONIC, &_t1);
+                _ms_resample += (_t1.tv_sec-_t0.tv_sec)*1e3 + (_t1.tv_nsec-_t0.tv_nsec)/1e6;
+                _t0 = _t1;
+            }
+
+            /* Allocate the per-line feat/prob buffers.  Glyphs
+             * are already populated above; we still need
+             * glyphs_tta for TTA on each line. */
+            mrz_scratch_select_half(0);
+            float (*glyphs0_tta)[CNN_IN_H][CNN_IN_W] =
+                (float (*)[CNN_IN_H][CNN_IN_W])mrz_scratch_glyphs(44 * (CNN_IN_H * CNN_IN_W));
+            float *feats0     = mrz_scratch_feats(44 * CNN_FLAT);
+            float *probs0     = mrz_scratch_probs(44 * CNN_OUT);
+            float *probs0_tta = mrz_scratch_probs(44 * CNN_OUT);
+            mrz_scratch_select_half(1);
+            float (*glyphs1_tta)[CNN_IN_H][CNN_IN_W] =
+                (float (*)[CNN_IN_H][CNN_IN_W])mrz_scratch_glyphs(44 * (CNN_IN_H * CNN_IN_W));
+            float *feats1     = mrz_scratch_feats(44 * CNN_FLAT);
+            float *probs1     = mrz_scratch_probs(44 * CNN_OUT);
+            float *probs1_tta = mrz_scratch_probs(44 * CNN_OUT);
+            if (!glyphs0_tta || !feats0 || !probs0 || !probs0_tta ||
+                !glyphs1_tta || !feats1 || !probs1 || !probs1_tta) {
+                status = MRZ_OCR_ERR_LOAD; goto cleanup;
+            }
+
+            /* Pass 1 above already populated glyphs0_keep and
+             * glyphs1_keep, so we skip the original wasteful
+             * re-resample pass. */
+            pthread_t worker;
+            mrz_line1_job_t job;
+            int worker_spawned = 0;
+            if (nchars_l[1] >= 30) {
+                job.net    = net;
+                job.glyphs = glyphs1_keep;
+                job.nchars = nchars_l[1];
+                job.feats  = feats1;
+                job.probs  = probs1;
+                if (pthread_create(&worker, NULL, mrz_line1_worker, &job) == 0) {
+                    worker_spawned = 1;
+                } else {
+                    /* Fallback: in-line. */
+                    cnn_row_features_batch(net, glyphs1_keep, nchars_l[1], feats1);
+                    cnn_fc_batch(net, feats1, nchars_l[1], probs1);
+                }
+            }
+
+            /* Line 0 forward (and TTA) on the main thread. */
+            if (nchars_l[0] >= 30) {
+                cnn_row_features_batch(net, glyphs0_keep, nchars_l[0], feats0);
+                cnn_fc_batch(net, feats0, nchars_l[0], probs0);
+                if (tta) {
+                    for (int c = 0; c < nchars_l[0]; ++c)
+                        for (int o = 0; o < CNN_OUT; ++o)
+                            probs0_tta[c * CNN_OUT + o] = probs0[c * CNN_OUT + o];
+                    for (int sh = -1; sh <= 1; sh += 2) {
+                        for (int c = 0; c < nchars_l[0]; ++c)
+                            resample_char_gray(band_gray, bw, bh,
+                                               chars_l[0][c].x + sh,
+                                               base_l[0] + chars_l[0][c].y,
+                                               chars_l[0][c].w, chars_l[0][c].h,
+                                               NULL, 0, glyphs0_tta[c]);
+                        cnn_row_features_batch(net, glyphs0_tta, nchars_l[0], feats0);
+                        cnn_fc_batch(net, feats0, nchars_l[0], probs0);
+                        for (int c = 0; c < nchars_l[0]; ++c)
+                            for (int o = 0; o < CNN_OUT; ++o)
+                                probs0_tta[c * CNN_OUT + o] += probs0[c * CNN_OUT + o];
                     }
-                    cnn_row_features_batch(net, glyphs_tta, nchars, feats);
-                    cnn_fc_batch(net, feats, nchars, probs);
+                    for (int c = 0; c < nchars_l[0]; ++c)
+                        for (int o = 0; o < CNN_OUT; ++o)
+                            probs0[c * CNN_OUT + o] = probs0_tta[c * CNN_OUT + o] / 3.0f;
+                }
+                decode_row((const float (*)[CNN_IN_H][CNN_IN_W])glyphs0_keep,
+                           nchars_l[0], 0, out->line1, &out->line1_avg_conf, probs0);
+                out->line1_len = nchars_l[0];
+                mrz_ocr_dump_glyphs("img", 0, glyphs0_keep, nchars_l[0], chars_l[0]);
+            }
+            if (tm && tm[0] && strcmp(tm, "0")) {
+                clock_gettime(CLOCK_MONOTONIC, &_t1);
+                _ms_decode += (_t1.tv_sec-_t0.tv_sec)*1e3 + (_t1.tv_nsec-_t0.tv_nsec)/1e6;
+                _t0 = _t1;
+            }
+
+            /* Join the line-1 worker, then do its TTA + decode. */
+            if (worker_spawned) {
+                pthread_join(worker, NULL);
+            } else if (nchars_l[1] >= 30) {
+                cnn_row_features_batch(net, glyphs1_keep, nchars_l[1], feats1);
+                cnn_fc_batch(net, feats1, nchars_l[1], probs1);
+            }
+            if (nchars_l[1] >= 30) {
+                if (tta) {
+                    for (int c = 0; c < nchars_l[1]; ++c)
+                        for (int o = 0; o < CNN_OUT; ++o)
+                            probs1_tta[c * CNN_OUT + o] = probs1[c * CNN_OUT + o];
+                    for (int sh = -1; sh <= 1; sh += 2) {
+                        for (int c = 0; c < nchars_l[1]; ++c)
+                            resample_char_gray(band_gray, bw, bh,
+                                               chars_l[1][c].x + sh,
+                                               base_l[1] + chars_l[1][c].y,
+                                               chars_l[1][c].w, chars_l[1][c].h,
+                                               NULL, 0, glyphs1_tta[c]);
+                        cnn_row_features_batch(net, glyphs1_tta, nchars_l[1], feats1);
+                        cnn_fc_batch(net, feats1, nchars_l[1], probs1);
+                        for (int c = 0; c < nchars_l[1]; ++c)
+                            for (int o = 0; o < CNN_OUT; ++o)
+                                probs1_tta[c * CNN_OUT + o] += probs1[c * CNN_OUT + o];
+                    }
+                    for (int c = 0; c < nchars_l[1]; ++c)
+                        for (int o = 0; o < CNN_OUT; ++o)
+                            probs1[c * CNN_OUT + o] = probs1_tta[c * CNN_OUT + o] / 3.0f;
+                }
+                decode_row((const float (*)[CNN_IN_H][CNN_IN_W])glyphs1_keep,
+                           nchars_l[1], 1, out->line2, &out->line2_avg_conf, probs1);
+                out->line2_len = nchars_l[1];
+                mrz_ocr_dump_glyphs("img", 1, glyphs1_keep, nchars_l[1], chars_l[1]);
+            }
+            if (tm && tm[0] && strcmp(tm, "0")) {
+                clock_gettime(CLOCK_MONOTONIC, &_t1);
+                _ms_decode += (_t1.tv_sec-_t0.tv_sec)*1e3 + (_t1.tv_nsec-_t0.tv_nsec)/1e6;
+                _t0 = _t1;
+            }
+        } else {
+            /* Sequential: cache-hot single loop.  Resample,
+             * cnn forward, TTA, decode back-to-back per line so
+             * the just-written glyph buffer is still in L1 when
+             * cnn_row_features_batch reads it. */
+            for (int li = 0; li < 2; ++li) {
+                int base = (li == 0) ? lines[0].y : lines[1].y;
+                int line_h = (li == 0) ? lines[0].h : lines[1].h;
+                if (line_h <= 0) continue;
+                mrz_scratch_select_half(li);
+                line_pixels = mrz_scratch_line((size_t)bw * line_h);
+                if (!line_pixels) { status = MRZ_OCR_ERR_LOAD; goto cleanup; }
+                for (int y = 0; y < line_h; ++y)
+                    memcpy(line_pixels + y * bw, band_bin + (base + y) * bw, bw);
+
+                mrz_ocr_rect_t chars[44];
+                int nchars = segment_line_grid(line_pixels, bw, line_h, chars, 44);
+                if (nchars <= 0)
+                    nchars = segment_line_cnn(line_pixels, bw, line_h, chars, 44);
+                if (nchars < 30) {
+                    line_pixels = NULL;
+                    status = MRZ_OCR_ERR_BAD_LINES; goto cleanup;
+                }
+                if (nchars > 44) nchars = 44;
+                for (int c = 0; c < nchars; ++c)
+                    resample_char_gray(band_gray, bw, bh,
+                                       chars[c].x, base + chars[c].y,
+                                       chars[c].w, chars[c].h,
+                                       NULL, 0, glyphs[c]);
+                if (tm && tm[0] && strcmp(tm, "0")) {
+                    clock_gettime(CLOCK_MONOTONIC, &_t1);
+                    _ms_resample += (_t1.tv_sec-_t0.tv_sec)*1e3 + (_t1.tv_nsec-_t0.tv_nsec)/1e6;
+                    _t0 = _t1;
+                }
+
+                cnn_row_features_batch(net, glyphs, nchars, feats);
+                cnn_fc_batch(net, feats, nchars, probs);
+                if (tta) {
+                    for (int c = 0; c < nchars; ++c)
+                        for (int o = 0; o < CNN_OUT; ++o) probs_tta[c * CNN_OUT + o] = probs[c * CNN_OUT + o];
+                    for (int sh = -1; sh <= 1; sh += 2) {
+                        for (int c = 0; c < nchars; ++c)
+                            resample_char_gray(band_gray, bw, bh,
+                                               chars[c].x + sh, base + chars[c].y,
+                                               chars[c].w, chars[c].h,
+                                               NULL, 0, glyphs_tta[c]);
+                        cnn_row_features_batch(net, glyphs_tta, nchars, feats);
+                        cnn_fc_batch(net, feats, nchars, probs);
+                        for (int c = 0; c < nchars; ++c)
+                            for (int o = 0; o < CNN_OUT; ++o)
+                                probs_tta[c * CNN_OUT + o] += probs[c * CNN_OUT + o];
+                    }
                     for (int c = 0; c < nchars; ++c)
                         for (int o = 0; o < CNN_OUT; ++o)
-                            probs_tta[c * CNN_OUT + o] += probs[c * CNN_OUT + o];
+                            probs[c * CNN_OUT + o] = probs_tta[c * CNN_OUT + o] / 3.0f;
                 }
-                for (int c = 0; c < nchars; ++c)
-                    for (int o = 0; o < CNN_OUT; ++o)
-                        probs[c * CNN_OUT + o] = probs_tta[c * CNN_OUT + o] / 3.0f;
-            }
 
-            char *dest = (li == 0) ? out->line1 : out->line2;
-            int *conf = (li == 0) ? &out->line1_avg_conf : &out->line2_avg_conf;
-            decode_row((const float (*)[CNN_IN_H][CNN_IN_W])glyphs, nchars, li, dest, conf, probs);
-            if (li == 0) out->line1_len = nchars; else out->line2_len = nchars;
-            mrz_ocr_dump_glyphs("img", li, glyphs, nchars, chars);
-            /* scratchpad: no free */ line_pixels = NULL;
-            if (tm && tm[0] && strcmp(tm, "0")) { clock_gettime(CLOCK_MONOTONIC, &_t1); _ms_decode += (_t1.tv_sec-_t0.tv_sec)*1e3+(_t1.tv_nsec-_t0.tv_nsec)/1e6; _t0=_t1; }
+                char *dest = (li == 0) ? out->line1 : out->line2;
+                int *conf = (li == 0) ? &out->line1_avg_conf : &out->line2_avg_conf;
+                decode_row((const float (*)[CNN_IN_H][CNN_IN_W])glyphs, nchars, li, dest, conf, probs);
+                if (li == 0) out->line1_len = nchars; else out->line2_len = nchars;
+                mrz_ocr_dump_glyphs("img", li, glyphs, nchars, chars);
+                line_pixels = NULL;
+                if (tm && tm[0] && strcmp(tm, "0")) {
+                    clock_gettime(CLOCK_MONOTONIC, &_t1);
+                    _ms_decode += (_t1.tv_sec-_t0.tv_sec)*1e3 + (_t1.tv_nsec-_t0.tv_nsec)/1e6;
+                    _t0 = _t1;
+                }
+            }
         }
     }
 
