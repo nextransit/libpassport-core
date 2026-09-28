@@ -709,16 +709,26 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
  * 64-byte aligned so they sit on cache-line boundaries
  * (helpful for the cnn_t weight matrix read pattern).
  */
-#define MRZ_SCRATCH_BYTES  (4u * 1024u * 1024u)
+/* 8 MB scratchpad split into two 4 MB halves (Step 2).  Line 0
+ * uses half 0; line 1 uses half 1.  Even on the current
+ * sequential path this gives the bump allocator disjoint
+ * regions so adding pthread-based dual-line parallelism
+ * later is just a one-line toggle (MRZ_OCR_PAR=1). */
+#define MRZ_SCRATCH_BYTES  (8u * 1024u * 1024u)
 static uint8_t  g_mrz_scratch[MRZ_SCRATCH_BYTES]
                 __attribute__((aligned(64)));
-static size_t   g_mrz_scratch_off = 0;
+/* g_mrz_scratch_off removed (Step 2): per-half offsets
+ * g_mrz_scratch_off0/1 are tracked below. */
+static int      g_mrz_scratch_active = 0;
+static size_t   g_mrz_scratch_off0 = 0;
+static size_t   g_mrz_scratch_off1 = 0;
 static pthread_once_t g_mrz_scratch_once = PTHREAD_ONCE_INIT;
 static int      g_mrz_scratch_cnn_ready = 0;
 static cnn_t    g_mrz_scratch_cnn_template;  /* one-shot weights cache */
 
 static void mrz_scratch_init_once(void) {
-    g_mrz_scratch_off = 0;
+    g_mrz_scratch_off0 = 0;
+    g_mrz_scratch_off1 = 0;
     if (!g_mrz_scratch_cnn_ready) {
         cnn_default_init(&g_mrz_scratch_cnn_template);
         g_mrz_scratch_cnn_ready = 1;
@@ -726,17 +736,58 @@ static void mrz_scratch_init_once(void) {
 }
 
 /* 64-byte aligned bump allocator. */
+#define MRZ_SCRATCH_HALF_BYTES (MRZ_SCRATCH_BYTES / 2u)
+
+
+void mrz_scratch_select_half(int half) { g_mrz_scratch_active = half; }
+static void *mrz_scratch_active_base(void) {
+    return g_mrz_scratch + (g_mrz_scratch_active == 0 ? 0 : MRZ_SCRATCH_HALF_BYTES);
+}
+static size_t mrz_scratch_active_off(void) {
+    return g_mrz_scratch_active == 0 ? g_mrz_scratch_off0 : g_mrz_scratch_off1;
+}
+static void mrz_scratch_set_active_off(size_t off) {
+    if (g_mrz_scratch_active == 0) g_mrz_scratch_off0 = off;
+    else                          g_mrz_scratch_off1 = off;
+}
+
 static void *mrz_scratch_alloc(size_t need) {
     pthread_once(&g_mrz_scratch_once, mrz_scratch_init_once);
     size_t aligned = (need + 63u) & ~(size_t)63u;
-    if (g_mrz_scratch_off + aligned > MRZ_SCRATCH_BYTES) return NULL;
-    void *p = g_mrz_scratch + g_mrz_scratch_off;
-    g_mrz_scratch_off += aligned;
+    size_t off = mrz_scratch_active_off();
+    if (off + aligned > MRZ_SCRATCH_HALF_BYTES) return NULL;
+    void *p = mrz_scratch_active_base() + off;
+    mrz_scratch_set_active_off(off + aligned);
     return p;
 }
 
 /* Reset for a fresh recogniser call.  O(1); no system calls. */
-static void mrz_scratch_reset(void) { g_mrz_scratch_off = 0; }
+static void mrz_scratch_reset(void) {
+    g_mrz_scratch_off0 = 0;
+    g_mrz_scratch_off1 = 0;
+    g_mrz_scratch_active = 0;
+}
+
+/* Per-line worker context (Step 2: reserved for the future
+ * dual-line pthread parallelism).  When MRZ_OCR_PAR=1, the
+ * main thread spawns one worker that runs the CNN forward
+ * for line 1 in parallel with the main thread doing line 0.
+ * Per-line state lives in disjoint scratchpad halves so the
+ * bump allocator never aliases across threads. */
+typedef struct {
+    const cnn_t   *net;
+    float        (*glyphs)[CNN_IN_H][CNN_IN_W];
+    int            nchars;
+    float         *feats;
+    float         *probs;
+} mrz_line1_job_t;
+
+static void *mrz_line1_worker(void *arg) {
+    mrz_line1_job_t *j = (mrz_line1_job_t *)arg;
+    cnn_row_features_batch(j->net, j->glyphs, j->nchars, j->feats);
+    cnn_fc_batch(j->net, j->feats, j->nchars, j->probs);
+    return NULL;
+}
 
 /* Convenience: typed allocations for the ten safe fields. */
 static uint8_t *mrz_scratch_gray    (size_t n)              { return (uint8_t *)mrz_scratch_alloc(n); }
