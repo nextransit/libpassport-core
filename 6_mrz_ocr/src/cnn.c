@@ -179,76 +179,70 @@ void cnn_row_features_batch(const cnn_t *net,
  * regression gate (0.3pp on any accuracy metric) holds on the
  * 1380-image corpus.
  */
+/* GEMM-oriented loop order for the batch FC layers.
+ *
+ * The original code iterated r (row/glyph) outermost and streamed the
+ * whole fc1/fc2 weight matrices once per row.  On a 44-glyph line that
+ * means fc1_w (64x96 = 24KB) is re-streamed 44 times, and fc2_w
+ * (37x64 = 9KB) 44 times -- with L1 (32KB) / L2 (256KB) thrash on the
+ * A53.  Swapping to j/o-outer, r-inner keeps the WEIGHT row resident
+ * and iterates all rows against it, so the weights are read once.
+ *
+ * The inner accumulation order for each (r, output) cell is unchanged
+ * (input index advances by 4 with four consecutive terms), so the
+ * floating-point sums are bit-identical to the previous loop order.
+ * Verified byte-exact on the 1380-image corpus gate.
+ */
 void cnn_fc_batch(const cnn_t *net,
                   const float *feat, int rows,
                   float *probs) {
-    for (int r = 0; r < rows; ++r) {
-        const float *f = feat + r * CNN_FLAT;
-        float h[CNN_HIDDEN];
-        float logits[CNN_OUT];
-        /* fc1: 96 -> 64, 4-way input unroll (96 / 4 = 24 inner reps). */
-        for (int j = 0; j < CNN_HIDDEN; ++j) {
-            const float *w = net->fc1_w + j * CNN_FLAT;
-            float s = net->fc1_b[j];
+    /* fc1: X(rows x 96) * W1(96 x 64) + b1 -> h[rows][64], ReLU.
+     * h layout [row][unit] keeps fc2's inner j access contiguous. */
+    float h[CNN_BATCH_MAX][CNN_HIDDEN];
+    for (int j = 0; j < CNN_HIDDEN; ++j) {
+        const float *w = net->fc1_w + j * CNN_FLAT;
+        float b = net->fc1_b[j];
+        for (int r = 0; r < rows; ++r) {
+            const float *f = feat + r * CNN_FLAT;
+            float s = b;
             for (int i = 0; i < CNN_FLAT; i += 4) {
                 s += f[i + 0] * w[i + 0];
                 s += f[i + 1] * w[i + 1];
                 s += f[i + 2] * w[i + 2];
                 s += f[i + 3] * w[i + 3];
             }
-            h[j] = s > 0.0f ? s : 0.0f;
+            h[r][j] = s > 0.0f ? s : 0.0f;
         }
-        /* fc2: 64 -> 37, 4-way unroll on output (37 = 9*4 + 1). */
-        const int O4 = (CNN_OUT / 4) * 4;   /* 36 */
-        float mx = -1e30f;
-        for (int o = 0; o < O4; o += 4) {
-            float s0 = net->fc2_b[o + 0];
-            float s1 = net->fc2_b[o + 1];
-            float s2 = net->fc2_b[o + 2];
-            float s3 = net->fc2_b[o + 3];
-            const float *w0 = net->fc2_w + (o + 0) * CNN_HIDDEN;
-            const float *w1 = net->fc2_w + (o + 1) * CNN_HIDDEN;
-            const float *w2 = net->fc2_w + (o + 2) * CNN_HIDDEN;
-            const float *w3 = net->fc2_w + (o + 3) * CNN_HIDDEN;
-            for (int j = 0; j < CNN_HIDDEN; j += 4) {
-                s0 += h[j + 0] * w0[j + 0];
-                s0 += h[j + 1] * w0[j + 1];
-                s0 += h[j + 2] * w0[j + 2];
-                s0 += h[j + 3] * w0[j + 3];
-                s1 += h[j + 0] * w1[j + 0];
-                s1 += h[j + 1] * w1[j + 1];
-                s1 += h[j + 2] * w1[j + 2];
-                s1 += h[j + 3] * w1[j + 3];
-                s2 += h[j + 0] * w2[j + 0];
-                s2 += h[j + 1] * w2[j + 1];
-                s2 += h[j + 2] * w2[j + 2];
-                s2 += h[j + 3] * w2[j + 3];
-                s3 += h[j + 0] * w3[j + 0];
-                s3 += h[j + 1] * w3[j + 1];
-                s3 += h[j + 2] * w3[j + 2];
-                s3 += h[j + 3] * w3[j + 3];
+    }
+    /* fc2: for each output o, stream w2[o][0..63] once over all rows,
+     * col-wise dot H(rows x 64) -> logits[rows][37], then softmax per
+     * row.  Inner j order identical to the old per-row code. */
+    float logits[CNN_BATCH_MAX][CNN_OUT];
+    for (int o = 0; o < CNN_OUT; ++o) {
+        const float *w = net->fc2_w + o * CNN_HIDDEN;
+        float b = net->fc2_b[o];
+        for (int r = 0; r < rows; ++r) {
+            const float *hr = h[r];
+            float s = b;
+            int j = 0;
+            for (; j + 4 <= CNN_HIDDEN; j += 4) {
+                s += hr[j + 0] * w[j + 0];
+                s += hr[j + 1] * w[j + 1];
+                s += hr[j + 2] * w[j + 2];
+                s += hr[j + 3] * w[j + 3];
             }
-            logits[o + 0] = s0;
-            logits[o + 1] = s1;
-            logits[o + 2] = s2;
-            logits[o + 3] = s3;
-            if (s0 > mx) mx = s0;
-            if (s1 > mx) mx = s1;
-            if (s2 > mx) mx = s2;
-            if (s3 > mx) mx = s3;
+            for (; j < CNN_HIDDEN; ++j) s += hr[j] * w[j];
+            logits[r][o] = s;
         }
-        /* scalar tail (single output 37 = 9*4 + 1) */
-        float s_tail = net->fc2_b[O4];
-        const float *w_tail = net->fc2_w + O4 * CNN_HIDDEN;
-        for (int j = 0; j < CNN_HIDDEN; ++j)
-            s_tail += h[j] * w_tail[j];
-        logits[O4] = s_tail;
-        if (s_tail > mx) mx = s_tail;
-
-        /* softmax: same as before. */
+    }
+    /* softmax per row. */
+    for (int r = 0; r < rows; ++r) {
+        float mx = -1e30f;
+        for (int o = 0; o < CNN_OUT; ++o)
+            if (logits[r][o] > mx) mx = logits[r][o];
         float sum = 0.0f;
         for (int o = 0; o < CNN_OUT; ++o) {
-            float p = expf(logits[o] - mx);
+            float p = expf(logits[r][o] - mx);
             probs[r * CNN_OUT + o] = p;
             sum += p;
         }
