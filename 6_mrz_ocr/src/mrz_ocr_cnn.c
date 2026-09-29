@@ -23,6 +23,10 @@
  *   9. line-2 checksum beam search (top-3 candidates, lowest-margin
  *      positions first)
  */
+/* _GNU_SOURCE must precede ANY system header include:
+ * Bionic gates cpu_set_t/CPU_SET in <sched.h> behind __USE_GNU,
+ * which is only defined when _GNU_SOURCE is seen first. */
+#define _GNU_SOURCE
 #include "mrz_ocr.h"
 #include "cnn.h"
 #include "template.h"
@@ -33,6 +37,12 @@
 #include <math.h>
 #include <string.h>
 #include <time.h>
+#ifdef __linux__
+/* Keep <sched.h> ahead of <pthread.h>: bionic's pthread.h includes
+ * sched.h, so a later include would be skipped by its #pragma once
+ * and cpu_set_t would never be visible. */
+#include <sched.h>
+#endif
 #include <pthread.h>
 
 #ifndef M_PI
@@ -796,8 +806,26 @@ typedef struct {
     int           *conf_avg;
 } mrz_line1_job_t;
 
+/* CPU affinity: the 4x Cortex-A53 are homogeneous, but the Linux
+ * scheduler (schedplus) still bounces a worker thread across cores,
+ * which thrashes the L1 (32KB)/L2 (256KB) caches and inflates the
+ * p50 on every image.  Pin the worker to a specific core at spawn so
+ * it stays put for the whole batch.  Failure is non-fatal (falls back
+ * to the scheduler's default placement). */
+#ifdef __linux__
+static void mrz_pin_to_cpu(unsigned int cpu) {
+    cpu_set_t mask;
+    CPU_ZERO(&mask);
+    CPU_SET((int)cpu, &mask);
+    sched_setaffinity(0, sizeof(mask), &mask);
+}
+#else
+static void mrz_pin_to_cpu(unsigned int cpu) { (void)cpu; }
+#endif
+
 static void *mrz_line1_worker(void *arg) {
     mrz_line1_job_t *j = (mrz_line1_job_t *)arg;
+    mrz_pin_to_cpu(3);  /* keep the worker away from the main thread's core */
     cnn_row_features_batch(j->net, j->glyphs, j->nchars, j->feats);
     cnn_fc_batch(j->net, j->feats, j->nchars, j->probs);
     if (j->tta) {
