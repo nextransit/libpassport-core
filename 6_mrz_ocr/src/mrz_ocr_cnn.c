@@ -823,9 +823,10 @@ static void mrz_pin_to_cpu(unsigned int cpu) {
 static void mrz_pin_to_cpu(unsigned int cpu) { (void)cpu; }
 #endif
 
-static void *mrz_line1_worker(void *arg) {
-    mrz_line1_job_t *j = (mrz_line1_job_t *)arg;
-    mrz_pin_to_cpu(3);  /* keep the worker away from the main thread's core */
+/* The actual line-1 work: forward + TTA + decode.  Kept as its own
+ * function so both the resident worker loop (__linux__) and the
+ * fallback in-line path share one implementation. */
+static void mrz_line1_run(mrz_line1_job_t *j) {
     cnn_row_features_batch(j->net, j->glyphs, j->nchars, j->feats);
     cnn_fc_batch(j->net, j->feats, j->nchars, j->probs);
     if (j->tta) {
@@ -852,8 +853,92 @@ static void *mrz_line1_worker(void *arg) {
     }
     decode_row((const float (*)[CNN_IN_H][CNN_IN_W])j->glyphs,
                j->nchars, 1, j->line_out, j->conf_avg, j->probs);
+}
+
+/* Thin pthread entry used on non-Linux hosts (MAC) or as a fallback
+ * when the resident worker cannot be created. */
+static void *mrz_line1_worker(void *arg) {
+    mrz_line1_job_t *j = (mrz_line1_job_t *)arg;
+    mrz_pin_to_cpu(3);  /* keep the worker away from the main thread's core */
+    mrz_line1_run(j);
     return NULL;
 }
+
+#ifdef __linux__
+/* ---- resident worker (MRZ_OCR_PAR=1) ----
+ * A single worker thread is created on first use and then reused for
+ * every image, removing the per-image pthread_create/join (~1 ms of
+ * jitter on the p50/p95 tail).  Job dispatch is a condvar handshake:
+ *
+ *   main: lock; copy job; has_job=1; signal ready; unlock
+ *   main: ... do line 0 ...
+ *   main: lock; while busy cond_wait done; unlock
+ *   worker: wait ready; run; busy=0; signal done
+ *
+ * The recogniser is single-threaded on the JNI side, so each submit
+ * is always preceded by a completed wait of the previous frame; the
+ * shared job slot never races. */
+static pthread_mutex_t g_mrz_worker_mu    = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t  g_mrz_worker_ready = PTHREAD_COND_INITIALIZER;
+static pthread_cond_t  g_mrz_worker_done  = PTHREAD_COND_INITIALIZER;
+static mrz_line1_job_t g_mrz_worker_job;
+static int g_mrz_worker_has_job = 0;
+static int g_mrz_worker_busy    = 0;
+static int g_mrz_worker_ready_created = 0;
+
+static void *mrz_resident_worker_loop(void *arg) {
+    (void)arg;
+    mrz_pin_to_cpu(3);
+    for (;;) {
+        pthread_mutex_lock(&g_mrz_worker_mu);
+        while (!g_mrz_worker_has_job)
+            pthread_cond_wait(&g_mrz_worker_ready, &g_mrz_worker_mu);
+        mrz_line1_job_t j = g_mrz_worker_job; /* copy (all pointer fields) */
+        g_mrz_worker_has_job = 0;
+        g_mrz_worker_busy = 1;
+        pthread_mutex_unlock(&g_mrz_worker_mu);
+
+        mrz_line1_run(&j);
+
+        pthread_mutex_lock(&g_mrz_worker_mu);
+        g_mrz_worker_busy = 0;
+        pthread_cond_signal(&g_mrz_worker_done);
+        pthread_mutex_unlock(&g_mrz_worker_mu);
+    }
+    return NULL;
+}
+
+/* Submit a job; returns 0 on success, -1 if the worker could not be
+ * created this time (caller falls back to in-line). */
+static int mrz_resident_submit(const mrz_line1_job_t *job) {
+    int created = 0;
+    pthread_mutex_lock(&g_mrz_worker_mu);
+    if (!g_mrz_worker_ready_created) {
+        pthread_t tid;
+        if (pthread_create(&tid, NULL, mrz_resident_worker_loop,
+                           NULL) == 0) {
+            g_mrz_worker_ready_created = 1;
+            created = 1;
+        } else {
+            pthread_mutex_unlock(&g_mrz_worker_mu);
+            return -1;
+        }
+    }
+    (void)created;
+    g_mrz_worker_job = *job;
+    g_mrz_worker_has_job = 1;
+    pthread_cond_signal(&g_mrz_worker_ready);
+    pthread_mutex_unlock(&g_mrz_worker_mu);
+    return 0;
+}
+
+static void mrz_resident_wait(void) {
+    pthread_mutex_lock(&g_mrz_worker_mu);
+    while (g_mrz_worker_busy)
+        pthread_cond_wait(&g_mrz_worker_done, &g_mrz_worker_mu);
+    pthread_mutex_unlock(&g_mrz_worker_mu);
+}
+#endif /* __linux__ */
 
 /* Convenience: typed allocations for the ten safe fields. */
 static uint8_t *mrz_scratch_gray    (size_t n)              { return (uint8_t *)mrz_scratch_alloc(n); }
@@ -1116,14 +1201,21 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                 job.tta       = tta;
                 job.line_out  = out->line2;
                 job.conf_avg  = &out->line2_avg_conf;
+#ifdef __linux__
+                if (mrz_resident_submit(&job) == 0) {
+                    worker_spawned = 1;   /* resident worker owns it */
+                } else {
+                    line1_did_inline = 1;
+                    mrz_line1_run(&job);  /* in-line fallback */
+                }
+#else
                 if (pthread_create(&worker, NULL, mrz_line1_worker, &job) == 0) {
                     worker_spawned = 1;
                 } else {
-                    /* Fallback: in-line (also does TTA+decode
-                     * so the pipeline stays byte-exact). */
                     line1_did_inline = 1;
                     mrz_line1_worker(&job);
                 }
+#endif
             }
 
             /* Line 0 forward (and TTA) on the main thread. */
@@ -1162,12 +1254,15 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                 _t0 = _t1;
             }
 
-            /* Join the line-1 worker.  If pthread_create failed
-             * we already ran the job in-line; in that case the
-             * decode_row inside the job has already written
-             * out->line2. */
+            /* Wait for line 1.  On Linux the resident worker is
+             * reused (no per-image join); elsewhere and on the
+             * in-line fallback the work is already done above. */
             if (worker_spawned) {
+#ifdef __linux__
+                mrz_resident_wait();
+#else
                 pthread_join(worker, NULL);
+#endif
             }
             if (nchars_l[1] >= 30) {
                 out->line2_len = nchars_l[1];
