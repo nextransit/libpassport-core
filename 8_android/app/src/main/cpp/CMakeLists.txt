@@ -49,6 +49,11 @@ target_include_directories(mrz_ocr PUBLIC
     ${MRZ_DIR}/src
     ${FACE_DIR}/include)
 target_link_libraries(mrz_ocr PUBLIC face m)
+# Needed when the recogniser emits per-stage TIMING to logcat
+# (mrz_ocr_cnn.c only references __android_log_print under
+# #ifdef __ANDROID__, but we always link on the Android target
+# to keep the source identical across host/device builds).
+target_link_libraries(mrz_ocr PUBLIC log)
 
 # 3) JNI shim that turns Java strings into UTF-8 paths and forwards
 #    per-image calls into the same C API the host tools use.

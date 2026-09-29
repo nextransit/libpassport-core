@@ -776,16 +776,54 @@ static void mrz_scratch_reset(void) {
  * bump allocator never aliases across threads. */
 typedef struct {
     const cnn_t   *net;
+    /* glyphs is the canonical input; tta_glyphs holds the +-1 shift
+     * snapshots so the worker can run TTA in-thread without the main
+     * thread having to share band_gray. */
     float        (*glyphs)[CNN_IN_H][CNN_IN_W];
-    int            nchars;
+    float        (*tta_glyphs)[CNN_IN_H][CNN_IN_W];
     float         *feats;
     float         *probs;
+    float         *tta_probs;
+    int            nchars;
+    /* decode_row inputs */
+    const uint8_t *band_gray;
+    int            bw, bh;
+    const mrz_ocr_rect_t *chars;
+    int            base_y;
+    int            tta;
+    /* outputs */
+    char          *line_out;
+    int           *conf_avg;
 } mrz_line1_job_t;
 
 static void *mrz_line1_worker(void *arg) {
     mrz_line1_job_t *j = (mrz_line1_job_t *)arg;
     cnn_row_features_batch(j->net, j->glyphs, j->nchars, j->feats);
     cnn_fc_batch(j->net, j->feats, j->nchars, j->probs);
+    if (j->tta) {
+        /* +-1px horizontal shift TTA averaged into j->probs. */
+        for (int c = 0; c < j->nchars; ++c)
+            for (int o = 0; o < CNN_OUT; ++o)
+                j->tta_probs[c * CNN_OUT + o] = j->probs[c * CNN_OUT + o];
+        for (int sh = -1; sh <= 1; sh += 2) {
+            for (int c = 0; c < j->nchars; ++c)
+                resample_char_gray(j->band_gray, j->bw, j->bh,
+                                   j->chars[c].x + sh,
+                                   j->base_y + j->chars[c].y,
+                                   j->chars[c].w, j->chars[c].h,
+                                   NULL, 0, j->tta_glyphs[c]);
+            cnn_row_features_batch(j->net, j->tta_glyphs, j->nchars, j->feats);
+            cnn_fc_batch(j->net, j->feats, j->nchars, j->probs);
+            for (int c = 0; c < j->nchars; ++c)
+                for (int o = 0; o < CNN_OUT; ++o)
+                    j->tta_probs[c * CNN_OUT + o] += j->probs[c * CNN_OUT + o];
+        }
+        for (int c = 0; c < j->nchars; ++c)
+            for (int o = 0; o < CNN_OUT; ++o)
+                j->probs[c * CNN_OUT + o] = j->tta_probs[c * CNN_OUT + o] / 3.0f;
+    }
+    decode_row((const float (*)[CNN_IN_H][CNN_IN_W])j->glyphs,
+               j->nchars, 1, j->line_out, j->conf_avg, j->probs);
     return NULL;
 }
 
@@ -1023,22 +1061,36 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
 
             /* Pass 1 above already populated glyphs0_keep and
              * glyphs1_keep, so we skip the original wasteful
-             * re-resample pass. */
+             * re-resample pass.  The line-1 worker now also runs
+             * TTA + decode_row in-thread so the join is
+             * essentially free on the main side. */
             pthread_t worker;
             mrz_line1_job_t job;
             int worker_spawned = 0;
+            int line1_did_inline = 0;
             if (nchars_l[1] >= 30) {
-                job.net    = net;
-                job.glyphs = glyphs1_keep;
-                job.nchars = nchars_l[1];
-                job.feats  = feats1;
-                job.probs  = probs1;
+                job.net       = net;
+                job.glyphs    = glyphs1_keep;
+                job.tta_glyphs= glyphs1_tta;
+                job.feats     = feats1;
+                job.probs     = probs1;
+                job.tta_probs = probs1_tta;
+                job.nchars    = nchars_l[1];
+                job.band_gray = band_gray;
+                job.bw        = bw;
+                job.bh        = bh;
+                job.chars     = chars_l[1];
+                job.base_y    = base_l[1];
+                job.tta       = tta;
+                job.line_out  = out->line2;
+                job.conf_avg  = &out->line2_avg_conf;
                 if (pthread_create(&worker, NULL, mrz_line1_worker, &job) == 0) {
                     worker_spawned = 1;
                 } else {
-                    /* Fallback: in-line. */
-                    cnn_row_features_batch(net, glyphs1_keep, nchars_l[1], feats1);
-                    cnn_fc_batch(net, feats1, nchars_l[1], probs1);
+                    /* Fallback: in-line (also does TTA+decode
+                     * so the pipeline stays byte-exact). */
+                    line1_did_inline = 1;
+                    mrz_line1_worker(&job);
                 }
             }
 
@@ -1078,37 +1130,14 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                 _t0 = _t1;
             }
 
-            /* Join the line-1 worker, then do its TTA + decode. */
+            /* Join the line-1 worker.  If pthread_create failed
+             * we already ran the job in-line; in that case the
+             * decode_row inside the job has already written
+             * out->line2. */
             if (worker_spawned) {
                 pthread_join(worker, NULL);
-            } else if (nchars_l[1] >= 30) {
-                cnn_row_features_batch(net, glyphs1_keep, nchars_l[1], feats1);
-                cnn_fc_batch(net, feats1, nchars_l[1], probs1);
             }
             if (nchars_l[1] >= 30) {
-                if (tta) {
-                    for (int c = 0; c < nchars_l[1]; ++c)
-                        for (int o = 0; o < CNN_OUT; ++o)
-                            probs1_tta[c * CNN_OUT + o] = probs1[c * CNN_OUT + o];
-                    for (int sh = -1; sh <= 1; sh += 2) {
-                        for (int c = 0; c < nchars_l[1]; ++c)
-                            resample_char_gray(band_gray, bw, bh,
-                                               chars_l[1][c].x + sh,
-                                               base_l[1] + chars_l[1][c].y,
-                                               chars_l[1][c].w, chars_l[1][c].h,
-                                               NULL, 0, glyphs1_tta[c]);
-                        cnn_row_features_batch(net, glyphs1_tta, nchars_l[1], feats1);
-                        cnn_fc_batch(net, feats1, nchars_l[1], probs1);
-                        for (int c = 0; c < nchars_l[1]; ++c)
-                            for (int o = 0; o < CNN_OUT; ++o)
-                                probs1_tta[c * CNN_OUT + o] += probs1[c * CNN_OUT + o];
-                    }
-                    for (int c = 0; c < nchars_l[1]; ++c)
-                        for (int o = 0; o < CNN_OUT; ++o)
-                            probs1[c * CNN_OUT + o] = probs1_tta[c * CNN_OUT + o] / 3.0f;
-                }
-                decode_row((const float (*)[CNN_IN_H][CNN_IN_W])glyphs1_keep,
-                           nchars_l[1], 1, out->line2, &out->line2_avg_conf, probs1);
                 out->line2_len = nchars_l[1];
                 mrz_ocr_dump_glyphs("img", 1, glyphs1_keep, nchars_l[1], chars_l[1]);
             }
@@ -1117,6 +1146,7 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                 _ms_decode += (_t1.tv_sec-_t0.tv_sec)*1e3 + (_t1.tv_nsec-_t0.tv_nsec)/1e6;
                 _t0 = _t1;
             }
+            (void)line1_did_inline; /* silence unused-var */
         } else {
             /* Sequential: cache-hot single loop.  Resample,
              * cnn forward, TTA, decode back-to-back per line so
@@ -1200,6 +1230,15 @@ cleanup:
     if (tm && tm[0] && strcmp(tm, "0")) {
         fprintf(stderr, "TIMING gray=%.2fms band+deskew=%.2fms resample=%.2fms decode=%.2fms\n",
                 _ms_gray, _ms_band, _ms_resample, _ms_decode);
+#ifdef __ANDROID__
+        /* Mirror to logcat under the same tag the JNI shim uses
+         * ("MrzNative") so `adb logcat -s MrzNative:TIMING` shows
+         * the per-stage breakdown while the bench is running. */
+        extern int __android_log_print(int, const char *, const char *, ...);
+        __android_log_print(6 /*ANDROID_LOG_ERROR*/, "MrzNative",
+            "TIMING gray=%.2fms band+deskew=%.2fms resample=%.2fms decode=%.2fms",
+            _ms_gray, _ms_band, _ms_resample, _ms_decode);
+#endif
     }
     return status;
 }
