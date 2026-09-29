@@ -1012,6 +1012,10 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
         const char *par_env = getenv("MRZ_OCR_PAR");
         int do_par = par_env && par_env[0] && strcmp(par_env, "0") != 0;
         if (do_par) {
+            /* Worker-only pinning (CPU 3) proved best: pinning the
+             * main thread to CPU 0 hurt p50 (~+11 ms) because it
+             * also froze the serial geometric front-end onto one
+             * core under system load.  Leave main unpinned. */
             /* Workspace for line 0/1 (chars from segmenter, line
              * pixels, base offset, line height). */
             static mrz_ocr_rect_t chars0[44], chars1[44];
