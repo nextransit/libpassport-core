@@ -196,7 +196,7 @@ int mrz_ocr_locate_band(const uint8_t *bin, int W, int H, mrz_ocr_rect_t *out) {
 
 /* ---------- 3. Split the band into the two TD3 lines. ---------- */
 int mrz_ocr_split_lines(const uint8_t *bin, int W, int H, mrz_ocr_rect_t *out) {
-    /* Project darkness on each row of the band to find the gap. */
+    /* Project darkness on each row of the band. */
     int *row_dark = (int *)calloc((size_t)H, sizeof(int));
     if (!row_dark) return -1;
     for (int y = 0; y < H; ++y) {
@@ -204,14 +204,15 @@ int mrz_ocr_split_lines(const uint8_t *bin, int W, int H, mrz_ocr_rect_t *out) {
         for (int x = 0; x < W; ++x) if (bin[y * W + x]) c++;
         row_dark[y] = c;
     }
-    /* Find the deepest gap. A row is "gap" when its ink count is a
-     * small FRACTION OF THE TEXT ROWS' PEAK -- a fixed fraction of W
-     * breaks under salt-and-pepper noise (gap rows pick up specks:
-     * at 3% noise a 1518 px row collects ~23 specks, above the old
-     * W/100 = 15 threshold, and the inter-line gap vanished). */
     int peak = 0;
     for (int y = 0; y < H; ++y)
         if (row_dark[y] > peak) peak = row_dark[y];
+
+    /* Step 1: find the split point with the proven deepest-gap scan. A
+     * row is "gap" when its ink count is a small FRACTION OF THE TEXT
+     * ROWS' PEAK -- a fixed fraction of W breaks under salt-and-pepper
+     * noise (gap rows pick up specks: at 3% noise a 1518 px row collects
+     * ~23 specks, above the old W/100 = 15 threshold). */
     int gap_thr = peak / 6;
     if (gap_thr < 4) gap_thr = 4;
     int best_gap_y = -1, best_gap_score = 0;
@@ -226,13 +227,93 @@ int mrz_ocr_split_lines(const uint8_t *bin, int W, int H, mrz_ocr_rect_t *out) {
             best_gap_y = y;
         }
     }
+    if (best_gap_y >= 0) {
+        out[0].x = 0; out[0].y = 0;
+        out[0].w = W; out[0].h = best_gap_y;
+        out[1].x = 0; out[1].y = best_gap_y + best_gap_score;
+        out[1].w = W; out[1].h = H - out[1].y;
+        free(row_dark);
+        return 0;
+    }
+
+    /* Step 3 (old path failed: no clean gap -- typically guilloche ink
+     * filling the inter-line rows on real photos): line-CORE detection.
+     * Group core-dense rows into runs (merging 1-2 row intra-line
+     * valleys from the '<' template's empty rows), then pick the
+     * adjacent run pair whose gap is comparable to the line height
+     * (gap <= 2 x shorter run, min 3) with the most combined ink. The
+     * gap rule rejects unrelated content merged near the band (e.g. a
+     * dark page edge dozens of rows below line 2); ties go to the
+     * bottom-most pair (MRZ sits at the bottom of the crop). */
+    int core_thr = peak / 4;
+    if (core_thr < 4) core_thr = 4;
+    int *r_top = (int *)malloc(sizeof(int) * (size_t)(H / 2 + 2));
+    int *r_bot = (int *)malloc(sizeof(int) * (size_t)(H / 2 + 2));
+    int *r_ink = (int *)malloc(sizeof(int) * (size_t)(H / 2 + 2));
+    int n_runs = 0;
+    int core_ok = (r_top && r_bot && r_ink);
+    if (core_ok) {
+        int y = 0;
+        while (y < H) {
+            if (row_dark[y] < core_thr) { y++; continue; }
+            int top = y, last = y;
+            long ink = 0;
+            for (;;) {
+                while (y < H && row_dark[y] >= core_thr) {
+                    ink += row_dark[y]; last = y; y++;
+                }
+                if (y >= H) break;
+                int z = y;
+                while (z < H && row_dark[z] < core_thr) z++;
+                if (z < H && z - last <= 2) {
+                    for (int q = y; q < z; ++q) ink += row_dark[q];
+                    y = z;
+                } else {
+                    break;
+                }
+            }
+            if (last - top + 1 >= 2 && n_runs < H / 2 + 2) {
+                r_top[n_runs] = top; r_bot[n_runs] = last;
+                r_ink[n_runs] = (int)ink; n_runs++;
+            }
+        }
+        int best_i = -1;
+        long best_score = -1;
+        for (int i = n_runs - 2; i >= 0; --i) {
+            int gap = r_top[i + 1] - r_bot[i] - 1;
+            int h1 = r_bot[i] - r_top[i] + 1;
+            int h2 = r_bot[i + 1] - r_top[i + 1] + 1;
+            int hmin = h1 < h2 ? h1 : h2;
+            int max_gap = hmin * 2 > 3 ? hmin * 2 : 3;
+            if (gap > max_gap) continue;
+            long score = (long)r_ink[i] + r_ink[i + 1];
+            if (score > best_score) { best_score = score; best_i = i; }
+        }
+        if (best_i >= 0) {
+            out[0].x = 0; out[0].y = r_top[best_i];
+            out[0].w = W; out[0].h = r_bot[best_i] - r_top[best_i] + 1;
+            out[1].x = 0; out[1].y = r_top[best_i + 1];
+            out[1].w = W; out[1].h = r_bot[best_i + 1] - r_top[best_i + 1] + 1;
+            free(r_top); free(r_bot); free(r_ink);
+            free(row_dark);
+            return 0;
+        }
+    }
+    free(r_top); free(r_bot); free(r_ink);
+    /* Step 4 (last resort): single merged blob -- split at the deepest
+     * valley in the middle half of the band. */
+    int valley = -1, valley_ink = 0;
+    for (int y = H / 4; y < H - H / 4; ++y) {
+        if (valley < 0 || row_dark[y] < valley_ink) {
+            valley = y; valley_ink = row_dark[y];
+        }
+    }
     free(row_dark);
-    if (best_gap_y < 0) return -1;
-    /* The two text lines are [0, best_gap_y) and [best_gap_y + best_gap_score, H). */
+    if (valley < 0 || valley_ink > peak / 3) return -1;
     out[0].x = 0; out[0].y = 0;
-    out[0].w = W; out[0].h = best_gap_y;
-    out[1].x = 0; out[1].y = best_gap_y + best_gap_score;
-    out[1].w = W; out[1].h = H - out[1].y;
+    out[0].w = W; out[0].h = valley + 1;
+    out[1].x = 0; out[1].y = valley + 1;
+    out[1].w = W; out[1].h = H - (valley + 1);
     return 0;
 }
 

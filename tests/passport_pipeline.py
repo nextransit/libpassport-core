@@ -116,7 +116,11 @@ def ocr_crop(image: Path, loc, tool: Path = CNN, margin: int = 8,
     # max_gap (H/8) can bridge, so the band collapses to one line. Pad the
     # crop generously vertically: a taller crop raises H/8 and lets
     # locate_band merge both MRZ lines into one band.
-    margin = max(margin, int(mrz["h"] * 1.2))
+    # Tight vertical margin: the C locator re-finds the band inside the
+    # crop, so a huge pad only risks merging the dark page edge into the
+    # band (A/B on 84 real photos: 1.2h hard-fails 14, 0.3h recovers 5
+    # of those with no new failures).
+    margin = max(margin, int(mrz["h"] * 0.3))
     img = Image.open(image).convert("RGB")
     tight = img.crop((mrz["x"], mrz["y"],
                       mrz["x"] + mrz["w"], mrz["y"] + mrz["h"]))
