@@ -2,6 +2,7 @@ import Foundation
 import AVFoundation
 import UIKit
 import SwiftUI
+import Accelerate
 
 /// Minimal smoke test: bootstrap model files, init FaceBridge,
 /// detect + register + query on a synthetic face-shaped NV21 frame.
@@ -59,16 +60,31 @@ enum SmokeTest {
         }
 
         // 3) End-to-end detect + register + query.
+        // We try the real face fixture shipped in Resources/TestFixtures
+        // first; if it isn't bundled (older build) we fall back to a
+        // simple Gaussian blob so the smoke still completes. The
+        // fixture is a 320x240 NV21 frame with a stylised face that
+        // SeetaFace2's FaceDetector is reliably able to detect.
         let w = 320, h = 240
-        var nv21 = [UInt8](repeating: 80, count: w * h * 3 / 2)
-        for j in 0..<h {
-            for i in 0..<w {
-                let dx = Double(i - 160), dy = Double(j - 120)
-                let lift = exp(-(dx * dx + dy * dy) / 1500.0) * 80.0
-                nv21[j * w + i] = UInt8(max(0, min(255, 80.0 + lift)))
+        var data: Data
+        if let url = Bundle.main.url(forResource: "synthetic_face_320x240", withExtension: "nv21",
+                                     subdirectory: "TestFixtures"),
+           let raw = try? Data(contentsOf: url),
+           raw.count == w * h * 3 / 2 {
+            data = raw
+            result["fixture"] = "synthetic_face_320x240.nv21"
+        } else {
+            var nv21 = [UInt8](repeating: 80, count: w * h * 3 / 2)
+            for j in 0..<h {
+                for i in 0..<w {
+                    let dx = Double(i - 160), dy = Double(j - 120)
+                    let lift = exp(-(dx * dx + dy * dy) / 1500.0) * 80.0
+                    nv21[j * w + i] = UInt8(max(0, min(255, 80.0 + lift)))
+                }
             }
+            data = Data(nv21)
+            result["fixture"] = "inline_gaussian_blob"
         }
-        let data = Data(nv21)
         result["database_size_before"] = Int(FaceBridge.databaseSize())
 
         // Benchmark: 50 detect calls to characterise the latency
@@ -149,6 +165,47 @@ enum SmokeTest {
         result["query_latency_p95_ms"] = qSorted[Int(Double(qSorted.count) * 0.95)] ?? 0
         result["query_id"] = qID
         result["query_sim"] = simOut
+
+        // 3b) vDSP dot-product benchmark. We construct two 1024-dim
+        // feature buffers (the canonical SeetaFace2 feature size)
+        // and compare them with a naive Swift loop and with
+        // Accelerate's vDSP_dotpr. This isolates the similarity
+        // cost from the dominant Extract cost and proves whether
+        // vDSP actually helps in a batch-query scenario.
+        if #available(iOS 14.0, *) {
+            let dim = 1024
+            var fa = [Float](repeating: 0, count: dim)
+            var fb = [Float](repeating: 0, count: dim)
+            for i in 0..<dim {
+                let v = Float(i) / Float(dim)
+                fa[i] = v
+                fb[i] = v * 0.99
+            }
+            // Naive: tight Swift loop
+            let naiveStart = DispatchTime.now()
+            var naiveSum: Float = 0
+            for _ in 0..<20000 {
+                naiveSum = 0
+                for i in 0..<dim { naiveSum += fa[i] * fb[i] }
+            }
+            let naiveMs = Double(DispatchTime.now().uptimeNanoseconds &- naiveStart.uptimeNanoseconds) / 1_000_000.0
+            // vDSP: hand the inner loop to the vector unit
+            var vdspSum: Float = 0
+            let vdspStart = DispatchTime.now()
+            for _ in 0..<20000 {
+                vDSP_dotpr(fa, 1, fb, 1, &vdspSum, vDSP_Length(dim))
+            }
+            let vdspMs = Double(DispatchTime.now().uptimeNanoseconds &- vdspStart.uptimeNanoseconds) / 1_000_000.0
+            result["vdsp_dim"] = dim
+            result["vdsp_iters"] = 20000
+            result["vdsp_naive_total_ms"] = naiveMs
+            result["vdsp_naive_per_iter_us"] = naiveMs * 1000.0 / 20000.0
+            result["vdsp_vdsp_total_ms"] = vdspMs
+            result["vdsp_vdsp_per_iter_us"] = vdspMs * 1000.0 / 20000.0
+            result["vdsp_speedup_x"] = naiveMs / max(vdspMs, 0.001)
+            result["vdsp_naive_sum"] = naiveSum
+            result["vdsp_vdsp_sum"] = vdspSum
+        }
 
         // 4) Camera diagnostic: enumerate devices, check auth, count session inputs/outputs.
         let videoAuth = AVCaptureDevice.authorizationStatus(for: .video)
@@ -274,17 +331,112 @@ extension SmokeTest {
         for _ in 0..<6 { RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.1)) }
         shoot("03_database.png")
 
+        // --- Tab-switch timing harness ---------------------------------
+        // We measure wall-clock time from posting the FaceAppSelection
+        // notification to the moment drawHierarchy reports a different
+        // pixel hash on the Live tab. This produces a numeric proof of
+        // the "1 second" requirement. Recorded in tab_switch_ms.json
+        // alongside the PNGs.
+        var liveHash: String = ""
+        var registerHash: String = ""
+        var databaseHash: String = ""
+
+        func hashOfWindow() -> String? {
+            guard let window = UIApplication.shared.connectedScenes
+                .compactMap({ ($0 as? UIWindowScene)?.keyWindow ?? ($0 as? UIWindowScene)?.windows.first })
+                .first else { return nil }
+            let format = UIGraphicsImageRendererFormat.default()
+            format.scale = 1.0
+            format.opaque = false
+            let renderer = UIGraphicsImageRenderer(bounds: window.bounds, format: format)
+            let img = renderer.image { _ in
+                window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
+            }
+            let digest = img.pngData() ?? Data()
+            // Cheap rolling hash: XOR + bit count over the PNG bytes.
+            // We don't need crypto-grade collision resistance — we
+            // only need to detect "this window's pixels are the
+            // same as the previous snapshot".
+            var h: UInt64 = 0xCBF29CE484222325
+            for b in digest { h ^= UInt64(b); h &*= 0x100000001B3 }
+            return String(h, radix: 16)
+        }
+
+        func waitForTabChange(prevHash: String, timeoutMs: Int) -> (changed: Bool, elapsedMs: Double, newHash: String?) {
+            let t0 = Date()
+            var elapsed: Double = 0
+            var lastHash: String? = prevHash
+            while elapsed < Double(timeoutMs) {
+                RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.04))
+                elapsed = Date().timeIntervalSince(t0) * 1000
+                if let h = hashOfWindow(), h != prevHash {
+                    lastHash = h
+                    return (true, elapsed, h)
+                }
+            }
+            return (false, elapsed, lastHash)
+        }
+
+        // First switch: Live -> Register. Measure how long until the
+        // pixel hash of the live window changes.
+        let livePrev = liveHash.isEmpty ? hashOfWindow() ?? "" : liveHash
+        nc.post(name: Notification.Name(key), object: nil, userInfo: ["tab": "register"])
+        let r1 = waitForTabChange(prevHash: livePrev, timeoutMs: 2000)
+        for _ in 0..<8 { RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.1)) }
+        shoot("02_register_initial.png")
+        registerHash = hashOfWindow() ?? ""
+
+        // Switch: Register -> Database.
+        nc.post(name: Notification.Name(key), object: nil, userInfo: ["tab": "database"])
+        let d1 = waitForTabChange(prevHash: registerHash, timeoutMs: 2000)
+        for _ in 0..<6 { RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.1)) }
+        shoot("03_database.png")
+        databaseHash = hashOfWindow() ?? ""
+
+        // Switch: Database -> Live. Now we want Live to come back up
+        // and render its preview. We capture the wall-clock time to
+        // the next distinct pixel hash.
         nc.post(name: Notification.Name(key), object: nil, userInfo: ["tab": "live"])
+        let l1 = waitForTabChange(prevHash: databaseHash, timeoutMs: 2000)
         for _ in 0..<20 { RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.1)) }
         shoot("04_live_after_switch.png")
+        liveHash = hashOfWindow() ?? ""
 
+        // Switch: Live -> Register.
         nc.post(name: Notification.Name(key), object: nil, userInfo: ["tab": "register"])
+        let r2 = waitForTabChange(prevHash: liveHash, timeoutMs: 2000)
         for _ in 0..<8 { RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.1)) }
         shoot("05_register_after_switch.png")
+        registerHash = hashOfWindow() ?? ""
 
+        // Switch: Register -> Live again.
         nc.post(name: Notification.Name(key), object: nil, userInfo: ["tab": "live"])
+        let l2 = waitForTabChange(prevHash: registerHash, timeoutMs: 2000)
         for _ in 0..<20 { RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.1)) }
         shoot("06_live_after_switch2.png")
+        liveHash = hashOfWindow() ?? ""
+
+        // ---- write tab_switch_ms.json --------------------------------
+        let tabSwitchReport: [String: Any] = [
+            "ts": Date().timeIntervalSince1970,
+            "target_ms": 1000,
+            "transitions": [
+                ["from": "live",    "to": "register", "elapsed_ms": r1.elapsedMs, "changed": r1.changed],
+                ["from": "register","to": "database", "elapsed_ms": d1.elapsedMs, "changed": d1.changed],
+                ["from": "database","to": "live",     "elapsed_ms": l1.elapsedMs, "changed": l1.changed],
+                ["from": "live",    "to": "register", "elapsed_ms": r2.elapsedMs, "changed": r2.changed],
+                ["from": "register","to": "live",     "elapsed_ms": l2.elapsedMs, "changed": l2.changed],
+            ],
+            "all_under_target_ms": [r1, d1, l1, r2, l2].allSatisfy { $0.elapsedMs < 1000 },
+        ]
+        let reportURL = outDir.appendingPathComponent("tab_switch_ms.json")
+        if let data = try? JSONSerialization.data(withJSONObject: tabSwitchReport,
+                                                  options: .prettyPrinted) {
+            try? data.write(to: reportURL)
+            NSLog("SMOKE wrote %@", reportURL.path)
+        }
+        NSLog("SMOKE tab-switch timings: live->reg=%.0fms reg->db=%.0fms db->live=%.0fms live->reg2=%.0fms reg->live2=%.0fms",
+              r1.elapsedMs, d1.elapsedMs, l1.elapsedMs, r2.elapsedMs, l2.elapsedMs)
 
         cam.isActive = false
         cam.stop()
