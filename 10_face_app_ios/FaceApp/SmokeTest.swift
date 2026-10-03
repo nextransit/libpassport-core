@@ -606,7 +606,18 @@ extension SmokeTest {
 
         // The screenshots we'd write for human inspection
         let shoot = { (name: String) in
-            for _ in 0..<4 { RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.1)) }
+            // Drain the runloop so SwiftUI's 0.18s tab transition
+            // settles and the mock camera's next frame (10 Hz) lands.
+            // Without this, automation_04 catches the mid-transition
+            // frame where the new tab is half-faded-in.
+            for _ in 0..<16 { RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.05)) }
+            // Force every SwiftUI observer of the camera manager to
+            // re-render. Tab switches hide views and SwiftUI may keep
+            // the previous render cached, so we explicitly emit an
+            // objectWillChange to make the freshly-active tab's body
+            // evaluate one more time before the screenshot is taken.
+            CameraManager.shared.forceRefresh()
+            for _ in 0..<8 { RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.05)) }
             guard let window = UIApplication.shared.connectedScenes
                 .compactMap({ ($0 as? UIWindowScene)?.keyWindow ?? ($0 as? UIWindowScene)?.windows.first })
                 .first else { return }
@@ -630,7 +641,8 @@ extension SmokeTest {
             let t0 = Date()
             let prev = windowHash()
             nc.post(name: Notification.Name(key), object: nil, userInfo: ["tab": tab])
-            // Wait up to 1500 ms for the screen to actually change
+            // Phase 1: wait until the FIRST visible pixel change
+            // (transition starts). Cap at 1500 ms.
             var elapsed: Double = 0
             var newHash: UInt64? = prev
             while elapsed < 1500 {
@@ -638,6 +650,12 @@ extension SmokeTest {
                 elapsed = Date().timeIntervalSince(t0) * 1000
                 if let h = windowHash(), h != prev { newHash = h; break }
             }
+            // Phase 2: wait a generous 800 ms for the SwiftUI 0.18 s
+            // opacity transition to settle AND for at least 6 new
+            // mock-camera frames to arrive (10 Hz = 100 ms each).
+            // The previous 250 ms wait caught the database→live shot
+            // before the Live view's first frame re-laid out.
+            for _ in 0..<16 { RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.05)) }
             let ok = newHash != prev && elapsed < 1000
             NSLog("AUTOMATION %@ elapsed=%.0fms ok=%d", label, elapsed, ok ? 1 : 0)
             return (elapsed, ok)

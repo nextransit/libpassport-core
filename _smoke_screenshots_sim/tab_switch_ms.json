@@ -1,0 +1,37 @@
+{
+  "all_under_target_ms" : true,
+  "ts" : 1791032096.2812281,
+  "target_ms" : 1000,
+  "transitions" : [
+    {
+      "changed" : true,
+      "to" : "register",
+      "elapsed_ms" : 41.479945182800293,
+      "from" : "live"
+    },
+    {
+      "changed" : true,
+      "elapsed_ms" : 41.814088821411133,
+      "from" : "register",
+      "to" : "database"
+    },
+    {
+      "from" : "database",
+      "changed" : true,
+      "to" : "live",
+      "elapsed_ms" : 41.174054145812988
+    },
+    {
+      "from" : "live",
+      "to" : "register",
+      "elapsed_ms" : 40.400981903076172,
+      "changed" : true
+    },
+    {
+      "to" : "live",
+      "changed" : true,
+      "from" : "register",
+      "elapsed_ms" : 41.013956069946289
+    }
+  ]
+}

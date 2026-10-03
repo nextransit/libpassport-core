@@ -12,23 +12,21 @@ struct LiveDetectView: View {
 
     var body: some View {
         ZStack {
-            CameraPreview(session: cam.session)
-                .ignoresSafeArea()
-                .onTapGesture { showOverlay.toggle() }
-
-            // Show the latest NV21 frame as a SwiftUI Image so the
-            // mock-camera simulator path actually displays the face.
-            // On a real device the AVCaptureVideoPreviewLayer does
-            // this for us and the Image stays drawn out (Camerapreview
-            // wins the Z-order). On the simulator there is no preview
-            // layer content so we fall back to a manual render.
+            // NV21Preview FIRST (back), so CameraPreview can layer
+            // above it on real devices (real preview is opaque over
+            // the rendered NV21 which is fine), while on the simulator
+            // the AVCaptureVideoPreviewLayer is transparent and the
+            // SwiftUI Image shows through.
             if let frame = cam.frameResult {
                 NV21Preview(nv21: frame.nv21,
                             width: frame.width,
                             height: frame.height)
                     .ignoresSafeArea()
-                    .opacity(cam.isRunning ? 1 : 0)
             }
+
+            CameraPreview(session: cam.session)
+                .ignoresSafeArea()
+                .onTapGesture { showOverlay.toggle() }
 
             // Placeholder visible whenever the camera session is not
             // actually running. This covers (a) the iOS Simulator

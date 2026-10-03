@@ -1,0 +1,52 @@
+{
+  "query_round_trip_ok" : true,
+  "query_bogus_id" : 0,
+  "database_size" : 1,
+  "register_id" : 0,
+  "max_tab_switch_ms" : 228.0430793762207,
+  "query_ms" : 35.315916000000001,
+  "detect_faces" : 1,
+  "register_name" : "AutomationTest_1791032817",
+  "query_bogus_sim" : 0.23949111998081207,
+  "bridge_init" : true,
+  "query_id" : 0,
+  "detect_face0_box" : {
+    "score" : 1.4638379812240601,
+    "h" : 166,
+    "y" : 0,
+    "w" : 152,
+    "x" : 99
+  },
+  "query_sim" : 0.99999910593032837,
+  "tab_transitions" : [
+    {
+      "from" : "live",
+      "to" : "register",
+      "ms" : 217.71907806396484,
+      "ok" : true
+    },
+    {
+      "ms" : 228.0430793762207,
+      "ok" : true,
+      "to" : "database",
+      "from" : "register"
+    },
+    {
+      "ms" : 101.997971534729,
+      "to" : "live",
+      "from" : "database",
+      "ok" : true
+    },
+    {
+      "ms" : 206.47001266479492,
+      "from" : "live",
+      "to" : "register",
+      "ok" : true
+    }
+  ],
+  "all_transitions_under_1000ms" : true,
+  "ts" : 1791032816.969825,
+  "register_ms" : 45.159958000000003,
+  "query_bogus_discriminates" : false,
+  "stage" : "complete"
+}

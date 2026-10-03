@@ -38,10 +38,25 @@ final class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputS
     /// keep the camera running but skip per-frame SwiftUI updates.
     @Published var isActive: Bool = false {
         didSet {
-            if isActive {
+            if isActive && !oldValue {
+                // Tab just became active. Restart the camera so a
+                // tab switch back into LiveDetectView re-installs
+                // the mock timer (which stopSession() tears down
+                // when the tab leaves). For real cameras this is a
+                // no-op because the timer is only set up by the
+                // mock path.
+                startSession()
                 pumpLatest()
             }
         }
+    }
+
+    /// Force every SwiftUI observer of this CameraManager to re-render.
+    /// Tab switches hide views and SwiftUI may keep the previous
+    /// render cached. Tests / smoke runs call this to make sure
+    /// the freshly-active tab gets a fresh body evaluation.
+    func forceRefresh() {
+        objectWillChange.send()
     }
 
     let session = AVCaptureSession()
@@ -140,12 +155,19 @@ final class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputS
     }
 
     private func startSession() {
-        // If we are in mock-camera mode (no physical device was
-        // discovered during configure()), the mock timer is already
-        // running. Calling session.startRunning() on a session with
-        // no inputs would mark isRunning=false and turn the preview
-        // into the placeholder again, so we skip the AVCaptureSession
-        // path entirely.
+        // If the mock timer was cancelled by a previous stopSession()
+        // (e.g. tab switched out of Live and back), re-install it.
+        // This keeps the LiveDetectView preview alive across tab
+        // switches without forcing the operator to background and
+        // foreground the app.
+        if mockTimer == nil && lastError == nil {
+            // No camera, no lastError -> we never had a real session
+            // either; the configure() path likely installed mock then
+            // stopSession() tore it down. Re-install.
+            if installMockCameraSource() {
+                NSLog("CameraManager.startSession: re-installed mock timer")
+            }
+        }
         if mockTimer != nil {
             DispatchQueue.main.async { self.isRunning = true }
             return

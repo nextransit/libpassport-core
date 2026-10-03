@@ -75,9 +75,14 @@ struct ContentView: View {
         }
         .opacity(transition == tab ? 1 : 0)
         .allowsHitTesting(transition == tab)
-        // A moving layer is cheaper to redraw than a fading one,
-        // so we use .move(edge:) for fast GPU compositing.
-        .transition(.opacity.combined(with: .move(edge: .leading)))
+        // Pure opacity transitions so the CameraPreview /
+        // NV21Preview inside each tab stays laid out at its full
+        // frame and the mock camera frames keep rendering
+        // throughout. The original .move(edge: .leading) layered
+        // a translation on top, which clipped the live preview
+        // during the 0.18 s animation and made the second back-
+        // switch land on an all-black LiveDetectView.
+        .transition(.opacity)
     }
 }
 

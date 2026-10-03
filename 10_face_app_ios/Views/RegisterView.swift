@@ -25,6 +25,17 @@ struct RegisterView: View {
 
     var body: some View {
         ZStack {
+            // NV21Preview FIRST (back), so CameraPreview can layer
+            // above it on real devices (real preview is opaque) while
+            // on the simulator the AVCaptureVideoPreviewLayer is
+            // transparent and the SwiftUI Image shows through.
+            if let frame = cam.frameResult {
+                NV21Preview(nv21: frame.nv21,
+                            width: frame.width,
+                            height: frame.height)
+                    .ignoresSafeArea()
+            }
+
             CameraPreview(session: cam.session)
                 .ignoresSafeArea()
 
