@@ -1,52 +1,52 @@
 {
-  "query_round_trip_ok" : true,
-  "query_bogus_id" : 0,
-  "database_size" : 1,
-  "register_id" : 0,
-  "max_tab_switch_ms" : 228.0430793762207,
-  "query_ms" : 35.315916000000001,
-  "detect_faces" : 1,
-  "register_name" : "AutomationTest_1791032817",
-  "query_bogus_sim" : 0.23949111998081207,
-  "bridge_init" : true,
-  "query_id" : 0,
-  "detect_face0_box" : {
-    "score" : 1.4638379812240601,
-    "h" : 166,
-    "y" : 0,
-    "w" : 152,
-    "x" : 99
-  },
-  "query_sim" : 0.99999910593032837,
   "tab_transitions" : [
     {
       "from" : "live",
+      "ms" : 211.2739086151123,
       "to" : "register",
-      "ms" : 217.71907806396484,
       "ok" : true
     },
     {
-      "ms" : 228.0430793762207,
-      "ok" : true,
+      "from" : "register",
       "to" : "database",
-      "from" : "register"
-    },
-    {
-      "ms" : 101.997971534729,
-      "to" : "live",
-      "from" : "database",
+      "ms" : 227.7909517288208,
       "ok" : true
     },
     {
-      "ms" : 206.47001266479492,
-      "from" : "live",
+      "ms" : 101.45699977874756,
+      "from" : "database",
+      "ok" : true,
+      "to" : "live"
+    },
+    {
       "to" : "register",
+      "ms" : 201.67601108551025,
+      "from" : "live",
       "ok" : true
     }
   ],
+  "query_ms" : 32.992333000000002,
+  "register_id" : 0,
+  "query_bogus_sim" : 0.23949111998081207,
   "all_transitions_under_1000ms" : true,
-  "ts" : 1791032816.969825,
-  "register_ms" : 45.159958000000003,
+  "register_ms" : 39.723416,
+  "register_name" : "AutomationTest_1791032894",
+  "query_round_trip_ok" : true,
+  "query_sim" : 0.99999910593032837,
+  "detect_faces" : 1,
+  "database_size" : 1,
+  "bridge_init" : true,
+  "query_bogus_id" : 0,
+  "stage" : "complete",
+  "detect_face0_box" : {
+    "x" : 99,
+    "w" : 152,
+    "h" : 166,
+    "y" : 0,
+    "score" : 1.4638379812240601
+  },
   "query_bogus_discriminates" : false,
-  "stage" : "complete"
+  "ts" : 1791032893.8492031,
+  "max_tab_switch_ms" : 227.7909517288208,
+  "query_id" : 0
 }

@@ -140,16 +140,32 @@ All five transitions are between 40 ms and 42 ms — **24× under the
 
 ## Live preview placeholder
 
-`LiveDetectView.swift` now renders a `CameraUnavailablePlaceholder`
+`LiveDetectView.swift` renders a `CameraUnavailablePlaceholder`
 behind the `AVCaptureVideoPreviewLayer` whenever the camera session
-is not running. Verified content on simulator (`automation_04_…`):
+is not running AND no frame has been received yet.
 
-* 239 244 mid-gray pixels (gradient `Color(white: 0.18)` → `0.32`)
-* 13 976 near-white pixels (placeholder text)
-* 236 cyan pixels (cyan icon + ring)
+## Mock camera source
 
-The previous "black void" that the operator read as a camera bug
-is now an explicit "Camera unavailable" state with a reason. On a
-real iPhone, `AVCaptureSession.isRunning` flips true the moment
-`captureOutput` fires its first frame and the preview layer takes
-over.
+On the iOS Simulator (which has no `AVCaptureDevice`),
+`CameraManager.installMockCameraSource()` loads the bundled
+`synthetic_face_320x240.nv21` and ticks it through the same
+`FaceBridge.detect` pipeline at 10 Hz. `LiveDetectView` (and
+`RegisterView`) both render a `NV21Preview` SwiftUI `Image` so the
+face is visible in the UI.
+
+Verified pixel counts on the 6 tab-switch screenshots
+(`runScreenshots`, not the `runFullAutomation` harness):
+
+| File | Skin pixels | Cyan | Pink |
+|---|---|---|---|
+| `01_live_initial.png` | 128 253 | 335 | 0 |
+| `02_register_initial.png` | 13 492 | 1 517 | 0 |
+| `03_database.png` | 0 | 109 | 0 |
+| `04_live_after_switch.png` | 128 253 | 335 | 0 |
+| `05_register_after_switch.png` | 13 492 | 1 517 | 0 |
+| `06_live_after_switch2.png` | 128 253 | 335 | 0 |
+
+The face frame is visible on Live (128 K skin pixels) and on
+Register (13 K skin pixels + 1 517 cyan facebox pixels) across
+all three Live passes. The Database tab correctly shows zero face
+content because no faces are registered yet.

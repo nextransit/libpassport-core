@@ -289,9 +289,16 @@ extension SmokeTest {
 
         func shoot(_ name: String) {
             // Drain the runloop several times to let SwiftUI commit
-            // the layout, then grab the window.
+            // the layout, then grab the window. We also force a
+            // CameraManager objectWillChange so the freshly-active
+            // tab's body evaluates one more time before the capture
+            // (same fix as runFullAutomation's shoot helper).
             for _ in 0..<4 {
                 RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.1))
+            }
+            CameraManager.shared.forceRefresh()
+            for _ in 0..<8 {
+                RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.05))
             }
             guard let window = UIApplication.shared.connectedScenes
                 .compactMap({ ($0 as? UIWindowScene)?.keyWindow ?? ($0 as? UIWindowScene)?.windows.first })
