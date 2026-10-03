@@ -16,16 +16,30 @@ struct LiveDetectView: View {
                 .ignoresSafeArea()
                 .onTapGesture { showOverlay.toggle() }
 
+            // Show the latest NV21 frame as a SwiftUI Image so the
+            // mock-camera simulator path actually displays the face.
+            // On a real device the AVCaptureVideoPreviewLayer does
+            // this for us and the Image stays drawn out (Camerapreview
+            // wins the Z-order). On the simulator there is no preview
+            // layer content so we fall back to a manual render.
+            if let frame = cam.frameResult {
+                NV21Preview(nv21: frame.nv21,
+                            width: frame.width,
+                            height: frame.height)
+                    .ignoresSafeArea()
+                    .opacity(cam.isRunning ? 1 : 0)
+            }
+
             // Placeholder visible whenever the camera session is not
             // actually running. This covers (a) the iOS Simulator
-            // where AVCaptureDevice.DiscoverySession returns 0 devices,
-            // and (b) the moment after launch before captureOutput
-            // fires its first frame. Without this the central area
-            // shows a black void, which the operator reads as a bug.
+            // where AVCaptureDevice.DiscoverySession returns 0 devices
+            // AND we have no frame yet, and (b) the moment after launch
+            // before captureOutput fires its first frame. Without this
+            // the central area shows a black void, which the operator
+            // reads as a bug.
             if !cam.isRunning {
                 CameraUnavailablePlaceholder(reason: cam.lastError ?? "camera session is not running")
                     .allowsHitTesting(false)
-                    .transition(.opacity)
             }
 
             if showOverlay {
@@ -255,5 +269,64 @@ struct CameraUnavailablePlaceholder: View {
                     .padding(.top, 6)
             }
         }
+    }
+}
+
+/// SwiftUI view that renders an NV21 buffer as a stretched Image.
+/// Used only as a fallback when the AVCaptureVideoPreviewLayer
+/// has no input (i.e. iOS Simulator with the mock camera). On a
+/// real device, CameraPreview wins the Z-order and this view is
+/// behind it, effectively hidden.
+struct NV21Preview: View {
+    let nv21: Data
+    let width: Int
+    let height: Int
+
+    var body: some View {
+        if let img = Self.makeImage(nv21: nv21, w: width, h: height) {
+            Image(uiImage: img)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+        } else {
+            Color.black
+        }
+    }
+
+    /// NV21 → CGImage (RGB) → UIImage. Mirrors the conversion in
+    /// face_pipeline.mm but at Swift level. We deliberately avoid
+    /// Accelerate here — this runs once per published frame at
+    /// ~10 Hz and the cost is dominated by UIGraphics, not the
+    /// pixel math.
+    private static func makeImage(nv21: Data, w: Int, h: Int) -> UIImage? {
+        guard nv21.count == w * h * 3 / 2 else { return nil }
+        let ySize = w * h
+        let yp = [UInt8](nv21.prefix(ySize))
+        let vp = [UInt8](nv21.suffix(ySize / 2))
+        var pixels = [UInt8](repeating: 0, count: w * h * 4)
+        for j in 0..<h {
+            for i in 0..<w {
+                let Y = Int(yp[j * w + i])
+                let vui = (j >> 1) * w + (i & ~1)
+                let V = Int(vp[vui + 0]) - 128
+                let U = Int(vp[vui + 1]) - 128
+                let r = Y + ((1471 * V) >> 10)
+                let g = Y - ((352 * U + 731 * V) >> 10)
+                let b = Y + ((1815 * U) >> 10)
+                let off = (j * w + i) * 4
+                pixels[off + 0] = UInt8(max(0, min(255, r)))
+                pixels[off + 1] = UInt8(max(0, min(255, g)))
+                pixels[off + 2] = UInt8(max(0, min(255, b)))
+                pixels[off + 3] = 255
+            }
+        }
+        let cs = CGColorSpaceCreateDeviceRGB()
+        let ctx = CGContext(data: &pixels,
+                            width: w, height: h,
+                            bitsPerComponent: 8,
+                            bytesPerRow: w * 4,
+                            space: cs,
+                            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        guard let cg = ctx?.makeImage() else { return nil }
+        return UIImage(cgImage: cg)
     }
 }

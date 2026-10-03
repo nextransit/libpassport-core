@@ -65,7 +65,18 @@ final class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputS
 
         guard let dev = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
                 ?? AVCaptureDevice.default(for: .video) else {
-            lastError = "no camera available"
+            // No physical camera. On the iOS Simulator we install a
+            // mock frame source that replays a bundled NV21 fixture
+            // through the same detect pipeline, so the operator can
+            // exercise Register / Live Detect end-to-end without a
+            // tethered iPhone. On a real device this branch never
+            // fires (the build-in cameras always resolve).
+            if installMockCameraSource() {
+                DispatchQueue.main.async { self.isRunning = true }
+                NSLog("CameraManager: using mock camera source (simulator)")
+            } else {
+                lastError = "no camera available"
+            }
             return
         }
         if let input = try? AVCaptureDeviceInput(device: dev) {
@@ -100,6 +111,12 @@ final class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputS
 
     @objc private func handleEnterForeground() {
         guard clients > 0 else { return }
+        if mockTimer == nil && lastError != nil {
+            // We were in mock mode before; re-install.
+            if installMockCameraSource() {
+                DispatchQueue.main.async { self.isRunning = true }
+            }
+        }
         startSession()
     }
 
@@ -123,6 +140,16 @@ final class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputS
     }
 
     private func startSession() {
+        // If we are in mock-camera mode (no physical device was
+        // discovered during configure()), the mock timer is already
+        // running. Calling session.startRunning() on a session with
+        // no inputs would mark isRunning=false and turn the preview
+        // into the placeholder again, so we skip the AVCaptureSession
+        // path entirely.
+        if mockTimer != nil {
+            DispatchQueue.main.async { self.isRunning = true }
+            return
+        }
         guard !session.isRunning else {
             DispatchQueue.main.async { self.isRunning = true }
             return
@@ -157,7 +184,16 @@ final class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputS
     }
 
     private func stopSession() {
-        guard session.isRunning else { return }
+        // Stop the mock timer if we are using the mock source.
+        mockTimer?.cancel()
+        mockTimer = nil
+        guard session.isRunning else {
+            DispatchQueue.main.async {
+                self.isRunning = false
+                self.frameResult = nil
+            }
+            return
+        }
         queue.async { [weak self] in
             guard let self else { return }
             self.session.stopRunning()
@@ -242,6 +278,81 @@ final class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputS
         // Explicit refresh when a tab becomes active so it doesn't
         // have to wait for the next captureOutput frame to render.
         objectWillChange.send()
+    }
+
+    /// Mock camera source for the iOS Simulator. Loads the bundled
+    /// face fixture once, then ticks a 10 Hz frame source that
+    /// runs the SAME FaceBridge.detect path as a real camera. This
+    /// lets the operator verify the Register "From Camera" button
+    /// is enabled (face detected), the HUD overlay draws, and the
+    /// register flow returns a valid id, all without a tethered
+    /// iPhone.
+    private var mockTimer: DispatchSourceTimer?
+    private var mockFixture: Data?
+    private var mockWidth: Int = 0
+    private var mockHeight: Int = 0
+
+    private func installMockCameraSource() -> Bool {
+        // Load NV21 fixture
+        guard let url = Bundle.main.url(forResource: "synthetic_face_320x240",
+                                        withExtension: "nv21",
+                                        subdirectory: "TestFixtures"),
+              let data = try? Data(contentsOf: url),
+              data.count == 320 * 240 * 3 / 2 else {
+            return false
+        }
+        mockFixture = data
+        mockWidth = 320
+        mockHeight = 240
+        // Allocate the publish buffer once. captureOutput reuses a
+        // single Data across frames; we do the same here so the
+        // downstream path behaves identically.
+        let needed = 320 * 240 * 3 / 2
+        if nv21Buffer.count != needed {
+            nv21Buffer = Data(count: needed)
+        }
+        // Schedule a 10 Hz timer on the camera queue. We deliberately
+        // do NOT use session.startRunning() — there is no session.
+        let timer = DispatchSource.makeTimerSource(queue: queue)
+        timer.schedule(deadline: .now() + 0.2, repeating: .milliseconds(100))
+        timer.setEventHandler { [weak self] in
+            self?.tickMockFrame()
+        }
+        timer.resume()
+        mockTimer = timer
+        return true
+    }
+
+    private func tickMockFrame() {
+        guard let frame = mockFixture else { return }
+        // Copy the fixture into the reusable buffer (so FaceBridge
+        // sees a stable address).
+        nv21Buffer.withUnsafeMutableBytes { dstRaw in
+            let dst = dstRaw.baseAddress!
+            frame.withUnsafeBytes { srcRaw in
+                memcpy(dst, srcRaw.baseAddress, frame.count)
+            }
+        }
+        frameCounter &+= 1
+        let shouldPublish = (frameCounter % publishEveryNFrames) == 0
+        let bufferCopy = nv21Buffer
+        let w = mockWidth, h = mockHeight, yStride = mockWidth
+        detectQueue.async { [weak self] in
+            guard let self else { return }
+            let detected = FaceBridge.detect(inNV21: bufferCopy, width: w, height: h)
+            if !shouldPublish { return }
+            DispatchQueue.main.async {
+                self.frameResult = FrameResult(
+                    width: w, height: h,
+                    nv21: bufferCopy,
+                    yStride: yStride,
+                    detected: detected
+                )
+                NotificationCenter.default.post(
+                    name: Notification.Name("FaceAppFrameCounter"),
+                    object: nil)
+            }
+        }
     }
 }
 
