@@ -16,6 +16,18 @@ struct LiveDetectView: View {
                 .ignoresSafeArea()
                 .onTapGesture { showOverlay.toggle() }
 
+            // Placeholder visible whenever the camera session is not
+            // actually running. This covers (a) the iOS Simulator
+            // where AVCaptureDevice.DiscoverySession returns 0 devices,
+            // and (b) the moment after launch before captureOutput
+            // fires its first frame. Without this the central area
+            // shows a black void, which the operator reads as a bug.
+            if !cam.isRunning {
+                CameraUnavailablePlaceholder(reason: cam.lastError ?? "camera session is not running")
+                    .allowsHitTesting(false)
+                    .transition(.opacity)
+            }
+
             if showOverlay {
                 HudOverlay(width: 320, height: 480,
                            frame: cam.frameResult?.detected,
@@ -195,6 +207,52 @@ struct HudOverlay: View {
                         j += 2
                     }
                 }
+            }
+        }
+    }
+}
+
+/// Placeholder shown when no camera frames are available. We render
+/// a dark gradient with a centred icon + message so the operator
+/// doesn't read the absence of a preview layer as a SwiftUI hang.
+/// This view never blocks taps — the tap-to-toggle overlay gesture
+/// keeps working above it.
+struct CameraUnavailablePlaceholder: View {
+    let reason: String
+
+    var body: some View {
+        ZStack {
+            // A clearly-visible dark gradient so the operator doesn't
+            // read the empty preview as "the app is hung". 0.18..0.32
+            // is well above the perceptual threshold on a real OLED
+            // display and renders as ~46..82 RGB on a 0-255 scale.
+            LinearGradient(
+                colors: [Color(white: 0.18), Color(white: 0.32), Color(white: 0.18)],
+                startPoint: .top, endPoint: .bottom
+            )
+            VStack(spacing: 16) {
+                ZStack {
+                    Circle()
+                        .fill(Color.cyan.opacity(0.12))
+                        .frame(width: 120, height: 120)
+                    Image(systemName: "camera.metering.unknown")
+                        .font(.system(size: 64, weight: .light))
+                        .foregroundStyle(.cyan.opacity(0.9))
+                }
+                Text("Camera unavailable")
+                    .font(.system(.title3, design: .monospaced).bold())
+                    .foregroundStyle(.white)
+                Text(reason)
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.white.opacity(0.75))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 24)
+                Text("Live preview requires a physical iPhone.\nThe iOS Simulator does not expose AVCaptureDevice.")
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.55))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+                    .padding(.top, 6)
             }
         }
     }

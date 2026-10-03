@@ -40,5 +40,10 @@ struct FaceAppApp: App {
                 SmokeTest.renderHudProof(outDir)
             }
         }
+        else if ProcessInfo.processInfo.environment["FACEAPP_AUTOMATION"] == "1" {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                SmokeTest.runFullAutomation()
+            }
+        }
     }
 }
