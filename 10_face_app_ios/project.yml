@@ -1,0 +1,84 @@
+# FaceApp iOS project definition for xcodegen.
+# The vendored SeetaFace2 static libraries are produced beforehand by
+# CMake (see CMakeLists.txt); this file links them into the app.
+name: FaceApp
+
+options:
+  bundleIdPrefix: com.decard
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+  defaultConfig: Debug
+
+settings:
+  base:
+    IPHONEOS_DEPLOYMENT_TARGET: "16.0"
+    SWIFT_VERSION: "5.0"
+    ENABLE_BITCODE: "NO"
+    # C++ standard + exceptions for the vendored SeetaFace2 classes.
+    CLANG_CXX_LANGUAGE_STANDARD: "gnu++20"
+    CLANG_CXX_LIBRARY: "libc++"
+    CLANG_ENABLE_MODULES: "YES"
+    CLANG_ENABLE_OBJC_ARC: "YES"
+    GCC_ENABLE_CPP_EXCEPTIONS: "YES"
+    GCC_ENABLE_CPP_RTTI: "YES"
+    OTHER_LDFLAGS:
+      - "-lc++"
+      - "-ObjC"
+    # SeetaFace2 headers (all four component include trees).
+    HEADER_SEARCH_PATHS:
+      - "$(SRCROOT)/../3_1_seetaface2"
+      - "$(SRCROOT)/../3_1_seetaface2/FaceDetector/include"
+      - "$(SRCROOT)/../3_1_seetaface2/FaceLandmarker/include"
+      - "$(SRCROOT)/../3_1_seetaface2/FaceRecognizer/include"
+      - "$(SRCROOT)/../3_1_seetaface2/SeetaNet/include"
+    # Prebuilt static archives land in build-ios/lib/Release after the
+    # CMake step.
+    LIBRARY_SEARCH_PATHS:
+      - "$(SRCROOT)/build-ios/lib/Release"
+      - "$(SRCROOT)/build-ios/lib-sim/Release"
+    # FaceBridge is an Objective-C++ wrapper; Swift imports it via the
+    # bridging header.
+    SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/FaceApp/FaceApp-Bridging-Header.h"
+
+targets:
+  FaceApp:
+    type: application
+    platform: iOS
+    sources:
+      - path: FaceApp
+      - path: Views
+      - path: Camera
+      - path: Data
+      - path: Native
+      - path: Resources/Assets.xcassets
+      - path: Resources/Models
+        type: folder
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.decard.faceapp
+        PRODUCT_NAME: FaceApp
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: FaceApp
+        INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.utilities"
+        INFOPLIST_KEY_NSCameraUsageDescription: "FaceApp uses the camera to detect and register faces."
+        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "FaceApp reads photos so you can register a face from an existing image."
+        INFOPLIST_KEY_UILaunchScreen_Generation: "YES"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        # Link the four vendored SeetaFace2 static libraries.
+        OTHER_LDFLAGS:
+          - "-lc++"
+          - "-ObjC"
+          - "$(SRCROOT)/build-ios/lib-sim/Release/libSeetaFaceDetector.a"
+          - "$(SRCROOT)/build-ios/lib-sim/Release/libSeetaFaceLandmarker.a"
+          - "$(SRCROOT)/build-ios/lib-sim/Release/libSeetaFaceRecognizer.a"
+          - "$(SRCROOT)/build-ios/lib-sim/Release/libSeetaNet.a"
+    # Signing is set at build time via DEVELOPMENT_TEAM on the command
+    # line; we keep the settings here empty so the operator can pass
+    # their team.
+    scheme:
+      testTargets: []
+      gatherCoverageData: false

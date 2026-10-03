@@ -1,0 +1,461 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		226EA291E9393F57A216AB94 /* face_pipeline.mm in Sources */ = {isa = PBXBuildFile; fileRef = F6CA87CF80244434798CA98D /* face_pipeline.mm */; };
+		32380788EC77B96C4E46190B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93FF94F034AA7CFB4936F61E /* ContentView.swift */; };
+		40409FD3C1F3FFBCFC5B235A /* Models in Resources */ = {isa = PBXBuildFile; fileRef = 5C201341B58A80586618F607 /* Models */; };
+		60A2CEDE7316406B9DABA3FC /* FaceModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2F414443F5FA69F37740EDF /* FaceModel.swift */; };
+		647218D1E5F08787BD7C50F3 /* RegisterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 244810C45301137AFBB5F526 /* RegisterView.swift */; };
+		731E01A3F25DEA667BD3E65F /* CameraManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31CC742F380FF6512549BEB2 /* CameraManager.swift */; };
+		88D0D4A94E1E9044897A5300 /* PersonStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 845F70D1D3E70BBDBF3E0C50 /* PersonStore.swift */; };
+		8BE9746B966E846540D3FDC7 /* SmokeTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D51AB398F7E49B60E751A64 /* SmokeTest.swift */; };
+		8CF8CA49ECE81C0CC3915845 /* LiveDetectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08FD40D240AE604531EEA81B /* LiveDetectView.swift */; };
+		B46C80AC1D4E9003A3B45F7B /* FaceQuality.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8E6EFE3ED11CE1C6B8A6C46 /* FaceQuality.swift */; };
+		BA486558C6B1B211814347B2 /* FaceBridge.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27DCDE58F329731176043364 /* FaceBridge.mm */; };
+		E56D1714DD615ADD9ECF1BC5 /* DatabaseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 614350B321C482D1A9B2E28B /* DatabaseView.swift */; };
+		F4A50945F98DFE20ED1F34A2 /* FaceAppApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12CB4345B8D18D41D1C200D1 /* FaceAppApp.swift */; };
+		F4DD6493255DFCC0FD4DBC63 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1DFE1EC8001F6C6F537A5F5B /* Assets.xcassets */; };
+		FB55BF1FCFD8FD666728D0C7 /* PersonEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31951C59C0833C038A23A434 /* PersonEntry.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		03D55FCAD639DEDBD2245D99 /* FaceBridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FaceBridge.h; sourceTree = "<group>"; };
+		08FD40D240AE604531EEA81B /* LiveDetectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveDetectView.swift; sourceTree = "<group>"; };
+		12CB4345B8D18D41D1C200D1 /* FaceAppApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceAppApp.swift; sourceTree = "<group>"; };
+		191BAB05F4D7AF3D5E9A1FFD /* FaceApp-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "FaceApp-Bridging-Header.h"; sourceTree = "<group>"; };
+		1DFE1EC8001F6C6F537A5F5B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		244810C45301137AFBB5F526 /* RegisterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegisterView.swift; sourceTree = "<group>"; };
+		27DCDE58F329731176043364 /* FaceBridge.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = FaceBridge.mm; sourceTree = "<group>"; };
+		31951C59C0833C038A23A434 /* PersonEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonEntry.swift; sourceTree = "<group>"; };
+		31CC742F380FF6512549BEB2 /* CameraManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraManager.swift; sourceTree = "<group>"; };
+		5C201341B58A80586618F607 /* Models */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Models; path = Resources/Models; sourceTree = SOURCE_ROOT; };
+		614350B321C482D1A9B2E28B /* DatabaseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseView.swift; sourceTree = "<group>"; };
+		845F70D1D3E70BBDBF3E0C50 /* PersonStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonStore.swift; sourceTree = "<group>"; };
+		93FF94F034AA7CFB4936F61E /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		9D51AB398F7E49B60E751A64 /* SmokeTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmokeTest.swift; sourceTree = "<group>"; };
+		C102BF702D258B57A14D4EDD /* FaceApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = FaceApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D8E6EFE3ED11CE1C6B8A6C46 /* FaceQuality.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceQuality.swift; sourceTree = "<group>"; };
+		E0D9F24D45B341D5EA9BF412 /* face_pipeline.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = face_pipeline.h; sourceTree = "<group>"; };
+		E2F414443F5FA69F37740EDF /* FaceModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceModel.swift; sourceTree = "<group>"; };
+		F6CA87CF80244434798CA98D /* face_pipeline.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = face_pipeline.mm; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		124D4A7949E6813D7B7029BF /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				1DFE1EC8001F6C6F537A5F5B /* Assets.xcassets */,
+				5C201341B58A80586618F607 /* Models */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		5BCFEB5119A650B4C4BF901B /* Native */ = {
+			isa = PBXGroup;
+			children = (
+				E0D9F24D45B341D5EA9BF412 /* face_pipeline.h */,
+				F6CA87CF80244434798CA98D /* face_pipeline.mm */,
+				03D55FCAD639DEDBD2245D99 /* FaceBridge.h */,
+				27DCDE58F329731176043364 /* FaceBridge.mm */,
+			);
+			path = Native;
+			sourceTree = "<group>";
+		};
+		98D742DF0BB76355777F30FF /* Camera */ = {
+			isa = PBXGroup;
+			children = (
+				31CC742F380FF6512549BEB2 /* CameraManager.swift */,
+				D8E6EFE3ED11CE1C6B8A6C46 /* FaceQuality.swift */,
+			);
+			path = Camera;
+			sourceTree = "<group>";
+		};
+		AC4CC923D97F4678CE15CA02 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				93FF94F034AA7CFB4936F61E /* ContentView.swift */,
+				614350B321C482D1A9B2E28B /* DatabaseView.swift */,
+				08FD40D240AE604531EEA81B /* LiveDetectView.swift */,
+				244810C45301137AFBB5F526 /* RegisterView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		AE0193F0E9B9191A30A5416F = {
+			isa = PBXGroup;
+			children = (
+				98D742DF0BB76355777F30FF /* Camera */,
+				F834F4DEDF051ED47EDD18C0 /* Data */,
+				FFEC919B69E378B3403F72F7 /* FaceApp */,
+				5BCFEB5119A650B4C4BF901B /* Native */,
+				124D4A7949E6813D7B7029BF /* Resources */,
+				AC4CC923D97F4678CE15CA02 /* Views */,
+				C63CC92148A195C3F1717172 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		C63CC92148A195C3F1717172 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				C102BF702D258B57A14D4EDD /* FaceApp.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		F834F4DEDF051ED47EDD18C0 /* Data */ = {
+			isa = PBXGroup;
+			children = (
+				845F70D1D3E70BBDBF3E0C50 /* PersonStore.swift */,
+			);
+			path = Data;
+			sourceTree = "<group>";
+		};
+		FFEC919B69E378B3403F72F7 /* FaceApp */ = {
+			isa = PBXGroup;
+			children = (
+				191BAB05F4D7AF3D5E9A1FFD /* FaceApp-Bridging-Header.h */,
+				12CB4345B8D18D41D1C200D1 /* FaceAppApp.swift */,
+				E2F414443F5FA69F37740EDF /* FaceModel.swift */,
+				31951C59C0833C038A23A434 /* PersonEntry.swift */,
+				9D51AB398F7E49B60E751A64 /* SmokeTest.swift */,
+			);
+			path = FaceApp;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		00E35AFD8057A03310140CC6 /* FaceApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 830801BB12B924E412BCD8DE /* Build configuration list for PBXNativeTarget "FaceApp" */;
+			buildPhases = (
+				2E4FBB4FFF415396175009C3 /* Sources */,
+				6280142D5D70EE7B433F34AB /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FaceApp;
+			packageProductDependencies = (
+			);
+			productName = FaceApp;
+			productReference = C102BF702D258B57A14D4EDD /* FaceApp.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A586BF8C5ABF858E99A522A6 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = AF05C178718FE1613471D0D3 /* Build configuration list for PBXProject "FaceApp" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = AE0193F0E9B9191A30A5416F;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = C63CC92148A195C3F1717172 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				00E35AFD8057A03310140CC6 /* FaceApp */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		6280142D5D70EE7B433F34AB /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F4DD6493255DFCC0FD4DBC63 /* Assets.xcassets in Resources */,
+				40409FD3C1F3FFBCFC5B235A /* Models in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		2E4FBB4FFF415396175009C3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				731E01A3F25DEA667BD3E65F /* CameraManager.swift in Sources */,
+				32380788EC77B96C4E46190B /* ContentView.swift in Sources */,
+				E56D1714DD615ADD9ECF1BC5 /* DatabaseView.swift in Sources */,
+				F4A50945F98DFE20ED1F34A2 /* FaceAppApp.swift in Sources */,
+				BA486558C6B1B211814347B2 /* FaceBridge.mm in Sources */,
+				60A2CEDE7316406B9DABA3FC /* FaceModel.swift in Sources */,
+				B46C80AC1D4E9003A3B45F7B /* FaceQuality.swift in Sources */,
+				8CF8CA49ECE81C0CC3915845 /* LiveDetectView.swift in Sources */,
+				FB55BF1FCFD8FD666728D0C7 /* PersonEntry.swift in Sources */,
+				88D0D4A94E1E9044897A5300 /* PersonStore.swift in Sources */,
+				647218D1E5F08787BD7C50F3 /* RegisterView.swift in Sources */,
+				8BE9746B966E846540D3FDC7 /* SmokeTest.swift in Sources */,
+				226EA291E9393F57A216AB94 /* face_pipeline.mm in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		205E0E4E9C5878274F9AF7EA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_BITCODE = NO;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_ENABLE_CPP_EXCEPTIONS = YES;
+				GCC_ENABLE_CPP_RTTI = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../3_1_seetaface2",
+					"$(SRCROOT)/../3_1_seetaface2/FaceDetector/include",
+					"$(SRCROOT)/../3_1_seetaface2/FaceLandmarker/include",
+					"$(SRCROOT)/../3_1_seetaface2/FaceRecognizer/include",
+					"$(SRCROOT)/../3_1_seetaface2/SeetaNet/include",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LIBRARY_SEARCH_PATHS = (
+					"$(SRCROOT)/build-ios/lib/Release",
+					"$(SRCROOT)/build-ios/lib-sim/Release",
+				);
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				OTHER_LDFLAGS = (
+					"-lc++",
+					"-ObjC",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OBJC_BRIDGING_HEADER = "$(SRCROOT)/FaceApp/FaceApp-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		2E65290D939893652CCDBF81 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = FaceApp;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSCameraUsageDescription = "FaceApp uses the camera to detect and register faces.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "FaceApp reads photos so you can register a face from an existing image.";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"-lc++",
+					"-ObjC",
+					"$(SRCROOT)/build-ios/lib-sim/Release/libSeetaFaceDetector.a",
+					"$(SRCROOT)/build-ios/lib-sim/Release/libSeetaFaceLandmarker.a",
+					"$(SRCROOT)/build-ios/lib-sim/Release/libSeetaFaceRecognizer.a",
+					"$(SRCROOT)/build-ios/lib-sim/Release/libSeetaNet.a",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.decard.faceapp;
+				PRODUCT_NAME = FaceApp;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		58169CFA200FAA8A28F460BB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = FaceApp;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSCameraUsageDescription = "FaceApp uses the camera to detect and register faces.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "FaceApp reads photos so you can register a face from an existing image.";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"-lc++",
+					"-ObjC",
+					"$(SRCROOT)/build-ios/lib-sim/Release/libSeetaFaceDetector.a",
+					"$(SRCROOT)/build-ios/lib-sim/Release/libSeetaFaceLandmarker.a",
+					"$(SRCROOT)/build-ios/lib-sim/Release/libSeetaFaceRecognizer.a",
+					"$(SRCROOT)/build-ios/lib-sim/Release/libSeetaNet.a",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.decard.faceapp;
+				PRODUCT_NAME = FaceApp;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		F3CD0B191891A4B9DE150363 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_BITCODE = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_CPP_EXCEPTIONS = YES;
+				GCC_ENABLE_CPP_RTTI = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../3_1_seetaface2",
+					"$(SRCROOT)/../3_1_seetaface2/FaceDetector/include",
+					"$(SRCROOT)/../3_1_seetaface2/FaceLandmarker/include",
+					"$(SRCROOT)/../3_1_seetaface2/FaceRecognizer/include",
+					"$(SRCROOT)/../3_1_seetaface2/SeetaNet/include",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LIBRARY_SEARCH_PATHS = (
+					"$(SRCROOT)/build-ios/lib/Release",
+					"$(SRCROOT)/build-ios/lib-sim/Release",
+				);
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				OTHER_LDFLAGS = (
+					"-lc++",
+					"-ObjC",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OBJC_BRIDGING_HEADER = "$(SRCROOT)/FaceApp/FaceApp-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		830801BB12B924E412BCD8DE /* Build configuration list for PBXNativeTarget "FaceApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				58169CFA200FAA8A28F460BB /* Debug */,
+				2E65290D939893652CCDBF81 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		AF05C178718FE1613471D0D3 /* Build configuration list for PBXProject "FaceApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F3CD0B191891A4B9DE150363 /* Debug */,
+				205E0E4E9C5878274F9AF7EA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A586BF8C5ABF858E99A522A6 /* Project object */;
+}

@@ -1,0 +1,8 @@
+# Local-only — never commit
+build/
+build-ios/
+DerivedData/
+xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
