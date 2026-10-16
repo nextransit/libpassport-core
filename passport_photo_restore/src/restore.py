@@ -236,20 +236,36 @@ def drop_reflection(work_rgb, st, mode="crop"):
     return keep, st2
 
 
-def clean_band_reflection(band_rgb, line1, line2, clear_rows=2):
-    """清除 MRZ 两行之间 line1 的镜面反射残留 (CNN band-split 假设未被破坏).
+def clean_band_reflection(band_rgb, line1, line2, clear_rows=2,
+                            unsharp=True, sharp_amount=1.5, blur_sigma=2.0):
+    """清除 band 内反射残留.
 
-    策略: 仅清 line1.y1+1 起的 clear_rows 行 (最强反射区, 反射随距离衰减);
-    中间剩余行保留, 让 CNN 工具的 band-split 能找到连续 ink 链.
-    clear_rows 太小则反射残留; 太大则 CNN split 失败. 默认 2 行 (经验值).
+    三层策略:
+    1) clear_rows: 清 line1.y1+1 起的 N 行 (line1 镜面反射最强区, 反射随距离衰减)
+    2) unsharp=True: USM 锐化 (抑制反射模糊层, 增强 line1/line2 锐利字符)
+       - sharp_amount 越大, 字符边缘越强 (反射模糊被抑制)
+       - 反射是"虚像", 边缘比真实字符模糊, USM 选择性增强锐利字符
+    3) clear_rows 也清掉 line2 下方反射残留的最后 N 行 (line2 镜面)
     """
+    import cv2 as _cv2
+    import numpy as _np
     H = band_rgb.shape[0]
-    l1y0, l1y1 = line1
-    clear_start = l1y1 + 1
-    clear_end = min(l1y1 + clear_rows, H - 1)
     clean = band_rgb.copy()
-    for y in range(clear_start, clear_end + 1):
-        clean[y] = 255
+    # 1) 清 line1 紧邻的反射 (clear_rows 行)
+    l1y0, l1y1 = line1
+    for y in range(l1y1 + 1, min(l1y1 + clear_rows, H - 1) + 1):
+        if 0 <= y < H:
+            clean[y] = 255
+    # 2) 清 line2 下方反射的最后 N 行
+    l2y0, l2y1 = line2
+    for y in range(max(l2y1 + 1, l2y1 - clear_rows + 1), l2y1 + 1):
+        if 0 <= y < H:
+            clean[y] = 255
+    # 3) USM 锐化 (抑制反射模糊层)
+    if unsharp:
+        blur = _cv2.GaussianBlur(clean, (0, 0), blur_sigma)
+        clean = _cv2.addWeighted(clean, sharp_amount, blur,
+                                 -(sharp_amount - 1.0), 0)
     return clean
 
 
@@ -282,10 +298,11 @@ def crop_pair(work_rgb, st, pad=0.06):
     return work_rgb[cy0:cy1 + 1]
 
 
-def crop_pair_clean(work_rgb, st, pad=0.06, clear_rows=2):
-    """crop_pair + clean_band_reflection: 剔除 band 内 line1 紧邻的镜面反射.
+def crop_pair_clean(work_rgb, st, pad=0.06, clear_rows=2, unsharp=True):
+    """crop_pair + clean_band_reflection(USM): 抑制 band 内反射模糊层.
 
-    clear_rows: 涂白 line1 之后的多少行 (默认 2, 经验值; 0 等同 crop_pair).
+    clear_rows: 涂白 line1 后/line2 后的多少行 (默认 2, 反射最强区)
+    unsharp: 是否应用 USM 锐化抑制反射 (默认 True)
     """
     pair = st.get("mrz_pair")
     if not pair:
@@ -298,7 +315,8 @@ def crop_pair_clean(work_rgb, st, pad=0.06, clear_rows=2):
     band = work_rgb[cy0:cy1 + 1]
     l1_in_band = (l1y0 - cy0, l1y1 - cy0)
     l2_in_band = (l2y0 - cy0, l2y1 - cy0)
-    clean = clean_band_reflection(band, l1_in_band, l2_in_band, clear_rows=clear_rows)
+    clean = clean_band_reflection(band, l1_in_band, l2_in_band,
+                                  clear_rows=clear_rows, unsharp=unsharp)
     return clean, {"band_in_work": (cy0, cy1), "l1_in_band": l1_in_band,
                    "l2_in_band": l2_in_band}
 
