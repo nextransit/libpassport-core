@@ -606,20 +606,24 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                            or ("cyber-dark" if HAS_TTKB else "darkly"))
         nb = ttk.Notebook(self)
         nb.pack(fill="both", expand=True, padx=8, pady=8)
-        # Tab order: Locator (1) -> OCR (2) -> NFC (3) -> MRZ (4) -> AC (5) -> face (6).
-        self.tab_loc  = ttk.Frame(nb)
-        self.tab_ocr  = ttk.Frame(nb)
-        self.tab_nfc  = ttk.Frame(nb)
-        self.tab_mrz  = ttk.Frame(nb)
-        self.tab_ac   = ttk.Frame(nb)
-        self.tab_face = ttk.Frame(nb)
-        nb.add(self.tab_loc,  text="护照定位")
-        nb.add(self.tab_ocr,  text="MRZ OCR 测试")
-        nb.add(self.tab_nfc,  text="NFC 读卡")
-        nb.add(self.tab_mrz,  text="MRZ 解码")
-        nb.add(self.tab_ac,   text="防伪验证")
-        nb.add(self.tab_face, text="照片比对")
+        # Tab order: Locator (1) -> Restore->MRZ (2) -> OCR (3) -> NFC (4)
+        # -> MRZ (5) -> AC (6) -> face (7).
+        self.tab_loc     = ttk.Frame(nb)
+        self.tab_restore = ttk.Frame(nb)
+        self.tab_ocr     = ttk.Frame(nb)
+        self.tab_nfc     = ttk.Frame(nb)
+        self.tab_mrz     = ttk.Frame(nb)
+        self.tab_ac      = ttk.Frame(nb)
+        self.tab_face    = ttk.Frame(nb)
+        nb.add(self.tab_loc,     text="护照定位")
+        nb.add(self.tab_restore, text="照片→MRZ")
+        nb.add(self.tab_ocr,     text="MRZ OCR 测试")
+        nb.add(self.tab_nfc,     text="NFC 读卡")
+        nb.add(self.tab_mrz,     text="MRZ 解码")
+        nb.add(self.tab_ac,      text="防伪验证")
+        nb.add(self.tab_face,    text="照片比对")
         self._build_loc_tab()
+        self._build_restore_tab()
         self._build_ocr_tab()
         self._build_nfc_tab()
         self._build_mrz_tab()
@@ -1772,6 +1776,226 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                                 highlightbackground=pal["border"],
                                 highlightcolor=pal["accent"])
         self.loc_info.pack(fill="both", expand=True)
+
+    # ---- 照片→MRZ 流水线 tab（矫正+去影 -> MRZ 粗定位 -> 识别 -> 解码）----
+    def _build_restore_tab(self):
+        """护照机照片 -> 矫正/去影 -> MRZ 粗定位 -> 识别 -> 解码，逐步可视化。"""
+        pal = self._pal
+        f = self.tab_restore
+
+        top = ttk.LabelFrame(f, text="护照照片 → MRZ（矫正 + 去倒影 + 识别）")
+        top.pack(fill="x", padx=4, pady=(4, 0))
+        row = ttk.Frame(top); row.pack(fill="x", padx=8, pady=4)
+        ttk.Label(row, text="样本:").pack(side="left")
+        self.rst_sample = tk.StringVar()
+        photo_names = []
+        photo_dir = ROOT / "Photo"
+        if photo_dir.exists():
+            photo_names = sorted(
+                p.name for p in photo_dir.rglob("*")
+                if p.suffix.lower() in (".jpg", ".jpeg", ".png"))
+        self.rst_samples = ["合成护照样本 (TD3 整页)",
+                            "assets/pic: 任选"] + [f"Photo: {n}" for n in photo_names]
+        cb = ttk.Combobox(row, textvariable=self.rst_sample,
+                          values=self.rst_samples, state="readonly", width=36,
+                          style="Field.TCombobox")
+        cb.pack(side="left", padx=2)
+        cb.current(0)
+        cb.bind("<<ComboboxSelected>>", self._rst_on_sample)
+        self.rst_pick_btn = ttk.Button(row, text="▤ 浏览文件…",
+                                       command=self._rst_pick)
+        self.rst_pick_btn.pack(side="left", padx=4)
+        self.rst_run_btn = self._cta(row, "▶ 运行流水线", self._rst_run,
+                                     padx=12, pady=3)
+        self.rst_run_btn.pack(side="left", padx=4)
+        self.rst_status = ttk.Label(row, text="")
+        self.rst_status.pack(side="left", padx=8)
+
+        # 左侧：两幅图（原图 + 矫正后），右侧：MRZ 粗定位框 + 识别结果
+        body = ttk.Frame(f); body.pack(fill="both", expand=True, padx=4, pady=(4, 6))
+        left = ttk.Frame(body); left.pack(side="left", fill="both", expand=True)
+        ttk.Label(left, text="① 原始图         ② 矫正+去影图",
+                  font=("TkDefaultFont", 10, "bold")).pack(anchor="w")
+        self.rst_canvas = tk.Canvas(left, width=900, height=360,
+                                    bg=pal["canvas"], highlightthickness=1,
+                                    highlightbackground=pal["canvas_border"],
+                                    highlightcolor=pal["accent"])
+        self.rst_canvas.pack(side="top", fill="both", expand=True)
+
+        right = ttk.Frame(body); right.pack(side="left", padx=(6, 0), fill="both")
+        ttk.Label(right, text="③ MRZ 区粗定位（红框）+ 阶段耗时",
+                  font=("TkDefaultFont", 10, "bold")).pack(anchor="w")
+        self.rst_canvas2 = tk.Canvas(right, width=520, height=220,
+                                     bg=pal["canvas"], highlightthickness=1,
+                                     highlightbackground=pal["canvas_border"],
+                                     highlightcolor=pal["accent"])
+        self.rst_canvas2.pack(side="top", fill="x")
+        ttk.Label(right, text="④ MRZ 识别结果 + 解码",
+                  font=("TkDefaultFont", 10, "bold")).pack(anchor="w", pady=(4, 0))
+        self.rst_info = tk.Text(right, width=64, height=12, font=("Menlo", 10),
+                                bg="#ffffff", fg="#111827")
+        self.rst_info.pack(fill="both", expand=True)
+
+    def _rst_resolve_path(self):
+        path = self.rst_sample_path.get() if hasattr(self, "rst_sample_path") else ""
+        if path and os.path.exists(path):
+            return path
+        key = self.rst_sample.get()
+        if key.startswith("Photo:"):
+            name = key.split(":", 1)[1].strip()
+            cand = list((ROOT / "Photo").rglob(name))
+            if cand:
+                return str(cand[0])
+        if key.startswith("assets/pic:"):
+            from passport_pipeline import PIC_DIR as _PIC  # type: ignore
+            name = key.split(":", 1)[1].strip()
+            p = _PIC / name
+            if p.exists():
+                return str(p)
+        return str(SAMPLE_PASSPORT_PNG)
+
+    def _rst_pick(self):
+        path = filedialog.askopenfilename(
+            filetypes=[("Image", "*.png *.ppm *.bmp *.jpg"), ("All", "*.*")])
+        if path:
+            if not hasattr(self, "rst_sample_path"):
+                self.rst_sample_path = tk.StringVar()
+            self.rst_sample_path.set(path)
+            self.rst_sample.set(f"自定义: {os.path.basename(path)}")
+            try:
+                self._rst_draw_source(path)
+            except Exception as e:
+                self.rst_status.config(text=f"加载失败: {e}", foreground=self._pal["err"])
+
+    def _rst_on_sample(self, _evt=None):
+        try:
+            path = self._rst_resolve_path()
+            self._rst_draw_source(path)
+        except Exception as e:
+            self.rst_status.config(text=f"加载失败: {e}", foreground=self._pal["err"])
+
+    def _rst_draw_source(self, path):
+        from PIL import Image, ImageTk
+        img = Image.open(path).convert("RGB")
+        disp = img.copy()
+        disp.thumbnail((450, 330))
+        self._rst_imgtk_src = ImageTk.PhotoImage(disp)
+        self.rst_canvas.delete("all")
+        self.rst_canvas.create_image(2, 2, image=self._rst_imgtk_src, anchor="nw")
+        self.rst_canvas.create_text(4, 12, text="原图", anchor="nw",
+                                    fill=self._pal["accent"], font=("Menlo", 10, "bold"))
+        self.rst_canvas.create_text(4, self.rst_canvas.winfo_height() - 4,
+                                    text=f"{img.width}×{img.height}", anchor="sw",
+                                    fill=self._pal["dim"], font=("Menlo", 8))
+
+    def _rst_run(self):
+        """执行 passport_photo_restore 流水线并分步展示。"""
+        import sys as _sys
+        from pathlib import Path as _P
+        try:
+            self.rst_run_btn.configure(state="disabled")
+            self.rst_status.config(text="运行流水线…", foreground=self._pal["dim"])
+            self.update_idletasks()
+            path = self._rst_resolve_path()
+            if not os.path.exists(path):
+                raise FileNotFoundError(path)
+            _sys.path.insert(0, str(_P(__file__).resolve().parents[1] /
+                                    "passport_photo_restore" / "src"))
+            from restore import load, _gray, detect_structure, rectify  # type: ignore
+            import cv2 as _cv2
+            rgb = _cv2.cvtColor(_cv2.imread(path), _cv2.COLOR_BGR2RGB)
+            # ① 原图
+            self._rst_draw_source(path)
+            # ② 矫正+去影
+            t0 = __import__("time").perf_counter()
+            work, scale = load(rgb, max_side=1250)
+            g = _gray(work)
+            st = detect_structure(g)
+            mrz = st.get("mrz")
+            t_stage = (__import__("time").perf_counter() - t0) * 1000
+            rect = rectify(work, st) if mrz else None
+            from PIL import Image, ImageTk
+            if rect is not None:
+                disp = Image.fromarray(rect)
+                disp.thumbnail((450, 330))
+                self._rst_imgtk_rect = ImageTk.PhotoImage(disp)
+                self.rst_canvas.create_image(460, 2, image=self._rst_imgtk_rect,
+                                             anchor="nw")
+                self.rst_canvas.create_text(462, 12, text="矫正+去影", anchor="nw",
+                                            fill=self._pal["ok"], font=("Menlo", 10, "bold"))
+            # ③ MRZ 粗定位（在原图 downscale 上画框）
+            self.rst_canvas2.delete("all")
+            small = Image.fromarray(work)
+            small.thumbnail((500, 200))
+            self._rst_imgtk_small = ImageTk.PhotoImage(small)
+            self.rst_canvas2.create_image(2, 2, image=self._rst_imgtk_small, anchor="nw")
+            if mrz:
+                y0, y1 = mrz
+                x0, x1 = 0, work.shape[1] - 1
+                s = work.shape[1] / small.width
+                self.rst_canvas2.create_rectangle(
+                    x0 / s + 2, y0 / s + 2, x1 / s + 2, y1 / s + 2,
+                    outline=self._pal["err"], width=2)
+                self.rst_canvas2.create_text(
+                    4, 14, text=f"MRZ 带 y{y0}-{y1} (h={y1-y0+1})", anchor="nw",
+                    fill=self._pal["err"], font=("Menlo", 9, "bold"))
+            # ④ 识别 + 解码
+            lines = []
+            lines.append(f"MRZ 带 y{y0}-{y1} 高 {y1-y0+1}px（单行~{(y1-y0+1)/2:.0f}px）")
+            lines.append(f"结构检测耗时 {t_stage:.1f} ms")
+            if rect is not None:
+                import tempfile, subprocess as _sp
+                with tempfile.NamedTemporaryFile(suffix=".ppm", delete=False) as tf:
+                    tmp = Path(tf.name)
+                Image.fromarray(rect).save(tmp, format="PPM")
+                t1 = __import__("time").perf_counter()
+                ocr_proc = _sp.run(
+                    [str(ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_cnn_tool"),
+                     str(tmp)], text=True, capture_output=True, timeout=20)
+                lines.append(f"OCR 识别耗时 {(__import__('time').perf_counter()-t1)*1000:.1f} ms")
+                kv = {}
+                for ln in ocr_proc.stdout.splitlines():
+                    if ":" in ln:
+                        k, _, v = ln.partition(":")
+                        kv[k.strip()] = v.strip()
+                l1 = kv.get("result.line1", "")
+                l2 = kv.get("result.line2", "")
+                lines.append("line1: " + l1)
+                lines.append("line2: " + l2)
+                if l1 and l2 and kv.get("result.ok") == "OK":
+                    t2 = __import__("time").perf_counter()
+                    dec = _sp.run([str(MRZ_TOOL), "decode", l1 + l2],
+                                  text=True, capture_output=True, timeout=10)
+                    lines.append(f"解码耗时 {(__import__('time').perf_counter()-t2)*1000:.1f} ms")
+                    lines.append("")
+                    lines.append(dec.stdout if dec.returncode == 0
+                                 else "[decode 拒绝] " + dec.stderr.strip())
+                else:
+                    lines.append("[识别未通过] " + kv.get("result.ok", ""))
+                try:
+                    tmp.unlink()
+                except OSError:
+                    pass
+            else:
+                lines.append("未定位到 MRZ 区（请换图）")
+            self.rst_info.configure(state="normal")
+            self.rst_info.delete("1.0", "end")
+            self.rst_info.insert("1.0", "\n".join(lines))
+            self.rst_info.configure(state="disabled")
+            self.rst_status.config(
+                text="完成" if (mrz is not None and rect is not None) else "MRZ 未定位",
+                foreground=(self._pal["ok"] if mrz else self._pal["err"]))
+        except Exception as e:
+            self.rst_status.config(text=f"流水线失败: {e}", foreground=self._pal["err"])
+            self.rst_info.configure(state="normal")
+            self.rst_info.delete("1.0", "end")
+            self.rst_info.insert("1.0", f"错误: {e}\n")
+            self.rst_info.configure(state="disabled")
+        finally:
+            try:
+                self.rst_run_btn.configure(state="normal")
+            except tk.TclError:
+                pass
 
     def _loc_pick(self):
         path = filedialog.askopenfilename(
