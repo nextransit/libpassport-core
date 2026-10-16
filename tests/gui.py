@@ -2080,19 +2080,25 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             H_before = work.shape[0]
             self._rst_fit_to(0, _Image.fromarray(rgb), footer=f"{W0}×{H0}")
 
-            # ② 去影图: 直接裁掉底部反射段 (反射段像素彻底不存在, 不入算法)
+            # ② 去影图: 直接裁掉底部反射段 (默认强制裁 150px)
             t0 = _time.perf_counter()
-            work2, st2 = drop_reflection(work, st, mode="crop")
+            work2, st2, refl_info = drop_reflection(work, st, mode="crop",
+                                                    force_min_drop=150)
             pair = st2.get("mrz_pair")
             H_after = work2.shape[0]
-            dropped_px = H_before - H_after
+            actual_drop = H_before - H_after
+            intended_drop = refl_info.get("intended_drop", 150)
             stages.append(("②去影(裁反射)", (_time.perf_counter() - t0) * 1000))
-            badge2 = (f"已裁掉底部 {dropped_px}px ({dropped_px*100//H_before}%) 反射"
-                      if dropped_px > 0 else "无反射段 (兜底)")
+            if actual_drop >= intended_drop:
+                badge2 = (f"已裁掉底部 {actual_drop}px ({actual_drop*100//H_before}%) 反射"
+                          f"  (force_min_drop={intended_drop})")
+            else:
+                badge2 = (f"已裁掉底部 {actual_drop}px ({actual_drop*100//H_before}%) 反射"
+                          f"  (要求 {intended_drop}px, 受 H={H_before} 限制)")
             self._rst_fit_to(1, _Image.fromarray(work2),
                              footer=f"{work2.shape[1]}×{work2.shape[0]}  (原 {H_before}px)",
                              badge=badge2,
-                             badge_color="warn" if dropped_px > 0 else "ok")
+                             badge_color="warn" if actual_drop > 0 else "ok")
 
             # ③ 矫正图: 对裁后图做 line1/line2 各自单应
             t0 = _time.perf_counter()
@@ -2142,7 +2148,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             else:
                 lines.append("MRZ 双行: <未定位>")
             lines.append(f"反射段裁掉: work {H_before} -> {H_after}  "
-                         f"(丢 {dropped_px}px, 反射段不再入算法)")
+                         f"(丢 {actual_drop}px, 要求 {intended_drop}px, 反射段不再入算法)")
             if reflection0:
                 lines.append(f"原始反射段: {reflection0}")
             lines.append("")

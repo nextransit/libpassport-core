@@ -179,16 +179,18 @@ def _mrzh_quad(g, y0, y1, min_ink_rows=2):
 
 
 def drop_reflection(work_rgb, st, mode="crop", force_min_drop=150):
-    """从 work 中移除 line2 下方反射段 (强制至少裁 force_min_drop px).
+    """从 work 中移除 line2 下方反射段 (默认强制裁 force_min_drop=150 px).
+
+    返回 (work2, st2, info), info 包含:
+      - intended_drop: 期望裁掉的 px (= force_min_drop)
+      - actual_drop: 实际裁掉的 px (= H_before - H_after, 受 H 限制)
+      - crop_top: 实际裁到的 y
 
     Args:
         work_rgb: load() 后的 RGB
-        st: detect_structure() 返回 dict (含 reflection 字段, 含 mrz_pair)
-        mode:
-          "crop" - 直接截掉 line2 下方反射段 (像素不存在)
-          "fill" - 用中位色填充
-        force_min_drop: 至少裁掉 line2 下方多少像素 (默认 150, 即 line2 反射延伸总长)
-                       -> 即便 detect_structure 没检测到反射段, 也按这个长度裁
+        st: detect_structure() 返回 dict
+        mode: "crop" / "fill"
+        force_min_drop: 期望裁掉的最小 px (默认 150)
     """
     reflection = st.get("reflection", []) or []
     pair = st.get("mrz_pair")
@@ -202,39 +204,45 @@ def drop_reflection(work_rgb, st, mode="crop", force_min_drop=150):
                 med = np.median(flat, axis=0).astype(np.uint8)
                 keep[y0:y1 + 1] = med
         st2 = dict(st); st2["reflection"] = []
-        return keep, st2
+        return keep, st2, {"intended_drop": force_min_drop, "actual_drop": 0,
+                            "crop_top": keep.shape[0], "mode": "fill"}
 
-    # mode == "crop"
     H = work_rgb.shape[0]
     if not pair:
-        # 无 pair: 兜底裁掉 line2 下方 force_min_drop px (假设 line2 在 work 中部)
         if not reflection:
-            return work_rgb, st
+            return work_rgb, st, {"intended_drop": force_min_drop, "actual_drop": 0,
+                                    "crop_top": H, "mode": "noop"}
         crop_top = min(t[0] for t in reflection)
         keep = work_rgb[:max(0, crop_top)]
         st2 = dict(st); st2["reflection"] = []
-        return keep, st2
+        return keep, st2, {"intended_drop": force_min_drop,
+                            "actual_drop": H - keep.shape[0],
+                            "crop_top": crop_top, "mode": "crop"}
 
     (l1y0, l1y1), (l2y0, l2y1) = pair
-    # 1) 检测到的 line2 下方反射段: 反射起点 = min(y0 for t in reflection if t[0] >= l2y1)
-    below_detected = [t for t in reflection if t[0] >= l2y0]
-    detected_start = min(t[0] for t in below_detected) if below_detected else None
 
-    # 2) 兜底: 至少裁 force_min_drop px (从 line2.y1+1 起)
-    forced_start = l2y1 + 1 + force_min_drop  # line2 字符下方 force_min_drop 行的起点
+    # 检测到的 line2 下方反射段起点
+    below = [t for t in reflection if t[0] >= l2y0]
+    detected_start = min(t[0] for t in below) if below else None
 
-    # 取检测到的反射起点和兜底起点的较小者 (裁更多)
-    crop_top = min([s for s in (detected_start, forced_start) if s is not None] + [H])
+    # 强制裁 force_min_drop (从 line2.y1+1 起算)
+    forced_start = l2y1 + 1 + force_min_drop
 
-    # 安全: 保留 line2 字符完整 (crop_top 必须 >= l2y1 + 1)
+    # crop_top: 取 detected_start 和 forced_start 中较小者 (裁更靠前=裁更多)
+    candidates = [s for s in (detected_start, forced_start) if s is not None]
+    crop_top = min(candidates) if candidates else H
+
+    # 安全: 保留 line2 字符
     crop_top = max(crop_top, l2y1 + 1)
-    # 不裁掉 line1 字符 (crop_top 必须 <= l1y1 + 1 + ??? 不能动 line1)
-    # 但 line1 在 l2y1 上方, 不影响
-    if crop_top >= H:
-        return work_rgb, st  # 没反射可裁
+    # 但不超过 H
+    crop_top = min(crop_top, H)
+
     keep = work_rgb[:crop_top]
     st2 = dict(st); st2["reflection"] = []
-    return keep, st2
+    actual_drop = H - keep.shape[0]
+    return keep, st2, {"intended_drop": force_min_drop,
+                        "actual_drop": actual_drop,
+                        "crop_top": crop_top, "mode": "crop"}
 
 
 
