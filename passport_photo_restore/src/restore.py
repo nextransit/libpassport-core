@@ -236,6 +236,23 @@ def drop_reflection(work_rgb, st, mode="crop"):
     return keep, st2
 
 
+def clean_band_reflection(band_rgb, line1, line2, clear_rows=2):
+    """清除 MRZ 两行之间 line1 的镜面反射残留 (CNN band-split 假设未被破坏).
+
+    策略: 仅清 line1.y1+1 起的 clear_rows 行 (最强反射区, 反射随距离衰减);
+    中间剩余行保留, 让 CNN 工具的 band-split 能找到连续 ink 链.
+    clear_rows 太小则反射残留; 太大则 CNN split 失败. 默认 2 行 (经验值).
+    """
+    H = band_rgb.shape[0]
+    l1y0, l1y1 = line1
+    clear_start = l1y1 + 1
+    clear_end = min(l1y1 + clear_rows, H - 1)
+    clean = band_rgb.copy()
+    for y in range(clear_start, clear_end + 1):
+        clean[y] = 255
+    return clean
+
+
 def crop_mrz(work_rgb, st, pad=0.06):
     """裁出 MRZ 两行（不含倒影）。返回 numpy RGB crop；无 MRZ 返回 None。"""
     mrz = st.get("mrz")
@@ -263,6 +280,27 @@ def crop_pair(work_rgb, st, pad=0.06):
     cy0 = max(0, y0 - pad_px)
     cy1 = min(work_rgb.shape[0] - 1, y1 + pad_px)
     return work_rgb[cy0:cy1 + 1]
+
+
+def crop_pair_clean(work_rgb, st, pad=0.06, clear_rows=2):
+    """crop_pair + clean_band_reflection: 剔除 band 内 line1 紧邻的镜面反射.
+
+    clear_rows: 涂白 line1 之后的多少行 (默认 2, 经验值; 0 等同 crop_pair).
+    """
+    pair = st.get("mrz_pair")
+    if not pair:
+        return None, None
+    (l1y0, l1y1), (l2y0, l2y1) = pair
+    y0, y1 = l1y0, l2y1
+    pad_px = max(3, int((y1 - y0) * pad))
+    cy0 = max(0, y0 - pad_px)
+    cy1 = min(work_rgb.shape[0] - 1, y1 + pad_px)
+    band = work_rgb[cy0:cy1 + 1]
+    l1_in_band = (l1y0 - cy0, l1y1 - cy0)
+    l2_in_band = (l2y0 - cy0, l2y1 - cy0)
+    clean = clean_band_reflection(band, l1_in_band, l2_in_band, clear_rows=clear_rows)
+    return clean, {"band_in_work": (cy0, cy1), "l1_in_band": l1_in_band,
+                   "l2_in_band": l2_in_band}
 
 
 def rectify_pair(work_rgb, st, tgt_w=TGT_W, tgt_h=TGT_H):

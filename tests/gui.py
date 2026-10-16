@@ -1842,7 +1842,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             ("① 原图（含镜片反射）", "src"),
             ("② 去影图（反射段已涂掉）", "nor"),
             ("③ 矫正图（去影图透视拉直）", "rect"),
-            ("④ MRZ 区（矫正图裁出 line1+line2）", "band"),
+            ("④ MRZ 区（OCR 输入：反射清干净）", "band"),
         ]
         for col, (title, key) in enumerate(labels):
             cell = ttk.Frame(imgs)
@@ -2059,7 +2059,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             _sys.path.insert(0, str(_P(__file__).resolve().parents[1] /
                                     "passport_photo_restore" / "src"))
             from restore import (load, _gray, detect_structure,  # type: ignore
-                                 rectify_pair, crop_pair, drop_reflection)
+                                 rectify_pair, crop_pair, drop_reflection,
+                                 crop_pair_clean)
             import cv2 as _cv2
             from PIL import Image as _Image
             from PIL import ImageDraw as _ImageDraw
@@ -2114,7 +2115,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             t0 = _time.perf_counter()
             band_rgb = None
             if pair:
-                band_rgb = crop_pair(work2, st2)
+                # OCR 输入: crop_pair_clean, 剔除 line1 紧邻反射
+                band_rgb, _band_info = crop_pair_clean(work2, st2, clear_rows=2)
             stages.append(("④MRZ区(crop)", (_time.perf_counter() - t0) * 1000))
             if band_rgb is not None:
                 self._rst_fit_to(3, _Image.fromarray(band_rgb),
