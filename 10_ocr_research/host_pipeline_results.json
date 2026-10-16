@@ -1,0 +1,182 @@
+[
+ {
+  "file": "Photo/3/IMG_1792133000_003.jpg",
+  "scale": 0.482,
+  "mrz_pair": [
+   [
+    793,
+    810
+   ],
+   [
+    817,
+    831
+   ]
+  ],
+  "restore_ms": 3.4,
+  "crop_shape": [
+   45,
+   1250,
+   3
+  ],
+  "cnn": {
+   "ok": true,
+   "line1": "A<ESI<<<P<<G<<PPPE<<<<<<SS<<SS<<<<<<<<<<<<<<",
+   "line2": "B<<<<SS<<3<<<<<<<<<6<<<<<<<3<<<<<<<<<<B",
+   "conf1": "65",
+   "conf2": "79",
+   "ms": 7.0,
+   "err": "OK"
+  },
+  "total_ms": 10.4
+ },
+ {
+  "file": "Photo/4/IMG_1792133002_004.jpg",
+  "scale": 0.482,
+  "mrz_pair": [
+   [
+    793,
+    810
+   ],
+   [
+    817,
+    831
+   ]
+  ],
+  "restore_ms": 3.3,
+  "crop_shape": [
+   45,
+   1250,
+   3
+  ],
+  "cnn": {
+   "ok": true,
+   "line1": "A<ESI<<<P<<G<<PPPE<<<<<<SS<<SS<<<<<<<<<<<<<<",
+   "line2": "B<<<<SS<<3<<<<<<<<<6<<<<<<<3<<<<<<<<<<B",
+   "conf1": "65",
+   "conf2": "79",
+   "ms": 7.9,
+   "err": "OK"
+  },
+  "total_ms": 11.2
+ },
+ {
+  "file": "Photo/5/IMG_1792133232_005.jpg",
+  "scale": 0.482,
+  "mrz_pair": [
+   [
+    793,
+    810
+   ],
+   [
+    817,
+    831
+   ]
+  ],
+  "restore_ms": 3.4,
+  "crop_shape": [
+   45,
+   1250,
+   3
+  ],
+  "cnn": {
+   "ok": true,
+   "line1": "A<ESI<<<P<<G<<PPPE<<<<<<SS<<SS<<<<<<<<<<<<<<",
+   "line2": "B<<<<SS<<3<<<<<<<<<6<<<<<<<3<<<<<<<<<<B",
+   "conf1": "65",
+   "conf2": "79",
+   "ms": 6.2,
+   "err": "OK"
+  },
+  "total_ms": 9.6
+ },
+ {
+  "file": "Photo/6/IMG_1792133581_006.jpg",
+  "scale": 0.482,
+  "mrz_pair": [
+   [
+    793,
+    810
+   ],
+   [
+    817,
+    831
+   ]
+  ],
+  "restore_ms": 3.4,
+  "crop_shape": [
+   45,
+   1250,
+   3
+  ],
+  "cnn": {
+   "ok": true,
+   "line1": "A<ESI<<<P<<G<<PPPE<<<<<<SS<<SS<<<<<<<<<<<<<<",
+   "line2": "B<<<<SS<<3<<<<<<<<<6<<<<<<<3<<<<<<<<<<B",
+   "conf1": "65",
+   "conf2": "79",
+   "ms": 6.5,
+   "err": "OK"
+  },
+  "total_ms": 9.9
+ },
+ {
+  "file": "Photo/7/IMG_1792133649_007.jpg",
+  "scale": 1.0,
+  "mrz_pair": [
+   [
+    411,
+    417
+   ],
+   [
+    427,
+    430
+   ]
+  ],
+  "restore_ms": 0.9,
+  "crop_shape": [
+   26,
+   640,
+   3
+  ],
+  "cnn": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "0",
+   "conf2": "0",
+   "ms": 4.0,
+   "err": "bad MRZ band geometry"
+  },
+  "total_ms": 4.9
+ },
+ {
+  "file": "Photo/8/IMG_1792133682_008.jpg",
+  "scale": 0.482,
+  "mrz_pair": [
+   [
+    801,
+    812
+   ],
+   [
+    829,
+    840
+   ]
+  ],
+  "restore_ms": 3.5,
+  "crop_shape": [
+   46,
+   1250,
+   3
+  ],
+  "cnn": {
+   "ok": true,
+   "line1": "A<SPS<<SSJ<SIFP<LIP<F<S<SFS<<GSF<LT<ESPP<BBB",
+   "line2": "BB<PP<<<<9TTP<<<<<<7<<<<<<<7<<<<<P<P<<<P<<77",
+   "conf1": "53",
+   "conf2": "36",
+   "ms": 6.7,
+   "err": "OK"
+  },
+  "total_ms": 10.2
+ }
+]

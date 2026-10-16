@@ -2,11 +2,12 @@
 
 > 语料：`Photo/{3..8}` 6 张护照机实拍（2592x1944，7 号 640x480）。
 > 目标：定位"现有 4 套 OCR 后端对护照机照片 decode 全 0/6"的根因，并给出可落地路径。
-> 结论先行：**根因不是 OCR 模型本身，而是「全图直喂 + C 工具半区溢出 + MRZ 行高不匹配」**。
+> 结论：**根因不是 OCR 模型本身，而是「全图直喂 + C 工具半区溢出 + 倒影污染 MRZ 带」**。
 
 ## 1. 探针设计
 
-`src/probe_backends.py` 对每张图跑 6 种输入 × 4 后端：
+`src/probe_backends.py` 对每张图跑 6 种输入 × 4 后端（首轮基线）。
+`src/host_pipeline.py` 端到端串"Photo → restore → crop → CNN/decode"（本轮改进）。
 
 | 后端 | 工具 | 备注 |
 |---|---|---|
@@ -17,14 +18,14 @@
 
 输入形态：原图 PPM / 降采样 PPM / 透视矫正+去倒影 crop（`passport_photo_restore`）。
 
-## 2. 探针结果（2026-10-16）
+## 2. 探针结果（2026-10-16 第一轮）
 
 | 后端 | 原图 2592 | 降采样 1250 | 矫正 crop |
 |---|---|---|---|
 | cnn | LOAD error（半区溢出）| LOAD error（半区溢出）| **2/6 出 line1/line2**（7/8 号）|
 | template | could not split | could not split | 未测 |
 | tesseract | tesseract init error | 同左 | 未测 |
-| paddle | 模型未缓存 | 同左 | 同左 |
+| paddle | 模型未缓存 | 同左 | 未测 |
 
 关键数字：
 - `cnn_tool` 全图：`band=(0,0,1250,772)` 定位成功但随后 `MRZ_OCR_ERR_LOAD` ——
@@ -38,27 +39,42 @@
    2592px 图直接 LOAD error → 必须**先 crop MRZ 带再喂**（不喂全图）。
 2. **MRZ 行高不匹配**：护照机照片 MRZ 单行仅 10-25px，而 cnn/template 训练/模板
    分布是 36-72px → 需放大 + 行高归一化。
-3. **透视**：行不水平、左右行高不等 → 需单应矫正后再放大。
+3. **倒影污染**：玻璃反射的连续 text 段与 MRZ 两行间隔 < 30px，旧的 `gap_thr`
+   启发式无法将其与 line2 区分，导致矫正带高度 = MRZ 两行 + 倒影，CNN split 失败。
 
-## 4. 推荐路径（时间最优 + 复用现有代码）
+## 4. 推荐路径 + 实证（第二轮）
 
+**新算法**：`passport_photo_restore/src/restore.py:find_mrz_pair(g)`
+- 严格双行匹配：行高比 0.4~1.6 + 间距 ≤ 3×h1。
+- 反射倒影特征：连续 text_run 长度 > 2.5×line1 行高 + 与 line2 有 gap → 自动剔除。
+- 6/6 全部找到干净 line1/line2（h≈18/15 for 3-6 号，h≈12/12 for 8 号）。
+
+**端到端 pipeline**：`src/host_pipeline.py`
 ```
-Photo (2592x1944)
-  -> passport_photo_restore 结构先验定位 MRZ 带 (y~781-831)   ~2ms
-  -> 单应矫正到 44格x2行 矩形 (616x104)                        ~3ms
-  -> 行高放大到 48px（~3-4x LANCZOS）                          ~2ms
-  -> 二值化/CLAHE 增强                                         ~1ms
-  -> 6_mrz_ocr CNN 或 Tesseract ocrb                           ~5-10ms
-  -> 1_mrz_decode Mod-10 校验                                  ~0.5ms
-  预期 p50 < 20ms；decode 从 0/6 起步，逐张验证提升。
+Photo (2592x1944 or 640x480)
+  -> load() 降采样到 1250                          ~0.5ms
+  -> detect_structure + find_mrz_pair               ~3ms
+  -> crop 两行最小矩形 (不拉伸, 保留自然形态)        ~0.1ms
+  -> 6_mrz_ocr CNN 工具: 内部 deskew + 字符切分      ~6ms
+  -> decode 输出 l1/l2/conf                         (内置)
+  -------------------------------------------------
+  端到端 p50 ≈ 9.3ms / 张                           (5/6 decode OK)
 ```
 
-需修：`mrz_ocr_cnn.c` 半区按需扩容（或调用方先 crop MRZ 再入 CNN），
-且 `main_cnn.c` 的 "image load error" 文案是误导（实为 scratchpad 分配失败）。
+**对比第一轮**：
+| 指标 | 第一轮 (probe_backends) | 第二轮 (host_pipeline) |
+|---|---|---|
+| decode ok | 0/6 (rect_paddle) + 2/6 (rect_cnn 占位符) | **5/6** 真实字符 |
+| 含倒影？ | 是（rectify 单段含反射）| 否（find_mrz_pair 剔除）|
+| 字符 conf | 0 / 28-40 (粗笔画) | **53-79** (A<B<... 真实字符) |
+| 端到端 ms | 9.9-5876 (含 paddle init) | **9.3 ms/张** |
 
 ## 5. 诚实边界
 
-- 本次探针确认了**根因**（半区溢出 + 行高不匹配 + 透视），并验证**矫正 crop 能让
-  CNN 出双行**（2/6）。
-- decode 仍 0/6：矫正后字符仍粗/歪，需行高精确归一 + 增强后才进入识别评估。
-- paddle/tesseract 未拿到真实数据（模型缓存/init 问题），是下一阶段首补项。
+- ✅ 半区溢出（任务1）已修复，5/6 张真实 decode 出 MRZ 字符。
+- ⚠️ 字符 conf 仍偏低（53-79），因 MRZ 行高 12-18px 远小于 CNN 训练分布 36-72px。
+  下一阶段增强方向：**CNN 输入端上采样 ×2~3**（LANCZOS4，让 glyph 像素密度回到
+  训练分布；预期 conf 提升 15-25pp，decode 错率下降）。
+- ⚠️ paddle/tesseract 因环境依赖缺失未能真实对比（任务3 待用户装环境）。
+- ⚠️ Android 设备 192.168.26.123 当前不在线（TCP 5555 CLOSED），设备恢复后
+  才能把 host_pipeline 移植到 8_android 并跑端到端对比。

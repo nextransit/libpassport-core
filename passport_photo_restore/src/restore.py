@@ -92,7 +92,50 @@ def detect_structure(g, gap_thr=15):
                 prev_h = t[1] - t[0] + 1
             if end - start + 1 >= 10:
                 mrz = (start, end)
-    return {"solid": solid_b, "text": text_b, "mrz": mrz}
+    pair = find_mrz_pair(g)
+    return {"solid": solid_b, "text": text_b, "mrz": mrz, "mrz_pair": pair}
+
+
+def find_mrz_pair(g):
+    """严格 MRZ 双行定位：找行高近似、间距合理的相邻 text-run pair。
+
+    反射倒影特征：连续 text_run 长度通常 > 2.5x line1 行高，且与 line2 之间
+    有可识别 gap。本函数天然剔除之（只接受相邻 + 行高比 0.4~1.6 的对子）。
+    返回 (line1, line2) 两个 (y0, y1)；找不到返回 None。
+    """
+    H, W = g.shape
+    row_ink = (g < 180).sum(axis=1)
+    gx = np.abs(np.diff(g.astype(np.int16), axis=1))
+    gx = np.pad(gx, ((0, 0), (1, 0)))
+    E = gx.sum(axis=1)
+    solid = row_ink > 0.9 * W
+    text = (row_ink > 0.2 * W) & (row_ink < 0.9 * W) & (E > 1800)
+    solid_b = _run_groups(solid, min_len=5)
+    text_b = _run_groups(text, min_len=4)
+    cand = [b for b in solid_b
+            if int(H * 0.3) <= b[0] <= int(H * 0.9) and b[1] - b[0] >= 10]
+    if not cand:
+        return None
+    s_top = cand[-1][1] + 1
+    below = [t for t in text_b if t[0] > s_top]
+    if not below:
+        return None
+    best = None
+    for i, t1 in enumerate(below[:-1]):
+        h1 = t1[1] - t1[0] + 1
+        if h1 < 4:
+            continue
+        for t2 in below[i + 1:]:
+            h2 = t2[1] - t2[0] + 1
+            gap = t2[0] - t1[1] - 1
+            if (0.4 <= h2 / h1 <= 1.6) and (0 <= gap <= max(8, int(3.0 * h1))):
+                score = abs(h1 - h2) + gap
+                if best is None or score < best[0]:
+                    best = (score, t1, t2)
+                break
+    if best is None:
+        return None
+    return best[1], best[2]
 
 
 def _mrzh_quad(g, y0, y1, min_ink_rows=2):
@@ -117,6 +160,45 @@ def crop_mrz(work_rgb, st, pad=0.06):
     cy0 = max(0, y0 - pad_px)
     cy1 = min(work_rgb.shape[0] - 1, y1 + pad_px)
     return work_rgb[cy0:cy1 + 1]
+
+
+def rectify_pair(work_rgb, st, tgt_w=TGT_W, tgt_h=TGT_H):
+    """严格双行单应矫正：line1/line2 各自四点 -> 矩形上下两半，分别 warp 后拼接。
+
+    反射倒影下方的连续 text 段不再被纳入 MRZ 带。每行字符严格匹配训练分布
+    (GLYPH_W x GLYPH_H)。返回 (rgb, info) 或 (None, None)。
+    """
+    pair = st.get("mrz_pair")
+    if not pair:
+        return None, None
+    g = _gray(work_rgb)
+    (l1y0, l1y1), (l2y0, l2y1) = pair
+    q1 = _mrzh_quad(g, l1y0, l1y1)
+    q2 = _mrzh_quad(g, l2y0, l2y1)
+    if q1 is None or q2 is None:
+        return None, None
+    # 目标两半
+    dst1 = np.array([[0, 0], [tgt_w - 1, 0],
+                     [tgt_w - 1, GLYPH_H - 1], [0, GLYPH_H - 1]], np.float32)
+    dst2 = np.array([[0, 0], [tgt_w - 1, 0],
+                     [tgt_w - 1, GLYPH_H - 1], [0, GLYPH_H - 1]], np.float32)
+    M1 = cv2.getPerspectiveTransform(q1, dst1)
+    M2 = cv2.getPerspectiveTransform(q2, dst2)
+    line1 = cv2.warpPerspective(work_rgb, M1, (tgt_w, GLYPH_H),
+                                flags=cv2.INTER_LANCZOS4)
+    line2 = cv2.warpPerspective(work_rgb, M2, (tgt_w, GLYPH_H),
+                                flags=cv2.INTER_LANCZOS4)
+    # 紧贴输出 (与 CNN 工具期望 band 连续两行的分布对齐)
+    rgb = np.zeros((tgt_h, tgt_w, 3), dtype=np.uint8)
+    rgb[0:GLYPH_H] = line1
+    rgb[GLYPH_H:GLYPH_H * 2] = line2
+    info = {
+        "line1_y_in_dst": (0, GLYPH_H - 1),
+        "line2_y_in_dst": (GLYPH_H, tgt_h - 1),
+        "src_quad_l1": q1.tolist(),
+        "src_quad_l2": q2.tolist(),
+    }
+    return rgb, info
 
 
 def rectify(work_rgb, st, tgt_w=TGT_W, tgt_h=TGT_H):
