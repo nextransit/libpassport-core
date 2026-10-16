@@ -81,10 +81,15 @@ def detect_structure(g, gap_thr=15):
         if below:
             start = below[0][0]
             end = below[0][1]
+            prev_h = end - start + 1
             for t in below[1:]:
-                if t[0] - end - 1 > gap_thr:
+                gap = t[0] - end - 1
+                # MRZ 两行间距通常 < 1.5 行高；倒影与 line2 的间距更大。
+                # 阈值随上一段行高缩放，避免全分辨率下把 line2 切断。
+                if gap > max(gap_thr, prev_h * 1.5):
                     break  # 进入倒影区
                 end = t[1]
+                prev_h = t[1] - t[0] + 1
             if end - start + 1 >= 10:
                 mrz = (start, end)
     return {"solid": solid_b, "text": text_b, "mrz": mrz}

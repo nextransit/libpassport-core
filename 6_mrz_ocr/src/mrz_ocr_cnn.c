@@ -719,12 +719,19 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
  * 64-byte aligned so they sit on cache-line boundaries
  * (helpful for the cnn_t weight matrix read pattern).
  */
-/* 8 MB scratchpad split into two 4 MB halves (Step 2).  Line 0
- * uses half 0; line 1 uses half 1.  Even on the current
- * sequential path this gives the bump allocator disjoint
- * regions so adding pthread-based dual-line parallelism
- * later is just a one-line toggle (MRZ_OCR_PAR=1). */
-#define MRZ_SCRATCH_BYTES  (8u * 1024u * 1024u)
+/* scratchpad split into two halves (Step 2).  Line 0 uses half 0;
+ * line 1 uses half 1.  Even on the current sequential path this
+ * gives the bump allocator disjoint regions so adding pthread-based
+ * dual-line parallelism later is just a one-line toggle
+ * (MRZ_OCR_PAR=1).
+ *
+ * 64 MB (32 MB/half): a passport-machine 2592x1944 photo needs
+ * gray + bin (~2 x 5.04 MB) plus band_gray + band_bin (~2 x
+ * 1.9 MB) in ONE half before the line split; 4 MB/half overflowed
+ * to MRZ_OCR_ERR_LOAD on full-res photos. The 16 MB/half keeps
+ * the full-res path working without exceeding embedded RAM
+ * budgets. */
+#define MRZ_SCRATCH_BYTES  (64u * 1024u * 1024u)
 static uint8_t  g_mrz_scratch[MRZ_SCRATCH_BYTES]
                 __attribute__((aligned(64)));
 /* g_mrz_scratch_off removed (Step 2): per-half offsets

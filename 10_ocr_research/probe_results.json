@@ -1,0 +1,344 @@
+[
+ {
+  "file": "Photo/3/IMG_1792133000_003.jpg",
+  "cnn": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "0",
+   "conf2": "0",
+   "ms": 6.4,
+   "err": "image load error"
+  },
+  "template": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "0",
+   "conf2": "0",
+   "ms": 99.9,
+   "err": "could not split into two lines"
+  },
+  "tesseract": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "",
+   "conf2": "",
+   "ms": 90.3,
+   "err": "result.ok       : tesseract init failed: No module named 'tesserocr'"
+  },
+  "paddle": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "",
+   "conf2": "",
+   "ms": 5876.4,
+   "err": "paddle_v6: `PP-OCRv6_medium_rec` is not registered on BasePredictor.\nThe registi"
+  },
+  "rect_cnn": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "0",
+   "conf2": "0",
+   "ms": 4.8,
+   "err": "could not split into two lines"
+  },
+  "rect_paddle": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "",
+   "conf2": "",
+   "ms": 5384.0,
+   "err": "paddle_v6: `PP-OCRv6_medium_rec` is not registered on BasePredictor.\nThe registi"
+  }
+ },
+ {
+  "file": "Photo/4/IMG_1792133002_004.jpg",
+  "cnn": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "0",
+   "conf2": "0",
+   "ms": 5.7,
+   "err": "image load error"
+  },
+  "template": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "0",
+   "conf2": "0",
+   "ms": 97.8,
+   "err": "could not split into two lines"
+  },
+  "tesseract": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "",
+   "conf2": "",
+   "ms": 80.4,
+   "err": "result.ok       : tesseract init failed: No module named 'tesserocr'"
+  },
+  "paddle": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "",
+   "conf2": "",
+   "ms": 5696.5,
+   "err": "paddle_v6: `PP-OCRv6_medium_rec` is not registered on BasePredictor.\nThe registi"
+  },
+  "rect_cnn": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "0",
+   "conf2": "0",
+   "ms": 4.3,
+   "err": "could not split into two lines"
+  },
+  "rect_paddle": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "",
+   "conf2": "",
+   "ms": 5079.5,
+   "err": "paddle_v6: `PP-OCRv6_medium_rec` is not registered on BasePredictor.\nThe registi"
+  }
+ },
+ {
+  "file": "Photo/5/IMG_1792133232_005.jpg",
+  "cnn": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "0",
+   "conf2": "0",
+   "ms": 5.6,
+   "err": "image load error"
+  },
+  "template": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "0",
+   "conf2": "0",
+   "ms": 98.6,
+   "err": "could not split into two lines"
+  },
+  "tesseract": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "",
+   "conf2": "",
+   "ms": 77.0,
+   "err": "result.ok       : tesseract init failed: No module named 'tesserocr'"
+  },
+  "paddle": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "",
+   "conf2": "",
+   "ms": 5243.0,
+   "err": "paddle_v6: `PP-OCRv6_medium_rec` is not registered on BasePredictor.\nThe registi"
+  },
+  "rect_cnn": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "0",
+   "conf2": "0",
+   "ms": 4.0,
+   "err": "could not split into two lines"
+  },
+  "rect_paddle": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "",
+   "conf2": "",
+   "ms": 5392.1,
+   "err": "paddle_v6: `PP-OCRv6_medium_rec` is not registered on BasePredictor.\nThe registi"
+  }
+ },
+ {
+  "file": "Photo/6/IMG_1792133581_006.jpg",
+  "cnn": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "0",
+   "conf2": "0",
+   "ms": 5.3,
+   "err": "image load error"
+  },
+  "template": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "0",
+   "conf2": "0",
+   "ms": 104.1,
+   "err": "could not split into two lines"
+  },
+  "tesseract": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "",
+   "conf2": "",
+   "ms": 75.8,
+   "err": "result.ok       : tesseract init failed: No module named 'tesserocr'"
+  },
+  "paddle": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "",
+   "conf2": "",
+   "ms": 5305.8,
+   "err": "paddle_v6: `PP-OCRv6_medium_rec` is not registered on BasePredictor.\nThe registi"
+  },
+  "rect_cnn": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "0",
+   "conf2": "0",
+   "ms": 4.5,
+   "err": "could not split into two lines"
+  },
+  "rect_paddle": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "",
+   "conf2": "",
+   "ms": 5619.8,
+   "err": "paddle_v6: `PP-OCRv6_medium_rec` is not registered on BasePredictor.\nThe registi"
+  }
+ },
+ {
+  "file": "Photo/7/IMG_1792133649_007.jpg",
+  "cnn": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "0",
+   "conf2": "0",
+   "ms": 10.2,
+   "err": "could not split into two lines"
+  },
+  "template": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "0",
+   "conf2": "0",
+   "ms": 9.9,
+   "err": "could not split into two lines"
+  },
+  "tesseract": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "",
+   "conf2": "",
+   "ms": 68.8,
+   "err": "result.ok       : tesseract init failed: No module named 'tesserocr'"
+  },
+  "paddle": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "",
+   "conf2": "",
+   "ms": 5648.2,
+   "err": "paddle_v6: `PP-OCRv6_medium_rec` is not registered on BasePredictor.\nThe registi"
+  },
+  "rect_cnn": {
+   "ok": true,
+   "line1": "A<ELP<<<<P<<P<<<<<P<<<P<<<PP<<<<<P<<<<P<<<<<",
+   "line2": "BBEP<<P5<9PP<56<<<<1<<<7<<<7<<P9<S<<SIP<E<<<",
+   "conf1": "28",
+   "conf2": "40",
+   "ms": 5.2,
+   "err": "OK"
+  },
+  "rect_paddle": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "",
+   "conf2": "",
+   "ms": 5990.9,
+   "err": "paddle_v6: `PP-OCRv6_medium_rec` is not registered on BasePredictor.\nThe registi"
+  }
+ },
+ {
+  "file": "Photo/8/IMG_1792133682_008.jpg",
+  "cnn": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "0",
+   "conf2": "0",
+   "ms": 5.1,
+   "err": "image load error"
+  },
+  "template": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "0",
+   "conf2": "0",
+   "ms": 98.6,
+   "err": "could not split into two lines"
+  },
+  "tesseract": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "",
+   "conf2": "",
+   "ms": 75.1,
+   "err": "result.ok       : tesseract init failed: No module named 'tesserocr'"
+  },
+  "paddle": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "",
+   "conf2": "",
+   "ms": 5444.7,
+   "err": "paddle_v6: `PP-OCRv6_medium_rec` is not registered on BasePredictor.\nThe registi"
+  },
+  "rect_cnn": {
+   "ok": true,
+   "line1": "A<FPG<<<<<SSSS<<<<<<<FL<EPF<SS<PIPFP<<I<<<<<",
+   "line2": "BE<DSS25E2P<<<2<<<<3<<<<<<<2<<<<<2H<<<<<<2<<",
+   "conf1": "55",
+   "conf2": "69",
+   "ms": 5.7,
+   "err": "OK"
+  },
+  "rect_paddle": {
+   "ok": false,
+   "line1": "",
+   "line2": "",
+   "conf1": "",
+   "conf2": "",
+   "ms": 5459.7,
+   "err": "paddle_v6: `PP-OCRv6_medium_rec` is not registered on BasePredictor.\nThe registi"
+  }
+ }
+]
