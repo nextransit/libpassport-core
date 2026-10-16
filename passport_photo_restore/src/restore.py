@@ -93,15 +93,28 @@ def detect_structure(g, gap_thr=15):
             if end - start + 1 >= 10:
                 mrz = (start, end)
     pair = find_mrz_pair(g)
-    # 倒影段：line2 下方连续的 text_run（length > 2*line1 行高为典型镜面反射）
+    # 反射段: 所有具有"反射特征"的 text_run.
+    # 反射特征 (>= 1):
+    #   - 长度 >= 1.5 * line1_h (明显比 MRZ 行长)
+    #   - 水平 ink 密度 > 0.55 (几乎全宽有 ink, 不像稀疏字符)
+    #   - 长度 >= 30 且与 line1/line2 上下相邻 (反射通常紧贴 MRZ 区)
     reflection = []
     if pair:
         (l1y0, l1y1), (l2y0, l2y1) = pair
         lh1 = l1y1 - l1y0 + 1
         for t in text_b:
-            if t[0] > l2y1:
-                if (t[1] - t[0] + 1) >= max(8, int(1.5 * lh1)):
-                    reflection.append(t)
+            tlen = t[1] - t[0] + 1
+            density = row_ink[t[0]:t[1] + 1].mean() / W
+            # 反射特征判别
+            is_reflection = (
+                tlen >= max(30, int(1.5 * lh1))   # 长段
+                or density > 0.55                 # 高密度 (反射/底纹)
+            )
+            # 排除 mrz_pair 自身 (line1/line2 不能当反射)
+            is_in_pair = (pair and
+                          (t == (l1y0, l1y1) or t == (l2y0, l2y1)))
+            if is_reflection and not is_in_pair:
+                reflection.append(t)
     return {
         "solid": solid_b,
         "text": text_b,
@@ -165,35 +178,22 @@ def _mrzh_quad(g, y0, y1, min_ink_rows=2):
     return np.array([[xl, y0], [xr, y0], [xr, y1], [xl, y1]], np.float32)
 
 
-def drop_reflection(work_rgb, st, mode="crop"):
-    """把结构检测得到的反射段 (st['reflection']) 从 work 中彻底移除。
+def drop_reflection(work_rgb, st, mode="crop", force_min_drop=150):
+    """从 work 中移除 line2 下方反射段 (强制至少裁 force_min_drop px).
 
     Args:
-        work_rgb: load() 后的 RGB 图
-        st: detect_structure() 返回的 dict (含 reflection 字段)
+        work_rgb: load() 后的 RGB
+        st: detect_structure() 返回 dict (含 reflection 字段, 含 mrz_pair)
         mode:
-          "crop"    — 直接截掉反射段所在 y 区间, 图变矮, 反射段 (不入后续算法)
-          "fill"    — 用中位色填充反射段, 图保持原长
-    Returns:
-        (work2, st2): 裁/填后的 RGB 与更新过的 st (st 字段已重新校准,
-                       反射段标记清空, 避免重复处理).
+          "crop" - 直接截掉 line2 下方反射段 (像素不存在)
+          "fill" - 用中位色填充
+        force_min_drop: 至少裁掉 line2 下方多少像素 (默认 150, 即 line2 反射延伸总长)
+                       -> 即便 detect_structure 没检测到反射段, 也按这个长度裁
     """
     reflection = st.get("reflection", []) or []
-    if not reflection:
-        # 即使没检测到反射, 也兜底裁掉底部 10% (避免漏检的反射进入算法)
-        H = work_rgb.shape[0]
-        bot = int(H * 0.90)
-        if bot < H:
-            reflection = [(bot, H - 1)]
-        else:
-            return work_rgb, st
-    H = work_rgb.shape[0]
-    crop_top = min(t[0] for t in reflection)  # 反射段最顶端 y (work 坐标)
+    pair = st.get("mrz_pair")
 
-    if mode == "crop":
-        # 直接截掉: 反射段以下像素彻底不存在
-        keep = work_rgb[:crop_top]
-    elif mode == "fill":
+    if mode == "fill":
         keep = work_rgb.copy()
         for (y0, y1) in reflection:
             band = keep[y0:y1 + 1]
@@ -201,39 +201,41 @@ def drop_reflection(work_rgb, st, mode="crop"):
                 flat = band.reshape(-1, 3)
                 med = np.median(flat, axis=0).astype(np.uint8)
                 keep[y0:y1 + 1] = med
-    else:
-        raise ValueError(f"drop_reflection mode={mode!r}")
+        st2 = dict(st); st2["reflection"] = []
+        return keep, st2
 
-    # 校准 st 字段 (所有 y 坐标 ≥ crop_top 的值需要 -crop_top, 反射段清空)
-    st2 = dict(st)
-    st2["reflection"] = []  # 已处理
+    # mode == "crop"
+    H = work_rgb.shape[0]
+    if not pair:
+        # 无 pair: 兜底裁掉 line2 下方 force_min_drop px (假设 line2 在 work 中部)
+        if not reflection:
+            return work_rgb, st
+        crop_top = min(t[0] for t in reflection)
+        keep = work_rgb[:max(0, crop_top)]
+        st2 = dict(st); st2["reflection"] = []
+        return keep, st2
 
-    def remap(t):
-        if t is None: return t
-        a, b = t
-        new_a = a if a < crop_top else None
-        new_b = b if b < crop_top else None
-        if new_a is None or new_b is None:
-            return None
-        return (new_a, new_b)
-    st2["mrz"] = remap(st.get("mrz"))
-    if st.get("mrz_pair"):
-        l1, l2 = st["mrz_pair"]
-        st2["mrz_pair"] = (remap(l1), remap(l2))
-    # solid/text 通常在反射上方, 不变; 但若 solid 跨越裁剪线则截断
-    if st.get("solid"):
-        new_solid = []
-        for t in st["solid"]:
-            r = remap(t)
-            if r: new_solid.append(r)
-        st2["solid"] = new_solid
-    if st.get("text"):
-        new_text = []
-        for t in st["text"]:
-            r = remap(t)
-            if r: new_text.append(r)
-        st2["text"] = new_text
+    (l1y0, l1y1), (l2y0, l2y1) = pair
+    # 1) 检测到的 line2 下方反射段: 反射起点 = min(y0 for t in reflection if t[0] >= l2y1)
+    below_detected = [t for t in reflection if t[0] >= l2y0]
+    detected_start = min(t[0] for t in below_detected) if below_detected else None
+
+    # 2) 兜底: 至少裁 force_min_drop px (从 line2.y1+1 起)
+    forced_start = l2y1 + 1 + force_min_drop  # line2 字符下方 force_min_drop 行的起点
+
+    # 取检测到的反射起点和兜底起点的较小者 (裁更多)
+    crop_top = min([s for s in (detected_start, forced_start) if s is not None] + [H])
+
+    # 安全: 保留 line2 字符完整 (crop_top 必须 >= l2y1 + 1)
+    crop_top = max(crop_top, l2y1 + 1)
+    # 不裁掉 line1 字符 (crop_top 必须 <= l1y1 + 1 + ??? 不能动 line1)
+    # 但 line1 在 l2y1 上方, 不影响
+    if crop_top >= H:
+        return work_rgb, st  # 没反射可裁
+    keep = work_rgb[:crop_top]
+    st2 = dict(st); st2["reflection"] = []
     return keep, st2
+
 
 
 def clean_band_reflection(band_rgb, line1, line2, clear_rows=2,
