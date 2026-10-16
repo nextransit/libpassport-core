@@ -1779,11 +1779,20 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
 
     # ---- 照片→MRZ 流水线 tab（矫正+去影 -> MRZ 粗定位 -> 识别 -> 解码）----
     def _build_restore_tab(self):
-        """护照机照片 -> 矫正/去影 -> MRZ 粗定位 -> 识别 -> 解码，逐步可视化。"""
+        """护照机照片 -> 去倒影 -> 粗定位 -> 矫正 -> MRZ 识别 -> 解码，5 步可视化。
+
+        布局（4 张图 + 1 段文字）：
+          ┌─────────────┬─────────────┐
+          │ ① 原图     │ ③ MRZ 区粗定位（line1/line2 红框 + 反射段橙框警示）│
+          ├─────────────┼─────────────┤
+          │ ② 去倒影图 │ ④ 矫正后图（OCR 输入：紧贴 44格×2行矩形）│
+          └─────────────┴─────────────┘
+          ⑤ 阶段耗时 + MRZ 识别结果 + 解码（字段 + 校验位）
+        """
         pal = self._pal
         f = self.tab_restore
 
-        top = ttk.LabelFrame(f, text="护照照片 → MRZ（矫正 + 去倒影 + 识别）")
+        top = ttk.LabelFrame(f, text="护照照片 → MRZ（去倒影 + 粗定位 + 矫正 + 识别）")
         top.pack(fill="x", padx=4, pady=(4, 0))
         row = ttk.Frame(top); row.pack(fill="x", padx=8, pady=4)
         ttk.Label(row, text="样本:").pack(side="left")
@@ -1811,30 +1820,67 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self.rst_status = ttk.Label(row, text="")
         self.rst_status.pack(side="left", padx=8)
 
-        # 左侧：两幅图（原图 + 矫正后），右侧：MRZ 粗定位框 + 识别结果
         body = ttk.Frame(f); body.pack(fill="both", expand=True, padx=4, pady=(4, 6))
-        left = ttk.Frame(body); left.pack(side="left", fill="both", expand=True)
-        ttk.Label(left, text="① 原始图         ② 矫正+去影图",
-                  font=("TkDefaultFont", 10, "bold")).pack(anchor="w")
-        self.rst_canvas = tk.Canvas(left, width=900, height=360,
-                                    bg=pal["canvas"], highlightthickness=1,
-                                    highlightbackground=pal["canvas_border"],
-                                    highlightcolor=pal["accent"])
-        self.rst_canvas.pack(side="top", fill="both", expand=True)
+        # 2x2 图像矩阵 + 右侧文本
+        grid = ttk.Frame(body); grid.pack(side="left", fill="both", expand=True)
+        grid.columnconfigure(0, weight=1); grid.columnconfigure(1, weight=1)
+        grid.rowconfigure(0, weight=1); grid.rowconfigure(1, weight=1)
 
-        right = ttk.Frame(body); right.pack(side="left", padx=(6, 0), fill="both")
-        ttk.Label(right, text="③ MRZ 区粗定位（红框）+ 阶段耗时",
+        # ① 原图
+        cell1 = ttk.Frame(grid)
+        cell1.grid(row=0, column=0, sticky="nsew", padx=(0, 2), pady=(0, 2))
+        ttk.Label(cell1, text="① 原始图（含镜片反射）",
                   font=("TkDefaultFont", 10, "bold")).pack(anchor="w")
-        self.rst_canvas2 = tk.Canvas(right, width=520, height=220,
-                                     bg=pal["canvas"], highlightthickness=1,
-                                     highlightbackground=pal["canvas_border"],
-                                     highlightcolor=pal["accent"])
-        self.rst_canvas2.pack(side="top", fill="x")
-        ttk.Label(right, text="④ MRZ 识别结果 + 解码",
-                  font=("TkDefaultFont", 10, "bold")).pack(anchor="w", pady=(4, 0))
-        self.rst_info = tk.Text(right, width=64, height=12, font=("Menlo", 10),
+        self.rst_canvas_src = tk.Canvas(cell1, width=440, height=240,
+                                        bg=pal["canvas"], highlightthickness=1,
+                                        highlightbackground=pal["canvas_border"],
+                                        highlightcolor=pal["accent"])
+        self.rst_canvas_src.pack(fill="both", expand=True)
+
+        # ② 去倒影图
+        cell2 = ttk.Frame(grid)
+        cell2.grid(row=0, column=1, sticky="nsew", padx=(2, 0), pady=(0, 2))
+        ttk.Label(cell2, text="② 去倒影图（反射段已涂掉）",
+                  font=("TkDefaultFont", 10, "bold")).pack(anchor="w")
+        self.rst_canvas_nor = tk.Canvas(cell2, width=440, height=240,
+                                        bg=pal["canvas"], highlightthickness=1,
+                                        highlightbackground=pal["canvas_border"],
+                                        highlightcolor=pal["accent"])
+        self.rst_canvas_nor.pack(fill="both", expand=True)
+
+        # ③ MRZ 区粗定位
+        cell3 = ttk.Frame(grid)
+        cell3.grid(row=1, column=0, sticky="nsew", padx=(0, 2), pady=(2, 0))
+        ttk.Label(cell3, text="③ MRZ 区粗定位（line1/line2 红框 + 反射橙框）",
+                  font=("TkDefaultFont", 10, "bold")).pack(anchor="w")
+        self.rst_canvas_loc = tk.Canvas(cell3, width=440, height=240,
+                                        bg=pal["canvas"], highlightthickness=1,
+                                        highlightbackground=pal["canvas_border"],
+                                        highlightcolor=pal["accent"])
+        self.rst_canvas_loc.pack(fill="both", expand=True)
+
+        # ④ 矫正后图（OCR 输入）
+        cell4 = ttk.Frame(grid)
+        cell4.grid(row=1, column=1, sticky="nsew", padx=(2, 0), pady=(2, 0))
+        ttk.Label(cell4, text="④ 矫正后图（OCR 输入：44格×2行紧贴矩形）",
+                  font=("TkDefaultFont", 10, "bold")).pack(anchor="w")
+        self.rst_canvas_rect = tk.Canvas(cell4, width=440, height=240,
+                                         bg=pal["canvas"], highlightthickness=1,
+                                         highlightbackground=pal["canvas_border"],
+                                         highlightcolor=pal["accent"])
+        self.rst_canvas_rect.pack(fill="both", expand=True)
+
+        # ⑤ 信息文本
+        right = ttk.Frame(body); right.pack(side="left", padx=(6, 0), fill="both")
+        ttk.Label(right, text="⑤ 阶段耗时 + MRZ 识别 + 解码",
+                  font=("TkDefaultFont", 10, "bold")).pack(anchor="w")
+        self.rst_info = tk.Text(right, width=64, height=22, font=("Menlo", 10),
                                 bg="#ffffff", fg="#111827")
         self.rst_info.pack(fill="both", expand=True)
+
+        # 兼容旧字段名 (避免破坏别处可能引用)
+        self.rst_canvas = self.rst_canvas_src
+        self.rst_canvas2 = self.rst_canvas_loc
 
     def _rst_resolve_path(self):
         path = self.rst_sample_path.get() if hasattr(self, "rst_sample_path") else ""
@@ -1875,23 +1921,110 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             self.rst_status.config(text=f"加载失败: {e}", foreground=self._pal["err"])
 
     def _rst_draw_source(self, path):
+        """①原图：缩放显示到 cell1。"""
         from PIL import Image, ImageTk
         img = Image.open(path).convert("RGB")
         disp = img.copy()
-        disp.thumbnail((450, 330))
+        disp.thumbnail((self.rst_canvas_src.winfo_width() - 4 or 436, 220))
         self._rst_imgtk_src = ImageTk.PhotoImage(disp)
-        self.rst_canvas.delete("all")
-        self.rst_canvas.create_image(2, 2, image=self._rst_imgtk_src, anchor="nw")
-        self.rst_canvas.create_text(4, 12, text="原图", anchor="nw",
-                                    fill=self._pal["accent"], font=("Menlo", 10, "bold"))
-        self.rst_canvas.create_text(4, self.rst_canvas.winfo_height() - 4,
-                                    text=f"{img.width}×{img.height}", anchor="sw",
-                                    fill=self._pal["dim"], font=("Menlo", 8))
+        self.rst_canvas_src.delete("all")
+        self.rst_canvas_src.create_image(2, 2, image=self._rst_imgtk_src, anchor="nw")
+        self.rst_canvas_src.create_text(4, self.rst_canvas_src.winfo_height() - 4,
+                                        text=f"{img.width}×{img.height}", anchor="sw",
+                                        fill=self._pal["dim"], font=("Menlo", 8))
+
+    def _rst_render_no_reflection(self, work_rgb, reflection):
+        """②去倒影图：原图上对每个反射段涂半透明橙带。"""
+        from PIL import Image, ImageTk, ImageDraw
+        pil = Image.fromarray(work_rgb).copy()
+        disp = pil.copy()
+        disp.thumbnail((self.rst_canvas_nor.winfo_width() - 4 or 436, 220))
+        scale_y = pil.height / disp.height if disp.height else 1
+        if reflection:
+            overlay = disp.copy().convert("RGBA")
+            d = ImageDraw.Draw(overlay)
+            for (y0, y1) in reflection:
+                d.rectangle((0, y0 / scale_y, disp.width - 1, y1 / scale_y),
+                            fill=(255, 140, 0, 110))
+            disp = Image.alpha_composite(overlay, disp.convert("RGBA")).convert("RGB")
+        self._rst_imgtk_nor = ImageTk.PhotoImage(disp)
+        self.rst_canvas_nor.delete("all")
+        self.rst_canvas_nor.create_image(2, 2, image=self._rst_imgtk_nor, anchor="nw")
+        if reflection:
+            self.rst_canvas_nor.create_text(
+                4, 14, text=f"反射段已涂掉 ({len(reflection)} 段)", anchor="nw",
+                fill=self._pal["warn"], font=("Menlo", 9, "bold"))
+        else:
+            self.rst_canvas_nor.create_text(
+                4, 14, text="(无检测到的反射)", anchor="nw",
+                fill=self._pal["dim"], font=("Menlo", 9, "bold"))
+
+    def _rst_render_location(self, work_rgb, pair, reflection):
+        """③MRZ 区粗定位：在原图 downscale 上画 line1/line2 红框 + 反射橙框。"""
+        from PIL import Image, ImageTk
+        pil = Image.fromarray(work_rgb).copy()
+        disp = pil.copy()
+        disp.thumbnail((self.rst_canvas_loc.winfo_width() - 4 or 436, 220))
+        scale_y = pil.height / disp.height if disp.height else 1
+        scale_x = pil.width / disp.width if disp.width else 1
+        self._rst_imgtk_loc = ImageTk.PhotoImage(disp)
+        self.rst_canvas_loc.delete("all")
+        self.rst_canvas_loc.create_image(2, 2, image=self._rst_imgtk_loc, anchor="nw")
+        x0, x1 = 0, work_rgb.shape[1] - 1
+        if pair is None:
+            self.rst_canvas_loc.create_text(4, 14, text="(未找到 MRZ 双行)",
+                                            anchor="nw", fill=self._pal["err"],
+                                            font=("Menlo", 9, "bold"))
+            return
+        (l1y0, l1y1), (l2y0, l2y1) = pair
+        self.rst_canvas_loc.create_rectangle(
+            x0 / scale_x + 2, l1y0 / scale_y + 2,
+            x1 / scale_x + 2, l1y1 / scale_y + 2,
+            outline=self._pal["err"], width=2)
+        self.rst_canvas_loc.create_text(4, 14,
+                                        text=f"line1 y{l1y0}-{l1y1} (h={l1y1-l1y0+1})",
+                                        anchor="nw", fill=self._pal["err"],
+                                        font=("Menlo", 9, "bold"))
+        self.rst_canvas_loc.create_rectangle(
+            x0 / scale_x + 2, l2y0 / scale_y + 2,
+            x1 / scale_x + 2, l2y1 / scale_y + 2,
+            outline=self._pal["err"], width=2)
+        self.rst_canvas_loc.create_text(4, 30,
+                                        text=f"line2 y{l2y0}-{l2y1} (h={l2y1-l2y0+1})",
+                                        anchor="nw", fill=self._pal["err"],
+                                        font=("Menlo", 9, "bold"))
+        for (y0, y1) in (reflection or []):
+            self.rst_canvas_loc.create_rectangle(
+                x0 / scale_x + 2, y0 / scale_y + 2,
+                x1 / scale_x + 2, y1 / scale_y + 2,
+                outline=self._pal["warn"], width=2, dash=(4, 2))
+            self.rst_canvas_loc.create_text(4, 46,
+                                            text=f"反射 y{y0}-{y1} (h={y1-y0+1})",
+                                            anchor="nw", fill=self._pal["warn"],
+                                            font=("Menlo", 9, "bold"))
+
+    def _rst_render_rectified(self, rect_rgb):
+        """④矫正后图：rectify_pair 输出，紧贴 44格×2行矩形。"""
+        from PIL import Image, ImageTk
+        disp = Image.fromarray(rect_rgb).copy()
+        disp.thumbnail((self.rst_canvas_rect.winfo_width() - 4 or 436, 220))
+        self._rst_imgtk_rect = ImageTk.PhotoImage(disp)
+        self.rst_canvas_rect.delete("all")
+        self.rst_canvas_rect.create_image(2, 2, image=self._rst_imgtk_rect, anchor="nw")
+        self.rst_canvas_rect.create_text(4, 14,
+                                         text=f"{rect_rgb.shape[1]}×{rect_rgb.shape[0]}",
+                                         anchor="nw", fill=self._pal["ok"],
+                                         font=("Menlo", 9, "bold"))
 
     def _rst_run(self):
-        """执行 passport_photo_restore 流水线并分步展示。"""
+        """5 步流水线: ①原图 ②去影 ③粗定位 ④矫正 ⑤识别+解码。
+
+        反射段被自动剔除（基于 mrz_pair 与 reflection 字段），
+        只把 line1/line2 喂给 CNN 工具内部 deskew+字符切分。
+        """
         import sys as _sys
         from pathlib import Path as _P
+        import time as _time
         try:
             self.rst_run_btn.configure(state="disabled")
             self.rst_status.config(text="运行流水线…", foreground=self._pal["dim"])
@@ -1901,58 +2034,87 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 raise FileNotFoundError(path)
             _sys.path.insert(0, str(_P(__file__).resolve().parents[1] /
                                     "passport_photo_restore" / "src"))
-            from restore import load, _gray, detect_structure, rectify  # type: ignore
+            from restore import (load, _gray, detect_structure,  # type: ignore
+                                 rectify_pair, crop_pair)
             import cv2 as _cv2
+
             rgb = _cv2.cvtColor(_cv2.imread(path), _cv2.COLOR_BGR2RGB)
+            H0, W0 = rgb.shape[:2]
+            stages = []
+
             # ① 原图
             self._rst_draw_source(path)
-            # ② 矫正+去影
-            t0 = __import__("time").perf_counter()
+
+            # load + 降采样 + 结构检测
+            t0 = _time.perf_counter()
             work, scale = load(rgb, max_side=1250)
             g = _gray(work)
             st = detect_structure(g)
-            mrz = st.get("mrz")
-            t_stage = (__import__("time").perf_counter() - t0) * 1000
-            rect = rectify(work, st) if mrz else None
-            from PIL import Image, ImageTk
+            stages.append(("load+detect", (_time.perf_counter() - t0) * 1000))
+            pair = st.get("mrz_pair")
+            reflection = st.get("reflection", [])
+
+            # ② 去倒影图
+            self._rst_render_no_reflection(work, reflection)
+
+            # ③ MRZ 粗定位
+            self._rst_render_location(work, pair, reflection)
+
+            # ④ 矫正图
+            rect = None
+            if pair:
+                t0 = _time.perf_counter()
+                rect, info = rectify_pair(work, st)
+                stages.append(("rectify_pair", (_time.perf_counter() - t0) * 1000))
             if rect is not None:
-                disp = Image.fromarray(rect)
-                disp.thumbnail((450, 330))
-                self._rst_imgtk_rect = ImageTk.PhotoImage(disp)
-                self.rst_canvas.create_image(460, 2, image=self._rst_imgtk_rect,
-                                             anchor="nw")
-                self.rst_canvas.create_text(462, 12, text="矫正+去影", anchor="nw",
-                                            fill=self._pal["ok"], font=("Menlo", 10, "bold"))
-            # ③ MRZ 粗定位（在原图 downscale 上画框）
-            self.rst_canvas2.delete("all")
-            small = Image.fromarray(work)
-            small.thumbnail((500, 200))
-            self._rst_imgtk_small = ImageTk.PhotoImage(small)
-            self.rst_canvas2.create_image(2, 2, image=self._rst_imgtk_small, anchor="nw")
-            if mrz:
-                y0, y1 = mrz
-                x0, x1 = 0, work.shape[1] - 1
-                s = work.shape[1] / small.width
-                self.rst_canvas2.create_rectangle(
-                    x0 / s + 2, y0 / s + 2, x1 / s + 2, y1 / s + 2,
-                    outline=self._pal["err"], width=2)
-                self.rst_canvas2.create_text(
-                    4, 14, text=f"MRZ 带 y{y0}-{y1} (h={y1-y0+1})", anchor="nw",
+                self._rst_render_rectified(rect)
+            else:
+                self.rst_canvas_rect.delete("all")
+                self.rst_canvas_rect.create_text(
+                    4, 14, text="(无 MRZ pair，无法矫正)", anchor="nw",
                     fill=self._pal["err"], font=("Menlo", 9, "bold"))
-            # ④ 识别 + 解码
+
+            # ⑤ OCR + decode
             lines = []
-            lines.append(f"MRZ 带 y{y0}-{y1} 高 {y1-y0+1}px（单行~{(y1-y0+1)/2:.0f}px）")
-            lines.append(f"结构检测耗时 {t_stage:.1f} ms")
+            lines.append(f"原图 {W0}×{H0}  →  工作 {work.shape[1]}×{work.shape[0]} "
+                         f"(scale={scale:.3f})")
+            if pair:
+                (l1y0, l1y1), (l2y0, l2y1) = pair
+                lines.append(
+                    f"MRZ 双行: line1 y{l1y0}-{l1y1} (h={l1y1-l1y0+1})  "
+                    f"line2 y{l2y0}-{l2y1} (h={l2y1-l2y0+1})  "
+                    f"gap={l2y0-l1y1-1}")
+            else:
+                lines.append("MRZ 双行: <未定位>")
+            if reflection:
+                lines.append(f"反射段: {reflection}  (已剔除)")
+            else:
+                lines.append("反射段: <无>")
+            lines.append("")
+            lines.append("阶段耗时:")
+            for name, ms in stages:
+                lines.append(f"  - {name:<14} {ms:6.1f} ms")
+            lines.append("")
+
+            ok = False
             if rect is not None:
-                import tempfile, subprocess as _sp
-                with tempfile.NamedTemporaryFile(suffix=".ppm", delete=False) as tf:
-                    tmp = Path(tf.name)
-                Image.fromarray(rect).save(tmp, format="PPM")
-                t1 = __import__("time").perf_counter()
+                import subprocess as _sp
+                from PIL import Image as _Image
+                tmp_dir = _P(__file__).resolve().parents[1] / "10_ocr_research"
+                tmp_dir.mkdir(parents=True, exist_ok=True)
+                tmp = tmp_dir / "_gui_rect.ppm"
+                # 实际 OCR 用 crop_pair (不拉伸, 让 CNN 工具内部 deskew)
+                # rectify_pair 输出仅用于 ④ 展示, 不直接喂 CNN
+                crop = crop_pair(work, st)
+                ocr_input = crop if crop is not None else rect
+                _Image.fromarray(ocr_input).save(str(tmp), format="PPM")
+                t1 = _time.perf_counter()
                 ocr_proc = _sp.run(
                     [str(ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_cnn_tool"),
                      str(tmp)], text=True, capture_output=True, timeout=20)
-                lines.append(f"OCR 识别耗时 {(__import__('time').perf_counter()-t1)*1000:.1f} ms")
+                ocr_ms = (_time.perf_counter() - t1) * 1000
+                stages.append(("CNN forward", ocr_ms))
+                lines.append(f"  - {'CNN forward':<14} {ocr_ms:6.1f} ms")
                 kv = {}
                 for ln in ocr_proc.stdout.splitlines():
                     if ":" in ln:
@@ -1960,16 +2122,24 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                         kv[k.strip()] = v.strip()
                 l1 = kv.get("result.line1", "")
                 l2 = kv.get("result.line2", "")
-                lines.append("line1: " + l1)
-                lines.append("line2: " + l2)
+                lines.append("")
+                lines.append(f"OCR 结果: {kv.get('result.ok', '?')}")
+                lines.append(f"  line1: {l1}")
+                lines.append(f"  line2: {l2}")
+                lines.append(f"  conf1={kv.get('result.conf1','')}  "
+                             f"conf2={kv.get('result.conf2','')}")
                 if l1 and l2 and kv.get("result.ok") == "OK":
-                    t2 = __import__("time").perf_counter()
+                    t2 = _time.perf_counter()
                     dec = _sp.run([str(MRZ_TOOL), "decode", l1 + l2],
                                   text=True, capture_output=True, timeout=10)
-                    lines.append(f"解码耗时 {(__import__('time').perf_counter()-t2)*1000:.1f} ms")
+                    dec_ms = (_time.perf_counter() - t2) * 1000
+                    stages.append(("decode", dec_ms))
+                    lines.append(f"  - {'decode':<14} {dec_ms:6.1f} ms")
                     lines.append("")
+                    lines.append("解码:")
                     lines.append(dec.stdout if dec.returncode == 0
                                  else "[decode 拒绝] " + dec.stderr.strip())
+                    ok = True
                 else:
                     lines.append("[识别未通过] " + kv.get("result.ok", ""))
                 try:
@@ -1977,19 +2147,24 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 except OSError:
                     pass
             else:
-                lines.append("未定位到 MRZ 区（请换图）")
+                lines.append("无 MRZ pair，跳过 OCR")
+
+            total = sum(ms for _, ms in stages)
+            lines.append("")
+            lines.append(f"总耗时 {total:.1f} ms")
+
             self.rst_info.configure(state="normal")
             self.rst_info.delete("1.0", "end")
-            self.rst_info.insert("1.0", "\n".join(lines))
+            self.rst_info.insert("1.0", chr(10).join(lines))
             self.rst_info.configure(state="disabled")
             self.rst_status.config(
-                text="完成" if (mrz is not None and rect is not None) else "MRZ 未定位",
-                foreground=(self._pal["ok"] if mrz else self._pal["err"]))
+                text=f"完成  ({total:.1f}ms)" if ok else "未通过",
+                foreground=(self._pal["ok"] if ok else self._pal["err"]))
         except Exception as e:
             self.rst_status.config(text=f"流水线失败: {e}", foreground=self._pal["err"])
             self.rst_info.configure(state="normal")
             self.rst_info.delete("1.0", "end")
-            self.rst_info.insert("1.0", f"错误: {e}\n")
+            self.rst_info.insert("1.0", f"错误: {e}" + chr(10))
             self.rst_info.configure(state="disabled")
         finally:
             try:

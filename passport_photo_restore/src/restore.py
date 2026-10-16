@@ -93,7 +93,22 @@ def detect_structure(g, gap_thr=15):
             if end - start + 1 >= 10:
                 mrz = (start, end)
     pair = find_mrz_pair(g)
-    return {"solid": solid_b, "text": text_b, "mrz": mrz, "mrz_pair": pair}
+    # 倒影段：line2 下方连续的 text_run（length > 2*line1 行高为典型镜面反射）
+    reflection = []
+    if pair:
+        (l1y0, l1y1), (l2y0, l2y1) = pair
+        lh1 = l1y1 - l1y0 + 1
+        for t in text_b:
+            if t[0] > l2y1:
+                if (t[1] - t[0] + 1) >= max(8, int(1.5 * lh1)):
+                    reflection.append(t)
+    return {
+        "solid": solid_b,
+        "text": text_b,
+        "mrz": mrz,
+        "mrz_pair": pair,
+        "reflection": reflection,
+    }
 
 
 def find_mrz_pair(g):
@@ -156,6 +171,23 @@ def crop_mrz(work_rgb, st, pad=0.06):
     if not mrz:
         return None
     y0, y1 = mrz
+    pad_px = max(3, int((y1 - y0) * pad))
+    cy0 = max(0, y0 - pad_px)
+    cy1 = min(work_rgb.shape[0] - 1, y1 + pad_px)
+    return work_rgb[cy0:cy1 + 1]
+
+
+def crop_pair(work_rgb, st, pad=0.06):
+    """严格双行 crop: 基于 mrz_pair (line1, line2) 框出最小矩形，不拉伸。
+
+    与 crop_mrz 的区别: crop_mrz 用旧 mrz 字段(含倒影), 本函数用 mrz_pair(剔除倒影)。
+    返回 numpy RGB crop; 无 pair 返回 None。
+    """
+    pair = st.get("mrz_pair")
+    if not pair:
+        return None
+    (l1y0, _), (l2y0, l2y1) = pair
+    y0, y1 = l1y0, l2y1
     pad_px = max(3, int((y1 - y0) * pad))
     cy0 = max(0, y0 - pad_px)
     cy1 = min(work_rgb.shape[0] - 1, y1 + pad_px)
