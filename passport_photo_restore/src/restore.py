@@ -55,12 +55,12 @@ def _run_groups(mask, min_len=5):
 
 
 def detect_structure(g, gap_thr=15):
-    """固定矫正结构先验检测。
+    """固定矫正结构先验检测 + 反射识别.
 
-    - solid 带：row_ink>0.9*W 的深色横带（护照机固定取景的黑色横条）。
-    - MRZ 带：solid 下沿之后连续 text 段（gap<=gap_thr），倒影在 gap 更大的
-      下一段 —— 由此天然切除倒影。
-    返回 {'solid': [...], 'text': [...], 'mrz': (y0,y1) 或 None}
+    反射识别 (更激进):
+      - line2 下方: 从 line2.y1+1 到图底, 任何连续 ink>180 行 (含反射过渡区) 都视为反射
+      - line1 上方: 同样规则
+      - 反射段总高包括 line2 字符衰减区 (line2.y1 ~ 反射起点)
     """
     H, W = g.shape
     row_ink = (g < 180).sum(axis=1)
@@ -84,37 +84,50 @@ def detect_structure(g, gap_thr=15):
             prev_h = end - start + 1
             for t in below[1:]:
                 gap = t[0] - end - 1
-                # MRZ 两行间距通常 < 1.5 行高；倒影与 line2 的间距更大。
-                # 阈值随上一段行高缩放，避免全分辨率下把 line2 切断。
                 if gap > max(gap_thr, prev_h * 1.5):
-                    break  # 进入倒影区
+                    break
                 end = t[1]
                 prev_h = t[1] - t[0] + 1
             if end - start + 1 >= 10:
                 mrz = (start, end)
+
     pair = find_mrz_pair(g)
-    # 反射段: 所有具有"反射特征"的 text_run.
-    # 反射特征 (>= 1):
-    #   - 长度 >= 1.5 * line1_h (明显比 MRZ 行长)
-    #   - 水平 ink 密度 > 0.55 (几乎全宽有 ink, 不像稀疏字符)
-    #   - 长度 >= 30 且与 line1/line2 上下相邻 (反射通常紧贴 MRZ 区)
     reflection = []
     if pair:
         (l1y0, l1y1), (l2y0, l2y1) = pair
-        lh1 = l1y1 - l1y0 + 1
-        for t in text_b:
-            tlen = t[1] - t[0] + 1
-            density = row_ink[t[0]:t[1] + 1].mean() / W
-            # 反射特征判别
-            is_reflection = (
-                tlen >= max(30, int(1.5 * lh1))   # 长段
-                or density > 0.55                 # 高密度 (反射/底纹)
-            )
-            # 排除 mrz_pair 自身 (line1/line2 不能当反射)
-            is_in_pair = (pair and
-                          (t == (l1y0, l1y1) or t == (l2y0, l2y1)))
-            if is_reflection and not is_in_pair:
-                reflection.append(t)
+        # line2 下方反射段: 从 line2.y1+1 起, 连续 ink>180 行 (含反射过渡)
+        refl_below_start = None
+        for y in range(l2y1 + 1, H):
+            if row_ink[y] > 180:
+                refl_below_start = y
+                break
+        if refl_below_start is not None:
+            # 找到连续 ink>180 行的终点
+            end = refl_below_start
+            for y in range(refl_below_start + 1, H):
+                if row_ink[y] > 180:
+                    end = y
+                else:
+                    # 允许最多 5 行空白间断 (反射字符之间的间隙)
+                    if y + 5 < H and all(row_ink[y2] <= 180 for y2 in range(y, min(y + 5, H))):
+                        break
+            reflection.append((refl_below_start, end))
+        # line1 上方反射段 (作为保留裁切的边界): line1.y0 之前连续 ink>180 行
+        refl_above_end = None  # 最深的反射终点
+        for y in range(l1y0 - 1, -1, -1):
+            if row_ink[y] > 180:
+                refl_above_end = y
+                break
+        if refl_above_end is not None:
+            # 反射段起点: 找最早的反射起点 (从 refl_above_end 往上)
+            start = refl_above_end
+            for y in range(refl_above_end - 1, -1, -1):
+                if row_ink[y] > 180:
+                    start = y
+                else:
+                    if y - 5 >= 0 and all(row_ink[y2] <= 180 for y2 in range(max(0, y - 5), y)):
+                        break
+            reflection.append((start, refl_above_end))
     return {
         "solid": solid_b,
         "text": text_b,
@@ -122,6 +135,7 @@ def detect_structure(g, gap_thr=15):
         "mrz_pair": pair,
         "reflection": reflection,
     }
+
 
 
 def find_mrz_pair(g):
@@ -179,18 +193,10 @@ def _mrzh_quad(g, y0, y1, min_ink_rows=2):
 
 
 def drop_reflection(work_rgb, st, mode="crop", force_min_drop=150):
-    """从 work 中移除 line2 下方反射段 (默认强制裁 force_min_drop=150 px).
+    """按你的指示: 反射段总高 = MRZ + 反射延伸, 应接近 force_min_drop=150.
 
-    返回 (work2, st2, info), info 包含:
-      - intended_drop: 期望裁掉的 px (= force_min_drop)
-      - actual_drop: 实际裁掉的 px (= H_before - H_after, 受 H 限制)
-      - crop_top: 实际裁到的 y
-
-    Args:
-        work_rgb: load() 后的 RGB
-        st: detect_structure() 返回 dict
-        mode: "crop" / "fill"
-        force_min_drop: 期望裁掉的最小 px (默认 150)
+    策略: 用 detect_structure 已识别的 reflection 字段, 区分 line1 上方 vs line2 下方.
+    保留 MRZ, 裁掉两段反射.
     """
     reflection = st.get("reflection", []) or []
     pair = st.get("mrz_pair")
@@ -221,28 +227,60 @@ def drop_reflection(work_rgb, st, mode="crop", force_min_drop=150):
 
     (l1y0, l1y1), (l2y0, l2y1) = pair
 
-    # 检测到的 line2 下方反射段起点
-    below = [t for t in reflection if t[0] >= l2y0]
-    detected_start = min(t[0] for t in below) if below else None
+    # 用 reflection 字段:
+    # above = y1 < l1y0 的反射段 (line1 上方)
+    # below = y0 > l2y1 的反射段 (line2 下方)
+    above = [t for t in reflection if t[1] < l1y0]
+    below = [t for t in reflection if t[0] > l2y1]
 
-    # 强制裁 force_min_drop (从 line2.y1+1 起算)
-    forced_start = l2y1 + 1 + force_min_drop
+    # 反射总高
+    above_h = sum(t[1] - t[0] + 1 for t in above)
+    below_h = sum(t[1] - t[0] + 1 for t in below)
+    refl_total = above_h + below_h
 
-    # crop_top: 取 detected_start 和 forced_start 中较小者 (裁更靠前=裁更多)
-    candidates = [s for s in (detected_start, forced_start) if s is not None]
-    crop_top = min(candidates) if candidates else H
+    # 若反射总高 < force_min_drop, 把 above 起点往上挪 (裁更多)
+    if refl_total < force_min_drop:
+        extra = force_min_drop - refl_total
+        # above 最早起点往上挪 extra
+        if above:
+            new_above_start = min(t[0] for t in above) - extra
+            # 但要确保不裁掉 line1.y0 之前的非反射区太多
+            # 安全下限 = l1y0 - 30 (line1 上方最多 30px 反射延伸)
+            new_above_start = max(new_above_start, l1y0 - 30)
+        else:
+            new_above_start = max(0, l1y0 - extra)
+    else:
+        new_above_start = min(t[0] for t in above) if above else l1y0
 
-    # 安全: 保留 line2 字符
-    crop_top = max(crop_top, l2y1 + 1)
-    # 但不超过 H
-    crop_top = min(crop_top, H)
+    # 裁掉 [new_above_start, l1y0) (line1 上方反射) + (l2y1, H) (line2 下方反射)
+    # 但 (l2y1, H) 不一定全是反射, 我们只裁 below 范围内的反射段
+    # 简化: 裁掉 below 段每个 + above 起点到 l1y0
+    parts = []
+    # part 1: 保留 [0, new_above_start)
+    if new_above_start > 0:
+        parts.append(work_rgb[:new_above_start])
+    # part 2: 保留 [l1y0, l2y1+1] (MRZ)
+    parts.append(work_rgb[l1y0:l2y1 + 1])
+    # part 3: 保留 [below_end+1, H) (裁掉 below 反射段)
+    if below:
+        max_below_end = max(t[1] for t in below)
+        if max_below_end + 1 < H:
+            parts.append(work_rgb[max_below_end + 1:])
+    keep = np.vstack(parts) if len(parts) > 1 else parts[0]
 
-    keep = work_rgb[:crop_top]
-    st2 = dict(st); st2["reflection"] = []
+    # 重新校准 mrz_pair
+    new_l1y0 = (work_rgb[:new_above_start].shape[0] if new_above_start > 0 else 0)
+    new_l1y1 = new_l1y0 + (l1y1 - l1y0)
+    new_l2y0 = new_l1y1 + 1
+    new_l2y1 = new_l2y0 + (l2y1 - l2y0)
+
+    st2 = dict(st)
+    st2["mrz_pair"] = ((new_l1y0, new_l1y1), (new_l2y0, new_l2y1))
+    st2["reflection"] = []
     actual_drop = H - keep.shape[0]
     return keep, st2, {"intended_drop": force_min_drop,
                         "actual_drop": actual_drop,
-                        "crop_top": crop_top, "mode": "crop"}
+                        "crop_top": new_above_start, "mode": "crop"}
 
 
 
