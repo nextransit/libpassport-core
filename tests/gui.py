@@ -1837,6 +1837,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
 
         self.rst_canvases = []
         self.rst_imgtk = []
+        self.rst_fullimg = []  # 保存各格原图 (PIL), 供点击放大
         labels = [
             ("① 原图（含镜片反射）", "src"),
             ("② 去影图（反射段已涂掉）", "nor"),
@@ -1854,6 +1855,13 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             cv.pack(fill="both", expand=True)
             self.rst_canvases.append(cv)
             self.rst_imgtk.append(None)  # PhotoImage 引用防回收
+            self.rst_fullimg.append(None)
+            # 点击放大: 绑定 canvas 实例 + 列号(idx) 一起传
+            cv.bind("<Button-1>",
+                    lambda _e, _i=col, _t=title: self._rst_zoom_open(_i, _t))
+            # hover 提示 (鼠标变手指)
+            cv.bind("<Enter>", lambda _e, _c=cv: _c.config(cursor="hand2"))
+            cv.bind("<Leave>", lambda _e, _c=cv: _c.config(cursor=""))
 
         # 下排：识别结果 + 解码 + 阶段耗时
         info = ttk.Frame(body); info.pack(fill="both", expand=False)
@@ -1918,6 +1926,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         ch = max(cv.winfo_height() - 4, 160)
         disp = pil_img.copy()
         disp.thumbnail((cw, ch))
+        # 保存全图供点击放大 (复制避免外部修改影响)
+        self.rst_fullimg[idx] = pil_img.copy()
         self.rst_imgtk[idx] = ImageTk.PhotoImage(disp)
         cv.delete("all")
         cv.create_image(2, 2, image=self.rst_imgtk[idx], anchor="nw")
@@ -1937,6 +1947,102 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         # 清空其余 3 格
         for i in (1, 2, 3):
             self.rst_canvases[i].delete("all")
+
+    def _rst_zoom_open(self, idx, title):
+        """点击 canvas[idx] 后弹出的可缩放查看器。
+
+        特性: 鼠标滚轮缩放, 左键拖动平移, 双击或 ESC 关闭, 状态栏显示缩放%.
+        """
+        from PIL import Image, ImageTk
+        img = self.rst_fullimg[idx] if idx < len(self.rst_fullimg) else None
+        if img is None:
+            return
+        pal = self._pal
+        W, H = img.width, img.height
+        # 弹窗大小 = 屏幕 70% 但不超过原图尺寸
+        sw = self.winfo_screenwidth()
+        sh = self.winfo_screenheight()
+        win_w = min(int(sw * 0.7), W + 40)
+        win_h = min(int(sh * 0.75), H + 80)
+        win_w = max(win_w, 480); win_h = max(win_h, 360)
+
+        top = tk.Toplevel(self)
+        top.title(f"{title}  ({W}x{H})")
+        top.configure(bg=pal["bg"])
+        # ESC 关闭
+        top.bind("<Escape>", lambda _e: top.destroy())
+        # 双击关闭
+        top.bind("<Double-Button-1>", lambda _e: top.destroy())
+
+        # 顶部工具条
+        bar = ttk.Frame(top); bar.pack(fill="x", padx=6, pady=4)
+        ttk.Label(bar, text=f"{title}  ·  原图 {W}x{H}  ·  ", font=("Menlo", 10)).pack(side="left")
+        zoom_lbl = ttk.Label(bar, text="100%", font=("Menlo", 10, "bold"))
+        zoom_lbl.pack(side="left")
+        ttk.Label(bar, text="  (滚轮缩放 / 左键拖动 / 双击或 ESC 关闭)",
+                  font=("Menlo", 9), foreground=pal["dim"]).pack(side="left", padx=8)
+
+        cv_frame = ttk.Frame(top); cv_frame.pack(fill="both", expand=True, padx=6, pady=(0, 6))
+        cv = tk.Canvas(cv_frame, width=win_w - 40, height=win_h - 80,
+                       bg=pal["canvas"], highlightthickness=1,
+                       highlightbackground=pal["canvas_border"])
+        cv.pack(fill="both", expand=True)
+
+        state = {"scale": 1.0, "tx": 0.0, "ty": 0.0}  # 当前缩放/平移
+
+        def render():
+            """按当前 scale 重渲染 ImageTk 并贴到 canvas."""
+            s = state["scale"]
+            nw = max(1, int(W * s)); nh = max(1, int(H * s))
+            disp = img.resize((nw, nh), _LANCZOS if s > 1 else _BILINEAR)
+            tk_img = ImageTk.PhotoImage(disp)
+            state["tk_img"] = tk_img  # 防回收
+            cv.delete("all")
+            cv.create_image(state["tx"], state["ty"], image=tk_img, anchor="nw")
+            zoom_lbl.config(text=f"{int(s * 100)}%  ({nw}x{nh})")
+
+        def fit_to_window():
+            state["scale"] = min((cv.winfo_width() - 4) / W,
+                                 (cv.winfo_height() - 4) / H)
+            state["tx"] = (cv.winfo_width() - W * state["scale"]) / 2
+            state["ty"] = (cv.winfo_height() - H * state["scale"]) / 2
+            render()
+
+        def zoom_at(cx, cy, factor):
+            """以 (cx, cy) 为缩放中心, 保持该点在视口内不动."""
+            s0 = state["scale"]
+            s1 = max(0.1, min(8.0, s0 * factor))
+            if s1 == s0:
+                return
+            # 旧缩放下 (cx, cy) 对应原图坐标
+            ix = (cx - state["tx"]) / s0
+            iy = (cy - state["ty"]) / s0
+            state["scale"] = s1
+            state["tx"] = cx - ix * s1
+            state["ty"] = cy - iy * s1
+            render()
+
+        # 滚轮缩放 (macOS / Linux 都用 Button-4/5)
+        cv.bind("<MouseWheel>", lambda e: zoom_at(e.x, e.y, 1.15 if e.delta > 0 else 1 / 1.15))
+        cv.bind("<Button-4>", lambda e: zoom_at(e.x, e.y, 1.15))
+        cv.bind("<Button-5>", lambda e: zoom_at(e.x, e.y, 1 / 1.15))
+        # 左键拖动
+        drag = {"x": 0, "y": 0, "on": False}
+        cv.bind("<ButtonPress-1>", lambda e: drag.update(x=e.x, y=e.y, on=True))
+        cv.bind("<B1-Motion>",
+                lambda e: (state.update(tx=state["tx"] + e.x - drag["x"],
+                                        ty=state["ty"] + e.y - drag["y"]),
+                           drag.update(x=e.x, y=e.y), render()))
+        cv.bind("<ButtonRelease-1>", lambda e: drag.update(on=False))
+        # 右键 = 适配窗口
+        cv.bind("<Button-3>", lambda _e: fit_to_window())
+        # 关闭时清理
+        top.protocol("WM_DELETE_WINDOW", top.destroy)
+        top.bind("<Configure>", lambda _e: None)  # 暂不响应 resize 重渲染
+
+        # 初次渲染: 适配窗口
+        top.update_idletasks()
+        fit_to_window()
 
     def _rst_run(self):
         """5 步流水线: 原图 → 去影 → 矫正 → MRZ区 → 识别/解码."""
