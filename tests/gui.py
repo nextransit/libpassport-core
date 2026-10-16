@@ -1994,7 +1994,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             """按当前 scale 重渲染 ImageTk 并贴到 canvas."""
             s = state["scale"]
             nw = max(1, int(W * s)); nh = max(1, int(H * s))
-            disp = img.resize((nw, nh), _LANCZOS if s > 1 else _BILINEAR)
+            disp = img.resize((nw, nh), Image.LANCZOS if s > 1 else Image.BILINEAR)
             tk_img = ImageTk.PhotoImage(disp)
             state["tk_img"] = tk_img  # 防回收
             cv.delete("all")
@@ -2059,7 +2059,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             _sys.path.insert(0, str(_P(__file__).resolve().parents[1] /
                                     "passport_photo_restore" / "src"))
             from restore import (load, _gray, detect_structure,  # type: ignore
-                                 rectify_pair, crop_pair)
+                                 rectify_pair, crop_pair, drop_reflection)
             import cv2 as _cv2
             from PIL import Image as _Image
             from PIL import ImageDraw as _ImageDraw
@@ -2074,37 +2074,30 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             g = _gray(work)
             st = detect_structure(g)
             stages.append(("①原图+结构检测", (_time.perf_counter() - t0) * 1000))
-            pair = st.get("mrz_pair")
-            reflection = st.get("reflection", [])
+            pair0 = st.get("mrz_pair")
+            reflection0 = st.get("reflection", [])
+            H_before = work.shape[0]
             self._rst_fit_to(0, _Image.fromarray(rgb), footer=f"{W0}×{H0}")
 
-            # ② 去影图: 在 work (downscale) 基础上把反射段涂黑
+            # ② 去影图: 直接裁掉底部反射段 (反射段像素彻底不存在, 不入算法)
             t0 = _time.perf_counter()
-            nor_rgb = work.copy()
-            if reflection:
-                for (y0, y1) in reflection:
-                    # 取该段中位色作为填充, 比纯黑更自然
-                    band = nor_rgb[y0:y1 + 1]
-                    if band.size > 0:
-                        med = _np_median_color(band)
-                    else:
-                        med = (235, 235, 235)
-                    nor_rgb[y0:y1 + 1] = med
-            stages.append(("②去影(涂反射段)", (_time.perf_counter() - t0) * 1000))
-            badge2 = (f"已涂掉 {len(reflection)} 段反射" if reflection
-                      else "无反射段")
-            self._rst_fit_to(1, _Image.fromarray(nor_rgb),
-                             footer=f"{work.shape[1]}×{work.shape[0]} scale={scale:.2f}",
+            work2, st2 = drop_reflection(work, st, mode="crop")
+            pair = st2.get("mrz_pair")
+            H_after = work2.shape[0]
+            dropped_px = H_before - H_after
+            stages.append(("②去影(裁反射)", (_time.perf_counter() - t0) * 1000))
+            badge2 = (f"已裁掉底部 {dropped_px}px ({dropped_px*100//H_before}%) 反射"
+                      if dropped_px > 0 else "无反射段 (兜底)")
+            self._rst_fit_to(1, _Image.fromarray(work2),
+                             footer=f"{work2.shape[1]}×{work2.shape[0]}  (原 {H_before}px)",
                              badge=badge2,
-                             badge_color="warn" if reflection else "ok")
+                             badge_color="warn" if dropped_px > 0 else "ok")
 
-            # ③ 矫正图: 对去影图做 line1/line2 各自单应, 拼成紧贴矩形
+            # ③ 矫正图: 对裁后图做 line1/line2 各自单应
             t0 = _time.perf_counter()
             rect = None
             if pair:
-                # rectify_pair 在原图基础上做几何变换; 不论原图是否有反射, 矫正后
-                # 已不含反射段 (因为 rect 只包含 line1/line2 两个 warp 后的矩形区)
-                rect, _info = rectify_pair(work, st)
+                rect, _info = rectify_pair(work2, st2)
             stages.append(("③矫正(单应)", (_time.perf_counter() - t0) * 1000))
             if rect is not None:
                 self._rst_fit_to(2, _Image.fromarray(rect),
@@ -2118,11 +2111,10 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                     fill=self._pal["err"], font=("Menlo", 9, "bold"))
 
             # ④ MRZ 区: 不拉伸自然形态 crop (保留 CNN 工具内部 deskew 假设)
-            # 矫正图 ③ 仅用于可视化核对透视拉直效果, 不直接喂 CNN.
             t0 = _time.perf_counter()
             band_rgb = None
             if pair:
-                band_rgb = crop_pair(work, st)
+                band_rgb = crop_pair(work2, st2)
             stages.append(("④MRZ区(crop)", (_time.perf_counter() - t0) * 1000))
             if band_rgb is not None:
                 self._rst_fit_to(3, _Image.fromarray(band_rgb),
@@ -2147,10 +2139,10 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                     f"gap={l2y0-l1y1-1}")
             else:
                 lines.append("MRZ 双行: <未定位>")
-            if reflection:
-                lines.append(f"反射段: {reflection}  (② 已涂掉)")
-            else:
-                lines.append("反射段: <无>")
+            lines.append(f"反射段裁掉: work {H_before} -> {H_after}  "
+                         f"(丢 {dropped_px}px, 反射段不再入算法)")
+            if reflection0:
+                lines.append(f"原始反射段: {reflection0}")
             lines.append("")
             lines.append("阶段耗时:")
             for name, ms in stages:

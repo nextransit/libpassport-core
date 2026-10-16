@@ -165,6 +165,77 @@ def _mrzh_quad(g, y0, y1, min_ink_rows=2):
     return np.array([[xl, y0], [xr, y0], [xr, y1], [xl, y1]], np.float32)
 
 
+def drop_reflection(work_rgb, st, mode="crop"):
+    """把结构检测得到的反射段 (st['reflection']) 从 work 中彻底移除。
+
+    Args:
+        work_rgb: load() 后的 RGB 图
+        st: detect_structure() 返回的 dict (含 reflection 字段)
+        mode:
+          "crop"    — 直接截掉反射段所在 y 区间, 图变矮, 反射段 (不入后续算法)
+          "fill"    — 用中位色填充反射段, 图保持原长
+    Returns:
+        (work2, st2): 裁/填后的 RGB 与更新过的 st (st 字段已重新校准,
+                       反射段标记清空, 避免重复处理).
+    """
+    reflection = st.get("reflection", []) or []
+    if not reflection:
+        # 即使没检测到反射, 也兜底裁掉底部 10% (避免漏检的反射进入算法)
+        H = work_rgb.shape[0]
+        bot = int(H * 0.90)
+        if bot < H:
+            reflection = [(bot, H - 1)]
+        else:
+            return work_rgb, st
+    H = work_rgb.shape[0]
+    crop_top = min(t[0] for t in reflection)  # 反射段最顶端 y (work 坐标)
+
+    if mode == "crop":
+        # 直接截掉: 反射段以下像素彻底不存在
+        keep = work_rgb[:crop_top]
+    elif mode == "fill":
+        keep = work_rgb.copy()
+        for (y0, y1) in reflection:
+            band = keep[y0:y1 + 1]
+            if band.size > 0:
+                flat = band.reshape(-1, 3)
+                med = np.median(flat, axis=0).astype(np.uint8)
+                keep[y0:y1 + 1] = med
+    else:
+        raise ValueError(f"drop_reflection mode={mode!r}")
+
+    # 校准 st 字段 (所有 y 坐标 ≥ crop_top 的值需要 -crop_top, 反射段清空)
+    st2 = dict(st)
+    st2["reflection"] = []  # 已处理
+
+    def remap(t):
+        if t is None: return t
+        a, b = t
+        new_a = a if a < crop_top else None
+        new_b = b if b < crop_top else None
+        if new_a is None or new_b is None:
+            return None
+        return (new_a, new_b)
+    st2["mrz"] = remap(st.get("mrz"))
+    if st.get("mrz_pair"):
+        l1, l2 = st["mrz_pair"]
+        st2["mrz_pair"] = (remap(l1), remap(l2))
+    # solid/text 通常在反射上方, 不变; 但若 solid 跨越裁剪线则截断
+    if st.get("solid"):
+        new_solid = []
+        for t in st["solid"]:
+            r = remap(t)
+            if r: new_solid.append(r)
+        st2["solid"] = new_solid
+    if st.get("text"):
+        new_text = []
+        for t in st["text"]:
+            r = remap(t)
+            if r: new_text.append(r)
+        st2["text"] = new_text
+    return keep, st2
+
+
 def crop_mrz(work_rgb, st, pad=0.06):
     """裁出 MRZ 两行（不含倒影）。返回 numpy RGB crop；无 MRZ 返回 None。"""
     mrz = st.get("mrz")
