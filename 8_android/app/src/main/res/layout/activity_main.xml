@@ -44,7 +44,7 @@
                 android:fontFamily="monospace"
                 android:textColor="@color/neon_cyan"
                 android:textSize="11sp"
-                android:text="— // batched mrz ocr — traditional + cnn" />
+                android:text="— // mrz bench + photo pipeline —" />
 
             <View
                 android:layout_width="match_parent"
@@ -62,7 +62,7 @@
         android:background="@color/bg"
         app:tabIndicatorColor="@color/neon_cyan"
         app:tabIndicatorHeight="2dp"
-        app:tabMode="fixed"
+        app:tabMode="scrollable"
         app:tabRippleColor="@color/border_hi"
         app:tabSelectedTextColor="@color/neon_cyan"
         app:tabTextColor="@color/text_dim"

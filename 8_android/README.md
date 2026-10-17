@@ -16,6 +16,30 @@ benchmark (`6_mrz_ocr/bench_results.json`).
   `/sdcard/Android/data/com.nextransit.mrzbench/files/results/`.
 * The **Compare** tab diffs on-device metrics against the host baseline you
   push via `tools/push_baseline.sh`.
+* The **PHOTO -> MRZ** tab runs the complete passport-photo path: structure
+  detection, reflection removal, perspective correction, MRZ crop, PaddleOCR
+  recognition, ICAO checksum repair, and readable field output.
+
+## PHOTO -> MRZ
+
+Select a passport-machine photo from the fourth tab and tap **Run pipeline**.
+The page shows the original image, the reflection-free image, the rectified
+MRZ view, and the clean MRZ crop. The result block keeps line 1 and line 2 in
+monospace text, uses status colors for decode/pass/fail, and lists the decoded
+TD3 fields and per-stage timings.
+
+Android uses the recognition-only `PP-OCRv6_medium_rec_onnx` model through
+ONNX Runtime. The model is packaged at:
+
+```text
+app/src/main/assets/models/ppocrv6_medium_rec.onnx
+```
+
+The first run copies the 76 MB model from APK assets into the app-private
+files directory and creates one reusable ONNX session. Later runs reuse that
+session. If ONNX initialization fails, the page falls back to the existing
+native CNN/template OCR and displays the fallback note. Python, Tesseract,
+and PaddleX registry APIs are not used inside Android.
 
 ## Module boundary
 
@@ -80,14 +104,16 @@ gate (any metric > 0.3pp off → GATE: FAIL).
 │   ├── proguard-rules.pro
 │   └── src/main/
 │       ├── AndroidManifest.xml
-│       ├── assets/corpus/              (slim demo: corpus.json only)
+│       ├── assets/corpus/              (slim demo corpus)
+│       ├── assets/models/              (PP-OCRv6 recognition ONNX model)
 │       ├── res/                        (themes, layouts, mipmap)
 │       └── java/com/nextransit/mrzbench/
 │           ├── MainActivity.kt
 │           ├── bench/                  (Benchmark, Metrics, IcaoChecksum, StreamBus)
 │           ├── data/                   (Corpus, CorpusEntry, Cyber palette)
 │           ├── jni/                    (MrzNative — JNI shim)
-│           ├── ui/                     (RunFragment, StreamFragment, CompareFragment)
+│           ├── photo/                  (photo pipeline + Android ONNX recognizer)
+│           ├── ui/                     (Run, Stream, Compare, Photo -> MRZ)
 │           └── util/                   (TinyJson)
 ├── app/src/main/cpp/
 │   ├── CMakeLists.txt                  (links host C sources verbatim)

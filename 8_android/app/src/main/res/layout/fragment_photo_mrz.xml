@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="14dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="0.10"
+            android:text="PHOTO → MRZ"
+            android:textColor="@color/text_dim"
+            android:textSize="11sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_photo_pick"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Select photo" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_photo_run"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:backgroundTint="@color/neon_cyan"
+                android:text="Run pipeline"
+                android:textColor="@color/bg" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/photo_status"
+            style="@style/ValMono"
+            android:layout_marginTop="8dp"
+            android:text="select a passport photo" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="0.10"
+            android:text="PIPELINE STAGES"
+            android:textColor="@color/text_dim"
+            android:textSize="11sp" />
+
+        <TextView
+            android:id="@+id/photo_stage_labels"
+            style="@style/ValMono"
+            android:layout_marginTop="6dp"
+            android:text="① original   ② reflection removed   ③ rectified   ④ MRZ crop" />
+
+        <GridLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:columnCount="2">
+
+            <ImageView
+                android:id="@+id/photo_original"
+                android:layout_width="0dp"
+                android:layout_height="150dp"
+                android:layout_columnWeight="1"
+                android:layout_margin="3dp"
+                android:background="@color/field"
+                android:contentDescription="original passport photo"
+                android:scaleType="fitCenter" />
+
+            <ImageView
+                android:id="@+id/photo_clean"
+                android:layout_width="0dp"
+                android:layout_height="150dp"
+                android:layout_columnWeight="1"
+                android:layout_margin="3dp"
+                android:background="@color/field"
+                android:contentDescription="reflection removed photo"
+                android:scaleType="fitCenter" />
+
+            <ImageView
+                android:id="@+id/photo_rectified"
+                android:layout_width="0dp"
+                android:layout_height="150dp"
+                android:layout_columnWeight="1"
+                android:layout_margin="3dp"
+                android:background="@color/field"
+                android:contentDescription="rectified MRZ"
+                android:scaleType="fitCenter" />
+
+            <ImageView
+                android:id="@+id/photo_mrz"
+                android:layout_width="0dp"
+                android:layout_height="150dp"
+                android:layout_columnWeight="1"
+                android:layout_margin="3dp"
+                android:background="@color/field"
+                android:contentDescription="MRZ crop"
+                android:scaleType="fitCenter" />
+        </GridLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="0.10"
+            android:text="RESULT"
+            android:textColor="@color/text_dim"
+            android:textSize="11sp" />
+
+        <TextView
+            android:id="@+id/photo_result"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:background="@color/field"
+            android:fontFamily="monospace"
+            android:padding="10dp"
+            android:text="ready to run"
+            android:textColor="@color/text"
+            android:textIsSelectable="true"
+            android:textSize="11sp" />
+    </LinearLayout>
+</ScrollView>

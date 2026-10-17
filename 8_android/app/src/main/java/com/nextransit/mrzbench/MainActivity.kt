@@ -18,6 +18,7 @@ import com.nextransit.mrzbench.jni.MrzNative
 import com.nextransit.mrzbench.ui.RunFragment
 import com.nextransit.mrzbench.ui.StreamFragment
 import com.nextransit.mrzbench.ui.CompareFragment
+import com.nextransit.mrzbench.ui.PhotoMrzFragment
 
 class MainActivity : AppCompatActivity() {
 
@@ -27,8 +28,9 @@ class MainActivity : AppCompatActivity() {
         RunFragment(),
         StreamFragment(),
         CompareFragment(),
+        PhotoMrzFragment(),
     )
-    private val titles = listOf("RUN", "STREAM", "COMPARE")
+    private val titles = listOf("RUN", "STREAM", "COMPARE", "PHOTO -> MRZ")
 
     private var benchReceiver: BroadcastReceiver? = null
 
@@ -41,7 +43,7 @@ class MainActivity : AppCompatActivity() {
 
         for (t in titles) tabs.addTab(tabs.newTab().setText(t))
 
-        // Pre-attach all three so back-stack isn't a question. Show
+        // Pre-attach all tabs so back-stack isn't a question. Show
         // only one at a time to keep memory flat (each fragment is
         // tiny but <5 MB matters on Android 9 / 2 GB-class handsets).
         supportFragmentManager.beginTransaction().apply {
