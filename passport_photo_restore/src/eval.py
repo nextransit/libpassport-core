@@ -4,7 +4,7 @@
 用法：
   python3 src/eval.py <Photo_dir> [<out_md>]
 
-输出 markdown：每图 MRZ 带 / solid 黑带 / 定位耗时。
+输出 markdown：每图 MRZ 双行 / 去影后高度 / solid 黑带 / 定位耗时。
 """
 from __future__ import annotations
 import sys
@@ -48,17 +48,24 @@ def main():
     md.append("**结果：MRZ 结构定位 %d/%d；solid 黑带定位 %d/%d。**"
               % (ok_mrz, total, ok_solid, total))
     md.append("")
-    md.append("| 文件 | MRZ 带(y0-y1, 高px) | solid 黑带 | 定位耗时(ms) |")
-    md.append("|---|---|---|---|")
+    md.append("| 文件 | MRZ 双行 | 去影后高度 | solid 黑带 | 定位耗时(ms) |")
+    md.append("|---|---|---:|---|---:|")
     for name, r in rows:
         mrz = r["mrz"]
-        mrz_txt = "y%d-%d (%dpx)" % (mrz[0], mrz[1], mrz[1] - mrz[0] + 1) if mrz else "**未定位**"
+        pair = r.get("mrz_pair")
+        if pair:
+            mrz_txt = "y%d-%d + y%d-%d" % (
+                pair[0][0], pair[0][1], pair[1][0], pair[1][1])
+        else:
+            mrz_txt = "**未定位**"
         solid_txt = "; ".join("%d-%d" % (a, b) for a, b in (r["solid"] or [])[-2:]) or "-"
-        md.append("| %s | %s | %s | %.1f |" % (name, mrz_txt, solid_txt, r["ms"]))
+        crop_h = r["crop"].shape[0] if r.get("crop") is not None else 0
+        md.append("| %s | %s | %d | %s | %.1f |" %
+                  (name, mrz_txt, crop_h, solid_txt, r["ms"]))
     md.append("")
     md.append("## 倒影切除判定")
-    md.append("- MRZ 带 = solid 黑带下沿之后连续 text 段（gap<=15px）。")
-    md.append("- 当下一段与上一段 gap>15px 判定进入倒影区 → crop 天然不含倒影。")
+    md.append("- MRZ 双行 = 最后一条 solid 黑带上方、紧邻的两段等高 text。")
+    md.append("- 只保留到 line2 末行；其后的黑色边界和模糊倒影全部裁掉。")
     md.append("- 单应矫正：MRZ 带四边形 -> 标准 44格x2行 矩形（INTER_LANCZOS4）。")
     out_md.parent.mkdir(parents=True, exist_ok=True)
     out_md.write_text("\n".join(md))

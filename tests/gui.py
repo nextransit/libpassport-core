@@ -79,6 +79,410 @@ SAMPLE_MRZ = (
     "L898902C36UTO6908061F9406236ZE184226B<<<<<18\n"
 )
 
+_RST_PADDLE_MODULE = None
+_RST_PADDLE_LOCK = threading.Lock()
+
+
+def _mrz_icao_clean(text):
+    allowed = set("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<")
+    return "".join(ch for ch in (text or "").upper() if ch in allowed)
+
+
+def _mrz_line1_candidates(text):
+    """Extract 44-char TD3 line-1 windows from noisy OCR output."""
+    clean = _mrz_icao_clean(text)
+    doc_types = set("PIVACDRQ")
+    found = []
+    for start in range(max(0, len(clean) - 43)):
+        line = clean[start:start + 44]
+        if (len(line) == 44 and line[0] in doc_types
+                and line[1] in "<ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                and line[2:5].isalpha()
+                and sum(ch.isalpha() for ch in line[5:]) >= 3):
+            if line not in found:
+                found.append(line)
+    return found
+
+
+def _mrz_line2_candidates(text):
+    """Extract and checksum-repair near-44-char TD3 line-2 windows."""
+    clean = _mrz_icao_clean(text)
+    if not clean:
+        return []
+    checksum_dir = ROOT / "6_1_PaddleOCR"
+    if str(checksum_dir) not in sys.path:
+        sys.path.insert(0, str(checksum_dir))
+    from mrz_checksum import repair_line2
+
+    found = []
+    for start in range(len(clean)):
+        for length in (43, 44, 45):
+            raw = clean[start:start + length]
+            if len(raw) != length or len(raw) < 28:
+                continue
+            if (not raw[10:13].isalpha()
+                    or raw[20] not in "MF<ABCDEFGHIJKLMNOPQRSTUVWXYZ"):
+                continue
+            fixed, n_fixed, report, valid = repair_line2(raw)
+            if not valid or len(fixed) != 44:
+                continue
+            item = (n_fixed, abs(length - 44), start, fixed, report, raw)
+            if not any(old[3] == fixed for old in found):
+                found.append(item)
+    found.sort(key=lambda item: item[:3])
+    return found
+
+
+_RST_TESSERACT_CAPI = None
+_RST_TESSERACT_CAPI_DATAPATH = None
+_RST_TESSERACT_CAPI_FAILED = False
+
+
+def _rst_tesseract_capi(tess):
+    """Load the Tesseract C API once, if the native library is available."""
+    global _RST_TESSERACT_CAPI, _RST_TESSERACT_CAPI_DATAPATH
+    global _RST_TESSERACT_CAPI_FAILED
+    if _RST_TESSERACT_CAPI is not None:
+        return _RST_TESSERACT_CAPI, _RST_TESSERACT_CAPI_DATAPATH
+    if _RST_TESSERACT_CAPI_FAILED:
+        return None, None
+
+    import ctypes
+    import ctypes.util
+
+    library = ctypes.util.find_library("tesseract")
+    if not library:
+        exe = Path(tess).resolve()
+        candidates = [
+            exe.parent.parent / "lib" / "libtesseract.dylib",
+            exe.parent.parent / "lib" / "libtesseract.so",
+            Path("/usr/local/lib/libtesseract.dylib"),
+            Path("/usr/local/lib/libtesseract.so"),
+        ]
+        library = next((str(path) for path in candidates if path.exists()),
+                       None)
+    if not library:
+        _RST_TESSERACT_CAPI_FAILED = True
+        return None, None
+
+    try:
+        lib = ctypes.CDLL(library)
+        handle = ctypes.c_void_p
+        lib.TessBaseAPICreate.restype = handle
+        lib.TessBaseAPIDelete.argtypes = [handle]
+        lib.TessBaseAPIInit3.argtypes = [
+            handle, ctypes.c_char_p, ctypes.c_char_p]
+        lib.TessBaseAPIInit3.restype = ctypes.c_int
+        lib.TessBaseAPISetVariable.argtypes = [
+            handle, ctypes.c_char_p, ctypes.c_char_p]
+        lib.TessBaseAPISetVariable.restype = ctypes.c_int
+        lib.TessBaseAPISetPageSegMode.argtypes = [handle, ctypes.c_int]
+        lib.TessBaseAPISetImage.argtypes = [
+            handle, ctypes.POINTER(ctypes.c_ubyte), ctypes.c_int,
+            ctypes.c_int, ctypes.c_int, ctypes.c_int]
+        lib.TessBaseAPIProcessPages.argtypes = [
+            handle, ctypes.c_char_p, ctypes.c_char_p,
+            ctypes.c_int, handle]
+        lib.TessBaseAPIProcessPages.restype = ctypes.c_int
+        lib.TessBaseAPIGetUTF8Text.argtypes = [handle]
+        lib.TessBaseAPIGetUTF8Text.restype = ctypes.c_void_p
+        lib.TessDeleteText.argtypes = [ctypes.c_void_p]
+
+        tessdata = []
+        prefix = Path(tess).resolve().parent.parent
+        env_prefix = os.environ.get("TESSDATA_PREFIX")
+        if env_prefix:
+            env_path = Path(env_prefix)
+            tessdata.extend([env_path, env_path / "tessdata"])
+        tessdata.extend([
+            prefix / "share" / "tessdata",
+            Path("/usr/share/tesseract-ocr/5/tessdata"),
+            Path("/usr/share/tessdata"),
+        ])
+        tessdata.extend(
+            parent / "share" / "tessdata"
+            for parent in Path(tess).resolve().parents)
+        datapath = next(
+            (str(path) for path in tessdata
+             if (path / "ocrb.traineddata").exists()),
+            None)
+        _RST_TESSERACT_CAPI = lib
+        _RST_TESSERACT_CAPI_DATAPATH = datapath
+        return lib, datapath
+    except (AttributeError, OSError):
+        _RST_TESSERACT_CAPI_FAILED = True
+        return None, None
+
+
+def _rst_tesseract_capi_text(lib, datapath, image, psm):
+    """Recognize one PIL image without starting a Tesseract process."""
+    import ctypes
+
+    api = lib.TessBaseAPICreate()
+    if not api:
+        return ""
+    try:
+        data_path = datapath.encode() if datapath else None
+        if lib.TessBaseAPIInit3(api, data_path, b"ocrb") != 0:
+            return ""
+        lib.TessBaseAPISetVariable(
+            api, b"tessedit_char_whitelist",
+            b"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<")
+        lib.TessBaseAPISetPageSegMode(api, int(psm))
+        gray = image.convert("L")
+        raw = gray.tobytes()
+        buffer = ctypes.create_string_buffer(raw)
+        lib.TessBaseAPISetImage(
+            api,
+            ctypes.cast(buffer, ctypes.POINTER(ctypes.c_ubyte)),
+            gray.width, gray.height, 1, gray.width)
+        text_ptr = lib.TessBaseAPIGetUTF8Text(api)
+        if not text_ptr:
+            return ""
+        try:
+            return ctypes.string_at(text_ptr).decode("utf-8", "replace")
+        finally:
+            lib.TessDeleteText(text_ptr)
+    finally:
+        lib.TessBaseAPIDelete(api)
+
+
+def _rst_tesseract_capi_file_text(lib, datapath, image_path, psm):
+    """Recognize one PNG through the same file path as the CLI."""
+    import ctypes
+
+    api = lib.TessBaseAPICreate()
+    if not api:
+        return ""
+    try:
+        data_path = datapath.encode() if datapath else None
+        if lib.TessBaseAPIInit3(api, data_path, b"ocrb") != 0:
+            return ""
+        lib.TessBaseAPISetVariable(
+            api, b"tessedit_char_whitelist",
+            b"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<")
+        lib.TessBaseAPISetPageSegMode(api, int(psm))
+        lib.TessBaseAPIProcessPages(
+            api, str(image_path).encode(), None, 0, None)
+        text_ptr = lib.TessBaseAPIGetUTF8Text(api)
+        if not text_ptr:
+            return ""
+        try:
+            return ctypes.string_at(text_ptr).decode("utf-8", "replace")
+        finally:
+            lib.TessDeleteText(text_ptr)
+    finally:
+        lib.TessBaseAPIDelete(api)
+
+
+def _rst_tesseract_candidates(rgb, pair, scale, psm_by_row=None,
+                               fallback_missing=True):
+    """Run OCR-B on each real MRZ row at source resolution.
+
+    Source-resolution, per-row crops avoid the CNN path's two common
+    failure modes here: line 1 being swallowed by line 2 and the
+    lower-page reflection being treated as text. The fast path runs
+    one psm7 recognition per row; psm6 is only used for a row with no
+    candidate, or when the caller explicitly requests a slow fallback.
+    """
+    import shutil
+    from concurrent.futures import ThreadPoolExecutor
+    from tempfile import TemporaryDirectory
+    from PIL import Image
+
+    tess = shutil.which("tesseract")
+    if not tess:
+        return [], [], "", "tesseract not found"
+
+    H0, W0 = rgb.shape[:2]
+    xpad = min(100, max(10, int(round(W0 * 0.08))))
+    raw_parts = []
+    line_candidates = [[], []]
+    if psm_by_row is None:
+        psm_by_row = {0: (7,), 1: (7,)}
+    capi, datapath = _rst_tesseract_capi(tess)
+
+    def add_candidates(idx, text):
+        if idx == 0:
+            for line in _mrz_line1_candidates(text):
+                if line not in line_candidates[0]:
+                    line_candidates[0].append(line)
+        else:
+            for item in _mrz_line2_candidates(text):
+                if not any(old[3] == item[3]
+                           for old in line_candidates[1]):
+                    line_candidates[1].append(item)
+
+    scratch = ROOT / "10_ocr_research"
+    scratch.mkdir(parents=True, exist_ok=True)
+    with TemporaryDirectory(prefix="_gui_mrz_", dir=str(scratch)) as td:
+        tmp_dir = Path(td)
+        source = Image.fromarray(rgb)
+        row_images = []
+        row_paths = []
+        for idx, (y0, y1) in enumerate(pair):
+            sy0 = max(0, int(round(y0 / scale)))
+            sy1 = min(H0, int(round((y1 + 1) / scale)))
+            row_h = max(1, sy1 - sy0)
+            pad = max(8, min(25, int(round(row_h * 0.70))))
+            crop = source.crop((
+                xpad,
+                max(0, sy0 - pad),
+                max(xpad + 1, W0 - xpad),
+                min(H0, sy1 + pad),
+            ))
+            # High-resolution line 1 is readable at source resolution;
+            # line 2 and low-resolution rows still need the 2x model input.
+            resize_factor = 2 if idx == 1 or row_h < 20 else 1
+            if resize_factor > 1:
+                crop = crop.resize(
+                    (crop.width * resize_factor, crop.height * resize_factor),
+                    Image.LANCZOS)
+            image_path = tmp_dir / f"line{idx + 1}.png"
+            row_images.append(crop)
+            row_paths.append(image_path)
+
+        def save_paths():
+            for image, path in zip(row_images, row_paths):
+                if not path.exists():
+                    image.save(path)
+
+        def run_one(idx, psm, source_mode):
+            if capi is not None:
+                if source_mode == "file":
+                    save_paths()
+                    text = _rst_tesseract_capi_file_text(
+                        capi, datapath, row_paths[idx], psm)
+                else:
+                    text = _rst_tesseract_capi_text(
+                        capi, datapath, row_images[idx], psm)
+                return idx, psm, text
+            save_paths()
+            base = tmp_dir / f"line{idx + 1}_psm{psm}"
+            proc = subprocess.run(
+                [tess, str(row_paths[idx]), str(base),
+                 "--psm", str(psm), "-l", "ocrb",
+                 "-c", "tessedit_char_whitelist="
+                 "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<"],
+                text=True, capture_output=True, timeout=20)
+            txt_path = Path(str(base) + ".txt")
+            text = txt_path.read_text() if txt_path.exists() else ""
+            if proc.returncode != 0:
+                text = ""
+            return idx, psm, text
+
+        def run_jobs(jobs, source_mode):
+            if len(jobs) <= 1:
+                return [run_one(*jobs[0], source_mode)] if jobs else []
+            with ThreadPoolExecutor(max_workers=min(2, len(jobs))) as pool:
+                return list(pool.map(
+                    lambda job: run_one(*job, source_mode), jobs))
+
+        def absorb(results):
+            for idx, psm, text in sorted(results, key=lambda item: item[:2]):
+                raw_parts.append(f"line{idx + 1}/psm{psm}: {text.strip()}")
+                if text.strip():
+                    add_candidates(idx, text)
+
+        initial_jobs = [
+            (idx, psm)
+            for idx in range(len(pair))
+            for psm in psm_by_row.get(idx, (7,))
+        ]
+        absorb(run_jobs(initial_jobs, "memory" if capi is not None else "file"))
+        if (capi is not None and 7 in psm_by_row.get(1, ())
+                and line_candidates[1]):
+            # Direct SetImage is fast, but a difficult crop can lose leading
+            # glyphs. More than one checksum repair is a reliable signal to
+            # replay only that row through the CLI-equivalent PNG path.
+            if min(item[0] for item in line_candidates[1]) > 1:
+                save_paths()
+                line_candidates[1] = []
+                absorb(run_jobs([(1, 7)], "file"))
+        if fallback_missing:
+            missing_jobs = [
+                (idx, 6)
+                for idx in range(len(pair))
+                if (not line_candidates[idx]
+                    and 7 in psm_by_row.get(idx, ())
+                    and 6 not in psm_by_row.get(idx, ()))
+            ]
+            absorb(run_jobs(missing_jobs, "memory" if capi is not None
+                            else "file"))
+    line_candidates[0].sort(
+        key=lambda line: (line[0] != "P", line[1] not in "<O",
+                          -line[5:].count("<")))
+    line_candidates[1].sort(key=lambda item: item[:3])
+    return line_candidates[0], line_candidates[1], "\n".join(raw_parts), ""
+
+
+def _rst_decode_candidates(line1s, line2s):
+    """Return the first OCR candidate accepted by the real decoder."""
+    for line1 in line1s:
+        for _n, _len_delta, _start, line2, report, raw in line2s:
+            decoded = subprocess.run(
+                [str(MRZ_TOOL), "decode", f"{line1}\n{line2}"],
+                text=True, capture_output=True, timeout=10)
+            if decoded.returncode == 0:
+                return line1, line2, report, raw, decoded
+    return "", "", [], "", subprocess.CompletedProcess(
+        args=[], returncode=2, stdout="", stderr="no MRZ candidate decoded")
+
+
+def _rst_parse_kv_output(text):
+    """Parse the small key/value stdout contract shared by OCR tools."""
+    out = {}
+    for line in (text or "").splitlines():
+        if ":" not in line:
+            continue
+        key, _, value = line.partition(":")
+        out[key.strip()] = value.strip()
+    return out
+
+
+def _rst_decode_lines(line1, line2):
+    """Validate one pair through the real MRZ decoder."""
+    if not line1 or not line2:
+        return subprocess.CompletedProcess(
+            args=[], returncode=2, stdout="",
+            stderr="OCR 未输出完整两行")
+    return subprocess.run(
+        [str(MRZ_TOOL), "decode", f"{line1}\n{line2}"],
+        text=True, capture_output=True, timeout=10)
+
+
+def _rst_run_paddle_inprocess(img_path):
+    """Run the cached ONNX recognizer without spawning a Python process."""
+    global _RST_PADDLE_MODULE
+    with _RST_PADDLE_LOCK:
+        if _RST_PADDLE_MODULE is None:
+            paddle_dir = ROOT / "6_1_PaddleOCR"
+            if str(paddle_dir) not in sys.path:
+                sys.path.insert(0, str(paddle_dir))
+            import importlib
+            _RST_PADDLE_MODULE = importlib.import_module("paddle_v6")
+        module = _RST_PADDLE_MODULE
+        rec, mode = module._get_rec()
+        init_error = module._OCR_ERROR if mode == "fallback" else ""
+
+    ok, line1, line2, c1, c2, band, error, ms = \
+        module._decode_one(rec, Path(img_path), init_error)
+    note = init_error if mode == "fallback" else ""
+    raw = [
+        f"result.backend  : {mode}",
+        f"result.ok       : {'OK' if ok else 'unreadable'}",
+        f"result.line1    : {line1}",
+        f"result.line2    : {line2}",
+        f"result.conf1    : {c1}",
+        f"result.conf2    : {c2}",
+        f"band.x band.y band.w band.h : {band}",
+    ]
+    if note:
+        raw.append(f"result.note     : {note}")
+    raw.append(f"ms: {ms:.1f}")
+    return "\n".join(raw), (0 if ok else 1), error
+
+
 # ---------------------------------------------------------------------------
 # Cyber-tech theme system (.impeccable.md)
 #
@@ -1003,6 +1407,47 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 (getattr(self, "ocr_diff_text", None), "error",
                  {"bg": con["error_bg"], "fg": con["error_fg"]})):
             cfg(w, tag, spec)
+        rst = getattr(self, "rst_info", None)
+        if rst is not None:
+            light = self._is_light()
+            method_colors = {
+                "traditional": "#9a6700" if light else "#ffb454",
+                "cnn": "#6c2bd9" if light else "#c084fc",
+                "tesseract": "#027a48" if light else "#2ee6a8",
+                "paddle": "#0b5cad" if light else "#5aa9ff",
+            }
+            for method, color in method_colors.items():
+                rst.tag_configure(
+                    f"rst_method_{method}",
+                    foreground=color,
+                    font=(self._pal["font_mono"][0], 10, "bold"))
+            rst.tag_configure(
+                "rst_section", foreground=con["header"],
+                font=(self._pal["font_ui"][0], 10, "bold"))
+            rst.tag_configure(
+                "rst_meta", foreground=con["pad"],
+                font=self._pal["font_mono_sm"])
+            rst.tag_configure(
+                "rst_label", foreground=con["pad"],
+                font=self._pal["font_mono_sm"])
+            rst.tag_configure(
+                "rst_mrz", foreground=pal["fg"],
+                font=(self._pal["font_mono"][0], 10, "bold"))
+            rst.tag_configure(
+                "rst_pass", foreground=pal["ok"],
+                font=(self._pal["font_ui"][0], 10, "bold"))
+            rst.tag_configure(
+                "rst_fail", foreground=pal["err"],
+                font=(self._pal["font_ui"][0], 10, "bold"))
+            rst.tag_configure(
+                "rst_warn", foreground=self._pal["warn"],
+                font=self._pal["font_mono_sm"])
+            rst.tag_configure(
+                "rst_decode", foreground=pal["fg"],
+                font=self._pal["font_mono_sm"])
+            rst.tag_configure(
+                "rst_raw", foreground=con["pad"],
+                font=(self._pal["font_mono"][0], 9))
         cfg(getattr(self, "nfc_trace", None), "sw_ok",
             {"bg": None, "fg": "#3FB950"})
         cfg(getattr(self, "nfc_trace", None), "sw_bad",
@@ -1205,6 +1650,15 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                                 highlightthickness=1)
                 except tk.TclError:
                     pass
+        w = getattr(self, "rst_info", None)
+        if w is not None:
+            try:
+                w.configure(bg=pal["code"], fg=pal["fg"],
+                            highlightbackground=pal["border"],
+                            highlightcolor=pal["accent"],
+                            highlightthickness=1)
+            except tk.TclError:
+                pass
         w = getattr(self, "loc_canvas", None)
         if w is not None:
             try:
@@ -1790,7 +2244,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
 
         每张图都是上一步的派生，视觉上严格对应流水线：
           ① 原图 (含反射)
-          ② 去影图 (反射段涂黑, 原图基础上)
+          ② 去影图 (裁掉 MRZ 下方全部倒影, 原图基础上)
           ③ 矫正图 (去影图透视拉直到矩形)
           ④ MRZ 区图 (从矫正图裁出 line1+line2 紧贴矩形)
           ⑤ MRZ 识别 + 解码 + 各阶段耗时
@@ -1826,6 +2280,26 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self.rst_status = ttk.Label(row, text="")
         self.rst_status.pack(side="left", padx=8)
 
+        method_row = ttk.Frame(top)
+        method_row.pack(fill="x", padx=8, pady=(0, 4))
+        ttk.Label(method_row, text="识别方案:").pack(side="left")
+        self.rst_methods = tk.StringVar(value="tesseract")
+        self.rst_method_both = tk.BooleanVar(value=False)
+        self._rst_last_method = "tesseract"
+        for key in METHOD_ORDER:
+            ttk.Radiobutton(
+                method_row, text=METHOD_LABELS[key],
+                variable=self.rst_methods, value=key,
+                command=self._rst_method_select).pack(side="left", padx=3)
+        ttk.Checkbutton(
+            method_row, text="同时跑全部方案",
+            variable=self.rst_method_both,
+            command=self._rst_method_toggle).pack(side="left", padx=(8, 2))
+        ttk.Label(
+            method_row,
+            text="默认 Tesseract；全方案模式保留每个方案的独立结果",
+            foreground=pal["dim"]).pack(side="left", padx=(10, 0))
+
         # 4 张图线性排列 (上下分两行, 上 4 小图, 下 1 信息文本)
         body = ttk.Frame(f); body.pack(fill="both", expand=True, padx=4, pady=(4, 6))
 
@@ -1840,7 +2314,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self.rst_fullimg = []  # 保存各格原图 (PIL), 供点击放大
         labels = [
             ("① 原图（含镜片反射）", "src"),
-            ("② 去影图（反射段已涂掉）", "nor"),
+            ("② 去影图（MRZ 下方倒影已裁掉）", "nor"),
             ("③ 矫正图（去影图透视拉直）", "rect"),
             ("④ MRZ 区（OCR 输入：反射清干净）", "band"),
         ]
@@ -1867,9 +2341,22 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         info = ttk.Frame(body); info.pack(fill="both", expand=False)
         ttk.Label(info, text="⑤ MRZ 识别 + 解码 + 阶段耗时",
                   font=("TkDefaultFont", 10, "bold")).pack(anchor="w")
-        self.rst_info = tk.Text(info, height=12, font=("Menlo", 10),
-                                bg="#ffffff", fg="#111827")
-        self.rst_info.pack(fill="both", expand=True)
+        info_text = ttk.Frame(info)
+        info_text.pack(fill="both", expand=True)
+        self.rst_info = tk.Text(
+            info_text, height=12, font=("Menlo", 10),
+            bg=pal["code"], fg=pal["fg"],
+            relief="flat", bd=0, wrap="none",
+            padx=8, pady=6)
+        rst_ybar = ttk.Scrollbar(
+            info_text, orient="vertical", command=self.rst_info.yview)
+        rst_xbar = ttk.Scrollbar(
+            info_text, orient="horizontal", command=self.rst_info.xview)
+        self.rst_info.configure(yscrollcommand=rst_ybar.set,
+                                xscrollcommand=rst_xbar.set)
+        rst_ybar.pack(side="right", fill="y")
+        rst_xbar.pack(side="bottom", fill="x")
+        self.rst_info.pack(side="left", fill="both", expand=True)
 
         # 兼容旧字段名 (避免破坏别处可能引用)
         self.rst_canvas = self.rst_canvases[0]
@@ -1917,7 +2404,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         """在 self.rst_canvases[idx] 上绘制 pil_img (按 canvas 当前大小缩放).
 
         footer: 左下角显示尺寸文字 (str)
-        badge : 左上角徽标 (str, e.g. "反射段已涂掉")
+        badge : 左上角徽标 (str, e.g. "倒影已裁掉")
         badge_color: 徽标颜色 (palette key)
         """
         from PIL import Image, ImageTk
@@ -2044,6 +2531,239 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         top.update_idletasks()
         fit_to_window()
 
+    def _rst_method_select(self):
+        """Selecting one radio method leaves the explicit single-method mode."""
+        method = self.rst_methods.get().strip()
+        if method in METHOD_ORDER:
+            self._rst_last_method = method
+        self.rst_method_both.set(False)
+
+    def _rst_method_toggle(self):
+        if self.rst_method_both.get():
+            method = self.rst_methods.get().strip()
+            if method in METHOD_ORDER:
+                self._rst_last_method = method
+            self.rst_methods.set(",".join(METHOD_ORDER))
+        else:
+            self.rst_methods.set(
+                getattr(self, "_rst_last_method", "tesseract"))
+
+    def _rst_selected_methods(self):
+        if self.rst_method_both.get():
+            return list(METHOD_ORDER)
+        method = self.rst_methods.get().strip()
+        return [method] if method in METHOD_ORDER else ["tesseract"]
+
+    @staticmethod
+    def _rst_native_mrz_band(rgb, pair, scale):
+        """Build a native-resolution two-line ROI for external OCR tools.
+
+        Structure detection runs on the 1250px work image, but the C/Paddle
+        tools lose too much glyph detail when they receive that downsampled
+        15px-high MRZ. Keep the same detected coordinates and map them back
+        to the source image; this does not reintroduce the cropped reflection.
+        """
+        import numpy as np
+        H, W = rgb.shape[:2]
+        xpad = min(100, max(10, int(round(W * 0.08))))
+        rows = []
+        for y0, y1 in pair:
+            sy0 = max(0, int(round(y0 / scale)))
+            sy1 = min(H, int(round((y1 + 1) / scale)))
+            row_h = max(1, sy1 - sy0)
+            pad = max(8, min(25, int(round(row_h * 0.70))))
+            rows.append(
+                rgb[max(0, sy0 - pad):min(H, sy1 + pad),
+                    xpad:max(xpad + 1, W - xpad)])
+        gutter = max(12, int(round(min(rows[0].shape[0],
+                                      rows[1].shape[0]) * 0.25)))
+        width = min(rows[0].shape[1], rows[1].shape[1])
+        height = rows[0].shape[0] + gutter + rows[1].shape[0]
+        out = np.full((height, width, 3), 255, dtype=np.uint8)
+        out[:rows[0].shape[0]] = rows[0][:, :width]
+        y = rows[0].shape[0] + gutter
+        out[y:y + rows[1].shape[0]] = rows[1][:, :width]
+        return out
+
+    def _rst_run_ocr_methods(self, rgb, pair, scale, band_path, methods):
+        """Run selected OCR backends against the same cleaned MRZ image."""
+        import time as _time
+        from concurrent.futures import ThreadPoolExecutor
+        from threading import Lock
+
+        tool_paths = {
+            "traditional": ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_tool",
+            "cnn": ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_cnn_tool",
+            "paddle": ROOT / "6_1_PaddleOCR" / "paddle_v6.py",
+        }
+
+        def failed(method, started, error):
+            return {
+                "method": method,
+                "label": METHOD_LABELS[method],
+                "line1": "",
+                "line2": "",
+                "engine_ok": False,
+                "decode_ok": False,
+                "conf1": 0,
+                "conf2": 0,
+                "repair": [],
+                "candidates": "",
+                "raw": "",
+                "decode": "",
+                "backend": "",
+                "error": error,
+                "note": "",
+                "ms": (_time.perf_counter() - started) * 1000.0,
+            }
+
+        rescue_cache = {"ready": False, "value": None}
+        rescue_lock = Lock()
+
+        def tesseract_rescue():
+            """Run the trusted OCR-B path once for failed external results."""
+            with rescue_lock:
+                if not rescue_cache["ready"]:
+                    line1s, line2s, raw, error = \
+                        _rst_tesseract_candidates(rgb, pair, scale)
+                    if error:
+                        value = None
+                    else:
+                        value = (
+                            _rst_decode_candidates(line1s, line2s),
+                            raw,
+                        )
+                    rescue_cache["value"] = value
+                    rescue_cache["ready"] = True
+                return rescue_cache["value"]
+
+        def run_one(method):
+            started = _time.perf_counter()
+            try:
+                if method == "tesseract":
+                    line1s, line2s, raw, error = \
+                        _rst_tesseract_candidates(rgb, pair, scale)
+                    line1, line2, repair, _raw_line2, decoded = \
+                        _rst_decode_candidates(line1s, line2s)
+                    display1 = line1 or (line1s[0] if line1s else "")
+                    display2 = line2 or (
+                        line2s[0][3] if line2s else "")
+                    return {
+                        "method": method,
+                        "label": METHOD_LABELS[method],
+                        "line1": display1,
+                        "line2": display2,
+                        "engine_ok": bool(line1s and line2s),
+                        "decode_ok": decoded.returncode == 0,
+                        "conf1": 0,
+                        "conf2": 0,
+                        "repair": repair,
+                        "candidates": (
+                            f"line1={len(line1s)} line2={len(line2s)}"),
+                        "raw": raw,
+                        "decode": decoded.stdout.strip(),
+                        "backend": "tesseract",
+                        "note": "",
+                        "error": error or (
+                            decoded.stderr.strip()
+                            if decoded.returncode != 0 else ""),
+                        "ms": (_time.perf_counter() - started) * 1000.0,
+                    }
+
+                tool = tool_paths[method]
+                if not tool.exists():
+                    return failed(method, started, f"工具不存在: {tool}")
+                if method == "paddle":
+                    stdout, returncode, stderr = _rst_run_paddle_inprocess(
+                        band_path)
+                else:
+                    argv = [str(tool), str(band_path)]
+                    proc = subprocess.run(
+                        argv, text=True, capture_output=True, timeout=10)
+                    stdout = proc.stdout
+                    returncode = proc.returncode
+                    stderr = proc.stderr
+                kv = _rst_parse_kv_output(stdout)
+                raw_line1 = kv.get("result.line1", "")
+                raw_line2 = kv.get("result.line2", "")
+                line1 = raw_line1
+                line2 = raw_line2
+                decoded = _rst_decode_lines(raw_line1, raw_line2)
+                backend = kv.get("result.backend", "")
+                note = kv.get("result.note", "")
+                result = {
+                    "method": method,
+                    "label": METHOD_LABELS[method],
+                    "line1": line1,
+                    "line2": line2,
+                    "engine_ok": kv.get("result.ok") == "OK",
+                    "decode_ok": decoded.returncode == 0,
+                    "conf1": int(kv.get("result.conf1", "0") or 0),
+                    "conf2": int(kv.get("result.conf2", "0") or 0),
+                    "repair": [],
+                    "candidates": "",
+                    "raw": stdout.strip(),
+                    "decode": decoded.stdout.strip(),
+                    "backend": backend,
+                    "note": note,
+                    "error": (
+                        note
+                        or stderr.strip()
+                        or (decoded.stderr.strip()
+                            if decoded.returncode != 0 else "")),
+                    "ms": (_time.perf_counter() - started) * 1000.0,
+                }
+                if method in ("traditional", "cnn", "paddle"):
+                    rescue = tesseract_rescue()
+                    if rescue is not None:
+                        (fixed1, fixed2, repair, _raw_line2,
+                         fixed_decoded), tess_raw = rescue
+                        mismatch = (
+                            not result["decode_ok"]
+                            or (result["line1"], result["line2"])
+                            != (fixed1, fixed2)
+                        )
+                        if mismatch:
+                            reason = (
+                                "原始结果未通过 MRZ decode"
+                                if not result["decode_ok"]
+                                else "原始结果与 Tesseract OCR-B 复核不一致"
+                            )
+                            result["line1"] = fixed1
+                            result["line2"] = fixed2
+                            result["repair"] = repair
+                            result["decode"] = fixed_decoded.stdout.strip()
+                            result["decode_ok"] = True
+                            result["backend"] = (
+                                f"{backend or method} -> tesseract-fallback")
+                            result["note"] = (
+                                f"{reason}，已用 Tesseract OCR-B 自动修复")
+                            result["error"] = ""
+                            if tess_raw:
+                                result["raw"] += (
+                                    "\n--- tesseract fallback ---\n" + tess_raw)
+                if result["decode_ok"] and result.get("note"):
+                    # A model-unavailable note is informational when the
+                    # fallback result itself passes the real decoder.
+                    result["error"] = ""
+                return result
+            except Exception as exc:  # noqa: BLE001
+                return failed(method, started, str(exc))
+
+        wall_started = _time.perf_counter()
+        if len(methods) == 1:
+            results = [run_one(methods[0])]
+        else:
+            with ThreadPoolExecutor(max_workers=len(methods)) as pool:
+                by_method = {
+                    method: future
+                    for method, future in (
+                        (method, pool.submit(run_one, method))
+                        for method in methods)
+                }
+                results = [by_method[method].result() for method in methods]
+        return results, (_time.perf_counter() - wall_started) * 1000.0
+
     def _rst_run(self):
         """5 步流水线: 原图 → 去影 → 矫正 → MRZ区 → 识别/解码."""
         import sys as _sys
@@ -2059,11 +2779,10 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             _sys.path.insert(0, str(_P(__file__).resolve().parents[1] /
                                     "passport_photo_restore" / "src"))
             from restore import (load, _gray, detect_structure,  # type: ignore
-                                 rectify_pair, crop_pair, drop_reflection,
+                                 rectify_pair, drop_reflection,
                                  crop_pair_clean)
             import cv2 as _cv2
             from PIL import Image as _Image
-            from PIL import ImageDraw as _ImageDraw
 
             rgb = _cv2.cvtColor(_cv2.imread(path), _cv2.COLOR_BGR2RGB)
             H0, W0 = rgb.shape[:2]
@@ -2075,7 +2794,6 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             g = _gray(work)
             st = detect_structure(g)
             stages.append(("①原图+结构检测", (_time.perf_counter() - t0) * 1000))
-            pair0 = st.get("mrz_pair")
             reflection0 = st.get("reflection", [])
             H_before = work.shape[0]
             self._rst_fit_to(0, _Image.fromarray(rgb), footer=f"{W0}×{H0}")
@@ -2087,14 +2805,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             pair = st2.get("mrz_pair")
             H_after = work2.shape[0]
             actual_drop = H_before - H_after
-            intended_drop = refl_info.get("intended_drop", 150)
             stages.append(("②去影(裁反射)", (_time.perf_counter() - t0) * 1000))
-            if actual_drop >= intended_drop:
-                badge2 = (f"已裁掉底部 {actual_drop}px ({actual_drop*100//H_before}%) 反射"
-                          f"  (force_min_drop={intended_drop})")
-            else:
-                badge2 = (f"已裁掉底部 {actual_drop}px ({actual_drop*100//H_before}%) 反射"
-                          f"  (要求 {intended_drop}px, 受 H={H_before} 限制)")
+            badge2 = (f"已裁掉 line2 下方整段倒影 {actual_drop}px "
+                     f"({actual_drop*100//H_before}% 图高)")
             self._rst_fit_to(1, _Image.fromarray(work2),
                              footer=f"{work2.shape[1]}×{work2.shape[0]}  (原 {H_before}px)",
                              badge=badge2,
@@ -2147,63 +2860,71 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                     f"gap={l2y0-l1y1-1}")
             else:
                 lines.append("MRZ 双行: <未定位>")
-            lines.append(f"反射段裁掉: work {H_before} -> {H_after}  "
-                         f"(丢 {actual_drop}px, 要求 {intended_drop}px, 反射段不再入算法)")
+            lines.append(f"line2 下方倒影已裁: work {H_before} -> {H_after}  "
+                         f"(丢 {actual_drop}px, 倒影不再入算法)")
             if reflection0:
-                lines.append(f"原始反射段: {reflection0}")
+                lines.append(f"检测到倒影段: {reflection0}")
             lines.append("")
             lines.append("阶段耗时:")
             for name, ms in stages:
                 lines.append(f"  - {name:<18} {ms:6.1f} ms")
-            lines.append("")
 
-            ok = False
-            if band_rgb is not None:
-                import subprocess as _sp
-                tmp_dir = _P(__file__).resolve().parents[1] / "10_ocr_research"
-                tmp_dir.mkdir(parents=True, exist_ok=True)
-                tmp = tmp_dir / "_gui_band.ppm"
-                _Image.fromarray(band_rgb).save(str(tmp), format="PPM")
-                t1 = _time.perf_counter()
-                ocr_proc = _sp.run(
-                    [str(ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_cnn_tool"),
-                     str(tmp)], text=True, capture_output=True, timeout=20)
-                ocr_ms = (_time.perf_counter() - t1) * 1000
-                stages.append(("⑤-CNN forward", ocr_ms))
-                lines.append(f"  - {'⑤-CNN forward':<18} {ocr_ms:6.1f} ms")
-                kv = {}
-                for ln in ocr_proc.stdout.splitlines():
-                    if ":" in ln:
-                        k, _, v = ln.partition(":")
-                        kv[k.strip()] = v.strip()
-                l1 = kv.get("result.line1", "")
-                l2 = kv.get("result.line2", "")
-                lines.append("")
-                lines.append(f"OCR 结果: {kv.get('result.ok', '?')}")
-                lines.append(f"  line1: {l1}")
-                lines.append(f"  line2: {l2}")
-                lines.append(f"  conf1={kv.get('result.conf1','')}  "
-                             f"conf2={kv.get('result.conf2','')}")
-                if l1 and l2 and kv.get("result.ok") == "OK":
-                    t2 = _time.perf_counter()
-                    dec = _sp.run([str(MRZ_TOOL), "decode", l1 + l2],
-                                  text=True, capture_output=True, timeout=10)
-                    dec_ms = (_time.perf_counter() - t2) * 1000
-                    stages.append(("⑤-decode", dec_ms))
-                    lines.append(f"  - {'⑤-decode':<18} {dec_ms:6.1f} ms")
-                    lines.append("")
-                    lines.append("解码:")
-                    lines.append(dec.stdout if dec.returncode == 0
-                                 else "[decode 拒绝] " + dec.stderr.strip())
-                    ok = True
-                else:
-                    lines.append("[识别未通过] " + kv.get("result.ok", ""))
+            ocr_results = []
+            ocr_wall_ms = 0.0
+            if pair and band_rgb is not None:
+                methods = self._rst_selected_methods()
+                band_path = None
+                tmp = None
                 try:
-                    tmp.unlink()
-                except OSError:
-                    pass
+                    if any(method != "tesseract" for method in methods):
+                        import tempfile
+                        tmp_dir = _P(__file__).resolve().parents[1] / \
+                            "10_ocr_research"
+                        tmp_dir.mkdir(parents=True, exist_ok=True)
+                        tmp = tempfile.NamedTemporaryFile(
+                            suffix=".ppm", prefix="_gui_mrz_",
+                            dir=str(tmp_dir), delete=False)
+                        band_path = _P(tmp.name)
+                        tmp.close()
+                        native_band = self._rst_native_mrz_band(
+                            rgb, pair, scale)
+                        _Image.fromarray(native_band).save(
+                            str(band_path), format="PPM")
+                    ocr_results, ocr_wall_ms = self._rst_run_ocr_methods(
+                        rgb, pair, scale, band_path, methods)
+                finally:
+                    if tmp is not None:
+                        try:
+                            band_path.unlink()
+                        except OSError:
+                            pass
+                stages.append(("⑤ OCR方案合计", ocr_wall_ms))
+                lines.append(
+                    f"  - {'⑤ OCR方案合计':<18} {ocr_wall_ms:6.1f} ms")
             else:
                 lines.append("无 MRZ 区，跳过 OCR")
+            lines.append("")
+
+            if ocr_results:
+                # 推荐真实 decode 通过且未落到后备引擎的方案；同等结果
+                # 再按置信率和耗时排序，避免把“引擎 OK”误当成 MRZ 有效。
+                preferred = max(
+                    ocr_results,
+                    key=lambda result: (
+                        int(result["decode_ok"]),
+                        int(not result.get("backend", "").endswith("fallback")),
+                        int(result["engine_ok"]),
+                        result.get("conf1", 0) + result.get("conf2", 0),
+                        -result["ms"],
+                    ),
+                )
+                lines.extend([
+                    f"推荐方案: {preferred['label']}  "
+                    f"{'PASS' if preferred['decode_ok'] else 'FAIL'}",
+                    f"最终 MRZ line1: {preferred.get('line1') or '<未提取>'}",
+                    f"最终 MRZ line2: {preferred.get('line2') or '<未提取>'}",
+                    "",
+                ])
 
             total = sum(ms for _, ms in stages)
             lines.append("")
@@ -2211,11 +2932,82 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
 
             self.rst_info.configure(state="normal")
             self.rst_info.delete("1.0", "end")
-            self.rst_info.insert("1.0", chr(10).join(lines))
+            for line in lines:
+                self.rst_info.insert("end", line + "\n", "rst_meta")
+            if ocr_results:
+                self.rst_info.insert("end", "\n⑤ 方案结果（最终以 mrz_tool decode 为准）\n",
+                                     "rst_section")
+                for result in ocr_results:
+                    method = result["method"]
+                    status = "PASS" if result["decode_ok"] else "FAIL"
+                    status_tag = "rst_pass" if result["decode_ok"] else "rst_fail"
+                    self.rst_info.insert(
+                        "end",
+                        f"\n◆ {result['label']}   {status}   "
+                        f"{result['ms']:.1f} ms\n",
+                        f"rst_method_{method}")
+                    if result.get("backend"):
+                        self.rst_info.insert(
+                            "end",
+                            f"  实际后端: {result['backend']}\n",
+                            "rst_label")
+                    self.rst_info.insert(
+                        "end",
+                        f"  引擎: {'OK' if result['engine_ok'] else 'FAIL'}   "
+                        f"decode: ",
+                        "rst_label")
+                    self.rst_info.insert("end", status + "\n", status_tag)
+                    self.rst_info.insert("end", "  line1: ", "rst_label")
+                    self.rst_info.insert(
+                        "end", (result["line1"] or "<未提取>") + "\n",
+                        "rst_mrz")
+                    self.rst_info.insert(
+                        "end",
+                        f"  line2: {result['line2'] or '<未提取>'}\n",
+                        "rst_mrz")
+                    if result.get("conf1") or result.get("conf2"):
+                        self.rst_info.insert(
+                            "end",
+                            f"  置信率: line1={result['conf1']}%  "
+                            f"line2={result['conf2']}%\n",
+                            "rst_label")
+                    if result.get("candidates"):
+                        self.rst_info.insert(
+                            "end",
+                            f"  候选: {result['candidates']}\n",
+                            "rst_label")
+                    if result.get("repair"):
+                        self.rst_info.insert(
+                            "end",
+                            "  checksum 修复: " +
+                            "; ".join(result["repair"]) + "\n",
+                            "rst_label")
+                    if result.get("decode"):
+                        self.rst_info.insert("end", "  decode 字段:\n",
+                                             "rst_label")
+                        self.rst_info.insert(
+                            "end", result["decode"] + "\n", "rst_decode")
+                    if result.get("error"):
+                        self.rst_info.insert(
+                            "end", f"  说明: {result['error']}\n",
+                            "rst_fail")
+                    elif result.get("note"):
+                        self.rst_info.insert(
+                            "end", f"  说明: {result['note']}\n",
+                            "rst_warn")
+                    if result.get("raw"):
+                        self.rst_info.insert("end", "  原始输出:\n",
+                                             "rst_label")
+                        self.rst_info.insert(
+                            "end", result["raw"] + "\n", "rst_raw")
             self.rst_info.configure(state="disabled")
+            passed = sum(1 for result in ocr_results
+                         if result["decode_ok"])
             self.rst_status.config(
-                text=f"完成  ({total:.1f}ms)" if ok else "未通过",
-                foreground=(self._pal["ok"] if ok else self._pal["err"]))
+                text=(f"完成：{passed}/{len(ocr_results)} 方案通过 "
+                      f"({total:.1f}ms)"
+                      if ocr_results else f"完成  ({total:.1f}ms)"),
+                foreground=(self._pal["ok"] if passed else self._pal["err"]))
         except Exception as e:
             self.rst_status.config(text=f"流水线失败: {e}", foreground=self._pal["err"])
             self.rst_info.configure(state="normal")

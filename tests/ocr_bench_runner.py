@@ -13,24 +13,34 @@ CNN  = ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_cnn_tool"
 TESS = ROOT / "6_2_Tesseract" / "tesseract_tool.py"
 # PaddleOCR via paddle_v6.py — Phase 3 PP-OCRv6 pure-rec decoder
 # (project-split rows, rec only, no det). Uses PP-OCRv6_medium_rec via
-# paddlex/onnxruntime when available, else falls back to paddle_local
+# ONNX Runtime when available, else falls back to paddle_local
 # (tesseract ocrb baseline). Same stdout contract on both paths.
 PADDLE = ROOT / "6_1_PaddleOCR" / "paddle_v6.py"
 
-# Interpreter that actually has paddlex/onnxruntime. The GUI launches
-# this runner with the OS python (sys.executable), which lacks paddlex;
-# without this probe paddle_v6 would silently fall back to the weaker
-# tesseract ocrb baseline. Probe order: /tmp/paddle_venv (dev venv),
-# then a generic .venv, then whatever python is running us.
+# Prefer the interpreter that has the ONNX Runtime dependency. The current
+# Python is checked first so `python gui.py` and its Paddle subprocess use
+# the same environment.
 def _probe_paddle_python() -> str:
     import os as _os
     candidates = [
+        sys.executable,
         "/tmp/paddle_venv/bin/python",
         str(ROOT / ".venv" / "bin" / "python"),
         "/tmp/paddle_venv/bin/python3",
     ]
     for cand in candidates:
-        if _os.path.exists(cand):
+        if not _os.path.exists(cand):
+            continue
+        try:
+            probe = subprocess.run(
+                [cand, "-c", "import onnxruntime"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=3,
+            )
+        except (OSError, subprocess.SubprocessError):
+            continue
+        if probe.returncode == 0:
             return cand
     return sys.executable
 
@@ -89,9 +99,8 @@ def run_one(tool: Path, image: Path) -> dict:
 def run_batch_paddle(images: list[tuple[str, Path]]) -> dict:
     """Batch-drive paddle_v6.py: one process decodes every image.
 
-    Reusing one paddlex model across all images is ~100x cheaper than
-    per-image subprocess spawns (each spawn would re-import paddlex and
-    reload the ONNX model, ~2s each — fatal for a 1380-image run).
+    Reusing one ONNX Runtime session across all images is ~100x cheaper than
+    per-image subprocess spawns (each spawn would reload the ONNX model).
 
     Images is a list of (case_id, image_path). The listfile keeps the
     same order, and paddle_v6 emits one stdout contract block per image
@@ -175,7 +184,7 @@ def run(case_ids: list[str] | None, methods: list[str],
                 "low_conf": 0}
             for m in methods}
 
-    # Paddle uses one long-lived process (paddlex model loaded once).
+    # Paddle uses one long-lived process (ONNX session loaded once).
     # Batch runs first; progress callbacks are emitted per-image here so
     # the GUI bar moves during the (slow) paddle pass.
     batch_paddle: dict = {}

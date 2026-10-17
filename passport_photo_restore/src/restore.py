@@ -6,10 +6,11 @@
   load(rgb)           降采样到 max_side 工作图（默认 1250px 宽）
   detect_structure(g) 结构先验检测：
                        - solid 黑带（护照机固定取景的黑色横条，y~725-770）
-                       - MRZ 两行（solid 下沿之后的连续 text 段）
+                       - MRZ 两行（最后一条 solid 黑带上方的连续 text 段）
                        - 倒影分界（gap>15px 判定进入倒影区）
-  crop_mrz(rgb, st)   从定位结果裁出 MRZ 两行（天然去除底部倒影）
-  rectify(work, st)   四点单应矫正：MRZ 两行四边形 -> 标准 44格x2行 矩形
+  crop_pair(rgb, st)  从定位结果裁出严格 MRZ 双行（天然去除底部倒影）
+  rectify_pair(work, st)
+                       两行分别单应矫正 -> 标准 44格x2行矩形
   restore(f)          端到端：load -> detect -> crop -> (可选)rectify
 """
 from __future__ import annotations
@@ -57,10 +58,9 @@ def _run_groups(mask, min_len=5):
 def detect_structure(g, gap_thr=15):
     """固定矫正结构先验检测 + 反射识别.
 
-    反射识别 (更激进):
-      - line2 下方: 从 line2.y1+1 到图底, 任何连续 ink>180 行 (含反射过渡区) 都视为反射
-      - line1 上方: 同样规则
-      - 反射段总高包括 line2 字符衰减区 (line2.y1 ~ 反射起点)
+    反射识别:
+      - 仅 line2 下方: 从 line2.y1+1 到图底, 连续 ink>180 行 (含反射过渡区) 视为倒影
+      - line1 上方是护照页底部(照片/数据区), 属真实内容, 不视为反射
     """
     H, W = g.shape
     row_ink = (g < 180).sum(axis=1)
@@ -72,26 +72,10 @@ def detect_structure(g, gap_thr=15):
     solid_b = _run_groups(solid, min_len=5)
     text_b = _run_groups(text, min_len=4)
 
-    mrz = None
     cand = [b for b in solid_b
             if int(H * 0.3) <= b[0] <= int(H * 0.9) and b[1] - b[0] >= 10]
-    if cand:
-        s_top = cand[-1][1] + 1
-        below = [t for t in text_b if t[0] > s_top]
-        if below:
-            start = below[0][0]
-            end = below[0][1]
-            prev_h = end - start + 1
-            for t in below[1:]:
-                gap = t[0] - end - 1
-                if gap > max(gap_thr, prev_h * 1.5):
-                    break
-                end = t[1]
-                prev_h = t[1] - t[0] + 1
-            if end - start + 1 >= 10:
-                mrz = (start, end)
-
     pair = find_mrz_pair(g)
+    mrz = (pair[0][0], pair[1][1]) if pair else None
     reflection = []
     if pair:
         (l1y0, l1y1), (l2y0, l2y1) = pair
@@ -112,22 +96,6 @@ def detect_structure(g, gap_thr=15):
                     if y + 5 < H and all(row_ink[y2] <= 180 for y2 in range(y, min(y + 5, H))):
                         break
             reflection.append((refl_below_start, end))
-        # line1 上方反射段 (作为保留裁切的边界): line1.y0 之前连续 ink>180 行
-        refl_above_end = None  # 最深的反射终点
-        for y in range(l1y0 - 1, -1, -1):
-            if row_ink[y] > 180:
-                refl_above_end = y
-                break
-        if refl_above_end is not None:
-            # 反射段起点: 找最早的反射起点 (从 refl_above_end 往上)
-            start = refl_above_end
-            for y in range(refl_above_end - 1, -1, -1):
-                if row_ink[y] > 180:
-                    start = y
-                else:
-                    if y - 5 >= 0 and all(row_ink[y2] <= 180 for y2 in range(max(0, y - 5), y)):
-                        break
-            reflection.append((start, refl_above_end))
     return {
         "solid": solid_b,
         "text": text_b,
@@ -139,10 +107,12 @@ def detect_structure(g, gap_thr=15):
 
 
 def find_mrz_pair(g):
-    """严格 MRZ 双行定位：找行高近似、间距合理的相邻 text-run pair。
+    """真实 MRZ 双行定位：从最后一条取景黑带上方的 text 段中找相邻 pair。
 
-    反射倒影特征：连续 text_run 长度通常 > 2.5x line1 行高，且与 line2 之间
-    有可识别 gap。本函数天然剔除之（只接受相邻 + 行高比 0.4~1.6 的对子）。
+    布局: [0, l1y0) = 黑色空白 + 完整梯形护照(照片/数据区),
+    [l1y0, l2y1] = 真实 MRZ 两行, 取景黑带 + 镜片倒影在其下方.
+    旧实现从黑带下方找, 会把 line1 的镜像倒影当成 line2. 因此优先在黑带
+    上方找行高近似、间距合理的相邻 text-run pair; 找不到再回退旧逻辑.
     返回 (line1, line2) 两个 (y0, y1)；找不到返回 None。
     """
     H, W = g.shape
@@ -159,44 +129,116 @@ def find_mrz_pair(g):
     if not cand:
         return None
     s_top = cand[-1][1] + 1
-    below = [t for t in text_b if t[0] > s_top]
-    if not below:
-        return None
-    best = None
-    for i, t1 in enumerate(below[:-1]):
-        h1 = t1[1] - t1[0] + 1
-        if h1 < 4:
-            continue
-        for t2 in below[i + 1:]:
+
+    def line_shape(t):
+        """Reject page edges and borders that look like dense text runs."""
+        y0, y1 = t
+        h = y1 - y0 + 1
+        if h < 5 or h > 48:
+            return None
+        band = g[y0:y1 + 1] < 180
+        col_ink = band.sum(axis=0)
+        strong = col_ink >= 4
+        groups = _run_groups(strong, min_len=1)
+        max_group = max((b - a + 1 for a, b in groups), default=0)
+        density = float(strong.mean())
+        # A real MRZ row has many separated glyph strokes.  The lower
+        # passport edge is almost continuous and has very high density.
+        if density > 0.90 or max_group > max(160, int(W * 0.45)):
+            return None
+        return density, len(groups), max_group
+
+    def pick(runs):
+        candidates = []
+        for i, t1 in enumerate(runs[:-1]):
+            h1 = t1[1] - t1[0] + 1
+            if h1 < 4:
+                continue
+            if line_shape(t1) is None:
+                continue
+            t2 = runs[i + 1]
             h2 = t2[1] - t2[0] + 1
             gap = t2[0] - t1[1] - 1
+            if line_shape(t2) is None:
+                continue
             if (0.4 <= h2 / h1 <= 1.6) and (0 <= gap <= max(8, int(3.0 * h1))):
-                score = abs(h1 - h2) + gap
-                if best is None or score < best[0]:
-                    best = (score, t1, t2)
-                break
-    if best is None:
-        return None
-    return best[1], best[2]
+                # Prefer the pair with the most stable, largest glyphs.
+                # The second term breaks the small-photo edge case where
+                # the lower page border forms a short pseudo-row.
+                rank = (-min(h1, h2), abs(h1 - h2) + gap, gap)
+                candidates.append((rank, t1, t2))
+        if not candidates:
+            return None
+        _, t1, t2 = min(candidates, key=lambda item: item[0])
+        return t1, t2
+
+    # 黑带上方: 枚举相邻 text 段，排除护照底边/边框伪文字。
+    above = [t for t in text_b if t[1] < s_top - 1]
+    if len(above) >= 2:
+        res = pick(above)
+        if res:
+            return res
+    # 回退: 旧逻辑 (黑带下方, 仅用于无真实 MRZ 的布局)
+    below = [t for t in text_b if t[0] > s_top]
+    if below:
+        res = pick(below)
+        if res:
+            return res
+    return None
 
 
 def _mrzh_quad(g, y0, y1, min_ink_rows=2):
-    """MRZ 带四端点（左右边界取列投影中 >=min_ink_rows 行的列）。"""
+    """MRZ 行四端点，优先使用护照页面边界而不是黑色画面边缘.
+
+    MRZ 所在的页面是亮色梯形，照片区域外的固定取景框则是黑色。
+    直接对“墨点列投影”取首尾会把黑色取景框当成 MRZ 左右边界，
+    造成矫正后字符被压缩并倾斜。这里对行附近的亮度做横向闭运算，
+    得到每个 y 的页面亮区边界，再用上下边界组成四边形。
+    """
+    H, W = g.shape
+
+    def page_span(y):
+        lo = max(0, y - 4)
+        hi = min(H, y + 5)
+        col = np.median(g[lo:hi], axis=0)
+        threshold = max(70.0, float(np.percentile(col, 20)))
+        mask = (col > threshold).astype(np.uint8)
+        kernel = np.ones(31, np.uint8)
+        mask = cv2.morphologyEx(mask[None, :], cv2.MORPH_CLOSE, kernel)[0]
+        runs = _run_groups(mask.astype(bool), min_len=max(20, W // 50))
+        if not runs:
+            return None
+        center = W // 2
+        return max(runs, key=lambda r: (
+            r[0] <= center <= r[1],
+            r[1] - r[0] + 1,
+        ))
+
+    top = page_span(y0)
+    bottom = page_span(y1)
+    if top and bottom:
+        xl0, xr0 = top
+        xl1, xr1 = bottom
+        if min(xr0 - xl0, xr1 - xl1) >= max(80, W // 4):
+            return np.array(
+                [[xl0, y0], [xr0, y0], [xr1, y1], [xl1, y1]],
+                np.float32,
+            )
+
+    # 兼容亮度不足或反色输入：保留原来的墨点投影作为退化路径。
     band = (g[y0:y1 + 1] < 180).astype(np.uint8)
     col = band.sum(axis=0)
     xs = np.where(col >= min_ink_rows)[0]
     if len(xs) == 0:
         return None
     xl = max(0, int(xs[0]) - 2)
-    xr = min(g.shape[1] - 1, int(xs[-1]) + 2)
+    xr = min(W - 1, int(xs[-1]) + 2)
     return np.array([[xl, y0], [xr, y0], [xr, y1], [xl, y1]], np.float32)
 
 
 def drop_reflection(work_rgb, st, mode="crop", force_min_drop=150):
-    """按你的指示: 反射段总高 = MRZ + 反射延伸, 应接近 force_min_drop=150.
-
-    策略: 用 detect_structure 已识别的 reflection 字段, 区分 line1 上方 vs line2 下方.
-    保留 MRZ, 裁掉两段反射.
+    """去镜片倒影: 保留 [0, line2.y1+1] 连续区域 (黑色空白 + 完整梯形护照 + MRZ),
+    只裁掉 line2 下方整段倒影; line1 上方是护照页真实内容, 不裁.
     """
     reflection = st.get("reflection", []) or []
     pair = st.get("mrz_pair")
@@ -227,73 +269,36 @@ def drop_reflection(work_rgb, st, mode="crop", force_min_drop=150):
 
     (l1y0, l1y1), (l2y0, l2y1) = pair
 
-    # 用 reflection 字段:
-    # above = y1 < l1y0 的反射段 (line1 上方)
-    # below = y0 > l2y1 的反射段 (line2 下方)
-    above = [t for t in reflection if t[1] < l1y0]
-    below = [t for t in reflection if t[0] > l2y1]
+    # 真实布局: [0, l1y0) = 黑色空白 + 完整梯形护照(照片/数据区),
+    # [l1y0, l2y1] = MRZ 两行, (l2y1, H) = 镜片倒影.
+    # line1 上方并非反射 (那只是护照页底部黑带区), 不裁.
+    # 只裁掉 line2 下方的倒影段, 保留 [0, l2y1+1] 连续区域.
+    # MRZ 行 2 之后的内容全部属于页面下方的边界/镜片倒影。
+    # 只保留到真实 MRZ 的最后一行，确保模糊 MRZ 和数据倒影不再进入后续算法。
+    crop_bottom = min(H, l2y1 + 1)
+    keep = work_rgb[:crop_bottom]
 
-    # 反射总高
-    above_h = sum(t[1] - t[0] + 1 for t in above)
-    below_h = sum(t[1] - t[0] + 1 for t in below)
-    refl_total = above_h + below_h
-
-    # 若反射总高 < force_min_drop, 把 above 起点往上挪 (裁更多)
-    if refl_total < force_min_drop:
-        extra = force_min_drop - refl_total
-        # above 最早起点往上挪 extra
-        if above:
-            new_above_start = min(t[0] for t in above) - extra
-            # 但要确保不裁掉 line1.y0 之前的非反射区太多
-            # 安全下限 = l1y0 - 30 (line1 上方最多 30px 反射延伸)
-            new_above_start = max(new_above_start, l1y0 - 30)
-        else:
-            new_above_start = max(0, l1y0 - extra)
-    else:
-        new_above_start = min(t[0] for t in above) if above else l1y0
-
-    # 裁掉 [new_above_start, l1y0) (line1 上方反射) + (l2y1, H) (line2 下方反射)
-    # 但 (l2y1, H) 不一定全是反射, 我们只裁 below 范围内的反射段
-    # 简化: 裁掉 below 段每个 + above 起点到 l1y0
-    parts = []
-    # part 1: 保留 [0, new_above_start)
-    if new_above_start > 0:
-        parts.append(work_rgb[:new_above_start])
-    # part 2: 保留 [l1y0, l2y1+1] (MRZ)
-    parts.append(work_rgb[l1y0:l2y1 + 1])
-    # part 3: 保留 [below_end+1, H) (裁掉 below 反射段)
-    if below:
-        max_below_end = max(t[1] for t in below)
-        if max_below_end + 1 < H:
-            parts.append(work_rgb[max_below_end + 1:])
-    keep = np.vstack(parts) if len(parts) > 1 else parts[0]
-
-    # 重新校准 mrz_pair
-    new_l1y0 = (work_rgb[:new_above_start].shape[0] if new_above_start > 0 else 0)
-    new_l1y1 = new_l1y0 + (l1y1 - l1y0)
-    new_l2y0 = new_l1y1 + 1
-    new_l2y1 = new_l2y0 + (l2y1 - l2y0)
+    # 坐标不变 (top 未裁), 只需清除 reflection 记录
+    new_l1y0, new_l1y1 = l1y0, l1y1
+    new_l2y0, new_l2y1 = l2y0, l2y1
 
     st2 = dict(st)
     st2["mrz_pair"] = ((new_l1y0, new_l1y1), (new_l2y0, new_l2y1))
     st2["reflection"] = []
     actual_drop = H - keep.shape[0]
     return keep, st2, {"intended_drop": force_min_drop,
-                        "actual_drop": actual_drop,
-                        "crop_top": new_above_start, "mode": "crop"}
+                        "actual_drop": actual_drop, "crop_bottom": crop_bottom,
+                        "crop_top": 0, "mode": "crop"}
 
 
 
 def clean_band_reflection(band_rgb, line1, line2, clear_rows=2,
                             unsharp=True, sharp_amount=1.5, blur_sigma=2.0):
-    """清除 band 内反射残留.
+    """清除 band 内残留的镜片反射过渡行.
 
-    三层策略:
-    1) clear_rows: 清 line1.y1+1 起的 N 行 (line1 镜面反射最强区, 反射随距离衰减)
-    2) unsharp=True: USM 锐化 (抑制反射模糊层, 增强 line1/line2 锐利字符)
-       - sharp_amount 越大, 字符边缘越强 (反射模糊被抑制)
-       - 反射是"虚像", 边缘比真实字符模糊, USM 选择性增强锐利字符
-    3) clear_rows 也清掉 line2 下方反射残留的最后 N 行 (line2 镜面)
+    1) 清 line1 紧邻的 N 行 (line1 下方反射过渡最强区, 反射随距离衰减)
+    2) 清 line2 紧邻的 N 行 (line2 下方倒影过渡)
+    3) unsharp USM 锐化: 抑制反射模糊层, 增强锐利的字符边缘
     """
     import cv2 as _cv2
     import numpy as _np
@@ -304,9 +309,9 @@ def clean_band_reflection(band_rgb, line1, line2, clear_rows=2,
     for y in range(l1y1 + 1, min(l1y1 + clear_rows, H - 1) + 1):
         if 0 <= y < H:
             clean[y] = 255
-    # 2) 清 line2 下方反射的最后 N 行
+    # 2) 清 line2 下方反射的最强 N 行
     l2y0, l2y1 = line2
-    for y in range(max(l2y1 + 1, l2y1 - clear_rows + 1), l2y1 + 1):
+    for y in range(l2y1 + 1, min(l2y1 + clear_rows + 1, H)):
         if 0 <= y < H:
             clean[y] = 255
     # 3) USM 锐化 (抑制反射模糊层)
@@ -396,12 +401,13 @@ def rectify_pair(work_rgb, st, tgt_w=TGT_W, tgt_h=TGT_H):
     line2 = cv2.warpPerspective(work_rgb, M2, (tgt_w, GLYPH_H),
                                 flags=cv2.INTER_LANCZOS4)
     # 紧贴输出 (与 CNN 工具期望 band 连续两行的分布对齐)
-    rgb = np.zeros((tgt_h, tgt_w, 3), dtype=np.uint8)
+    rgb = np.full((tgt_h, tgt_w, 3), 255, dtype=np.uint8)
     rgb[0:GLYPH_H] = line1
     rgb[GLYPH_H:GLYPH_H * 2] = line2
     info = {
         "line1_y_in_dst": (0, GLYPH_H - 1),
-        "line2_y_in_dst": (GLYPH_H, tgt_h - 1),
+        "line2_y_in_dst": (GLYPH_H, GLYPH_H * 2 - 1),
+        "separator_y_in_dst": (GLYPH_H * 2, tgt_h - 1),
         "src_quad_l1": q1.tolist(),
         "src_quad_l2": q2.tolist(),
     }
@@ -437,11 +443,12 @@ def restore(img_path, max_side=1250, do_rectify=True):
     g = _gray(work)
     st = detect_structure(g)
     ms = (time.perf_counter() - t0) * 1000
-    crop = crop_mrz(work, st) if st.get("mrz") else None
-    rect = rectify(work, st) if (do_rectify and st.get("mrz")) else None
+    crop = crop_pair(work, st) if st.get("mrz_pair") else None
+    rect = rectify_pair(work, st)[0] if (do_rectify and st.get("mrz_pair")) else None
     return {
         "ok": st.get("mrz") is not None,
         "mrz": st.get("mrz"),
+        "mrz_pair": st.get("mrz_pair"),
         "solid": st.get("solid"),
         "crop": crop,
         "rect": rect,

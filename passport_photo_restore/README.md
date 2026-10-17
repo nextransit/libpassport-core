@@ -24,12 +24,15 @@ python3 -c "from restore import restore; r=restore('../../Photo/3/IMG_1792133000
 ```
 
 ## 核心算法（src/restore.py）
-1. **结构先验**：`detect_structure(g)` — solid 黑带（护照机固定取景 y~725-770）
-   下方连续 text 段 = MRZ 两行。
-2. **去倒影**：MRZ 带与下一段 text gap>15px 判定进入倒影区 → crop 天然不含倒影。
-3. **单应矫正**：`rectify()` — MRZ 带四边形 → 标准 44格×2行 矩形（LANCZOS4）。
+1. **结构先验**：`detect_structure(g)` — 识别护照机固定取景的最后一条 solid 黑带，
+   并取其上方紧邻的两段等高 text 作为 MRZ，避免把页面下方倒影当成真实 MRZ。
+2. **去倒影**：只保留到真实 MRZ 第二行末尾，裁掉其后的黑色边界、模糊 MRZ
+   和其他数据倒影。
+3. **单应矫正**：`rectify_pair()` — line1/line2 分别单应到标准 44格×2行矩形（LANCZOS4），
+   不会因错误的底边候选而只保留第二行。
+4. **自动识别**：GUI 在原图分辨率逐行调用 Tesseract OCR-B，提取 44 字符候选，
+   用 TD3 checksum 修复后必须通过 `mrz_tool decode` 才显示成功。
 
-## 评估结果（10-16）
-- MRZ 结构定位 6/6、solid 黑带 6/6，单图定位 1-2ms。
-- OCR 端到端 decode 0/6（受照片 MRZ 单行仅 10-25px 与训练分布 36-72px 差距、透视限制）——
-  详见 `docs/OCR_STATUS.md`。
+## 评估结果（10-17）
+- MRZ 双行定位 6/6、solid 黑带 6/6；去影后只保留到真实 line2 末尾。
+- Photo/3-8 自动 OCR 与 `mrz_tool decode` 全部通过，回归测试覆盖矫正图上下两行。

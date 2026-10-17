@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""paddle_v6 -- PP-OCRv6 pure-rec MRZ decoder (Phase 3+).
+"""paddle_v6 -- Paddle pure-rec MRZ decoder (Phase 3+).
 
 Pipeline: adaptive MRZ band -> mid-gutter row split -> per-row LANCZOS
 upscale (3x, plus 2x/4x when the checksums disagree) -> PP-OCRv6 medium
@@ -9,9 +9,7 @@ checksum repair -> cross-scale per-position vote for Line 1.
 Why recognition-only: the dense MRZ strip must NOT go through a text
 detector (det merges/drops lines). Instead we project-split the two
 rows, upscale each, and run PP-OCRv6 medium rec on each single row.
-The v5-server rec is a universal (incl. Chinese) dictionary model whose
-OCR-B glyph handling is poor, while v6-medium rec tracks the narrow
-OCR-B line far better.
+The v5-server rec is used only when the v6 ONNX model is unavailable.
 
 Error recovery (two independent layers):
   * mrz_slots.enforce_slots  -- slot-domain swaps along the OCR-B
@@ -39,8 +37,8 @@ so the GUI's ocr_bench_runner can pick it without changes:
     result.conf2   : 0..100
     band.x ...     : "x y w h"
 
-If paddlex/onnxruntime are missing, we fall back to paddle_local
-(tesseract ocrb baseline) so the tool keeps working everywhere.
+If the cached ONNX model or onnxruntime is missing, we fall back to
+paddle_local (tesseract ocrb baseline) so the tool keeps working everywhere.
 
 Measured on 6_mrz_ocr/data/corpus_eval with PP-OCRv6 medium rec:
   * stratified n=200 (100 clean + 100 realistic): L1 88.82%
@@ -53,6 +51,7 @@ check-valid lines before the slot + checksum layers, so the repair
 pass is what makes the output usable downstream.
 """
 from __future__ import annotations
+import math
 import os
 import sys
 import time
@@ -69,17 +68,36 @@ from mrz_checksum import repair_line2
 _TTA = os.environ.get("MRZ_TTA", "1") != "0"
 _REPAIR = os.environ.get("MRZ_REPAIR", "1") != "0"
 
-# PP-OCRv6 medium rec (onnx, no paddlepaddle needed). The model dir is
-# cached by paddlex under ~/.paddlex/official_models.
-_MODEL_NAME = "PP-OCRv6_medium_rec"
+# Prefer the locally cached/registerable ONNX model name. Older PaddleX
+# builds expose the same files under the name without the `_onnx` suffix.
+_MODEL_NAMES = tuple(
+    name for name in (
+        os.environ.get("MRZ_PADDLE_MODEL", "").strip(),
+        "PP-OCRv6_medium_rec_onnx",
+        "PP-OCRv6_medium_rec",
+        "PP-OCRv5_server_rec",
+        "PP-OCRv5_mobile_rec",
+        "en_PP-OCRv5_mobile_rec",
+    ) if name
+)
 _HOME_MODELS = Path.home() / ".paddlex" / "official_models"
 
 
-def _find_model_dir(model_name: str) -> Path:
-    for suffix in ("_onnx", ""):
-        cand = _HOME_MODELS / (model_name + suffix)
-        if cand.exists():
-            return cand
+def _find_model_dir(model_name: str) -> tuple[str, Path]:
+    """Return PaddleX's registered name and its cached directory.
+
+    PaddleX may cache an ONNX model under a ``*_onnx`` directory while the
+    directory metadata keeps the base registered name.  Passing the cache
+    directory name as ``model_name`` makes PaddleX reject the model.
+    """
+    registered_name = model_name.removesuffix("_onnx")
+    candidates = (model_name, registered_name)
+    if not model_name.endswith("_onnx"):
+        candidates = (model_name + "_onnx", model_name)
+    for candidate_name in candidates:
+        cand = _HOME_MODELS / candidate_name
+        if cand.is_dir():
+            return registered_name, cand
     raise FileNotFoundError(f"model {model_name} not cached in {_HOME_MODELS}")
 
 
@@ -175,28 +193,233 @@ def _merge_line1(cands):
 
 
 _OCR = None
+_OCR_ATTEMPTED = False
+_OCR_ERROR = ""
+
+
+class _OnnxRec:
+    """Small PP-OCR recognition adapter for cached ONNX models.
+
+    PaddleX 3.3.x does not register PP-OCRv6 recognition yet, although the
+    downloaded model and its ONNX runtime files are valid.  Loading the
+    model directly keeps the recognition-only path independent of that
+    registry.
+    """
+
+    def __init__(self, model_dir: Path):
+        import cv2
+        import onnxruntime as ort
+        import yaml
+
+        config_path = model_dir / "inference.yml"
+        model_path = model_dir / "inference.onnx"
+        config = yaml.safe_load(config_path.read_text())
+        shape = next(
+            op["RecResizeImg"]["image_shape"]
+            for op in config["PreProcess"]["transform_ops"]
+            if "RecResizeImg" in op
+        )
+        chars = config["PostProcess"]["character_dict"]
+        self._cv2 = cv2
+        self._height = int(shape[1])
+        self._max_width = 3200
+        self._characters = ["blank"] + list(chars)
+        self._session = ort.InferenceSession(
+            str(model_path), providers=["CPUExecutionProvider"])
+        self._input_name = self._session.get_inputs()[0].name
+
+    def _prepare(self, image):
+        image = np.asarray(image)
+        if image.ndim == 2:
+            image = np.repeat(image[:, :, None], 3, axis=2)
+        if image.ndim != 3 or image.shape[2] < 3:
+            raise ValueError(f"invalid recognition image shape: {image.shape}")
+        image = image[:, :, :3]
+        h, w = image.shape[:2]
+        if h <= 0 or w <= 0:
+            raise ValueError("empty recognition image")
+        width = min(self._max_width, max(
+            1, int(math.ceil(self._height * w / float(h)))))
+        image = self._cv2.resize(
+            image, (width, self._height),
+            interpolation=self._cv2.INTER_LINEAR,
+        )
+        image = image.astype("float32").transpose((2, 0, 1)) / 255.0
+        image = (image - 0.5) / 0.5
+        return image[None, ...].astype("float32")
+
+    def _decode(self, output):
+        output = np.asarray(output)
+        if output.ndim == 3:
+            output = output[0]
+        indices = output.argmax(axis=-1)
+        probabilities = output.max(axis=-1)
+        selected = np.ones(len(indices), dtype=bool)
+        if len(indices) > 1:
+            selected[1:] = indices[1:] != indices[:-1]
+        selected &= indices != 0
+        text = "".join(
+            self._characters[int(index)]
+            for index in indices[selected]
+            if int(index) < len(self._characters)
+        )
+        score = float(probabilities[selected].mean()) \
+            if selected.any() else 0.0
+        return text, score
+
+    def predict(self, image):
+        batch = image if isinstance(image, (list, tuple)) else [image]
+        inputs = np.concatenate([self._prepare(item) for item in batch], axis=0)
+        output = self._session.run(None, {self._input_name: inputs})[0]
+        return [
+            {"rec_text": text, "rec_score": score}
+            for text, score in (self._decode(item) for item in output)
+        ]
 
 
 def _get_rec():
-    global _OCR
+    global _OCR, _OCR_ATTEMPTED, _OCR_ERROR
     if _OCR is not None:
-        return _OCR, "v6"
-    try:
-        import paddlex  # noqa: F401
-    except ImportError:
+        return _OCR, "paddle-onnxruntime"
+    if _OCR_ATTEMPTED:
         return None, "fallback"
-    try:
-        model_dir = _find_model_dir(_MODEL_NAME)
-    except FileNotFoundError:
+    _OCR_ATTEMPTED = True
+
+    missing = []
+    selected = None
+    for model_name in _MODEL_NAMES:
+        try:
+            registered_name, model_dir = _find_model_dir(model_name)
+        except FileNotFoundError:
+            missing.append(model_name)
+            continue
+        if (model_dir / "inference.onnx").is_file():
+            selected = (registered_name, model_dir)
+            break
+
+    if selected is None:
+        _OCR_ERROR = (
+            "no cached ONNX recognition model; tried " +
+            ", ".join(missing or _MODEL_NAMES)
+        )
         return None, "fallback"
-    _OCR = paddlex.create_model(
-        model_name=_MODEL_NAME, model_dir=str(model_dir),
-        device="cpu", engine="onnxruntime",
+
+    model_name, model_dir = selected
+    try:
+        _OCR = _OnnxRec(model_dir)
+        return _OCR, "paddle-onnxruntime"
+    except Exception as exc:
+        _OCR_ERROR = f"{model_name} ONNX init failed: {exc}"
+        return None, "fallback"
+
+
+def _decode_strip_fallback(img_path):
+    """Use fast per-row OCR when the Paddle model is unavailable.
+
+    The GUI passes a native-resolution, two-row MRZ strip for external
+    backends. PSM 6 on that strip can swap the rows or keep a leading
+    camera-frame glyph. Split the two ink runs first, recognize each row
+    with PSM 7, then apply the same ICAO/checksum post-processing.
+    """
+    import shutil
+    import subprocess
+    import tempfile
+
+    if not shutil.which("tesseract"):
+        return None
+    try:
+        gray = np.asarray(Image.open(img_path).convert("L"))
+    except Exception:
+        return None
+    H, W = gray.shape
+    if H < 100 or W <= 3 * H:
+        return None
+
+    row_ink = (gray < 128).sum(axis=1)
+    rows = np.where(row_ink > W * 0.10)[0]
+    if rows.size < 4:
+        return None
+    groups = []
+    start = previous = int(rows[0])
+    for y in rows[1:]:
+        y = int(y)
+        if y - previous <= 4:
+            previous = y
+        else:
+            groups.append((start, previous))
+            start = previous = y
+    groups.append((start, previous))
+    groups = [g for g in groups if g[1] - g[0] >= 6]
+    if len(groups) < 2:
+        return None
+    first, second = groups[-2:]
+    pad = max(15, min(30, int(round(
+        max(1, second[0] - first[1]) * 0.38))))
+    crops = [
+        gray[max(0, first[0] - pad):min(H, first[1] + pad + 1)],
+        gray[max(0, second[0] - pad):min(H, second[1] + pad + 1)],
+    ]
+
+    texts = []
+    with tempfile.TemporaryDirectory(prefix="_paddle_fallback_") as td:
+        for idx, row in enumerate(crops):
+            image_path = Path(td) / f"line{idx + 1}.png"
+            Image.fromarray(row).resize(
+                (row.shape[1] * 2, row.shape[0] * 2),
+                Image.Resampling.LANCZOS,
+            ).save(image_path)
+            output_base = Path(td) / f"ocr{idx + 1}"
+            proc = subprocess.run(
+                [shutil.which("tesseract"), str(image_path),
+                 str(output_base), "--psm", "7", "-l", "ocrb",
+                 "-c",
+                 "tessedit_char_whitelist="
+                 "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<"],
+                text=True, capture_output=True, timeout=10,
+            )
+            text_path = Path(str(output_base) + ".txt")
+            texts.append(text_path.read_text() if (
+                proc.returncode == 0 and text_path.exists()) else "")
+
+    line1_raw = _filter(texts[0])
+    line1_start = next(
+        (i for i, ch in enumerate(line1_raw) if ch in DOC_TYPES),
+        -1,
     )
-    return _OCR, "v6"
+    if line1_start < 0:
+        return None
+    line1, _score = _line1_eval(line1_raw[line1_start:line1_start + 44],
+                                 0.85)
+
+    line2_raw = _filter(texts[1])
+    choices = []
+    for start in range(len(line2_raw)):
+        candidate = line2_raw[start:start + 44]
+        if len(candidate) < 40:
+            continue
+        line2, n_fixed, valid = _line2_eval(candidate)
+        if valid:
+            choices.append((n_fixed, start, line2))
+    if not choices:
+        return None
+    _n_fixed, _start, line2 = min(choices)
+    ok = (
+        line1[0] in DOC_TYPES and
+        sum(ch not in "<" for ch in line1) >= 5 and
+        sum(ch not in "<" for ch in line2) >= 5
+    )
+    return {
+        "ok": ok,
+        "line1": line1,
+        "line2": line2,
+        "conf1": 85,
+        "conf2": 85,
+        "band_box": f"0 0 {W} {H}",
+        "err": "",
+    }
 
 
-def _decode_one(rec, img_path):
+def _decode_one(rec, img_path, init_error=""):
     """Run the V6 pure-rec pipeline on one image.
 
     Returns (ok, line1, line2, c1, c2, band_box, err, ms_ms). When
@@ -204,13 +427,20 @@ def _decode_one(rec, img_path):
     """
     t0 = time.perf_counter()
     if rec is None:
-        # Fallback: no paddlex / no cached model -> tesseract ocrb path.
-        from paddle_local import decode_image
-        d = decode_image(str(img_path))
+        # Fallback: use the native two-row path when called by the GUI;
+        # retain paddle_local for full-page/batch inputs.
+        strip = _decode_strip_fallback(img_path)
+        if strip is not None:
+            d = strip
+        else:
+            from paddle_local import decode_image
+            d = decode_image(str(img_path))
         ms = (time.perf_counter() - t0) * 1000.0
         return (bool(d.get("ok")), d.get("line1", ""), d.get("line2", ""),
                 int(d.get("conf1", 0) or 0), int(d.get("conf2", 0) or 0),
-                d.get("band_box", ""), d.get("err", ""), ms)
+                d.get("band_box", ""),
+                "; ".join(x for x in (init_error, d.get("err", "")) if x),
+                ms)
     try:
         gray = np.asarray(Image.open(img_path).convert("L"))
     except Exception as e:
@@ -237,7 +467,10 @@ def _decode_one(rec, img_path):
         key = (valid, s2, -nfix)
         if best2_key is None or key > best2_key:
             best2_key, best2 = key, (l2, nfix, valid, s2)
-        if valid and nfix <= 2:
+        # A high-confidence checksum-valid result does not benefit from
+        # another full inference pass. Keep TTA for low-confidence repairs
+        # and checksum failures, where a second scale can still help.
+        if valid and (nfix <= 2 or s2 >= 0.85):
             got_valid = True
             break
         # Hard case: try one finer scale before giving up.
@@ -249,8 +482,8 @@ def _decode_one(rec, img_path):
     line2, _nfix, _valid, s2sel = best2
     l1_real = sum(1 for c in line1 if c not in "<")
     l2_real = sum(1 for c in line2 if c not in "<")
-    ok = (line1[0] in DOC_TYPES and line1[1] == "<"
-          and l1_real >= 5 and l2_real >= 5)
+    ok = (line1[0] in DOC_TYPES
+          and l1_real >= 5 and l2_real >= 5 and _valid)
     c1 = int(min(100, max((s for _t, s in l1_cands), default=0.0) * 100))
     c2 = int(min(100, s2sel * 100))
     band_box = f"0 {y0} {W} {y1 - y0}"
@@ -258,13 +491,18 @@ def _decode_one(rec, img_path):
     return ok, line1, line2, c1, c2, band_box, "", ms
 
 
-def _emit(ok, line1, line2, c1, c2, band_box, ms=None):
+def _emit(ok, line1, line2, c1, c2, band_box, ms=None,
+          backend="", note=""):
+    if backend:
+        print(f"result.backend  : {backend}")
     print(f"result.ok       : {'OK' if ok else 'unreadable'}")
     print(f"result.line1    : {line1}")
     print(f"result.line2    : {line2}")
     print(f"result.conf1    : {c1}")
     print(f"result.conf2    : {c2}")
     print(f"band.x band.y band.w band.h : {band_box}")
+    if note:
+        print(f"result.note     : {note}")
     if ms is not None:
         print(f"ms: {ms:.1f}")
 
@@ -299,8 +537,13 @@ def main(argv):
         rec, mode = _get_rec()
         total = len(entries)
         for i, (cid, ip) in enumerate(entries, 1):
-            ok, line1, line2, c1, c2, band, err, ms = _decode_one(rec, ip)
-            _emit(ok, line1, line2, c1, c2, band, ms)
+            ok, line1, line2, c1, c2, band, err, ms = _decode_one(
+                rec, ip, _OCR_ERROR if mode == "fallback" else "")
+            _emit(
+                ok, line1, line2, c1, c2, band, ms,
+                backend=mode,
+                note=_OCR_ERROR if mode == "fallback" else "",
+            )
             print()
             if err:
                 print(f"paddle_v6: {cid} {err}", file=sys.stderr)
@@ -313,9 +556,14 @@ def main(argv):
         print(f"cannot open {img_path}", file=sys.stderr)
         return 2
 
-    rec, _mode = _get_rec()
-    ok, line1, line2, c1, c2, band, err, _ms = _decode_one(rec, img_path)
-    _emit(ok, line1, line2, c1, c2, band)
+    rec, mode = _get_rec()
+    ok, line1, line2, c1, c2, band, err, _ms = _decode_one(
+        rec, img_path, _OCR_ERROR if mode == "fallback" else "")
+    _emit(
+        ok, line1, line2, c1, c2, band,
+        backend=mode,
+        note=_OCR_ERROR if mode == "fallback" else "",
+    )
     return 0 if ok else 1
 
 
