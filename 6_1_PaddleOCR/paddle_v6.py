@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """paddle_v6 -- Paddle pure-rec MRZ decoder (Phase 3+).
 
-Pipeline: adaptive MRZ band -> mid-gutter row split -> per-row LANCZOS
-upscale (3x, plus 2x/4x when the checksums disagree) -> PP-OCRv6 medium
-*recognition only* -> ICAO filter -> TD3 slot enforcement -> Mod-10
-checksum repair -> cross-scale per-position vote for Line 1.
+Pipeline: adaptive MRZ band -> mid-gutter row split -> direct per-row
+PP-OCRv6 medium *recognition only* -> ICAO filter -> TD3 slot enforcement
+-> Mod-10 checksum repair. Uncertain line 2 retries with LANCZOS upscales
+(3x/2x, and 4x for the hardest cases) before cross-scale voting; line 1
+is re-run only while its first pass is still unusable.
 
 Why recognition-only: the dense MRZ strip must NOT go through a text
 detector (det merges/drops lines). Instead we project-split the two
-rows, upscale each, and run PP-OCRv6 medium rec on each single row.
+rows, and run PP-OCRv6 medium rec on each single row.
 The v5-server rec is used only when the v6 ONNX model is unavailable.
 
 Error recovery (two independent layers):
@@ -40,12 +41,10 @@ so the GUI's ocr_bench_runner can pick it without changes:
 If the cached ONNX model or onnxruntime is missing, we fall back to
 paddle_local (tesseract ocrb baseline) so the tool keeps working everywhere.
 
-Measured on 6_mrz_ocr/data/corpus_eval with PP-OCRv6 medium rec:
-  * stratified n=200 (100 clean + 100 realistic): L1 88.82%
-    (exact 48/200), L2 94.70% (exact 78/200),
-    chk4 = chk5 = 200/200, ~132 ms/img.
-  * full corpus n=1380: L1 84.91% (exact 326), L2 89.29% (exact 543),
-    chk4 = chk5 = 1335/1380 (96.7%), ~190 ms/img.
+Latest stratified n=200 benchmark on the same corpus: L1 90.41%
+(exact 57/200), L2 94.99% (exact 85/200), all four local checks
+200/200, ~80 ms/img. Full-corpus figures from the previous 3x-first
+path are intentionally not presented as current measurements.
 The same n=200 sample scores L1 87.55% / L2 92.18% with only 31/200
 check-valid lines before the slot + checksum layers, so the repair
 pass is what makes the output usable downstream.
@@ -138,10 +137,17 @@ def _pad(s: str) -> str:
 
 
 def _rec_row(rec, row, scale=3):
-    im = Image.fromarray(row).resize(
-        (row.shape[1] * scale, row.shape[0] * scale), Image.LANCZOS
-    )
-    out = list(rec.predict(np.asarray(im.convert("RGB"))))
+    # The recognition model resizes every row to height 48 internally.
+    # Avoid a redundant large LANCZOS pass on the normal path; keep the
+    # explicit upscale for TTA/recovery callers that still request it.
+    im = Image.fromarray(row)
+    if scale > 1:
+        im = im.resize(
+            (row.shape[1] * scale, row.shape[0] * scale),
+            Image.Resampling.LANCZOS,
+        )
+    im = im.convert("RGB")
+    out = list(rec.predict(np.asarray(im)))
     if not out:
         return "", 0.0, ""
     o = out[0]
@@ -207,7 +213,6 @@ class _OnnxRec:
     """
 
     def __init__(self, model_dir: Path):
-        import cv2
         import onnxruntime as ort
         import yaml
 
@@ -220,7 +225,6 @@ class _OnnxRec:
             if "RecResizeImg" in op
         )
         chars = config["PostProcess"]["character_dict"]
-        self._cv2 = cv2
         self._height = int(shape[1])
         self._max_width = 3200
         self._characters = ["blank"] + list(chars)
@@ -240,11 +244,13 @@ class _OnnxRec:
             raise ValueError("empty recognition image")
         width = min(self._max_width, max(
             1, int(math.ceil(self._height * w / float(h)))))
-        image = self._cv2.resize(
-            image, (width, self._height),
-            interpolation=self._cv2.INTER_LINEAR,
-        )
-        image = image.astype("float32").transpose((2, 0, 1)) / 255.0
+        image = np.asarray(
+            Image.fromarray(image).resize(
+                (width, self._height),
+                Image.Resampling.BILINEAR,
+            ),
+            dtype="float32",
+        ).transpose((2, 0, 1)) / 255.0
         image = (image - 0.5) / 0.5
         return image[None, ...].astype("float32")
 
@@ -442,7 +448,17 @@ def _decode_one(rec, img_path, init_error=""):
                 "; ".join(x for x in (init_error, d.get("err", "")) if x),
                 ms)
     try:
-        gray = np.asarray(Image.open(img_path).convert("L"))
+        if isinstance(img_path, (str, os.PathLike)):
+            gray = np.asarray(Image.open(img_path).convert("L"))
+        else:
+            source = np.asarray(img_path)
+            if source.ndim == 2:
+                gray = source
+            elif source.ndim == 3 and source.shape[2] >= 3:
+                gray = np.asarray(
+                    Image.fromarray(source[:, :, :3]).convert("L"))
+            else:
+                raise ValueError(f"invalid image shape: {source.shape}")
     except Exception as e:
         ms = (time.perf_counter() - t0) * 1000.0
         return False, "", "", 0, 0, "", f"cannot load image: {e}", ms
@@ -451,18 +467,30 @@ def _decode_one(rec, img_path, init_error=""):
     y0, y1 = _find_mrz_band(gray)
     r1, r2 = _split_rows(gray, y0, y1)
 
-    scales = [3, 2] if _TTA else [3]
+    # Direct rows are already resized to the model's fixed 48px height in
+    # _prepare(). Only revisit with explicit upscales when the fast pass is
+    # uncertain; clean MRZs therefore pay for one inference scale.
+    scales = [1, 3, 2] if _TTA else [3]
     l1_cands = []
     best2 = None
     best2_key = None
     got_valid = False
+    l1_settled = False
     idx = 0
     while idx < len(scales):
         sc = scales[idx]
         idx += 1
-        t1, s1, _ = _rec_row(rec, r1, sc)
-        t2, s2, _ = _rec_row(rec, r2, sc)
-        l1_cands.append(_line1_eval(t1, s1))
+        # Line 2 drives the retry loop; re-running line 1 on every scale
+        # only pays off while its first pass is still unusable.
+        if l1_settled:
+            t2, s2, _ = _rec_row(rec, r2, sc)
+        else:
+            t1, s1, _ = _rec_row(rec, r1, sc)
+            t2, s2, _ = _rec_row(rec, r2, sc)
+            ev1 = _line1_eval(t1, s1)
+            l1_cands.append(ev1)
+            l1_settled = (ev1[0][0] in DOC_TYPES
+                          and sum(1 for c in ev1[0] if c not in "<") >= 5)
         l2, nfix, valid = _line2_eval(t2)
         key = (valid, s2, -nfix)
         if best2_key is None or key > best2_key:

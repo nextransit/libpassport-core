@@ -33,12 +33,16 @@ def test_photo_pages_keep_real_mrz_and_drop_bottom_reflection():
         st = detect_structure(_gray(work))
         assert st["mrz_pair"] == pair
         assert st["mrz"] == (pair[0][0], pair[1][1])
+        assert st["reflection"], f"{name}: 应检出 line2 下方倒影段"
 
-        cleaned, cleaned_st, info = drop_reflection(work, st, mode="crop")
+        cleaned, cleaned_st, info = drop_reflection(work, st)
         assert cleaned.shape[0] == pair[1][1] + 1
         assert info["actual_drop"] == work.shape[0] - cleaned.shape[0]
+        assert info["reflection_detected"] is True
+        assert info["reflection_px"] > 0
         assert cleaned_st["mrz_pair"] == pair
         assert cleaned_st["reflection"] == []
+        assert cleaned_st["reflection_cropped"]
         assert cleaned[-1].tolist() == work[pair[1][1]].tolist()
 
         rect, info = rectify_pair(cleaned, cleaned_st)

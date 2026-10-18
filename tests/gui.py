@@ -81,6 +81,8 @@ SAMPLE_MRZ = (
 
 _RST_PADDLE_MODULE = None
 _RST_PADDLE_LOCK = threading.Lock()
+_RST_PADDLE_WARMUP_STARTED = False
+_RST_CNN_MIN_ROW_HEIGHT = 12
 
 
 def _mrz_icao_clean(text):
@@ -114,14 +116,20 @@ def _mrz_line2_candidates(text):
         sys.path.insert(0, str(checksum_dir))
     from mrz_checksum import repair_line2
 
+    country_fix = {"0": "O", "1": "I", "2": "Z", "5": "S", "6": "G", "8": "B"}
     found = []
     for start in range(len(clean)):
         for length in (43, 44, 45):
             raw = clean[start:start + length]
             if len(raw) != length or len(raw) < 28:
                 continue
-            if (not raw[10:13].isalpha()
-                    or raw[20] not in "MF<ABCDEFGHIJKLMNOPQRSTUVWXYZ"):
+            country = raw[10:13]
+            if not country.isalpha():
+                country = "".join(country_fix.get(ch, ch) for ch in country)
+                if not country.isalpha():
+                    continue
+                raw = raw[:10] + country + raw[13:]
+            if raw[20] not in "MF<ABCDEFGHIJKLMNOPQRSTUVWXYZ":
                 continue
             fixed, n_fixed, report, valid = repair_line2(raw)
             if not valid or len(fixed) != 44:
@@ -136,6 +144,10 @@ def _mrz_line2_candidates(text):
 _RST_TESSERACT_CAPI = None
 _RST_TESSERACT_CAPI_DATAPATH = None
 _RST_TESSERACT_CAPI_FAILED = False
+_RST_TESSERACT_POOL = []
+_RST_TESSERACT_POOL_CREATED = 0
+_RST_TESSERACT_POOL_COND = threading.Condition()
+_RST_TESSERACT_POOL_MAX = 2
 
 
 def _rst_tesseract_capi(tess):
@@ -187,6 +199,7 @@ def _rst_tesseract_capi(tess):
         lib.TessBaseAPIGetUTF8Text.argtypes = [handle]
         lib.TessBaseAPIGetUTF8Text.restype = ctypes.c_void_p
         lib.TessDeleteText.argtypes = [ctypes.c_void_p]
+        lib.TessBaseAPIClear.argtypes = [handle]
 
         tessdata = []
         prefix = Path(tess).resolve().parent.parent
@@ -214,20 +227,62 @@ def _rst_tesseract_capi(tess):
         return None, None
 
 
+def _rst_tesseract_create(lib, datapath):
+    """Build one Tesseract handle with the OCR-B whitelist applied."""
+    api = lib.TessBaseAPICreate()
+    if not api:
+        return None
+    data_path = datapath.encode() if datapath else None
+    if lib.TessBaseAPIInit3(api, data_path, b"ocrb") != 0:
+        lib.TessBaseAPIDelete(api)
+        return None
+    lib.TessBaseAPISetVariable(
+        api, b"tessedit_char_whitelist",
+        b"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<")
+    return api
+
+
+def _rst_tesseract_acquire(lib, datapath):
+    """Lease an idle handle, creating one up to _RST_TESSERACT_POOL_MAX.
+
+    TessBaseAPIInit3 reloads every language model (~70ms), so handles
+    are recycled for the process lifetime and re-armed with
+    SetImage/ProcessPages + Clear between recognitions.  A handle is
+    not thread safe, so each in-flight recognition owns one exclusive.
+    """
+    global _RST_TESSERACT_POOL_CREATED
+    with _RST_TESSERACT_POOL_COND:
+        while (not _RST_TESSERACT_POOL
+               and _RST_TESSERACT_POOL_CREATED >= _RST_TESSERACT_POOL_MAX):
+            _RST_TESSERACT_POOL_COND.wait()
+        if _RST_TESSERACT_POOL:
+            return _RST_TESSERACT_POOL.pop()
+        _RST_TESSERACT_POOL_CREATED += 1
+    api = _rst_tesseract_create(lib, datapath)
+    if api is None:
+        with _RST_TESSERACT_POOL_COND:
+            _RST_TESSERACT_POOL_CREATED -= 1
+            _RST_TESSERACT_POOL_COND.notify_all()
+    return api
+
+
+def _rst_tesseract_release(api):
+    """Return a handle to the idle pool."""
+    if not api:
+        return
+    with _RST_TESSERACT_POOL_COND:
+        _RST_TESSERACT_POOL.append(api)
+        _RST_TESSERACT_POOL_COND.notify_all()
+
+
 def _rst_tesseract_capi_text(lib, datapath, image, psm):
     """Recognize one PIL image without starting a Tesseract process."""
     import ctypes
 
-    api = lib.TessBaseAPICreate()
+    api = _rst_tesseract_acquire(lib, datapath)
     if not api:
         return ""
     try:
-        data_path = datapath.encode() if datapath else None
-        if lib.TessBaseAPIInit3(api, data_path, b"ocrb") != 0:
-            return ""
-        lib.TessBaseAPISetVariable(
-            api, b"tessedit_char_whitelist",
-            b"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<")
         lib.TessBaseAPISetPageSegMode(api, int(psm))
         gray = image.convert("L")
         raw = gray.tobytes()
@@ -244,23 +299,18 @@ def _rst_tesseract_capi_text(lib, datapath, image, psm):
         finally:
             lib.TessDeleteText(text_ptr)
     finally:
-        lib.TessBaseAPIDelete(api)
+        lib.TessBaseAPIClear(api)
+        _rst_tesseract_release(api)
 
 
 def _rst_tesseract_capi_file_text(lib, datapath, image_path, psm):
     """Recognize one PNG through the same file path as the CLI."""
     import ctypes
 
-    api = lib.TessBaseAPICreate()
+    api = _rst_tesseract_acquire(lib, datapath)
     if not api:
         return ""
     try:
-        data_path = datapath.encode() if datapath else None
-        if lib.TessBaseAPIInit3(api, data_path, b"ocrb") != 0:
-            return ""
-        lib.TessBaseAPISetVariable(
-            api, b"tessedit_char_whitelist",
-            b"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<")
         lib.TessBaseAPISetPageSegMode(api, int(psm))
         lib.TessBaseAPIProcessPages(
             api, str(image_path).encode(), None, 0, None)
@@ -272,7 +322,32 @@ def _rst_tesseract_capi_file_text(lib, datapath, image_path, psm):
         finally:
             lib.TessDeleteText(text_ptr)
     finally:
-        lib.TessBaseAPIDelete(api)
+        lib.TessBaseAPIClear(api)
+        _rst_tesseract_release(api)
+
+
+def _rst_adaptive_xpad(rgb, pair, scale, nominal):
+    """左右裁边: 机位照保留名义 xpad, 无取景框的照片不裁边。
+
+    名义 xpad 的唯一用途是剔除机位照的黑色取景框; 整页满幅照/ID 卡
+    照没有边框, 名义 xpad 会裁掉真实字形(实测 960px 图 MRZ 墨迹延到
+    x45/x913)。以源图左右边条(最多 12 列)的整体墨量占比判定取景框:
+    机位照边框列整列近全黑(实测 6 图边条暗占比 1.00), 满幅照边缘
+    0.00-0.67; 有框一侧保留 nominal, 无框一侧返回 0(不裁)。
+    疏底纹/暗背景不会误触发(边条均值阈值 0.9)。
+    """
+    import numpy as np
+
+    W = rgb.shape[1]
+    if W < 40 or not pair:
+        return nominal, nominal
+    wts = np.array([0.299, 0.587, 0.114])
+    strip = max(4, min(12, W // 25))
+    left_dark = ((rgb[:, :strip] @ wts) < 160).mean()
+    right_dark = ((rgb[:, W - strip:] @ wts) < 160).mean()
+    left = nominal if left_dark >= 0.9 else 0
+    right = nominal if right_dark >= 0.9 else 0
+    return left, right
 
 
 def _rst_tesseract_candidates(rgb, pair, scale, psm_by_row=None,
@@ -296,6 +371,7 @@ def _rst_tesseract_candidates(rgb, pair, scale, psm_by_row=None,
 
     H0, W0 = rgb.shape[:2]
     xpad = min(100, max(10, int(round(W0 * 0.08))))
+    xpad_l, xpad_r = _rst_adaptive_xpad(rgb, pair, scale, xpad)
     raw_parts = []
     line_candidates = [[], []]
     if psm_by_row is None:
@@ -326,9 +402,9 @@ def _rst_tesseract_candidates(rgb, pair, scale, psm_by_row=None,
             row_h = max(1, sy1 - sy0)
             pad = max(8, min(25, int(round(row_h * 0.70))))
             crop = source.crop((
-                xpad,
+                xpad_l,
                 max(0, sy0 - pad),
-                max(xpad + 1, W0 - xpad),
+                max(xpad_l + 1, W0 - xpad_r),
                 min(H0, sy1 + pad),
             ))
             # High-resolution line 1 is readable at source resolution;
@@ -451,22 +527,59 @@ def _rst_decode_lines(line1, line2):
         text=True, capture_output=True, timeout=10)
 
 
-def _rst_run_paddle_inprocess(img_path):
-    """Run the cached ONNX recognizer without spawning a Python process."""
+def _rst_cnn_source_heights(pair, scale):
+    """Map detected work-image rows back to source-image pixel heights."""
+    if not pair or scale <= 0:
+        return ()
+    return tuple(
+        max(1, int(round((y1 + 1) / scale)) - int(round(y0 / scale)))
+        for y0, y1 in pair
+    )
+
+
+def _rst_cnn_low_res_reason(pair, scale):
+    """Return a reason when the C CNN cannot safely consume this MRZ."""
+    heights = _rst_cnn_source_heights(pair, scale)
+    if len(heights) != 2 or min(heights) >= _RST_CNN_MIN_ROW_HEIGHT:
+        return ""
+    return (
+        f"源图 MRZ 行高 {heights[0]}/{heights[1]}px，"
+        f"低于轻量CNN最小 {_RST_CNN_MIN_ROW_HEIGHT}px"
+    )
+
+
+def _rst_prepare_paddle():
+    """Import and initialize the cached Paddle recognizer once."""
     global _RST_PADDLE_MODULE
     with _RST_PADDLE_LOCK:
-        if _RST_PADDLE_MODULE is None:
+        module = _RST_PADDLE_MODULE
+        if module is None:
             paddle_dir = ROOT / "6_1_PaddleOCR"
             if str(paddle_dir) not in sys.path:
                 sys.path.insert(0, str(paddle_dir))
             import importlib
-            _RST_PADDLE_MODULE = importlib.import_module("paddle_v6")
-        module = _RST_PADDLE_MODULE
+            module = importlib.import_module("paddle_v6")
         rec, mode = module._get_rec()
+        _RST_PADDLE_MODULE = module
         init_error = module._OCR_ERROR if mode == "fallback" else ""
+    return module, rec, mode, init_error
+
+
+def _rst_paddle_warmup():
+    """Prepare Paddle in a background thread before the first run."""
+    try:
+        _rst_prepare_paddle()
+    except Exception:
+        # The actual run still reports the concrete initialization error.
+        pass
+
+
+def _rst_run_paddle_inprocess(img_path):
+    """Run the cached ONNX recognizer without spawning a Python process."""
+    module, rec, mode, init_error = _rst_prepare_paddle()
 
     ok, line1, line2, c1, c2, band, error, ms = \
-        module._decode_one(rec, Path(img_path), init_error)
+        module._decode_one(rec, img_path, init_error)
     note = init_error if mode == "fallback" else ""
     raw = [
         f"result.backend  : {mode}",
@@ -2537,6 +2650,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         if method in METHOD_ORDER:
             self._rst_last_method = method
         self.rst_method_both.set(False)
+        if method == "paddle":
+            self._rst_request_paddle_warmup()
 
     def _rst_method_toggle(self):
         if self.rst_method_both.get():
@@ -2547,6 +2662,21 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         else:
             self.rst_methods.set(
                 getattr(self, "_rst_last_method", "tesseract"))
+        if self.rst_method_both.get():
+            self._rst_request_paddle_warmup()
+
+    def _rst_request_paddle_warmup(self):
+        """Start Paddle initialization without blocking the Tk event loop."""
+        global _RST_PADDLE_WARMUP_STARTED
+        with _RST_PADDLE_LOCK:
+            if _RST_PADDLE_MODULE is not None or _RST_PADDLE_WARMUP_STARTED:
+                return
+            _RST_PADDLE_WARMUP_STARTED = True
+        threading.Thread(
+            target=_rst_paddle_warmup,
+            name="paddle-mrz-warmup",
+            daemon=True,
+        ).start()
 
     def _rst_selected_methods(self):
         if self.rst_method_both.get():
@@ -2565,7 +2695,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         """
         import numpy as np
         H, W = rgb.shape[:2]
-        xpad = min(100, max(10, int(round(W * 0.08))))
+        nominal = min(100, max(10, int(round(W * 0.08))))
+        xpad_l, xpad_r = _rst_adaptive_xpad(rgb, pair, scale, nominal)
         rows = []
         for y0, y1 in pair:
             sy0 = max(0, int(round(y0 / scale)))
@@ -2574,7 +2705,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             pad = max(8, min(25, int(round(row_h * 0.70))))
             rows.append(
                 rgb[max(0, sy0 - pad):min(H, sy1 + pad),
-                    xpad:max(xpad + 1, W - xpad)])
+                    xpad_l:max(xpad_l + 1, W - xpad_r)])
         gutter = max(12, int(round(min(rows[0].shape[0],
                                       rows[1].shape[0]) * 0.25)))
         width = min(rows[0].shape[1], rows[1].shape[1])
@@ -2585,7 +2716,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         out[y:y + rows[1].shape[0]] = rows[1][:, :width]
         return out
 
-    def _rst_run_ocr_methods(self, rgb, pair, scale, band_path, methods):
+    def _rst_run_ocr_methods(self, rgb, pair, scale, band_path, methods,
+                             native_band=None):
         """Run selected OCR backends against the same cleaned MRZ image."""
         import time as _time
         from concurrent.futures import ThreadPoolExecutor
@@ -2604,6 +2736,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 "line1": "",
                 "line2": "",
                 "engine_ok": False,
+                "engine_status": "FAIL",
                 "decode_ok": False,
                 "conf1": 0,
                 "conf2": 0,
@@ -2611,6 +2744,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 "candidates": "",
                 "raw": "",
                 "decode": "",
+                "raw_decode_rc": None,
+                "raw_decode_error": "",
                 "backend": "",
                 "error": error,
                 "note": "",
@@ -2624,6 +2759,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             """Run the trusted OCR-B path once for failed external results."""
             with rescue_lock:
                 if not rescue_cache["ready"]:
+                    rescue_started = _time.perf_counter()
                     line1s, line2s, raw, error = \
                         _rst_tesseract_candidates(rgb, pair, scale)
                     if error:
@@ -2634,8 +2770,10 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                             raw,
                         )
                     rescue_cache["value"] = value
+                    rescue_cache["ms"] = (
+                        _time.perf_counter() - rescue_started) * 1000.0
                     rescue_cache["ready"] = True
-                return rescue_cache["value"]
+                return rescue_cache["value"], rescue_cache.get("ms", 0.0)
 
         def run_one(method):
             started = _time.perf_counter()
@@ -2654,6 +2792,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                         "line1": display1,
                         "line2": display2,
                         "engine_ok": bool(line1s and line2s),
+                        "engine_status": "OK" if (line1s and line2s)
+                        else "FAIL",
                         "decode_ok": decoded.returncode == 0,
                         "conf1": 0,
                         "conf2": 0,
@@ -2662,6 +2802,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                             f"line1={len(line1s)} line2={len(line2s)}"),
                         "raw": raw,
                         "decode": decoded.stdout.strip(),
+                        "raw_decode_rc": decoded.returncode,
+                        "raw_decode_error": decoded.stderr.strip(),
                         "backend": "tesseract",
                         "note": "",
                         "error": error or (
@@ -2673,9 +2815,63 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 tool = tool_paths[method]
                 if not tool.exists():
                     return failed(method, started, f"工具不存在: {tool}")
+                if method == "cnn":
+                    low_res_reason = _rst_cnn_low_res_reason(pair, scale)
+                    if low_res_reason:
+                        rescue, rescue_ms = tesseract_rescue()
+                        result = {
+                            "method": method,
+                            "label": METHOD_LABELS[method],
+                            "line1": "",
+                            "line2": "",
+                            "engine_ok": False,
+                            "engine_status": "SKIP",
+                            "decode_ok": False,
+                            "conf1": 0,
+                            "conf2": 0,
+                            "repair": [],
+                            "candidates": "",
+                            "raw": (
+                                "method            : cnn\n"
+                                "result.ok         : skipped low-resolution MRZ\n"
+                                f"result.note       : {low_res_reason}\n"
+                            ),
+                            "decode": "",
+                            "raw_decode_rc": None,
+                            "raw_decode_error": "",
+                            "backend": "cnn (low-res skip)",
+                            "note": "",
+                            "error": "",
+                            "ms": (_time.perf_counter() - started) * 1000.0,
+                        }
+                        if rescue is not None:
+                            (fixed1, fixed2, repair, _raw_line2,
+                             fixed_decoded), tess_raw = rescue
+                            result["line1"] = fixed1
+                            result["line2"] = fixed2
+                            result["repair"] = repair
+                            result["decode"] = fixed_decoded.stdout.strip()
+                            result["decode_ok"] = fixed_decoded.returncode == 0
+                            result["backend"] = (
+                                "cnn (low-res skip) -> tesseract-fallback")
+                            result["note"] = (
+                                f"轻量CNN已跳过：{low_res_reason}；"
+                                "直接使用 Tesseract OCR-B 识别"
+                                f"（fallback {rescue_ms:.1f} ms）")
+                            if tess_raw:
+                                result["raw"] += (
+                                    "--- tesseract fallback ---\n" + tess_raw)
+                            result["ms"] = (
+                                _time.perf_counter() - started) * 1000.0
+                        else:
+                            result["error"] = (
+                                "轻量CNN已跳过："
+                                f"{low_res_reason}；Tesseract OCR-B 也未返回有效结果"
+                            )
+                        return result
                 if method == "paddle":
                     stdout, returncode, stderr = _rst_run_paddle_inprocess(
-                        band_path)
+                        native_band if native_band is not None else band_path)
                 else:
                     argv = [str(tool), str(band_path)]
                     proc = subprocess.run(
@@ -2697,6 +2893,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                     "line1": line1,
                     "line2": line2,
                     "engine_ok": kv.get("result.ok") == "OK",
+                    "engine_status": (
+                        "OK" if kv.get("result.ok") == "OK" else "FAIL"),
                     "decode_ok": decoded.returncode == 0,
                     "conf1": int(kv.get("result.conf1", "0") or 0),
                     "conf2": int(kv.get("result.conf2", "0") or 0),
@@ -2704,6 +2902,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                     "candidates": "",
                     "raw": stdout.strip(),
                     "decode": decoded.stdout.strip(),
+                    "raw_decode_rc": decoded.returncode,
+                    "raw_decode_error": decoded.stderr.strip(),
                     "backend": backend,
                     "note": note,
                     "error": (
@@ -2713,8 +2913,15 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                             if decoded.returncode != 0 else "")),
                     "ms": (_time.perf_counter() - started) * 1000.0,
                 }
-                if method in ("traditional", "cnn", "paddle"):
-                    rescue = tesseract_rescue()
+                needs_rescue = (
+                    not result["decode_ok"]
+                    or result["conf1"] < 80
+                    or result["conf2"] < 80
+                )
+                if method in ("traditional", "cnn", "paddle") and needs_rescue:
+                    rescue, rescue_ms = tesseract_rescue()
+                    result["ms"] = (
+                        _time.perf_counter() - started) * 1000.0
                     if rescue is not None:
                         (fixed1, fixed2, repair, _raw_line2,
                          fixed_decoded), tess_raw = rescue
@@ -2724,11 +2931,23 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                             != (fixed1, fixed2)
                         )
                         if mismatch:
-                            reason = (
-                                "原始结果未通过 MRZ decode"
-                                if not result["decode_ok"]
-                                else "原始结果与 Tesseract OCR-B 复核不一致"
-                            )
+                            raw_status = kv.get("result.ok", "").strip()
+                            if not result["engine_ok"]:
+                                reason = (
+                                    f"{METHOD_LABELS[method]} 未产生有效引擎输出"
+                                    + (f"（{raw_status}）"
+                                       if raw_status else "")
+                                )
+                            elif not result["decode_ok"]:
+                                reason = (
+                                    f"{METHOD_LABELS[method]} 已输出结果，"
+                                    "但原始结果未通过 MRZ decode"
+                                )
+                            else:
+                                reason = (
+                                    f"{METHOD_LABELS[method]} 结果置信率偏低，"
+                                    "与 Tesseract OCR-B 复核不一致"
+                                )
                             result["line1"] = fixed1
                             result["line2"] = fixed2
                             result["repair"] = repair
@@ -2736,8 +2955,11 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                             result["decode_ok"] = True
                             result["backend"] = (
                                 f"{backend or method} -> tesseract-fallback")
+                            result["engine_status"] = (
+                                "FAIL" if not result["engine_ok"] else "OK")
                             result["note"] = (
-                                f"{reason}，已用 Tesseract OCR-B 自动修复")
+                                f"{reason}；已切换到 Tesseract OCR-B "
+                                f"自动修复（fallback {rescue_ms:.1f} ms）")
                             result["error"] = ""
                             if tess_raw:
                                 result["raw"] += (
@@ -2751,6 +2973,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 return failed(method, started, str(exc))
 
         wall_started = _time.perf_counter()
+        if "paddle" in methods:
+            self._rst_request_paddle_warmup()
         if len(methods) == 1:
             results = [run_one(methods[0])]
         else:
@@ -2794,24 +3018,31 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             g = _gray(work)
             st = detect_structure(g)
             stages.append(("①原图+结构检测", (_time.perf_counter() - t0) * 1000))
-            reflection0 = st.get("reflection", [])
             H_before = work.shape[0]
             self._rst_fit_to(0, _Image.fromarray(rgb), footer=f"{W0}×{H0}")
 
-            # ② 去影图: 直接裁掉底部反射段 (默认强制裁 150px)
+            # ② 去影图: 自适应——检出倒影则如实报告并裁掉 line2 下方倒影段,
+            #    未检出则仅裁取景黑带
             t0 = _time.perf_counter()
-            work2, st2, refl_info = drop_reflection(work, st, mode="crop",
-                                                    force_min_drop=150)
+            work2, st2, refl_info = drop_reflection(work, st)
             pair = st2.get("mrz_pair")
             H_after = work2.shape[0]
             actual_drop = H_before - H_after
-            stages.append(("②去影(裁反射)", (_time.perf_counter() - t0) * 1000))
-            badge2 = (f"已裁掉 line2 下方整段倒影 {actual_drop}px "
-                     f"({actual_drop*100//H_before}% 图高)")
+            stages.append(("②去影(自适应)", (_time.perf_counter() - t0) * 1000))
+            pct = actual_drop * 100 // H_before if H_before else 0
+            if actual_drop <= 0:
+                badge2, badge2_color = "无需裁除 (line2 已到图底)", "ok"
+            elif refl_info.get("reflection_detected"):
+                badge2 = (f"已裁掉 line2 下方倒影 {actual_drop}px "
+                          f"({pct}% 图高, 检出倒影 {refl_info.get('reflection_px', 0)}px)")
+                badge2_color = "warn"
+            else:
+                badge2 = (f"未检出倒影; 裁除 line2 下方余量 {actual_drop}px ({pct}% 图高)")
+                badge2_color = "ok"
             self._rst_fit_to(1, _Image.fromarray(work2),
                              footer=f"{work2.shape[1]}×{work2.shape[0]}  (原 {H_before}px)",
                              badge=badge2,
-                             badge_color="warn" if actual_drop > 0 else "ok")
+                             badge_color=badge2_color)
 
             # ③ 矫正图: 对裁后图做 line1/line2 各自单应
             t0 = _time.perf_counter()
@@ -2860,10 +3091,13 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                     f"gap={l2y0-l1y1-1}")
             else:
                 lines.append("MRZ 双行: <未定位>")
-            lines.append(f"line2 下方倒影已裁: work {H_before} -> {H_after}  "
-                         f"(丢 {actual_drop}px, 倒影不再入算法)")
-            if reflection0:
-                lines.append(f"检测到倒影段: {reflection0}")
+            if refl_info.get("reflection_detected"):
+                lines.append(
+                    f"line2 下方检出倒影段 {refl_info.get('reflection')} 已裁: "
+                    f"work {H_before} -> {H_after} (丢 {actual_drop}px)")
+            else:
+                lines.append(f"line2 下方未检出倒影; 裁除 line2 下方余量 {actual_drop}px "
+                             f"(work {H_before} -> {H_after})")
             lines.append("")
             lines.append("阶段耗时:")
             for name, ms in stages:
@@ -2875,8 +3109,14 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 methods = self._rst_selected_methods()
                 band_path = None
                 tmp = None
+                native_band = None
                 try:
-                    if any(method != "tesseract" for method in methods):
+                    needs_file_band = any(
+                        method in ("traditional", "cnn") for method in methods)
+                    if "paddle" in methods or needs_file_band:
+                        native_band = self._rst_native_mrz_band(
+                            rgb, pair, scale)
+                    if needs_file_band:
                         import tempfile
                         tmp_dir = _P(__file__).resolve().parents[1] / \
                             "10_ocr_research"
@@ -2886,12 +3126,11 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                             dir=str(tmp_dir), delete=False)
                         band_path = _P(tmp.name)
                         tmp.close()
-                        native_band = self._rst_native_mrz_band(
-                            rgb, pair, scale)
                         _Image.fromarray(native_band).save(
                             str(band_path), format="PPM")
                     ocr_results, ocr_wall_ms = self._rst_run_ocr_methods(
-                        rgb, pair, scale, band_path, methods)
+                        rgb, pair, scale, band_path, methods,
+                        native_band=native_band)
                 finally:
                     if tmp is not None:
                         try:
@@ -2918,8 +3157,12 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                         -result["ms"],
                     ),
                 )
+                preferred_label = preferred["label"]
+                preferred_backend = preferred.get("backend", "")
+                if preferred_backend.endswith("fallback"):
+                    preferred_label += f" -> {preferred_backend.split(' -> ', 1)[-1]}"
                 lines.extend([
-                    f"推荐方案: {preferred['label']}  "
+                    f"推荐方案: {preferred_label}  "
                     f"{'PASS' if preferred['decode_ok'] else 'FAIL'}",
                     f"最终 MRZ line1: {preferred.get('line1') or '<未提取>'}",
                     f"最终 MRZ line2: {preferred.get('line2') or '<未提取>'}",
@@ -2953,10 +3196,35 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                             "rst_label")
                     self.rst_info.insert(
                         "end",
-                        f"  引擎: {'OK' if result['engine_ok'] else 'FAIL'}   "
+                        f"  引擎: {result.get('engine_status') or ('OK' if result['engine_ok'] else 'FAIL')}   "
                         f"decode: ",
-                        "rst_label")
+                        (
+                            "rst_warn"
+                            if result.get("engine_status") == "SKIP"
+                            else "rst_label"
+                        ))
                     self.rst_info.insert("end", status + "\n", status_tag)
+                    raw_decode_rc = result.get("raw_decode_rc")
+                    if (
+                        raw_decode_rc is not None
+                        and result.get("backend", "").endswith("fallback")
+                    ):
+                        raw_decode_status = (
+                            "PASS" if raw_decode_rc == 0 else "FAIL")
+                        self.rst_info.insert(
+                            "end",
+                            f"  原始 MRZ decode: {raw_decode_status} "
+                            f"(rc={raw_decode_rc})\n",
+                            (
+                                "rst_pass"
+                                if raw_decode_rc == 0 else "rst_fail"
+                            ))
+                        if raw_decode_rc != 0:
+                            self.rst_info.insert(
+                                "end",
+                                f"  原始 decode 说明: "
+                                f"{result.get('raw_decode_error') or '(无 stderr)'}\n",
+                                "rst_fail")
                     self.rst_info.insert("end", "  line1: ", "rst_label")
                     self.rst_info.insert(
                         "end", (result["line1"] or "<未提取>") + "\n",
