@@ -30,6 +30,25 @@ object PaddleOcrAndroid {
     private var env: OrtEnvironment? = null
     private var session: OrtSession? = null
 
+    /**
+     * Eagerly initialise the ORT environment, copy the recognition model
+     * to internal storage and create the inference session on a worker
+     * thread. Safe to call multiple times — subsequent calls short-circuit
+     * if the session already exists. Call from Application.onCreate (or
+     * MainActivity.onCreate) so the first photo does not pay 2-3s of
+     * cold start.
+     */
+    fun preload(context: Context) {
+        synchronized(lock) {
+            if (session != null) return
+        }
+        Thread({
+            try {
+                getSession(context.applicationContext)
+            } catch (_: Throwable) { /* will retry on first recognize() */ }
+        }, "paddle-preload").start()
+    }
+
     fun recognize(context: Context, line1: Bitmap, line2: Bitmap): PaddleRecognition {
         val (runtime, model) = getSession(context)
         val first = recognizeRow(runtime, model, line1)

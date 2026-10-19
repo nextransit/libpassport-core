@@ -46,6 +46,7 @@ data class StructureResult(
     val noReflection: Bitmap?,
     val rectified: Bitmap?,
     val mrzCrop: Bitmap?,
+    val xpadAdaptive: Pair<Int, Int> = Pair(0, 0),
     val timings: LinkedHashMap<String, Long>,
     val error: String = "",
 )
@@ -78,7 +79,7 @@ object PhotoMrzPipeline {
         }
 
         val nativeBand = nativeBand(source, structure.pair.first, structure.pair.second,
-            scaleFor(structure.source))
+            scaleFor(structure.source), structure.xpadAdaptive)
         val ocrStart = System.nanoTime()
         val recognition = try {
             val paddle = PaddleOcrAndroid.recognize(context, nativeBand.line1, nativeBand.line2)
@@ -122,8 +123,10 @@ object PhotoMrzPipeline {
         val pair = findPair(gray)
         timings["structure"] = elapsedMs(workStart)
         if (pair == null) {
-            return StructureResult(source, work, null, work, null, null, timings, "MRZ 双行未定位")
+            return StructureResult(source, work, null, work, null, null, Pair(0, 0), timings, "MRZ 双行未定位")
         }
+
+        val xpad = adaptiveXpad(source, work, pair)
 
         val cropStart = System.nanoTime()
         val cropBottom = pair.second.last + 1
@@ -138,7 +141,46 @@ object PhotoMrzPipeline {
         val mrzCrop = cropPairClean(noReflection, pair.first, pair.second)
         timings["MRZ crop"] = elapsedMs(mrzCropStart)
 
-        return StructureResult(source, work, pair, noReflection, rectified, mrzCrop, timings)
+        return StructureResult(source, work, pair, noReflection, rectified, mrzCrop, xpad, timings)
+    }
+
+    /**
+     * F3 边条框检测自适应 xpad：机位照左右各取 8 列（strip∈[4,12]）
+     * 计算整列暗占比；有框（>=0.9）一侧保留名义 xpad，无框一侧返回 0。
+     * 对齐 Python _rst_adaptive_xpad v4：机位照 1.00 → 100/51；满幅照 0.00-0.67 → 0。
+     * 返回值在源图坐标系（与 nativeBand 的 source.width 对齐）。
+     */
+    fun adaptiveXpad(source: Bitmap, work: Bitmap, pair: PairRows): Pair<Int, Int> {
+        val Wsrc = source.width
+        if (Wsrc < 40 || pair.first.isEmpty() || pair.second.isEmpty()) {
+            val nominal = min(100, max(10, (Wsrc * 0.08).roundToInt()))
+            return Pair(nominal, nominal)
+        }
+        val strip = max(4, min(12, work.width / 25))
+        val leftDark = stripDarkFrac(work, 0, strip)
+        val rightDark = stripDarkFrac(work, work.width - strip, work.width)
+        val nominal = min(100, max(10, (Wsrc * 0.08).roundToInt()))
+        val left = if (leftDark >= 0.9) nominal else 0
+        val right = if (rightDark >= 0.9) nominal else 0
+        return Pair(left, right)
+    }
+
+    private fun stripDarkFrac(work: Bitmap, x0: Int, x1: Int): Double {
+        val W = x1 - x0
+        if (W <= 0) return 0.0
+        val H = work.height
+        val pixels = IntArray(W * H)
+        work.getPixels(pixels, 0, W, x0, 0, W, H)
+        var dark = 0
+        for (px in pixels) {
+            val r = (px shr 16) and 0xFF
+            val g = (px shr 8) and 0xFF
+            val b = px and 0xFF
+            // ITU-R BT.601 luma, 0-255 范围
+            val luma = (299 * r + 587 * g + 114 * b + 500) / 1000
+            if (luma < 160) dark++
+        }
+        return dark.toDouble() / pixels.size
     }
 
     private fun scaleFor(source: Bitmap): Double =
@@ -222,6 +264,15 @@ object PhotoMrzPipeline {
         listOf(a[0] to (b[0] to cost), b[0] to (a[0] to cost))
     }.groupBy({ it.first }, { it.second })
         .mapValues { (_, values) -> values.distinctBy { it.first }.sortedBy { it.second } }
+
+    /**
+     * F4 国家码 O/0 归一：line2 [10..12] 是 3 字母国家码，常见 OCR 误读仅 6 类。
+     * 通用 confusionPairs 在该窗口可能给出 0→Q/U/D 等误归一（成本 2），收紧到仅 O/0 等
+     * 1-成本映射，与 Python _mrz_line2_candidates country_fix 对齐。
+     */
+    private val countryFix = mapOf(
+        '0' to 'O', '1' to 'I', '2' to 'Z', '5' to 'S', '6' to 'G', '8' to 'B',
+    )
 
     private fun enforceLine1(raw: String): String {
         val out = normalizeRaw(raw).padEnd(44, '<').take(44).toCharArray()
@@ -339,10 +390,8 @@ object PhotoMrzPipeline {
                     ?.first
                     ?.let { out[i] = it }
             } else if (i in 10..12 && out[i].isDigit()) {
-                confusionPairs[out[i]]
-                    ?.firstOrNull { it.first.isLetter() }
-                    ?.first
-                    ?.let { out[i] = it }
+                // F4 国家码 10..12：仅用 countryFix 收紧集合（不引 0→Q/U/D 等）
+                countryFix[out[i]]?.let { out[i] = it }
             }
         }
         return out.concatToString()
@@ -560,18 +609,22 @@ object PhotoMrzPipeline {
         first: IntRange,
         second: IntRange,
         scale: Double,
+        xpadAdaptive: Pair<Int, Int>,
     ): Band {
-        val xpad = min(100, max(10, (source.width * 0.08).roundToInt()))
+        // xpadAdaptive 已经在源图坐标系下（work 系 pair 通过 /scale 转换），直接用
+        val xpadL = xpadAdaptive.first
+        val xpadR = xpadAdaptive.second
         val rows = listOf(first, second).map { run ->
             val sourceY0 = max(0, (run.first / scale).roundToInt())
             val sourceY1 = min(source.height, ((run.last + 1) / scale).roundToInt())
             val rowHeight = max(1, sourceY1 - sourceY0)
             val pad = max(8, min(25, (rowHeight * 0.70).roundToInt()))
+            val w = max(1, source.width - xpadL - xpadR)
             Bitmap.createBitmap(
                 source,
-                xpad,
+                xpadL,
                 max(0, sourceY0 - pad),
-                max(1, source.width - 2 * xpad),
+                w,
                 min(source.height, sourceY1 + pad) - max(0, sourceY0 - pad),
             )
         }

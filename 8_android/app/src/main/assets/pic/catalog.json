@@ -1,0 +1,4244 @@
+{
+  "count": 84,
+  "pass": 84,
+  "verified": 0,
+  "suspect": 0,
+  "reject": 0,
+  "records": [
+    {
+      "file": "08806d29a6268e1f_0003.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/08806d29a6268e1f_0003.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 34,
+          "y": 30,
+          "w": 532,
+          "h": 317,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (317 rows)"
+        },
+        "mrz": {
+          "x": 5,
+          "y": 347,
+          "w": 591,
+          "h": 82,
+          "confidence": 0.97,
+          "evidence": "bottom band: 82 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "38 0 401 32",
+        "ms": 4.245959018589929,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 249,
+          "w": 600,
+          "h": 180
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 60.35212500137277
+    },
+    {
+      "file": "0c7ddb43a8ff36a4_0033.png",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/0c7ddb43a8ff36a4_0033.png",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 62,
+          "y": 34,
+          "w": 898,
+          "h": 693,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (608 rows)"
+        },
+        "mrz": {
+          "x": 41,
+          "y": 727,
+          "w": 918,
+          "h": 415,
+          "confidence": 0.97,
+          "evidence": "bottom band: 364 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "39 593 921 320",
+        "ms": 6.013125006575137,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 229,
+          "w": 960,
+          "h": 1138
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 84.50595798785798
+    },
+    {
+      "file": "0f9780b8e1e3cc21_0008.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/0f9780b8e1e3cc21_0008.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": {
+          "x": 292,
+          "y": 241,
+          "w": 258,
+          "h": 352,
+          "confidence": 0.99,
+          "evidence": "skin component (33656 px) inside light photo card"
+        },
+        "data": {
+          "x": 0,
+          "y": 241,
+          "w": 959,
+          "h": 964,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (878 rows)"
+        },
+        "mrz": {
+          "x": 0,
+          "y": 1205,
+          "w": 959,
+          "h": 80,
+          "confidence": 0.97,
+          "evidence": "bottom band: 73 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "U<IUTUTIITIIITIIIUTTHTUNB<HHHUUHUHHHVNHQHUUU",
+        "line2": "UUCYTM3M63IUM7373067M77771757MUNNNNNNNNNNN11",
+        "conf1": 72,
+        "conf2": 53,
+        "band": "0 0 960 38",
+        "ms": 6.625415990129113,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 1109,
+          "w": 960,
+          "h": 208
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: check digit mismatch",
+        "fields": {}
+      },
+      "mrz": "U<IUTUTIITIIITIIIUTTHTUNB<HHHUUHUHHHVNHQHUUU\nUUCYTM3M63IUM7373067M77771757MUNNNNNNNNNNN11",
+      "verified": false,
+      "ms": 134.9160420068074
+    },
+    {
+      "file": "16c07a99a0fb81e4_0013.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/16c07a99a0fb81e4_0013.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 28,
+          "y": 30,
+          "w": 547,
+          "h": 268,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (268 rows)"
+        },
+        "mrz": {
+          "x": 37,
+          "y": 331,
+          "w": 531,
+          "h": 42,
+          "confidence": 0.97,
+          "evidence": "bottom band: 42 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "T<UUUUUTTTWWWTUUTUUUGTTUUUUUUUUTUUUTTUTTTTUT",
+        "line2": "NNUUNUSW46UIN0400009F1100019N0NS0UUUMOIU4444",
+        "conf1": 87,
+        "conf2": 57,
+        "band": "29 79 547 13",
+        "ms": 6.3523749995511025,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 281,
+          "w": 600,
+          "h": 135
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: invalid field content",
+        "fields": {}
+      },
+      "mrz": "T<UUUUUTTTWWWTUUTUUUGTTUUUUUUUUTUUUTTUTTTTUT\nNNUUNUSW46UIN0400009F1100019N0NS0UUUMOIU4444",
+      "verified": false,
+      "ms": 22.713125013979152
+    },
+    {
+      "file": "16e75f8372cca686_0010.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/16e75f8372cca686_0010.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 4,
+          "y": 39,
+          "w": 952,
+          "h": 1181,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (1056 rows)"
+        },
+        "mrz": {
+          "x": 50,
+          "y": 1220,
+          "w": 842,
+          "h": 56,
+          "confidence": 0.97,
+          "evidence": "bottom band: 50 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "T<JTTUYUUNTTUUTMIGHTTTTTUTTLLL",
+        "line2": "CNHAAGMAH0SKS4111044<4444444<<RRRRRRVVHVVV66",
+        "conf1": 80,
+        "conf2": 53,
+        "band": "43 63 858 17",
+        "ms": 6.019082997227088,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 1153,
+          "w": 959,
+          "h": 189
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 73.33329200628214
+    },
+    {
+      "file": "1792f7a2d79c7a8a_0017.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/1792f7a2d79c7a8a_0017.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": {
+          "x": 84,
+          "y": 209,
+          "w": 146,
+          "h": 247,
+          "confidence": 0.99,
+          "evidence": "skin component (25161 px) inside light photo card"
+        },
+        "data": {
+          "x": 33,
+          "y": 209,
+          "w": 901,
+          "h": 341,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (341 rows)"
+        },
+        "mrz": {
+          "x": 38,
+          "y": 550,
+          "w": 871,
+          "h": 70,
+          "confidence": 0.97,
+          "evidence": "bottom band: 70 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "I<WWTWTTWUITUTUHUHHHNUWHUUUUUHUUUUUWUTUTUUUT",
+        "line2": "HHUUUUUHH0UHH0000000M0900000HHUQUUHNUHHNUH00",
+        "conf1": 75,
+        "conf2": 53,
+        "band": "31 132 886 22",
+        "ms": 6.484958023065701,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 466,
+          "w": 960,
+          "h": 183
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: invalid field content",
+        "fields": {}
+      },
+      "mrz": "I<WWTWTTWUITUTUHUHHHNUWHUUUUUHUUUUUWUTUTUUUT\nHHUUUUUHH0UHH0000000M0900000HHUQUUHNUHHNUH00",
+      "verified": false,
+      "ms": 58.03766701137647
+    },
+    {
+      "file": "1a62700c228ccff5_0053.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/1a62700c228ccff5_0053.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": {
+          "x": 725,
+          "y": 296,
+          "w": 65,
+          "h": 40,
+          "confidence": 0.574,
+          "evidence": "skin component (963 px) inside light photo card"
+        },
+        "data": {
+          "x": 7,
+          "y": 296,
+          "w": 953,
+          "h": 933,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (836 rows)"
+        },
+        "mrz": {
+          "x": 28,
+          "y": 1229,
+          "w": 932,
+          "h": 56,
+          "confidence": 0.97,
+          "evidence": "bottom band: 50 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "G<GTANJNTIITGUUMSMCMUWWWWIIWWUUJJDJTUJ",
+        "line2": "IJNNLNPIZ1LUL1111111M9131544<<S<SSSSSSSS0J",
+        "conf1": 79,
+        "conf2": 56,
+        "band": "131 111 829 20",
+        "ms": 6.208583014085889,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 1162,
+          "w": 960,
+          "h": 177
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 76.5500410052482
+    },
+    {
+      "file": "1c6acd092dee7031_0222.png",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/1c6acd092dee7031_0222.png",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": {
+          "x": 76,
+          "y": 183,
+          "w": 83,
+          "h": 97,
+          "confidence": 0.627,
+          "evidence": "skin component (3092 px) inside light photo card"
+        },
+        "data": {
+          "x": 32,
+          "y": 183,
+          "w": 635,
+          "h": 144,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (144 rows)"
+        },
+        "mrz": {
+          "x": 35,
+          "y": 327,
+          "w": 626,
+          "h": 77,
+          "confidence": 0.97,
+          "evidence": "bottom band: 77 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "1 31 698 82",
+        "ms": 4.139500000746921,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 235,
+          "w": 700,
+          "h": 207
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 31.130207993555814
+    },
+    {
+      "file": "1cce0f3fc387c893_0001.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/1cce0f3fc387c893_0001.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 12,
+          "y": 30,
+          "w": 406,
+          "h": 212,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (212 rows)"
+        },
+        "mrz": {
+          "x": 21,
+          "y": 242,
+          "w": 386,
+          "h": 33,
+          "confidence": 0.97,
+          "evidence": "bottom band: 33 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "14 62 401 10",
+        "ms": 3.497917001368478,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 203,
+          "w": 432,
+          "h": 92
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 12.09745797677897
+    },
+    {
+      "file": "1f2efa72ff601a1c_0112.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/1f2efa72ff601a1c_0112.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": {
+          "x": 867,
+          "y": 303,
+          "w": 46,
+          "h": 47,
+          "confidence": 0.575,
+          "evidence": "skin component (1011 px) inside light photo card"
+        },
+        "data": null,
+        "mrz": {
+          "x": 0,
+          "y": 850,
+          "w": 960,
+          "h": 311,
+          "confidence": 0.97,
+          "evidence": "bottom band: 276 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "0 274 960 364",
+        "ms": 5.117208987940103,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 477,
+          "w": 960,
+          "h": 876
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 60.057541995774955
+    },
+    {
+      "file": "239e042aba0c3ab2_0102.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/239e042aba0c3ab2_0102.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": {
+          "x": 48,
+          "y": 224,
+          "w": 152,
+          "h": 184,
+          "confidence": 0.837,
+          "evidence": "skin component (11499 px) inside light photo card"
+        },
+        "data": {
+          "x": 35,
+          "y": 224,
+          "w": 925,
+          "h": 331,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (331 rows)"
+        },
+        "mrz": {
+          "x": 48,
+          "y": 555,
+          "w": 912,
+          "h": 68,
+          "confidence": 0.97,
+          "evidence": "bottom band: 68 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "W<UHHHHHHUITUTUHHHWAAAITTWWWTWTWTTTTTTTUUTUT",
+        "line2": "0UOUUUUUU0QNH0901090M0909098ONUUUUUORRRRRR90",
+        "conf1": 72,
+        "conf2": 58,
+        "band": "40 127 920 22",
+        "ms": 6.051000003935769,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 474,
+          "w": 960,
+          "h": 194
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: invalid field content",
+        "fields": {}
+      },
+      "mrz": "W<UHHHHHHUITUTUHHHWAAAITTWWWTWTWTTTTTTTUUTUT\n0UOUUUUUU0QNH0901090M0909098ONUUUUUORRRRRR90",
+      "verified": false,
+      "ms": 48.56170801213011
+    },
+    {
+      "file": "23f16a7d9b6ab9da_0062.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/23f16a7d9b6ab9da_0062.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 15,
+          "y": 30,
+          "w": 536,
+          "h": 293,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (293 rows)"
+        },
+        "mrz": {
+          "x": 10,
+          "y": 323,
+          "w": 547,
+          "h": 77,
+          "confidence": 0.97,
+          "evidence": "bottom band: 77 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "10 0 558 51",
+        "ms": 4.333082993980497,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 231,
+          "w": 569,
+          "h": 176
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 18.55924999108538
+    },
+    {
+      "file": "28a42952ba25584a_0078.png",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/28a42952ba25584a_0078.png",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": {
+          "x": 38,
+          "y": 422,
+          "w": 79,
+          "h": 114,
+          "confidence": 0.701,
+          "evidence": "skin component (6036 px) inside light photo card"
+        },
+        "data": {
+          "x": 19,
+          "y": 432,
+          "w": 452,
+          "h": 126,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (126 rows)"
+        },
+        "mrz": {
+          "x": 0,
+          "y": 592,
+          "w": 471,
+          "h": 58,
+          "confidence": 0.97,
+          "evidence": "bottom band: 58 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "Q<CHHHQHBLHNOAOHULHTTMA<<<AAA<A<AAAAAA<AAAHT",
+        "line2": "A0O06WOS06<WA6680106<40021118AA6TITTGGGGGW16",
+        "conf1": 73,
+        "conf2": 52,
+        "band": "16 69 455 33",
+        "ms": 5.891249980777502,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 523,
+          "w": 471,
+          "h": 127
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: check digit mismatch",
+        "fields": {}
+      },
+      "mrz": "Q<CHHHQHBLHNOAOHULHTTMA<<<AAA<A<AAAAAA<AAAHT\nA0O06WOS06<WA6680106<40021118AA6TITTGGGGGW16",
+      "verified": false,
+      "ms": 29.338082997128367
+    },
+    {
+      "file": "28ccd101a752acef_0016.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/28ccd101a752acef_0016.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": {
+          "x": 120,
+          "y": 244,
+          "w": 71,
+          "h": 56,
+          "confidence": 0.581,
+          "evidence": "skin component (1230 px) inside light photo card"
+        },
+        "data": {
+          "x": 84,
+          "y": 244,
+          "w": 649,
+          "h": 170,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (170 rows)"
+        },
+        "mrz": {
+          "x": 78,
+          "y": 414,
+          "w": 800,
+          "h": 27,
+          "confidence": 0.97,
+          "evidence": "bottom band: 27 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "0 0 855 91",
+        "ms": 3.7278330128174275,
+        "err": "",
+        "crop": {
+          "x": 46,
+          "y": 382,
+          "w": 864,
+          "h": 91
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 32.405167003162205
+    },
+    {
+      "file": "2c793efe12276f9b_0258.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/2c793efe12276f9b_0258.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 19,
+          "y": 30,
+          "w": 920,
+          "h": 113,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (113 rows)"
+        },
+        "mrz": {
+          "x": 7,
+          "y": 143,
+          "w": 950,
+          "h": 447,
+          "confidence": 0.97,
+          "evidence": "bottom band: 447 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "16 136 928 298",
+        "ms": 4.519209003774449,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "w": 960,
+          "h": 635
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 22.517208009958267
+    },
+    {
+      "file": "2d6029eb8d489f68_0004.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/2d6029eb8d489f68_0004.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 15,
+          "y": 31,
+          "w": 930,
+          "h": 772,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (738 rows)"
+        },
+        "mrz": {
+          "x": 20,
+          "y": 803,
+          "w": 925,
+          "h": 282,
+          "confidence": 0.97,
+          "evidence": "bottom band: 270 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "8 422 946 199",
+        "ms": 5.23524999152869,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 465,
+          "w": 960,
+          "h": 790
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 61.6129580012057
+    },
+    {
+      "file": "31611582cbf14d7f_0018.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/31611582cbf14d7f_0018.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": {
+          "x": 537,
+          "y": 622,
+          "w": 447,
+          "h": 97,
+          "confidence": 0.99,
+          "evidence": "skin component (26473 px) inside light photo card"
+        },
+        "data": {
+          "x": 3,
+          "y": 622,
+          "w": 1255,
+          "h": 27,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (25 rows)"
+        },
+        "mrz": {
+          "x": 64,
+          "y": 718,
+          "w": 1141,
+          "h": 96,
+          "confidence": 0.97,
+          "evidence": "bottom band: 90 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "M<UUUHHMHUOMMOHOIUQUWHWWWWUWWUUJIIIIIIII",
+        "line2": "WMNWNNNNW0UDU0000008M9009090HHHHHHHHHHHHHH00",
+        "conf1": 84,
+        "conf2": 55,
+        "band": "57 180 1154 33",
+        "ms": 6.608040974242613,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 603,
+          "w": 1280,
+          "h": 269
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 102.1912090072874
+    },
+    {
+      "file": "3f5bb54276c6b754_0110.png",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/3f5bb54276c6b754_0110.png",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": {
+          "x": 570,
+          "y": 175,
+          "w": 150,
+          "h": 230,
+          "confidence": 0.99,
+          "evidence": "skin component (19668 px) inside light photo card"
+        },
+        "data": {
+          "x": 0,
+          "y": 175,
+          "w": 960,
+          "h": 1116,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (999 rows)"
+        },
+        "mrz": {
+          "x": 0,
+          "y": 1292,
+          "w": 960,
+          "h": 49,
+          "confidence": 0.97,
+          "evidence": "bottom band: 44 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "0 54 960 53",
+        "ms": 3.92662500962615,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 1234,
+          "w": 960,
+          "h": 107
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 127.13737500598654
+    },
+    {
+      "file": "4023a0d69dbd6cf7_0120.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/4023a0d69dbd6cf7_0120.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": {
+          "x": 200,
+          "y": 457,
+          "w": 111,
+          "h": 118,
+          "confidence": 0.651,
+          "evidence": "skin component (4042 px) inside light photo card"
+        },
+        "data": {
+          "x": 0,
+          "y": 457,
+          "w": 960,
+          "h": 777,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (695 rows)"
+        },
+        "mrz": {
+          "x": 40,
+          "y": 1234,
+          "w": 873,
+          "h": 69,
+          "confidence": 0.97,
+          "evidence": "bottom band: 62 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "G<NNNNHNHNITGTJAAAAAAAJAHTTTAWLILILLLLLILTTU",
+        "line2": "WNUUUUUUU9CNH5901890F0001011TSUHUUUHNHUK<<46",
+        "conf1": 76,
+        "conf2": 55,
+        "band": "33 130 918 21",
+        "ms": 6.5000419854186475,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 1152,
+          "w": 960,
+          "h": 189
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: invalid field content",
+        "fields": {}
+      },
+      "mrz": "G<NNNNHNHNITGTJAAAAAAAJAHTTTAWLILILLLLLILTTU\nWNUUUUUUU9CNH5901890F0001011TSUHUUUHNHUK<<46",
+      "verified": false,
+      "ms": 81.38399999006651
+    },
+    {
+      "file": "4086f51e94e9c5c7_0007.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/4086f51e94e9c5c7_0007.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 0,
+          "y": 46,
+          "w": 960,
+          "h": 513,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (513 rows)"
+        },
+        "mrz": {
+          "x": 0,
+          "y": 559,
+          "w": 906,
+          "h": 67,
+          "confidence": 0.97,
+          "evidence": "bottom band: 67 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "L<TTWTWTWAAITTIHHHHHTUWMHMMMMUTTTTTTTTTTTTTJ",
+        "line2": "LOOUUUUUU0UHU9000000M0010110ASSSSSSSSSSSSN90",
+        "conf1": 75,
+        "conf2": 54,
+        "band": "0 127 915 21",
+        "ms": 6.049583986168727,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 479,
+          "w": 960,
+          "h": 214
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: invalid field content",
+        "fields": {}
+      },
+      "mrz": "L<TTWTWTWAAITTIHHHHHTUWMHMMMMUTTTTTTTTTTTTTJ\nLOOUUUUUU0UHU9000000M0010110ASSSSSSSSSSSSN90",
+      "verified": false,
+      "ms": 41.11904199817218
+    },
+    {
+      "file": "41ab45d4bde758dc_0306.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/41ab45d4bde758dc_0306.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": {
+          "x": 858,
+          "y": 281,
+          "w": 65,
+          "h": 94,
+          "confidence": 0.61,
+          "evidence": "skin component (2394 px) inside light photo card"
+        },
+        "data": null,
+        "mrz": {
+          "x": 49,
+          "y": 550,
+          "w": 853,
+          "h": 67,
+          "confidence": 0.97,
+          "evidence": "bottom band: 67 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "L<TTWWWATTAIIINNNNHNNTWNNMMMUMMMTTTTMATTTTTT",
+        "line2": "IOIOIUUUN6WBW1109090M9940980UUTU9ULUUDISSS49",
+        "conf1": 86,
+        "conf2": 58,
+        "band": "41 127 869 21",
+        "ms": 5.9708750050049275,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 470,
+          "w": 960,
+          "h": 217
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: invalid field content",
+        "fields": {}
+      },
+      "mrz": "L<TTWWWATTAIIINNNNHNNTWNNMMMUMMMTTTTMATTTTTT\nIOIOIUUUN6WBW1109090M9940980UUTU9ULUUDISSS49",
+      "verified": false,
+      "ms": 41.690540994750336
+    },
+    {
+      "file": "43ecb49033fb30c1_0073.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/43ecb49033fb30c1_0073.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": {
+          "x": 49,
+          "y": 836,
+          "w": 260,
+          "h": 330,
+          "confidence": 0.99,
+          "evidence": "skin component (38693 px) inside light photo card"
+        },
+        "data": {
+          "x": 11,
+          "y": 836,
+          "w": 867,
+          "h": 384,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (340 rows)"
+        },
+        "mrz": {
+          "x": 58,
+          "y": 1220,
+          "w": 827,
+          "h": 63,
+          "confidence": 0.97,
+          "evidence": "bottom band: 56 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "P<UMAT<UHCO<<OHDIHT<NICHLLL<<<<<<<<<<<<<<<<<",
+        "line2": "OWOHCIT991UHT9100100<0701006<<<<<VW<<VVG<G<6",
+        "conf1": 71,
+        "conf2": 61,
+        "band": "49 74 880 65",
+        "ms": 6.656624987954274,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 1145,
+          "w": 960,
+          "h": 210
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: check digit mismatch",
+        "fields": {}
+      },
+      "mrz": "P<UMAT<UHCO<<OHDIHT<NICHLLL<<<<<<<<<<<<<<<<<\nOWOHCIT991UHT9100100<0701006<<<<<VW<<VVG<G<6",
+      "verified": false,
+      "ms": 94.38587501063012
+    },
+    {
+      "file": "4c5f5e1654002cd0_0050.png",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/4c5f5e1654002cd0_0050.png",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": {
+          "x": 164,
+          "y": 149,
+          "w": 142,
+          "h": 195,
+          "confidence": 0.888,
+          "evidence": "skin component (13539 px) inside light photo card"
+        },
+        "data": {
+          "x": 76,
+          "y": 305,
+          "w": 376,
+          "h": 38,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (38 rows)"
+        },
+        "mrz": {
+          "x": 2,
+          "y": 343,
+          "w": 535,
+          "h": 387,
+          "confidence": 0.97,
+          "evidence": "bottom band: 387 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "0 469 537 184",
+        "ms": 3.953208011807874,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "w": 537,
+          "h": 753
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 36.809541983529925
+    },
+    {
+      "file": "4dbd1b9e24b069f4_0023.png",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/4dbd1b9e24b069f4_0023.png",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": {
+          "x": 143,
+          "y": 233,
+          "w": 150,
+          "h": 239,
+          "confidence": 0.99,
+          "evidence": "skin component (24565 px) inside light photo card"
+        },
+        "data": {
+          "x": 99,
+          "y": 239,
+          "w": 788,
+          "h": 358,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (358 rows)"
+        },
+        "mrz": {
+          "x": 84,
+          "y": 644,
+          "w": 803,
+          "h": 75,
+          "confidence": 0.97,
+          "evidence": "bottom band: 75 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "I<IITIIIITTTTTTTITAUWUUHITITTTTITTTTTITUT",
+        "line2": "COOIOOTWI0DNN0000009M0000000NNNNNNNNNNNNNN14",
+        "conf1": 77,
+        "conf2": 54,
+        "band": "106 25 789 19",
+        "ms": 6.427749991416931,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 554,
+          "w": 960,
+          "h": 166
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 83.81366700632498
+    },
+    {
+      "file": "526d2e38b6b977bc_0014.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/526d2e38b6b977bc_0014.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": {
+          "x": 445,
+          "y": 74,
+          "w": 163,
+          "h": 212,
+          "confidence": 0.745,
+          "evidence": "skin component (7800 px) inside light photo card"
+        },
+        "data": {
+          "x": 0,
+          "y": 74,
+          "w": 959,
+          "h": 464,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (464 rows)"
+        },
+        "mrz": {
+          "x": 0,
+          "y": 538,
+          "w": 959,
+          "h": 68,
+          "confidence": 0.97,
+          "evidence": "bottom band: 68 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "0 78 960 79",
+        "ms": 4.0094169962685555,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 457,
+          "w": 960,
+          "h": 214
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 68.30512499436736
+    },
+    {
+      "file": "52f421c92ccf6ba4_0136.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/52f421c92ccf6ba4_0136.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": {
+          "x": 328,
+          "y": 10,
+          "w": 632,
+          "h": 510,
+          "confidence": 0.99,
+          "evidence": "skin component (217877 px) inside light photo card"
+        },
+        "data": null,
+        "mrz": {
+          "x": 4,
+          "y": 519,
+          "w": 887,
+          "h": 66,
+          "confidence": 0.97,
+          "evidence": "bottom band: 66 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "0 0 859 25",
+        "ms": 4.926417022943497,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 440,
+          "w": 960,
+          "h": 203
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 179.86729100812227
+    },
+    {
+      "file": "556644d1d8bf4672_0215.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/556644d1d8bf4672_0215.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": {
+          "x": 138,
+          "y": 106,
+          "w": 37,
+          "h": 84,
+          "confidence": 0.575,
+          "evidence": "skin component (1000 px) inside light photo card"
+        },
+        "data": {
+          "x": 14,
+          "y": 106,
+          "w": 387,
+          "h": 237,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (237 rows)"
+        },
+        "mrz": {
+          "x": 9,
+          "y": 343,
+          "w": 448,
+          "h": 282,
+          "confidence": 0.97,
+          "evidence": "bottom band: 282 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "0 390 461 173",
+        "ms": 4.426458006491885,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 5,
+          "w": 461,
+          "h": 644
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 18.42279199627228
+    },
+    {
+      "file": "58b7776585fe04f3_0024.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/58b7776585fe04f3_0024.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": {
+          "x": 145,
+          "y": 1121,
+          "w": 150,
+          "h": 28,
+          "confidence": 0.58,
+          "evidence": "skin component (1205 px) inside light photo card"
+        },
+        "data": {
+          "x": 0,
+          "y": 1121,
+          "w": 953,
+          "h": 73,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (66 rows)"
+        },
+        "mrz": {
+          "x": 0,
+          "y": 1194,
+          "w": 956,
+          "h": 52,
+          "confidence": 0.97,
+          "evidence": "bottom band: 47 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "U<MUUTMUMUMUUUTMMNTTUUTTAHTNHHQUTHOHITUTUTIH",
+        "line2": "UUUMSUHOA8ARH4807900M4904068HUUJNUW0K0Q8QQ06",
+        "conf1": 78,
+        "conf2": 56,
+        "band": "0 97 944 18",
+        "ms": 6.343249988276511,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 1132,
+          "w": 960,
+          "h": 176
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: invalid field content",
+        "fields": {}
+      },
+      "mrz": "U<MUUTMUMUMUUUTMMNTTUUTTAHTNHHQUTHOHITUTUTIH\nUUUMSUHOA8ARH4807900M4904068HUUJNUW0K0Q8QQ06",
+      "verified": false,
+      "ms": 81.28641700022854
+    },
+    {
+      "file": "5910a51436407dde_0086.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/5910a51436407dde_0086.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": {
+          "x": 79,
+          "y": 915,
+          "w": 184,
+          "h": 282,
+          "confidence": 0.99,
+          "evidence": "skin component (25007 px) inside light photo card"
+        },
+        "data": {
+          "x": 50,
+          "y": 915,
+          "w": 890,
+          "h": 344,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (301 rows)"
+        },
+        "mrz": {
+          "x": 39,
+          "y": 1259,
+          "w": 869,
+          "h": 63,
+          "confidence": 0.97,
+          "evidence": "bottom band: 55 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "L<LIIITIITGIIVATTIWWUQOANHTTUUUWUUUUUUOUUUUU",
+        "line2": "WRWCKNNA80NWQ6048446<6666666QQQQQXXKKKKXKK44",
+        "conf1": 83,
+        "conf2": 46,
+        "band": "31 74 885 17",
+        "ms": 6.4019169949460775,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 1184,
+          "w": 960,
+          "h": 188
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: invalid field content",
+        "fields": {}
+      },
+      "mrz": "L<LIIITIITGIIVATTIWWUQOANHTTUUUWUUUUUUOUUUUU\nWRWCKNNA80NWQ6048446<6666666QQQQQXXKKKKXKK44",
+      "verified": false,
+      "ms": 88.32541698939167
+    },
+    {
+      "file": "61d671ec161f22e3_0042.png",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/61d671ec161f22e3_0042.png",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": {
+          "x": 281,
+          "y": 749,
+          "w": 187,
+          "h": 43,
+          "confidence": 0.693,
+          "evidence": "skin component (5711 px) inside light photo card"
+        },
+        "data": null,
+        "mrz": {
+          "x": 74,
+          "y": 791,
+          "w": 491,
+          "h": 40,
+          "confidence": 0.97,
+          "evidence": "bottom band: 40 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "12 0 567 113",
+        "ms": 3.853791014989838,
+        "err": "",
+        "crop": {
+          "x": 26,
+          "y": 743,
+          "w": 587,
+          "h": 136
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 66.42216700129211
+    },
+    {
+      "file": "63af2253ed025b0f_0012.png",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/63af2253ed025b0f_0012.png",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": {
+          "x": 90,
+          "y": 889,
+          "w": 122,
+          "h": 217,
+          "confidence": 0.933,
+          "evidence": "skin component (15333 px) inside light photo card"
+        },
+        "data": {
+          "x": 29,
+          "y": 891,
+          "w": 898,
+          "h": 308,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (277 rows)"
+        },
+        "mrz": {
+          "x": 29,
+          "y": 1199,
+          "w": 896,
+          "h": 65,
+          "confidence": 0.97,
+          "evidence": "bottom band: 58 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "T<ITUTUTUTUTTTUTUHUTUTUTUIITUTUTTTUITUTUTTTU",
+        "line2": "TKJTTTTJT1TTT4461614F6666454SKKKNKKKKKKK<K45",
+        "conf1": 90,
+        "conf2": 51,
+        "band": "20 76 914 18",
+        "ms": 6.179332995088771,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 1121,
+          "w": 960,
+          "h": 214
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: invalid field content",
+        "fields": {}
+      },
+      "mrz": "T<ITUTUTUTUTTTUTUHUTUTUTUIITUTUTTTUITUTUTTTU\nTKJTTTTJT1TTT4461614F6666454SKKKNKKKKKKK<K45",
+      "verified": false,
+      "ms": 153.10187501017936
+    },
+    {
+      "file": "64cf2acb2e4f1593_0104.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/64cf2acb2e4f1593_0104.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": {
+          "x": 0,
+          "y": 0,
+          "w": 277,
+          "h": 158,
+          "confidence": 0.83,
+          "evidence": "skin component (11203 px) inside light photo card"
+        },
+        "data": {
+          "x": 0,
+          "y": 1,
+          "w": 960,
+          "h": 214,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (214 rows)"
+        },
+        "mrz": {
+          "x": 0,
+          "y": 215,
+          "w": 949,
+          "h": 483,
+          "confidence": 0.97,
+          "evidence": "bottom band: 483 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "0 35 957 663",
+        "ms": 5.5452079977840185,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "w": 960,
+          "h": 698
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 46.09624997829087
+    },
+    {
+      "file": "698bfa379b5859ab_0088.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/698bfa379b5859ab_0088.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": {
+          "x": 79,
+          "y": 915,
+          "w": 184,
+          "h": 282,
+          "confidence": 0.99,
+          "evidence": "skin component (25007 px) inside light photo card"
+        },
+        "data": {
+          "x": 50,
+          "y": 915,
+          "w": 890,
+          "h": 344,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (301 rows)"
+        },
+        "mrz": {
+          "x": 39,
+          "y": 1259,
+          "w": 869,
+          "h": 63,
+          "confidence": 0.97,
+          "evidence": "bottom band: 55 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "L<LIIITIITGIIVATTIWWUQOANHTTUUUWUUUUUUOUUUUU",
+        "line2": "WRWCKNNA80NWQ6048446<6666666QQQQQXXKKKKXKK44",
+        "conf1": 83,
+        "conf2": 46,
+        "band": "31 74 885 17",
+        "ms": 6.004166993079707,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 1184,
+          "w": 960,
+          "h": 188
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: invalid field content",
+        "fields": {}
+      },
+      "mrz": "L<LIIITIITGIIVATTIWWUQOANHTTUUUWUUUUUUOUUUUU\nWRWCKNNA80NWQ6048446<6666666QQQQQXXKKKKXKK44",
+      "verified": false,
+      "ms": 87.36708399374038
+    },
+    {
+      "file": "6b0e5919dd6f3ac8_0006.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/6b0e5919dd6f3ac8_0006.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": {
+          "x": 0,
+          "y": 115,
+          "w": 180,
+          "h": 224,
+          "confidence": 0.99,
+          "evidence": "skin component (19966 px) inside light photo card"
+        },
+        "data": {
+          "x": 13,
+          "y": 115,
+          "w": 577,
+          "h": 223,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (223 rows)"
+        },
+        "mrz": {
+          "x": 34,
+          "y": 338,
+          "w": 536,
+          "h": 43,
+          "confidence": 0.97,
+          "evidence": "bottom band: 43 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "T<WUUUUUTTTTWTTTTTTTTJWUWTWTWTTWWWTTTUTTTT",
+        "line2": "WAAWVWBSA9UUN8009016F6090001MWNNNNNNNHUU4K40",
+        "conf1": 82,
+        "conf2": 54,
+        "band": "26 80 552 14",
+        "ms": 6.223500007763505,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 287,
+          "w": 600,
+          "h": 132
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 36.45150002557784
+    },
+    {
+      "file": "6b91117492dc24f3_0022.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/6b91117492dc24f3_0022.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": {
+          "x": 4,
+          "y": 495,
+          "w": 956,
+          "h": 54,
+          "confidence": 0.99,
+          "evidence": "skin component (37898 px) inside light photo card"
+        },
+        "data": null,
+        "mrz": {
+          "x": 44,
+          "y": 548,
+          "w": 852,
+          "h": 65,
+          "confidence": 0.97,
+          "evidence": "bottom band: 65 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "P<VNNAUKAIMABIKKIBBA<WBHUUUWA<HAUHWWRRRRW<<<",
+        "line2": "W6RQFQA000ANA0803008<2000080H000HWHIWWWWWW80",
+        "conf1": 72,
+        "conf2": 59,
+        "band": "36 77 868 67",
+        "ms": 6.554499996127561,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 470,
+          "w": 960,
+          "h": 215
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: check digit mismatch",
+        "fields": {}
+      },
+      "mrz": "P<VNNAUKAIMABIKKIBBA<WBHUUUWA<HAUHWWRRRRW<<<\nW6RQFQA000ANA0803008<2000080H000HWHIWWWWWW80",
+      "verified": false,
+      "ms": 104.56408298341557
+    },
+    {
+      "file": "6dafa3b35c792d06_0039.png",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/6dafa3b35c792d06_0039.png",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": {
+          "x": 493,
+          "y": 218,
+          "w": 342,
+          "h": 121,
+          "confidence": 0.815,
+          "evidence": "skin component (10599 px) inside light photo card"
+        },
+        "data": {
+          "x": 39,
+          "y": 218,
+          "w": 921,
+          "h": 181,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (181 rows)"
+        },
+        "mrz": {
+          "x": 36,
+          "y": 493,
+          "w": 924,
+          "h": 62,
+          "confidence": 0.97,
+          "evidence": "bottom band: 62 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "T<TANTHUNIHIIIINHTTAHNIITHTTTTNTAHTHUNAAIIII",
+        "line2": "ABJTZ1WSK7<SN4079111M2971019JTJTJTW1JTZ1WS57",
+        "conf1": 85,
+        "conf2": 57,
+        "band": "28 117 932 19",
+        "ms": 6.466833001468331,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 419,
+          "w": 960,
+          "h": 195
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: invalid field content",
+        "fields": {}
+      },
+      "mrz": "T<TANTHUNIHIIIINHTTAHNIITHTTTTNTAHTHUNAAIIII\nABJTZ1WSK7<SN4079111M2971019JTJTJTW1JTZ1WS57",
+      "verified": false,
+      "ms": 59.04533399734646
+    },
+    {
+      "file": "7294ad26ea8d95e0_0010.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/7294ad26ea8d95e0_0010.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": {
+          "x": 88,
+          "y": 256,
+          "w": 82,
+          "h": 67,
+          "confidence": 0.597,
+          "evidence": "skin component (1864 px) inside light photo card"
+        },
+        "data": {
+          "x": 38,
+          "y": 256,
+          "w": 922,
+          "h": 238,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (238 rows)"
+        },
+        "mrz": {
+          "x": 49,
+          "y": 556,
+          "w": 911,
+          "h": 52,
+          "confidence": 0.97,
+          "evidence": "bottom band: 52 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "H<BQWHTQIWB<DOU<BTHIOB<<QODQIOO<<<<<<<<<<<<<",
+        "line2": "WTOOO1AH<7AAW0609181<1907099A<<<A<<<<<<<<<00",
+        "conf1": 77,
+        "conf2": 56,
+        "band": "41 62 919 53",
+        "ms": 6.155957991722971,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 494,
+          "w": 960,
+          "h": 174
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: check digit mismatch",
+        "fields": {}
+      },
+      "mrz": "H<BQWHTQIWB<DOU<BTHIOB<<QODQIOO<<<<<<<<<<<<<\nWTOOO1AH<7AAW0609181<1907099A<<<A<<<<<<<<<00",
+      "verified": false,
+      "ms": 48.94941599923186
+    },
+    {
+      "file": "72ef4ce48bf27731_0002.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/72ef4ce48bf27731_0002.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 20,
+          "y": 30,
+          "w": 461,
+          "h": 308,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (308 rows)"
+        },
+        "mrz": {
+          "x": 1,
+          "y": 338,
+          "w": 499,
+          "h": 324,
+          "confidence": 0.97,
+          "evidence": "bottom band: 324 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "21 437 472 83",
+        "ms": 4.178000002866611,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "w": 500,
+          "h": 686
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 18.405707989586517
+    },
+    {
+      "file": "7626df394c39f314_0020.png",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/7626df394c39f314_0020.png",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": {
+          "x": 117,
+          "y": 240,
+          "w": 117,
+          "h": 121,
+          "confidence": 0.692,
+          "evidence": "skin component (5662 px) inside light photo card"
+        },
+        "data": {
+          "x": 97,
+          "y": 240,
+          "w": 804,
+          "h": 239,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (239 rows)"
+        },
+        "mrz": {
+          "x": 67,
+          "y": 518,
+          "w": 820,
+          "h": 65,
+          "confidence": 0.97,
+          "evidence": "bottom band: 65 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "N<BHRLBRWHIN<<NOHWNNLD<WBDULLW<YOUIIH<<<<<<<",
+        "line2": "HOOOOOOO<7AWA4001206<9212161OOOOOOOOOAW<AW06",
+        "conf1": 90,
+        "conf2": 62,
+        "band": "59 78 836 65",
+        "ms": 6.715208000969142,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 440,
+          "w": 960,
+          "h": 217
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: check digit mismatch",
+        "fields": {}
+      },
+      "mrz": "N<BHRLBRWHIN<<NOHWNNLD<WBDULLW<YOUIIH<<<<<<<\nHOOOOOOO<7AWA4001206<9212161OOOOOOOOOAW<AW06",
+      "verified": false,
+      "ms": 63.66145898937248
+    },
+    {
+      "file": "78f45152a658f728_0012.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/78f45152a658f728_0012.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 0,
+          "y": 30,
+          "w": 960,
+          "h": 491,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (491 rows)"
+        },
+        "mrz": {
+          "x": 46,
+          "y": 521,
+          "w": 828,
+          "h": 67,
+          "confidence": 0.97,
+          "evidence": "bottom band: 67 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "M<MMMMMOMMUHUUUMUTHWHHWTHAAAAAHAAAAAT",
+        "line2": "HAAAAAAWW6WWW6668804M0000008KAOR1HHTUUUUUU00",
+        "conf1": 81,
+        "conf2": 51,
+        "band": "0 20 909 20",
+        "ms": 6.2623749836348,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 441,
+          "w": 954,
+          "h": 196
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 38.58933298033662
+    },
+    {
+      "file": "7c5899e1f86a07a0_0008.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/7c5899e1f86a07a0_0008.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": {
+          "x": 1,
+          "y": 488,
+          "w": 959,
+          "h": 42,
+          "confidence": 0.99,
+          "evidence": "skin component (35006 px) inside light photo card"
+        },
+        "data": null,
+        "mrz": {
+          "x": 55,
+          "y": 529,
+          "w": 845,
+          "h": 68,
+          "confidence": 0.97,
+          "evidence": "bottom band: 68 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "M<MMMMNNINTGTTNNNNTTHGAAHTAAAWAAWWTGTWGGUULW",
+        "line2": "WWWOUUUUS8LTU9089010M8809001UHUANUUHUUUIOI16",
+        "conf1": 84,
+        "conf2": 50,
+        "band": "47 128 861 21",
+        "ms": 6.379416998242959,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 448,
+          "w": 960,
+          "h": 210
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: invalid field content",
+        "fields": {}
+      },
+      "mrz": "M<MMMMNNINTGTTNNNNTTHGAAHTAAAWAAWWTGTWGGUULW\nWWWOUUUUS8LTU9089010M8809001UHUANUUHUUUIOI16",
+      "verified": false,
+      "ms": 87.48516699415632
+    },
+    {
+      "file": "7c6f47bad47d70e9_0230.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/7c6f47bad47d70e9_0230.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": {
+          "x": 284,
+          "y": 38,
+          "w": 240,
+          "h": 141,
+          "confidence": 0.99,
+          "evidence": "skin component (18757 px) inside light photo card"
+        },
+        "data": {
+          "x": 27,
+          "y": 64,
+          "w": 621,
+          "h": 114,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (114 rows)"
+        },
+        "mrz": {
+          "x": 19,
+          "y": 178,
+          "w": 629,
+          "h": 214,
+          "confidence": 0.97,
+          "evidence": "bottom band: 214 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "10 106 638 213",
+        "ms": 4.343000007793307,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "w": 648,
+          "h": 431
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 30.110249994322658
+    },
+    {
+      "file": "8627765d2a1a0bf9_0049.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/8627765d2a1a0bf9_0049.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": {
+          "x": 0,
+          "y": 669,
+          "w": 957,
+          "h": 368,
+          "confidence": 0.99,
+          "evidence": "skin component (239066 px) inside light photo card"
+        },
+        "data": null,
+        "mrz": {
+          "x": 36,
+          "y": 1036,
+          "w": 921,
+          "h": 180,
+          "confidence": 0.97,
+          "evidence": "bottom band: 160 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "0 45 960 318",
+        "ms": 5.056207999587059,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 820,
+          "w": 960,
+          "h": 530
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 200.64733299659565
+    },
+    {
+      "file": "86c6d990773daff2_0002.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/86c6d990773daff2_0002.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": {
+          "x": 52,
+          "y": 93,
+          "w": 452,
+          "h": 235,
+          "confidence": 0.99,
+          "evidence": "skin component (28695 px) inside light photo card"
+        },
+        "data": {
+          "x": 37,
+          "y": 167,
+          "w": 563,
+          "h": 99,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (99 rows)"
+        },
+        "mrz": {
+          "x": 29,
+          "y": 327,
+          "w": 555,
+          "h": 42,
+          "confidence": 0.97,
+          "evidence": "bottom band: 42 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "U<UUUUUTTUTTUWUUTTTTWTUTTWTWTTTTTTTTTTTTTTTT",
+        "line2": "WNHOAHNKK0NUU0000000M0000000RK4KKKKANNNNAN00",
+        "conf1": 85,
+        "conf2": 49,
+        "band": "21 79 571 14",
+        "ms": 5.869457992957905,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 277,
+          "w": 600,
+          "h": 131
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: invalid field content",
+        "fields": {}
+      },
+      "mrz": "U<UUUUUTTUTTUWUUTTTTWTUTTWTWTTTTTTTTTTTTTTTT\nWNHOAHNKK0NUU0000000M0000000RK4KKKKANNNNAN00",
+      "verified": false,
+      "ms": 53.898457990726456
+    },
+    {
+      "file": "8a5e3bc18a6ff7d2_0043.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/8a5e3bc18a6ff7d2_0043.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 52,
+          "y": 35,
+          "w": 887,
+          "h": 1127,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (974 rows)"
+        },
+        "mrz": {
+          "x": 67,
+          "y": 1227,
+          "w": 822,
+          "h": 65,
+          "confidence": 0.97,
+          "evidence": "bottom band: 56 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "N<HLDDL<BAUIJH<<WILLLRL<LIBLIOTTL<<<<<<<<<<<",
+        "line2": "HAHP1DOMW2AUH6909101<2609006HH994HHHO<<AAW86",
+        "conf1": 88,
+        "conf2": 58,
+        "band": "59 78 839 66",
+        "ms": 6.514917011372745,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 1149,
+          "w": 960,
+          "h": 221
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: check digit mismatch",
+        "fields": {}
+      },
+      "mrz": "N<HLDDL<BAUIJH<<WILLLRL<LIBLIOTTL<<<<<<<<<<<\nHAHP1DOMW2AUH6909101<2609006HH994HHHO<<AAW86",
+      "verified": false,
+      "ms": 67.66812500427477
+    },
+    {
+      "file": "8de1f04907363a2d_0000.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/8de1f04907363a2d_0000.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": {
+          "x": 0,
+          "y": 74,
+          "w": 199,
+          "h": 273,
+          "confidence": 0.99,
+          "evidence": "skin component (22096 px) inside light photo card"
+        },
+        "data": {
+          "x": 29,
+          "y": 91,
+          "w": 507,
+          "h": 260,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (260 rows)"
+        },
+        "mrz": {
+          "x": 28,
+          "y": 351,
+          "w": 538,
+          "h": 39,
+          "confidence": 0.97,
+          "evidence": "bottom band: 39 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "T<OLTULTUUTMNATTMTNJNAITTTTIIILILLLLL",
+        "line2": "YNNYNYYYY4<AG1611711<0401318AZNIJUIUII<1219<",
+        "conf1": 83,
+        "conf2": 51,
+        "band": "20 74 554 15",
+        "ms": 6.1402499850373715,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 305,
+          "w": 600,
+          "h": 116
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 32.09454199532047
+    },
+    {
+      "file": "90b464ea218a9909_0001.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/90b464ea218a9909_0001.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": {
+          "x": 794,
+          "y": 13,
+          "w": 75,
+          "h": 150,
+          "confidence": 0.591,
+          "evidence": "skin component (1622 px) inside light photo card"
+        },
+        "data": {
+          "x": 34,
+          "y": 220,
+          "w": 908,
+          "h": 435,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (435 rows)"
+        },
+        "mrz": {
+          "x": 22,
+          "y": 655,
+          "w": 920,
+          "h": 23,
+          "confidence": 0.97,
+          "evidence": "bottom band: 23 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "16 26 929 7",
+        "ms": 3.7641249946318567,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 628,
+          "w": 960,
+          "h": 50
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 44.013042002916336
+    },
+    {
+      "file": "927cd546b5a8111d_0108.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/927cd546b5a8111d_0108.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 44,
+          "y": 52,
+          "w": 881,
+          "h": 170,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (170 rows)"
+        },
+        "mrz": {
+          "x": 40,
+          "y": 222,
+          "w": 902,
+          "h": 418,
+          "confidence": 0.97,
+          "evidence": "bottom band: 418 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "51 209 894 83",
+        "ms": 4.665624990593642,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "w": 960,
+          "h": 696
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 25.234458997147158
+    },
+    {
+      "file": "95f9bd53a7df7606_0079.png",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/95f9bd53a7df7606_0079.png",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": {
+          "x": 97,
+          "y": 248,
+          "w": 166,
+          "h": 89,
+          "confidence": 0.68,
+          "evidence": "skin component (5189 px) inside light photo card"
+        },
+        "data": {
+          "x": 69,
+          "y": 248,
+          "w": 752,
+          "h": 93,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (93 rows)"
+        },
+        "mrz": {
+          "x": 38,
+          "y": 341,
+          "w": 885,
+          "h": 129,
+          "confidence": 0.97,
+          "evidence": "bottom band: 129 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "29 36 903 253",
+        "ms": 4.725125007098541,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 187,
+          "w": 960,
+          "h": 437
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 62.12383398087695
+    },
+    {
+      "file": "a495fb368b46ab35_0280.png",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/a495fb368b46ab35_0280.png",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": {
+          "x": 0,
+          "y": 0,
+          "w": 461,
+          "h": 391,
+          "confidence": 0.99,
+          "evidence": "skin component (156975 px) inside light photo card"
+        },
+        "data": null,
+        "mrz": {
+          "x": 10,
+          "y": 390,
+          "w": 452,
+          "h": 229,
+          "confidence": 0.97,
+          "evidence": "bottom band: 229 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "14 271 448 45",
+        "ms": 4.182000004220754,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 116,
+          "w": 462,
+          "h": 526
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 106.35483401711099
+    },
+    {
+      "file": "a5964dd742a6c084_0053.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/a5964dd742a6c084_0053.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": {
+          "x": 204,
+          "y": 470,
+          "w": 78,
+          "h": 53,
+          "confidence": 0.584,
+          "evidence": "skin component (1378 px) inside light photo card"
+        },
+        "data": {
+          "x": 17,
+          "y": 470,
+          "w": 934,
+          "h": 870,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (761 rows)"
+        },
+        "mrz": {
+          "x": 26,
+          "y": 1340,
+          "w": 923,
+          "h": 25,
+          "confidence": 0.97,
+          "evidence": "bottom band: 22 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "17 29 942 26",
+        "ms": 4.450208012713119,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 1310,
+          "w": 960,
+          "h": 62
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 78.16524998634122
+    },
+    {
+      "file": "a60aae34a06f1867_0016.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/a60aae34a06f1867_0016.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 0,
+          "y": 41,
+          "w": 960,
+          "h": 516,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (516 rows)"
+        },
+        "mrz": {
+          "x": 52,
+          "y": 557,
+          "w": 864,
+          "h": 70,
+          "confidence": 0.97,
+          "evidence": "bottom band: 70 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "T<TTOMMMMMIMTTTJGNTNNNTNJNNNNNNNTNNTNTNNNNII",
+        "line2": "AAUOUUUUS8UK<1318526F1298129IJTZSWSKZKNU<<<4",
+        "conf1": 87,
+        "conf2": 49,
+        "band": "44 134 880 21",
+        "ms": 6.551375001436099,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 473,
+          "w": 960,
+          "h": 211
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: invalid field content",
+        "fields": {}
+      },
+      "mrz": "T<TTOMMMMMIMTTTJGNTNNNTNJNNNNNNNTNNTNTNNNNII\nAAUOUUUUS8UK<1318526F1298129IJTZSWSKZKNU<<<4",
+      "verified": false,
+      "ms": 40.03704199567437
+    },
+    {
+      "file": "a955e21ae58d8c1d_0013.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/a955e21ae58d8c1d_0013.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": {
+          "x": 63,
+          "y": 196,
+          "w": 160,
+          "h": 223,
+          "confidence": 0.99,
+          "evidence": "skin component (24787 px) inside light photo card"
+        },
+        "data": {
+          "x": 7,
+          "y": 197,
+          "w": 943,
+          "h": 343,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (343 rows)"
+        },
+        "mrz": {
+          "x": 9,
+          "y": 540,
+          "w": 867,
+          "h": 65,
+          "confidence": 0.97,
+          "evidence": "bottom band: 65 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "T<WHNAHTWHOUA<<HWHI<<<<<<<<<<<<<<<<<<<<<<<<<",
+        "line2": "TW00000000AHN0000000<00008060000AVVANMAA4440",
+        "conf1": 78,
+        "conf2": 64,
+        "band": "0 77 885 67",
+        "ms": 6.523041985929012,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 462,
+          "w": 954,
+          "h": 215
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: check digit mismatch",
+        "fields": {}
+      },
+      "mrz": "T<WHNAHTWHOUA<<HWHI<<<<<<<<<<<<<<<<<<<<<<<<<\nTW00000000AHN0000000<00008060000AVVANMAA4440",
+      "verified": false,
+      "ms": 55.119458003900945
+    },
+    {
+      "file": "ab01dc87d9ed045a_0068.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/ab01dc87d9ed045a_0068.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": {
+          "x": 0,
+          "y": 2,
+          "w": 959,
+          "h": 691,
+          "confidence": 0.99,
+          "evidence": "skin component (143557 px) inside light photo card"
+        },
+        "data": null,
+        "mrz": {
+          "x": 47,
+          "y": 1204,
+          "w": 851,
+          "h": 64,
+          "confidence": 0.97,
+          "evidence": "bottom band: 57 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "T<UTTIIIAATATTHIITTTTTTLLILLLII",
+        "line2": "AUWUQNHN90TUO1604000M0104444RR8U",
+        "conf1": 79,
+        "conf2": 37,
+        "band": "39 121 868 22",
+        "ms": 5.913707980653271,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 1128,
+          "w": 960,
+          "h": 209
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 194.7886250272859
+    },
+    {
+      "file": "acd3e9fd1ce9bd0a_0016.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/acd3e9fd1ce9bd0a_0016.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": {
+          "x": 74,
+          "y": 123,
+          "w": 91,
+          "h": 107,
+          "confidence": 0.708,
+          "evidence": "skin component (6304 px) inside light photo card"
+        },
+        "data": {
+          "x": 10,
+          "y": 124,
+          "w": 565,
+          "h": 104,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (104 rows)"
+        },
+        "mrz": {
+          "x": 10,
+          "y": 229,
+          "w": 565,
+          "h": 156,
+          "confidence": 0.97,
+          "evidence": "bottom band: 156 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "0 124 589 148",
+        "ms": 4.361041006632149,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 42,
+          "w": 600,
+          "h": 381
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 19.45037499535829
+    },
+    {
+      "file": "acf14e0c631ec935_0030.png",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/acf14e0c631ec935_0030.png",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": {
+          "x": 781,
+          "y": 271,
+          "w": 145,
+          "h": 139,
+          "confidence": 0.63,
+          "evidence": "skin component (3209 px) inside light photo card"
+        },
+        "data": null,
+        "mrz": {
+          "x": 11,
+          "y": 551,
+          "w": 946,
+          "h": 102,
+          "confidence": 0.97,
+          "evidence": "bottom band: 102 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "H<UUUUHUUUHUHHHOUUHUHHHHHHHHHHHHHHHHHHHHHHHH",
+        "line2": "0HUUUUUUU0UHH0000000M0000000HHHHHHHHHHHHHH00",
+        "conf1": 90,
+        "conf2": 55,
+        "band": "22 122 903 72",
+        "ms": 8.544874988729134,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 429,
+          "w": 960,
+          "h": 226
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: invalid field content",
+        "fields": {}
+      },
+      "mrz": "H<UUUUHUUUHUHHHOUUHUHHHHHHHHHHHHHHHHHHHHHHHH\n0HUUUUUUU0UHH0000000M0000000HHHHHHHHHHHHHH00",
+      "verified": false,
+      "ms": 56.27816598280333
+    },
+    {
+      "file": "ae5fdb36f7498291_0019.png",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/ae5fdb36f7498291_0019.png",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 23,
+          "y": 30,
+          "w": 658,
+          "h": 352,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (352 rows)"
+        },
+        "mrz": {
+          "x": 23,
+          "y": 382,
+          "w": 644,
+          "h": 50,
+          "confidence": 0.97,
+          "evidence": "bottom band: 50 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "U<UUUULLIILICJZICYYTZYILTUILCZYICYYYSTHJ",
+        "line2": "",
+        "conf1": 61,
+        "conf2": 0,
+        "band": "9 0 702 21",
+        "ms": 4.605374997481704,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 322,
+          "w": 711,
+          "h": 131
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 27.542750001884997
+    },
+    {
+      "file": "b1442018a8167bf5_0046.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/b1442018a8167bf5_0046.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": {
+          "x": 93,
+          "y": 247,
+          "w": 103,
+          "h": 159,
+          "confidence": 0.714,
+          "evidence": "skin component (6543 px) inside light photo card"
+        },
+        "data": {
+          "x": 0,
+          "y": 247,
+          "w": 800,
+          "h": 812,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (812 rows)"
+        },
+        "mrz": {
+          "x": 0,
+          "y": 1059,
+          "w": 800,
+          "h": 31,
+          "confidence": 0.97,
+          "evidence": "bottom band: 31 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "0 37 800 31",
+        "ms": 4.011000011814758,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 1022,
+          "w": 800,
+          "h": 68
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 60.22808398120105
+    },
+    {
+      "file": "b284565582147454_0098.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/b284565582147454_0098.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 34,
+          "y": 41,
+          "w": 499,
+          "h": 258,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (258 rows)"
+        },
+        "mrz": {
+          "x": 38,
+          "y": 341,
+          "w": 497,
+          "h": 38,
+          "confidence": 0.97,
+          "evidence": "bottom band: 38 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "J<TTTTTTWTTGJTWTWTTTJTTTTTGTTTGJGTTTJTTJTTT",
+        "line2": "NOUNNNUNN9QO<9910111F1616011Z1ITSTIJIUTTTZ91",
+        "conf1": 92,
+        "conf2": 51,
+        "band": "30 71 513 12",
+        "ms": 6.383750005625188,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 296,
+          "w": 563,
+          "h": 126
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 19.570875010685995
+    },
+    {
+      "file": "b284565582147454_0115.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/b284565582147454_0115.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 34,
+          "y": 41,
+          "w": 499,
+          "h": 258,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (258 rows)"
+        },
+        "mrz": {
+          "x": 38,
+          "y": 341,
+          "w": 497,
+          "h": 38,
+          "confidence": 0.97,
+          "evidence": "bottom band: 38 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "J<TTTTTTWTTGJTWTWTTTJTTTTTGTTTGJGTTTJTTJTTT",
+        "line2": "NOUNNNUNN9QO<9910111F1616011Z1ITSTIJIUTTTZ91",
+        "conf1": 92,
+        "conf2": 51,
+        "band": "30 71 513 12",
+        "ms": 6.075375014916062,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 296,
+          "w": 563,
+          "h": 126
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 19.132291985442862
+    },
+    {
+      "file": "b2b5008f3839530d_0001.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/b2b5008f3839530d_0001.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 33,
+          "y": 38,
+          "w": 541,
+          "h": 313,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (313 rows)"
+        },
+        "mrz": {
+          "x": 19,
+          "y": 351,
+          "w": 563,
+          "h": 86,
+          "confidence": 0.97,
+          "evidence": "bottom band: 86 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "32 0 519 42",
+        "ms": 3.80512498668395,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 248,
+          "w": 600,
+          "h": 194
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 19.22391599509865
+    },
+    {
+      "file": "b30dc79ee9550e9e_0024.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/b30dc79ee9550e9e_0024.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": {
+          "x": 55,
+          "y": 137,
+          "w": 86,
+          "h": 149,
+          "confidence": 0.787,
+          "evidence": "skin component (9478 px) inside light photo card"
+        },
+        "data": {
+          "x": 0,
+          "y": 141,
+          "w": 572,
+          "h": 157,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (157 rows)"
+        },
+        "mrz": {
+          "x": 0,
+          "y": 337,
+          "w": 567,
+          "h": 43,
+          "confidence": 0.97,
+          "evidence": "bottom band: 43 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "U<WIBUUNICINIHRHIHWUOBHBNOCINUHHHHHHRHHHHRHH",
+        "line2": "UABB0NOHM8BNH0100000M00000000NBNBN0WNM90AW80",
+        "conf1": 72,
+        "conf2": 55,
+        "band": "0 51 575 43",
+        "ms": 6.315334001556039,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 286,
+          "w": 600,
+          "h": 137
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: invalid field content",
+        "fields": {}
+      },
+      "mrz": "U<WIBUUNICINIHRHIHWUOBHBNOCINUHHHHHHRHHHHRHH\nUABB0NOHM8BNH0100000M00000000NBNBN0WNM90AW80",
+      "verified": false,
+      "ms": 25.221874995622784
+    },
+    {
+      "file": "b43dea2a9c578cd0_0092.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/b43dea2a9c578cd0_0092.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 0,
+          "y": 30,
+          "w": 960,
+          "h": 604,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (604 rows)"
+        },
+        "mrz": {
+          "x": 0,
+          "y": 634,
+          "w": 946,
+          "h": 174,
+          "confidence": 0.97,
+          "evidence": "bottom band: 174 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "0 0 960 385",
+        "ms": 4.7437920002266765,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 426,
+          "w": 960,
+          "h": 489
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 45.21250000107102
+    },
+    {
+      "file": "b7a97ca0edede07b_0164.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/b7a97ca0edede07b_0164.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": {
+          "x": 173,
+          "y": 116,
+          "w": 100,
+          "h": 113,
+          "confidence": 0.721,
+          "evidence": "skin component (6852 px) inside light photo card"
+        },
+        "data": {
+          "x": 1,
+          "y": 116,
+          "w": 344,
+          "h": 632,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (632 rows)"
+        },
+        "mrz": {
+          "x": 13,
+          "y": 795,
+          "w": 315,
+          "h": 24,
+          "confidence": 0.97,
+          "evidence": "bottom band: 24 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "5 27 331 8",
+        "ms": 3.9160420128609985,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 767,
+          "w": 348,
+          "h": 76
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 28.098042006604373
+    },
+    {
+      "file": "bc1ddfd8c13b5ca9_0007.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/bc1ddfd8c13b5ca9_0007.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": {
+          "x": 192,
+          "y": 103,
+          "w": 240,
+          "h": 235,
+          "confidence": 0.99,
+          "evidence": "skin component (26172 px) inside light photo card"
+        },
+        "data": {
+          "x": 10,
+          "y": 111,
+          "w": 574,
+          "h": 226,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (226 rows)"
+        },
+        "mrz": {
+          "x": 31,
+          "y": 337,
+          "w": 527,
+          "h": 43,
+          "confidence": 0.97,
+          "evidence": "bottom band: 43 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "T<WWWWTWTWWUWTUUWUUUUUUUTTTTTTTTTTTTTTUM",
+        "line2": "HUQMUUBUM8NQW0900910M0900089KKKKNNKNNNNNNN8<",
+        "conf1": 87,
+        "conf2": 52,
+        "band": "23 80 543 14",
+        "ms": 5.81245799548924,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 286,
+          "w": 600,
+          "h": 127
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 47.78629099018872
+    },
+    {
+      "file": "c0cbf7c176328f3d_0006.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/c0cbf7c176328f3d_0006.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": {
+          "x": 45,
+          "y": 139,
+          "w": 81,
+          "h": 38,
+          "confidence": 0.608,
+          "evidence": "skin component (2301 px) inside light photo card"
+        },
+        "data": {
+          "x": 23,
+          "y": 139,
+          "w": 577,
+          "h": 198,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (198 rows)"
+        },
+        "mrz": {
+          "x": 28,
+          "y": 337,
+          "w": 572,
+          "h": 42,
+          "confidence": 0.97,
+          "evidence": "bottom band: 42 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "U<UHUUUUUUTWUUUUUUUUUUWUWWTTTU",
+        "line2": "AAUUAAN0A0AHH6000000M0000000UHHHHHHHHHHHAH00",
+        "conf1": 75,
+        "conf2": 58,
+        "band": "21 79 579 14",
+        "ms": 5.78854201012291,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 287,
+          "w": 600,
+          "h": 119
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 25.139500008663163
+    },
+    {
+      "file": "c1a15c65d128223e_0067.jpeg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/c1a15c65d128223e_0067.jpeg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 35,
+          "y": 238,
+          "w": 920,
+          "h": 621,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (555 rows)"
+        },
+        "mrz": {
+          "x": 38,
+          "y": 860,
+          "w": 917,
+          "h": 34,
+          "confidence": 0.97,
+          "evidence": "bottom band: 30 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "30 17 930 64",
+        "ms": 4.172542016021907,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 820,
+          "w": 960,
+          "h": 114
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 64.15670798742212
+    },
+    {
+      "file": "c1dc9ecd737e1e4c_0085.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/c1dc9ecd737e1e4c_0085.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": {
+          "x": 32,
+          "y": 256,
+          "w": 917,
+          "h": 301,
+          "confidence": 0.99,
+          "evidence": "skin component (139875 px) inside light photo card"
+        },
+        "data": null,
+        "mrz": {
+          "x": 7,
+          "y": 556,
+          "w": 939,
+          "h": 83,
+          "confidence": 0.97,
+          "evidence": "bottom band: 83 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "U<TTTTTTTUTUUTUUUUTUUTUUUUMAHMUUUUUUUUUUUUUU",
+        "line2": "UUHHHUTHH0NHH0000000<00000000WUNNNNNNNNNNN11",
+        "conf1": 77,
+        "conf2": 49,
+        "band": "0 148 916 21",
+        "ms": 6.667832989478484,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 457,
+          "w": 960,
+          "h": 236
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: invalid field content",
+        "fields": {}
+      },
+      "mrz": "U<TTTTTTTUTUUTUUUUTUUTUUUUMAHMUUUUUUUUUUUUUU\nUUHHHUTHH0NHH0000000<00000000WUNNNNNNNNNNN11",
+      "verified": false,
+      "ms": 156.70070800115354
+    },
+    {
+      "file": "c2aee55b9017575f_0028.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/c2aee55b9017575f_0028.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 0,
+          "y": 37,
+          "w": 926,
+          "h": 496,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (496 rows)"
+        },
+        "mrz": {
+          "x": 0,
+          "y": 533,
+          "w": 898,
+          "h": 67,
+          "confidence": 0.97,
+          "evidence": "bottom band: 67 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "U<MHMNUHTHHTTTTNHHHHAATUAAHATWTTUTUUITUTUITT",
+        "line2": "LDUUUH0UU0NHH0190000M0000000U9HKK6NK6<NHRH46",
+        "conf1": 64,
+        "conf2": 43,
+        "band": "0 127 906 21",
+        "ms": 6.322791014099494,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 453,
+          "w": 960,
+          "h": 217
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: invalid field content",
+        "fields": {}
+      },
+      "mrz": "U<MHMNUHTHHTTTTNHHHHAATUAAHATWTTUTUUITUTUITT\nLDUUUH0UU0NHH0190000M0000000U9HKK6NK6<NHRH46",
+      "verified": false,
+      "ms": 45.52183399209753
+    },
+    {
+      "file": "cb64e780ab32f735_0004.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/cb64e780ab32f735_0004.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 8,
+          "y": 45,
+          "w": 951,
+          "h": 1184,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (1043 rows)"
+        },
+        "mrz": {
+          "x": 37,
+          "y": 1229,
+          "w": 922,
+          "h": 68,
+          "confidence": 0.97,
+          "evidence": "bottom band: 60 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "T<NAMJUMMMMAGTWWUUUUIUNGNUNAWAAWTGGGTGTGTTII",
+        "line2": "ANOTZ11T00SUS0619111M1911118N16US1UNPJ3JTO11",
+        "conf1": 78,
+        "conf2": 57,
+        "band": "29 129 880 20",
+        "ms": 6.4761670073494315,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 1148,
+          "w": 960,
+          "h": 214
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: invalid field content",
+        "fields": {}
+      },
+      "mrz": "T<NAMJUMMMMAGTWWUUUUIUNGNUNAWAAWTGGGTGTGTTII\nANOTZ11T00SUS0619111M1911118N16US1UNPJ3JTO11",
+      "verified": false,
+      "ms": 75.91137499548495
+    },
+    {
+      "file": "cd83b43756aff32d_0013.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/cd83b43756aff32d_0013.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": {
+          "x": 543,
+          "y": 164,
+          "w": 57,
+          "h": 140,
+          "confidence": 0.615,
+          "evidence": "skin component (2608 px) inside light photo card"
+        },
+        "data": null,
+        "mrz": {
+          "x": 0,
+          "y": 335,
+          "w": 600,
+          "h": 41,
+          "confidence": 0.97,
+          "evidence": "bottom band: 41 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "T<TTWWTWUWTWTUUTTGJTJUMTMMMMTTUMMMTMTTTTTTTT",
+        "line2": "TUIUU0UUU0UUM9188000M1009001TAW0W0TNNNNNNN44",
+        "conf1": 86,
+        "conf2": 49,
+        "band": "0 78 600 13",
+        "ms": 5.91920901206322,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 286,
+          "w": 600,
+          "h": 135
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: invalid field content",
+        "fields": {}
+      },
+      "mrz": "T<TTWWTWUWTWTUUTTGJTJUMTMMMMTTUMMMTMTTTTTTTT\nTUIUU0UUU0UUM9188000M1009001TAW0W0TNNNNNNN44",
+      "verified": false,
+      "ms": 22.942000010516495
+    },
+    {
+      "file": "cdcc06ad360b7849_0019.png",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/cdcc06ad360b7849_0019.png",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": {
+          "x": 375,
+          "y": 998,
+          "w": 250,
+          "h": 57,
+          "confidence": 0.772,
+          "evidence": "skin component (8877 px) inside light photo card"
+        },
+        "data": null,
+        "mrz": {
+          "x": 98,
+          "y": 1054,
+          "w": 655,
+          "h": 53,
+          "confidence": 0.97,
+          "evidence": "bottom band: 50 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "19 0 750 150",
+        "ms": 4.284499998902902,
+        "err": "",
+        "crop": {
+          "x": 35,
+          "y": 991,
+          "w": 781,
+          "h": 179
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 113.39933300041594
+    },
+    {
+      "file": "dd6a2ea3ce305a5d_0192.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/dd6a2ea3ce305a5d_0192.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": {
+          "x": 53,
+          "y": 496,
+          "w": 88,
+          "h": 111,
+          "confidence": 0.672,
+          "evidence": "skin component (4891 px) inside light photo card"
+        },
+        "data": {
+          "x": 39,
+          "y": 508,
+          "w": 440,
+          "h": 98,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (98 rows)"
+        },
+        "mrz": {
+          "x": 21,
+          "y": 606,
+          "w": 547,
+          "h": 188,
+          "confidence": 0.97,
+          "evidence": "bottom band: 188 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "19 277 557 71",
+        "ms": 4.028083989396691,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 381,
+          "w": 600,
+          "h": 460
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 31.788624997716397
+    },
+    {
+      "file": "e350cea71e824345_0007.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/e350cea71e824345_0007.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": {
+          "x": 4,
+          "y": 3,
+          "w": 956,
+          "h": 157,
+          "confidence": 0.99,
+          "evidence": "skin component (86176 px) inside light photo card"
+        },
+        "data": null,
+        "mrz": {
+          "x": 0,
+          "y": 531,
+          "w": 960,
+          "h": 68,
+          "confidence": 0.97,
+          "evidence": "bottom band: 68 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "U<ABOQIHWHOHAHAQIIBWAQWDHIHWAAHHAHHHAAHHHHAT",
+        "line2": "UB00OOOOO0MHA0090000M0090910HUBO0OMOMBBAAA89",
+        "conf1": 67,
+        "conf2": 50,
+        "band": "0 81 960 68",
+        "ms": 6.341208994854242,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 450,
+          "w": 960,
+          "h": 219
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: invalid field content",
+        "fields": {}
+      },
+      "mrz": "U<ABOQIHWHOHAHAQIIBWAQWDHIHWAAHHAHHHAAHHHHAT\nUB00OOOOO0MHA0090000M0090910HUBO0OMOMBBAAA89",
+      "verified": false,
+      "ms": 128.79079100093804
+    },
+    {
+      "file": "e564d4372e28b9ed_0018.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/e564d4372e28b9ed_0018.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": {
+          "x": 516,
+          "y": 421,
+          "w": 77,
+          "h": 49,
+          "confidence": 0.617,
+          "evidence": "skin component (2697 px) inside light photo card"
+        },
+        "data": {
+          "x": 0,
+          "y": 421,
+          "w": 960,
+          "h": 83,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (83 rows)"
+        },
+        "mrz": {
+          "x": 0,
+          "y": 531,
+          "w": 960,
+          "h": 68,
+          "confidence": 0.97,
+          "evidence": "bottom band: 68 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "U<UUUUUUHUUUUUUUUHUUUUUUUUUUHUHUUUUUUUUUUUUU",
+        "line2": "UUUUUUUYH0UHH0000000M0000000UUUUHUUUUUUUMY00",
+        "conf1": 86,
+        "conf2": 54,
+        "band": "0 0 960 23",
+        "ms": 6.365167006151751,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 450,
+          "w": 960,
+          "h": 214
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: invalid field content",
+        "fields": {}
+      },
+      "mrz": "U<UUUUUUHUUUUUUUUHUUUUUUUUUUHUHUUUUUUUUUUUUU\nUUUUUUUYH0UHH0000000M0000000UUUUHUUUUUUUMY00",
+      "verified": false,
+      "ms": 41.757708007935435
+    },
+    {
+      "file": "e726442c11085334_0090.png",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/e726442c11085334_0090.png",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 11,
+          "y": 30,
+          "w": 948,
+          "h": 525,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (525 rows)"
+        },
+        "mrz": {
+          "x": 41,
+          "y": 555,
+          "w": 869,
+          "h": 67,
+          "confidence": 0.97,
+          "evidence": "bottom band: 67 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "N<UWUUNUOUHUHHHUHUWHHHHHHHHHHHHHHHHHHHHHHHHH",
+        "line2": "HA00000000HWH0000000M0000009H000000HUH0WHH00",
+        "conf1": 90,
+        "conf2": 65,
+        "band": "33 79 886 68",
+        "ms": 6.295708997640759,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 475,
+          "w": 960,
+          "h": 211
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: invalid field content",
+        "fields": {}
+      },
+      "mrz": "N<UWUUNUOUHUHHHUHUWHHHHHHHHHHHHHHHHHHHHHHHHH\nHA00000000HWH0000000M0000009H000000HUH0WHH00",
+      "verified": false,
+      "ms": 53.45820798538625
+    },
+    {
+      "file": "f22471c46575ec04_0008.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/f22471c46575ec04_0008.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": {
+          "x": 45,
+          "y": 16,
+          "w": 169,
+          "h": 96,
+          "confidence": 0.694,
+          "evidence": "skin component (5747 px) inside light photo card"
+        },
+        "data": {
+          "x": 0,
+          "y": 39,
+          "w": 960,
+          "h": 463,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (463 rows)"
+        },
+        "mrz": {
+          "x": 0,
+          "y": 543,
+          "w": 907,
+          "h": 67,
+          "confidence": 0.97,
+          "evidence": "bottom band: 67 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "L<WUMMUMUMMTTTAMMUMMUMAMMUUMMMTTTTTTIIITTTIT",
+        "line2": "LAN3UUDA90MHA0000011M0190990TOT9UUSKKKKS4444",
+        "conf1": 88,
+        "conf2": 51,
+        "band": "0 128 916 20",
+        "ms": 6.625457986956462,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 463,
+          "w": 960,
+          "h": 212
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: invalid field content",
+        "fields": {}
+      },
+      "mrz": "L<WUMMUMUMMTTTAMMUMMUMAMMUUMMMTTTTTTIIITTTIT\nLAN3UUDA90MHA0000011M0190990TOT9UUSKKKKS4444",
+      "verified": false,
+      "ms": 51.2714579817839
+    },
+    {
+      "file": "f385b0113d785dfd_0040.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/f385b0113d785dfd_0040.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": {
+          "x": 404,
+          "y": 463,
+          "w": 331,
+          "h": 78,
+          "confidence": 0.983,
+          "evidence": "skin component (17324 px) inside light photo card"
+        },
+        "data": {
+          "x": 2,
+          "y": 463,
+          "w": 946,
+          "h": 24,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (24 rows)"
+        },
+        "mrz": {
+          "x": 48,
+          "y": 540,
+          "w": 856,
+          "h": 71,
+          "confidence": 0.97,
+          "evidence": "bottom band: 71 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "M<UUMUUMUHOOUIUWUHWWTWWIUUIIIIIIIII",
+        "line2": "WMNUWN0NN0HWU0000000M0900909UHHHRHHHHHHRH000",
+        "conf1": 77,
+        "conf2": 50,
+        "band": "40 132 870 25",
+        "ms": 6.148667016532272,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 455,
+          "w": 960,
+          "h": 199
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 63.02441700245254
+    },
+    {
+      "file": "f46cf4a378fcd626_0015.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/f46cf4a378fcd626_0015.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": {
+          "x": 84,
+          "y": 197,
+          "w": 167,
+          "h": 214,
+          "confidence": 0.99,
+          "evidence": "skin component (24537 px) inside light photo card"
+        },
+        "data": {
+          "x": 0,
+          "y": 197,
+          "w": 960,
+          "h": 334,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (334 rows)"
+        },
+        "mrz": {
+          "x": 0,
+          "y": 531,
+          "w": 960,
+          "h": 131,
+          "confidence": 0.97,
+          "evidence": "bottom band: 131 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "0 0 960 58",
+        "ms": 4.865750001044944,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 374,
+          "w": 960,
+          "h": 288
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 62.14545798138715
+    },
+    {
+      "file": "f6132d0c5422d26a_0026.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/f6132d0c5422d26a_0026.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": {
+          "x": 798,
+          "y": 220,
+          "w": 63,
+          "h": 66,
+          "confidence": 0.596,
+          "evidence": "skin component (1850 px) inside light photo card"
+        },
+        "data": {
+          "x": 22,
+          "y": 228,
+          "w": 896,
+          "h": 211,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (211 rows)"
+        },
+        "mrz": {
+          "x": 49,
+          "y": 517,
+          "w": 848,
+          "h": 68,
+          "confidence": 0.97,
+          "evidence": "bottom band: 68 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "A<HOROCBIBHBNCHR<WWBWHUHD<BPBCIHBHR<<A<<<<<<",
+        "line2": "PPPOODD9M6WAA9806130M3006050<<<<<A<<<<<<<<06",
+        "conf1": 83,
+        "conf2": 57,
+        "band": "41 81 864 68",
+        "ms": 6.683665997115895,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 436,
+          "w": 960,
+          "h": 218
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: check digit mismatch",
+        "fields": {}
+      },
+      "mrz": "A<HOROCBIBHBNCHR<WWBWHUHD<BPBCIHBHR<<A<<<<<<\nPPPOODD9M6WAA9806130M3006050<<<<<A<<<<<<<<06",
+      "verified": false,
+      "ms": 46.369042014703155
+    },
+    {
+      "file": "f6eeb483a66e8d94_0084.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/f6eeb483a66e8d94_0084.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 37,
+          "y": 30,
+          "w": 923,
+          "h": 152,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (152 rows)"
+        },
+        "mrz": {
+          "x": 26,
+          "y": 182,
+          "w": 934,
+          "h": 420,
+          "confidence": 0.97,
+          "evidence": "bottom band: 420 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "",
+        "line2": "",
+        "conf1": 0,
+        "conf2": 0,
+        "band": "18 197 942 248",
+        "ms": 4.702000005636364,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "w": 960,
+          "h": 618
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 23.16437501576729
+    },
+    {
+      "file": "f80334b200240666_0034.png",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/f80334b200240666_0034.png",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": {
+          "x": 27,
+          "y": 103,
+          "w": 158,
+          "h": 185,
+          "confidence": 0.936,
+          "evidence": "skin component (15440 px) inside light photo card"
+        },
+        "data": {
+          "x": 32,
+          "y": 103,
+          "w": 505,
+          "h": 195,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (195 rows)"
+        },
+        "mrz": {
+          "x": 31,
+          "y": 318,
+          "w": 511,
+          "h": 40,
+          "confidence": 0.97,
+          "evidence": "bottom band: 40 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "N<TQQQOHITUII<QOOQIQUII<NWAITHTAATMAATPTTAWW",
+        "line2": "TTHO0OO0O0TAA9000060<9909009O00000000AAAWW06",
+        "conf1": 75,
+        "conf2": 57,
+        "band": "23 48 528 40",
+        "ms": 5.9017080056946725,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 270,
+          "w": 581,
+          "h": 136
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: check digit mismatch",
+        "fields": {}
+      },
+      "mrz": "N<TQQQOHITUII<QOOQIQUII<NWAITHTAATMAATPTTAWW\nTTHO0OO0O0TAA9000060<9909009O00000000AAAWW06",
+      "verified": false,
+      "ms": 31.836790993111208
+    },
+    {
+      "file": "f91e9a99cca60c68_0099.jpg",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/f91e9a99cca60c68_0099.jpg",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u9f50\u5168\uff1bOCR \u672a\u51fa\u5b8c\u6574\u4e24\u884c\uff08\u5de5\u5177\u5bf9\u4f4e\u5206\u8fa8\u7387\u7167\u7247\u7684\u5c40\u9650\uff09",
+      "loc": {
+        "photo": {
+          "x": 111,
+          "y": 892,
+          "w": 134,
+          "h": 185,
+          "confidence": 0.847,
+          "evidence": "skin component (11897 px) inside light photo card"
+        },
+        "data": {
+          "x": 29,
+          "y": 892,
+          "w": 909,
+          "h": 365,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (322 rows)"
+        },
+        "mrz": {
+          "x": 15,
+          "y": 1257,
+          "w": 906,
+          "h": 85,
+          "confidence": 0.97,
+          "evidence": "bottom band: 75 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": false,
+        "line1": "P<WZHAKNMVCDQN<<OHUHWATID<<<<<<<<<<<<<<<<<<<",
+        "line2": "",
+        "conf1": 79,
+        "conf2": 0,
+        "band": "7 101 921 86",
+        "ms": 5.653917003655806,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 1155,
+          "w": 960,
+          "h": 205
+        }
+      },
+      "decode": null,
+      "mrz": "",
+      "verified": false,
+      "ms": 79.52850000583567
+    },
+    {
+      "file": "ffa1dc640314fa58_0089.png",
+      "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/assets/pic/ffa1dc640314fa58_0089.png",
+      "grade": "PASS",
+      "reason": "MRZ \u533a\u5b9a\u4f4d\u6210\u529f\uff0c\u7167\u7247/\u6570\u636e\u533a\u7f3a\u5931\uff1bOCR \u51fa\u4e24\u884c\u4f46\u6821\u9a8c\u5931\u8d25",
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 31,
+          "y": 30,
+          "w": 874,
+          "h": 501,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (501 rows)"
+        },
+        "mrz": {
+          "x": 55,
+          "y": 531,
+          "w": 845,
+          "h": 68,
+          "confidence": 0.97,
+          "evidence": "bottom band: 68 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "ocr": {
+        "ok": true,
+        "line1": "U<IUIUWWIITUHUUHHUUWHHUUUUUHUUHHUIUHUIUUUUWT",
+        "line2": "UHMUBW90M0NIH0000000M0000000HUOH0UNAH0OKKH00",
+        "conf1": 72,
+        "conf2": 47,
+        "band": "48 127 860 23",
+        "ms": 6.174834008561447,
+        "err": "",
+        "crop": {
+          "x": 0,
+          "y": 450,
+          "w": 960,
+          "h": 209
+        }
+      },
+      "decode": {
+        "ok": false,
+        "err": "decode failed: invalid field content",
+        "fields": {}
+      },
+      "mrz": "U<IUIUWWIITUHUUHHUUWHHUUUUUHUUHHUIUHUIUUUUWT\nUHMUBW90M0NIH0000000M0000000HUOH0UNAH0OKKH00",
+      "verified": false,
+      "ms": 50.217707990668714
+    }
+  ]
+}

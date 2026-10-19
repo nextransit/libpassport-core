@@ -1,0 +1,4933 @@
+{
+  "meta": {
+    "_comment": "Region annotations (photo/data/mrz) generated via tests/passport_pipeline.locate / tests/passport_locator.locate_regions (same path as GUI and catalog builder, max_side=1200 with coordinates scaled back to full resolution). Coordinate format: absolute pixel [x,y,w,h], origin top-left. Regions null/absent when locator found no evidence; auto-generated only, not human-reviewed — review before training.",
+    "generator": "tests/passport_pipeline.locate",
+    "generated_at": "2026-09-27T23:53:53+0800",
+    "classes": [
+      "photo",
+      "data",
+      "mrz"
+    ],
+    "coordinate_format": "pixel_xywh_absolute",
+    "auto_generated": true,
+    "human_reviewed": false
+  },
+  "counts": {
+    "total": 84,
+    "with_photo": 61,
+    "with_data": 68,
+    "with_mrz": 83,
+    "with_all_three": 45
+  },
+  "errors": [],
+  "annotations": {
+    "08806d29a6268e1f_0003.jpg": {
+      "size": [
+        600,
+        429
+      ],
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 34,
+          "y": 30,
+          "w": 532,
+          "h": 284,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (284 rows)"
+        },
+        "mrz": {
+          "x": 25,
+          "y": 342,
+          "w": 544,
+          "h": 50,
+          "confidence": 0.97,
+          "evidence": "bottom band: 50 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "data",
+          "bbox": [
+            34,
+            30,
+            532,
+            284
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (284 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            25,
+            342,
+            544,
+            50
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 50 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "0c7ddb43a8ff36a4_0033.png": {
+      "size": [
+        960,
+        1367
+      ],
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 54,
+          "y": 34,
+          "w": 906,
+          "h": 713,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (626 rows)"
+        },
+        "mrz": {
+          "x": 32,
+          "y": 747,
+          "w": 927,
+          "h": 50,
+          "confidence": 0.97,
+          "evidence": "bottom band: 44 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "data",
+          "bbox": [
+            54,
+            34,
+            906,
+            713
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (626 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            32,
+            747,
+            927,
+            50
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 44 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "0f9780b8e1e3cc21_0008.jpg": {
+      "size": [
+        960,
+        1317
+      ],
+      "loc": {
+        "photo": {
+          "x": 292,
+          "y": 241,
+          "w": 258,
+          "h": 352,
+          "confidence": 0.99,
+          "evidence": "skin component (33656 px) inside light photo card"
+        },
+        "data": {
+          "x": 0,
+          "y": 241,
+          "w": 959,
+          "h": 992,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (904 rows)"
+        },
+        "mrz": {
+          "x": 0,
+          "y": 1260,
+          "w": 904,
+          "h": 31,
+          "confidence": 0.97,
+          "evidence": "bottom band: 28 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            292,
+            241,
+            258,
+            352
+          ],
+          "confidence": 0.99,
+          "evidence": "skin component (33656 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            0,
+            241,
+            959,
+            992
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (904 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            0,
+            1260,
+            904,
+            31
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 28 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "16c07a99a0fb81e4_0013.jpg": {
+      "size": [
+        600,
+        416
+      ],
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 28,
+          "y": 30,
+          "w": 547,
+          "h": 268,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (268 rows)"
+        },
+        "mrz": {
+          "x": 29,
+          "y": 327,
+          "w": 547,
+          "h": 50,
+          "confidence": 0.97,
+          "evidence": "bottom band: 50 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "data",
+          "bbox": [
+            28,
+            30,
+            547,
+            268
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (268 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            29,
+            327,
+            547,
+            50
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 50 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "16e75f8372cca686_0010.jpg": {
+      "size": [
+        960,
+        1342
+      ],
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 4,
+          "y": 39,
+          "w": 952,
+          "h": 1132,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (1012 rows)"
+        },
+        "mrz": {
+          "x": 41,
+          "y": 1211,
+          "w": 860,
+          "h": 27,
+          "confidence": 0.97,
+          "evidence": "bottom band: 24 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "data",
+          "bbox": [
+            4,
+            39,
+            952,
+            1132
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (1012 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            41,
+            1211,
+            860,
+            27
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 24 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "1792f7a2d79c7a8a_0017.jpg": {
+      "size": [
+        960,
+        649
+      ],
+      "loc": {
+        "photo": {
+          "x": 84,
+          "y": 209,
+          "w": 146,
+          "h": 247,
+          "confidence": 0.99,
+          "evidence": "skin component (25161 px) inside light photo card"
+        },
+        "data": {
+          "x": 33,
+          "y": 209,
+          "w": 901,
+          "h": 362,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (362 rows)"
+        },
+        "mrz": {
+          "x": 30,
+          "y": 593,
+          "w": 887,
+          "h": 32,
+          "confidence": 0.97,
+          "evidence": "bottom band: 32 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            84,
+            209,
+            146,
+            247
+          ],
+          "confidence": 0.99,
+          "evidence": "skin component (25161 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            33,
+            209,
+            901,
+            362
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (362 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            30,
+            593,
+            887,
+            32
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 32 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "1a62700c228ccff5_0053.jpg": {
+      "size": [
+        960,
+        1339
+      ],
+      "loc": {
+        "photo": {
+          "x": 725,
+          "y": 296,
+          "w": 65,
+          "h": 40,
+          "confidence": 0.574,
+          "evidence": "skin component (963 px) inside light photo card"
+        },
+        "data": {
+          "x": 7,
+          "y": 296,
+          "w": 953,
+          "h": 973,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (872 rows)"
+        },
+        "mrz": {
+          "x": 131,
+          "y": 1269,
+          "w": 829,
+          "h": 29,
+          "confidence": 0.97,
+          "evidence": "bottom band: 26 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            725,
+            296,
+            65,
+            40
+          ],
+          "confidence": 0.574,
+          "evidence": "skin component (963 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            7,
+            296,
+            953,
+            973
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (872 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            131,
+            1269,
+            829,
+            29
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 26 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "1c6acd092dee7031_0222.png": {
+      "size": [
+        700,
+        442
+      ],
+      "loc": {
+        "photo": {
+          "x": 76,
+          "y": 183,
+          "w": 83,
+          "h": 97,
+          "confidence": 0.627,
+          "evidence": "skin component (3092 px) inside light photo card"
+        },
+        "data": {
+          "x": 32,
+          "y": 183,
+          "w": 635,
+          "h": 166,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (166 rows)"
+        },
+        "mrz": {
+          "x": 33,
+          "y": 378,
+          "w": 636,
+          "h": 30,
+          "confidence": 0.97,
+          "evidence": "bottom band: 30 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            76,
+            183,
+            83,
+            97
+          ],
+          "confidence": 0.627,
+          "evidence": "skin component (3092 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            32,
+            183,
+            635,
+            166
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (166 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            33,
+            378,
+            636,
+            30
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 30 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "1cce0f3fc387c893_0001.jpg": {
+      "size": [
+        432,
+        295
+      ],
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 12,
+          "y": 30,
+          "w": 406,
+          "h": 129,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (129 rows)"
+        },
+        "mrz": {
+          "x": 10,
+          "y": 159,
+          "w": 412,
+          "h": 51,
+          "confidence": 0.97,
+          "evidence": "bottom band: 51 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "data",
+          "bbox": [
+            12,
+            30,
+            406,
+            129
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (129 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            10,
+            159,
+            412,
+            51
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 51 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "1f2efa72ff601a1c_0112.jpg": {
+      "size": [
+        960,
+        1353
+      ],
+      "loc": {
+        "photo": {
+          "x": 867,
+          "y": 303,
+          "w": 46,
+          "h": 47,
+          "confidence": 0.575,
+          "evidence": "skin component (1011 px) inside light photo card"
+        },
+        "data": null,
+        "mrz": {
+          "x": 0,
+          "y": 768,
+          "w": 938,
+          "h": 76,
+          "confidence": 0.97,
+          "evidence": "bottom band: 67 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            867,
+            303,
+            46,
+            47
+          ],
+          "confidence": 0.575,
+          "evidence": "skin component (1011 px) inside light photo card"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            0,
+            768,
+            938,
+            76
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 67 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "239e042aba0c3ab2_0102.jpg": {
+      "size": [
+        960,
+        668
+      ],
+      "loc": {
+        "photo": {
+          "x": 48,
+          "y": 224,
+          "w": 152,
+          "h": 184,
+          "confidence": 0.837,
+          "evidence": "skin component (11499 px) inside light photo card"
+        },
+        "data": {
+          "x": 35,
+          "y": 224,
+          "w": 925,
+          "h": 351,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (351 rows)"
+        },
+        "mrz": {
+          "x": 40,
+          "y": 597,
+          "w": 920,
+          "h": 30,
+          "confidence": 0.97,
+          "evidence": "bottom band: 30 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            48,
+            224,
+            152,
+            184
+          ],
+          "confidence": 0.837,
+          "evidence": "skin component (11499 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            35,
+            224,
+            925,
+            351
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (351 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            40,
+            597,
+            920,
+            30
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 30 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "23f16a7d9b6ab9da_0062.jpg": {
+      "size": [
+        569,
+        407
+      ],
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 15,
+          "y": 30,
+          "w": 536,
+          "h": 264,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (264 rows)"
+        },
+        "mrz": {
+          "x": 20,
+          "y": 318,
+          "w": 520,
+          "h": 48,
+          "confidence": 0.97,
+          "evidence": "bottom band: 48 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "data",
+          "bbox": [
+            15,
+            30,
+            536,
+            264
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (264 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            20,
+            318,
+            520,
+            48
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 48 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "28a42952ba25584a_0078.png": {
+      "size": [
+        471,
+        650
+      ],
+      "loc": {
+        "photo": {
+          "x": 38,
+          "y": 422,
+          "w": 79,
+          "h": 87,
+          "confidence": 0.666,
+          "evidence": "skin component (4626 px) inside light photo card"
+        },
+        "data": {
+          "x": 30,
+          "y": 432,
+          "w": 441,
+          "h": 76,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (76 rows)"
+        },
+        "mrz": {
+          "x": 11,
+          "y": 508,
+          "w": 460,
+          "h": 33,
+          "confidence": 0.97,
+          "evidence": "bottom band: 33 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            38,
+            422,
+            79,
+            87
+          ],
+          "confidence": 0.666,
+          "evidence": "skin component (4626 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            30,
+            432,
+            441,
+            76
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (76 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            11,
+            508,
+            460,
+            33
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 33 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "28ccd101a752acef_0016.jpg": {
+      "size": [
+        960,
+        658
+      ],
+      "loc": {
+        "photo": {
+          "x": 120,
+          "y": 244,
+          "w": 71,
+          "h": 56,
+          "confidence": 0.581,
+          "evidence": "skin component (1230 px) inside light photo card"
+        },
+        "data": {
+          "x": 54,
+          "y": 244,
+          "w": 855,
+          "h": 323,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (323 rows)"
+        },
+        "mrz": {
+          "x": 55,
+          "y": 593,
+          "w": 861,
+          "h": 27,
+          "confidence": 0.97,
+          "evidence": "bottom band: 27 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            120,
+            244,
+            71,
+            56
+          ],
+          "confidence": 0.581,
+          "evidence": "skin component (1230 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            54,
+            244,
+            855,
+            323
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (323 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            55,
+            593,
+            861,
+            27
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 27 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "2c793efe12276f9b_0258.jpg": {
+      "size": [
+        960,
+        635
+      ],
+      "loc": {
+        "photo": {
+          "x": 742,
+          "y": 436,
+          "w": 218,
+          "h": 51,
+          "confidence": 0.74,
+          "evidence": "skin component (7607 px) inside light photo card"
+        },
+        "data": null,
+        "mrz": {
+          "x": 38,
+          "y": 565,
+          "w": 883,
+          "h": 30,
+          "confidence": 0.97,
+          "evidence": "bottom band: 30 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            742,
+            436,
+            218,
+            51
+          ],
+          "confidence": 0.74,
+          "evidence": "skin component (7607 px) inside light photo card"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            38,
+            565,
+            883,
+            30
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 30 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "2d6029eb8d489f68_0004.jpg": {
+      "size": [
+        960,
+        1255
+      ],
+      "loc": {
+        "photo": {
+          "x": 239,
+          "y": 798,
+          "w": 28,
+          "h": 49,
+          "confidence": 0.581,
+          "evidence": "skin component (1241 px) inside light photo card"
+        },
+        "data": {
+          "x": 22,
+          "y": 798,
+          "w": 896,
+          "h": 48,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (46 rows)"
+        },
+        "mrz": {
+          "x": 16,
+          "y": 846,
+          "w": 935,
+          "h": 65,
+          "confidence": 0.97,
+          "evidence": "bottom band: 62 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            239,
+            798,
+            28,
+            49
+          ],
+          "confidence": 0.581,
+          "evidence": "skin component (1241 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            22,
+            798,
+            896,
+            48
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (46 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            16,
+            846,
+            935,
+            65
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 62 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "31611582cbf14d7f_0018.jpg": {
+      "size": [
+        1280,
+        872
+      ],
+      "loc": {
+        "photo": {
+          "x": 537,
+          "y": 622,
+          "w": 447,
+          "h": 157,
+          "confidence": 0.99,
+          "evidence": "skin component (38098 px) inside light photo card"
+        },
+        "data": {
+          "x": 3,
+          "y": 622,
+          "w": 1255,
+          "h": 124,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (116 rows)"
+        },
+        "mrz": {
+          "x": 57,
+          "y": 778,
+          "w": 1155,
+          "h": 42,
+          "confidence": 0.97,
+          "evidence": "bottom band: 39 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            537,
+            622,
+            447,
+            157
+          ],
+          "confidence": 0.99,
+          "evidence": "skin component (38098 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            3,
+            622,
+            1255,
+            124
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (116 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            57,
+            778,
+            1155,
+            42
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 39 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "3f5bb54276c6b754_0110.png": {
+      "size": [
+        960,
+        1341
+      ],
+      "loc": {
+        "photo": {
+          "x": 570,
+          "y": 175,
+          "w": 150,
+          "h": 230,
+          "confidence": 0.99,
+          "evidence": "skin component (19668 px) inside light photo card"
+        },
+        "data": {
+          "x": 0,
+          "y": 175,
+          "w": 960,
+          "h": 1143,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (1023 rows)"
+        },
+        "mrz": null
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            570,
+            175,
+            150,
+            230
+          ],
+          "confidence": 0.99,
+          "evidence": "skin component (19668 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            0,
+            175,
+            960,
+            1143
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (1023 rows)"
+        }
+      ]
+    },
+    "4023a0d69dbd6cf7_0120.jpg": {
+      "size": [
+        960,
+        1341
+      ],
+      "loc": {
+        "photo": {
+          "x": 200,
+          "y": 457,
+          "w": 111,
+          "h": 118,
+          "confidence": 0.651,
+          "evidence": "skin component (4042 px) inside light photo card"
+        },
+        "data": {
+          "x": 0,
+          "y": 457,
+          "w": 960,
+          "h": 796,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (712 rows)"
+        },
+        "mrz": {
+          "x": 31,
+          "y": 1277,
+          "w": 890,
+          "h": 30,
+          "confidence": 0.97,
+          "evidence": "bottom band: 27 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            200,
+            457,
+            111,
+            118
+          ],
+          "confidence": 0.651,
+          "evidence": "skin component (4042 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            0,
+            457,
+            960,
+            796
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (712 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            31,
+            1277,
+            890,
+            30
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 27 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "4086f51e94e9c5c7_0007.jpg": {
+      "size": [
+        960,
+        693
+      ],
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 0,
+          "y": 46,
+          "w": 960,
+          "h": 533,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (533 rows)"
+        },
+        "mrz": {
+          "x": 0,
+          "y": 602,
+          "w": 914,
+          "h": 29,
+          "confidence": 0.97,
+          "evidence": "bottom band: 29 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "data",
+          "bbox": [
+            0,
+            46,
+            960,
+            533
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (533 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            0,
+            602,
+            914,
+            29
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 29 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "41ab45d4bde758dc_0306.jpg": {
+      "size": [
+        960,
+        687
+      ],
+      "loc": {
+        "photo": {
+          "x": 858,
+          "y": 281,
+          "w": 65,
+          "h": 94,
+          "confidence": 0.61,
+          "evidence": "skin component (2394 px) inside light photo card"
+        },
+        "data": null,
+        "mrz": {
+          "x": 41,
+          "y": 593,
+          "w": 869,
+          "h": 29,
+          "confidence": 0.97,
+          "evidence": "bottom band: 29 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            858,
+            281,
+            65,
+            94
+          ],
+          "confidence": 0.61,
+          "evidence": "skin component (2394 px) inside light photo card"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            41,
+            593,
+            869,
+            29
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 29 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "43ecb49033fb30c1_0073.jpg": {
+      "size": [
+        960,
+        1355
+      ],
+      "loc": {
+        "photo": {
+          "x": 49,
+          "y": 836,
+          "w": 260,
+          "h": 330,
+          "confidence": 0.99,
+          "evidence": "skin component (38693 px) inside light photo card"
+        },
+        "data": {
+          "x": 11,
+          "y": 836,
+          "w": 867,
+          "h": 340,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (301 rows)"
+        },
+        "mrz": {
+          "x": 49,
+          "y": 1214,
+          "w": 845,
+          "h": 75,
+          "confidence": 0.97,
+          "evidence": "bottom band: 66 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            49,
+            836,
+            260,
+            330
+          ],
+          "confidence": 0.99,
+          "evidence": "skin component (38693 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            11,
+            836,
+            867,
+            340
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (301 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            49,
+            1214,
+            845,
+            75
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 66 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "4c5f5e1654002cd0_0050.png": {
+      "size": [
+        537,
+        753
+      ],
+      "loc": {
+        "photo": {
+          "x": 164,
+          "y": 149,
+          "w": 142,
+          "h": 225,
+          "confidence": 0.908,
+          "evidence": "skin component (14316 px) inside light photo card"
+        },
+        "data": {
+          "x": 2,
+          "y": 305,
+          "w": 535,
+          "h": 363,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (363 rows)"
+        },
+        "mrz": {
+          "x": 0,
+          "y": 687,
+          "w": 510,
+          "h": 48,
+          "confidence": 0.97,
+          "evidence": "bottom band: 48 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            164,
+            149,
+            142,
+            225
+          ],
+          "confidence": 0.908,
+          "evidence": "skin component (14316 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            2,
+            305,
+            535,
+            363
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (363 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            0,
+            687,
+            510,
+            48
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 48 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "4dbd1b9e24b069f4_0023.png": {
+      "size": [
+        960,
+        720
+      ],
+      "loc": {
+        "photo": {
+          "x": 143,
+          "y": 233,
+          "w": 150,
+          "h": 239,
+          "confidence": 0.99,
+          "evidence": "skin component (24565 px) inside light photo card"
+        },
+        "data": {
+          "x": 84,
+          "y": 239,
+          "w": 803,
+          "h": 406,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (406 rows)"
+        },
+        "mrz": {
+          "x": 77,
+          "y": 677,
+          "w": 780,
+          "h": 20,
+          "confidence": 0.97,
+          "evidence": "bottom band: 20 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            143,
+            233,
+            150,
+            239
+          ],
+          "confidence": 0.99,
+          "evidence": "skin component (24565 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            84,
+            239,
+            803,
+            406
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (406 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            77,
+            677,
+            780,
+            20
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 20 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "526d2e38b6b977bc_0014.jpg": {
+      "size": [
+        960,
+        671
+      ],
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 5,
+          "y": 30,
+          "w": 954,
+          "h": 50,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (50 rows)"
+        },
+        "mrz": {
+          "x": 0,
+          "y": 80,
+          "w": 960,
+          "h": 45,
+          "confidence": 0.97,
+          "evidence": "bottom band: 45 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "data",
+          "bbox": [
+            5,
+            30,
+            954,
+            50
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (50 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            0,
+            80,
+            960,
+            45
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 45 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "52f421c92ccf6ba4_0136.jpg": {
+      "size": [
+        960,
+        643
+      ],
+      "loc": {
+        "photo": {
+          "x": 328,
+          "y": 10,
+          "w": 632,
+          "h": 552,
+          "confidence": 0.99,
+          "evidence": "skin component (218904 px) inside light photo card"
+        },
+        "data": null,
+        "mrz": {
+          "x": 0,
+          "y": 561,
+          "w": 897,
+          "h": 29,
+          "confidence": 0.97,
+          "evidence": "bottom band: 29 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            328,
+            10,
+            632,
+            552
+          ],
+          "confidence": 0.99,
+          "evidence": "skin component (218904 px) inside light photo card"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            0,
+            561,
+            897,
+            29
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 29 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "556644d1d8bf4672_0215.jpg": {
+      "size": [
+        461,
+        649
+      ],
+      "loc": {
+        "photo": {
+          "x": 45,
+          "y": 432,
+          "w": 60,
+          "h": 78,
+          "confidence": 0.606,
+          "evidence": "skin component (2246 px) inside light photo card"
+        },
+        "data": {
+          "x": 9,
+          "y": 432,
+          "w": 448,
+          "h": 169,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (169 rows)"
+        },
+        "mrz": {
+          "x": 13,
+          "y": 610,
+          "w": 427,
+          "h": 19,
+          "confidence": 0.97,
+          "evidence": "bottom band: 19 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            45,
+            432,
+            60,
+            78
+          ],
+          "confidence": 0.606,
+          "evidence": "skin component (2246 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            9,
+            432,
+            448,
+            169
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (169 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            13,
+            610,
+            427,
+            19
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 19 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "58b7776585fe04f3_0024.jpg": {
+      "size": [
+        960,
+        1334
+      ],
+      "loc": {
+        "photo": {
+          "x": 145,
+          "y": 1121,
+          "w": 150,
+          "h": 28,
+          "confidence": 0.58,
+          "evidence": "skin component (1205 px) inside light photo card"
+        },
+        "data": {
+          "x": 0,
+          "y": 1121,
+          "w": 956,
+          "h": 103,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (93 rows)"
+        },
+        "mrz": {
+          "x": 0,
+          "y": 1224,
+          "w": 899,
+          "h": 28,
+          "confidence": 0.97,
+          "evidence": "bottom band: 25 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            145,
+            1121,
+            150,
+            28
+          ],
+          "confidence": 0.58,
+          "evidence": "skin component (1205 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            0,
+            1121,
+            956,
+            103
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (93 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            0,
+            1224,
+            899,
+            28
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 25 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "5910a51436407dde_0086.jpg": {
+      "size": [
+        960,
+        1372
+      ],
+      "loc": {
+        "photo": {
+          "x": 79,
+          "y": 915,
+          "w": 184,
+          "h": 282,
+          "confidence": 0.99,
+          "evidence": "skin component (25007 px) inside light photo card"
+        },
+        "data": {
+          "x": 39,
+          "y": 915,
+          "w": 901,
+          "h": 362,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (317 rows)"
+        },
+        "mrz": {
+          "x": 30,
+          "y": 1303,
+          "w": 887,
+          "h": 26,
+          "confidence": 0.97,
+          "evidence": "bottom band: 23 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            79,
+            915,
+            184,
+            282
+          ],
+          "confidence": 0.99,
+          "evidence": "skin component (25007 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            39,
+            915,
+            901,
+            362
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (317 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            30,
+            1303,
+            887,
+            26
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 23 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "61d671ec161f22e3_0042.png": {
+      "size": [
+        960,
+        902
+      ],
+      "loc": {
+        "photo": {
+          "x": 281,
+          "y": 749,
+          "w": 187,
+          "h": 37,
+          "confidence": 0.67,
+          "evidence": "skin component (4817 px) inside light photo card"
+        },
+        "data": null,
+        "mrz": {
+          "x": 66,
+          "y": 785,
+          "w": 507,
+          "h": 50,
+          "confidence": 0.97,
+          "evidence": "bottom band: 50 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            281,
+            749,
+            187,
+            37
+          ],
+          "confidence": 0.67,
+          "evidence": "skin component (4817 px) inside light photo card"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            66,
+            785,
+            507,
+            50
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 50 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "63af2253ed025b0f_0012.png": {
+      "size": [
+        960,
+        1335
+      ],
+      "loc": {
+        "photo": {
+          "x": 90,
+          "y": 889,
+          "w": 122,
+          "h": 217,
+          "confidence": 0.933,
+          "evidence": "skin component (15333 px) inside light photo card"
+        },
+        "data": {
+          "x": 29,
+          "y": 891,
+          "w": 898,
+          "h": 324,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (291 rows)"
+        },
+        "mrz": {
+          "x": 20,
+          "y": 1242,
+          "w": 913,
+          "h": 27,
+          "confidence": 0.97,
+          "evidence": "bottom band: 24 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            90,
+            889,
+            122,
+            217
+          ],
+          "confidence": 0.933,
+          "evidence": "skin component (15333 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            29,
+            891,
+            898,
+            324
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (291 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            20,
+            1242,
+            913,
+            27
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 24 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "64cf2acb2e4f1593_0104.jpg": {
+      "size": [
+        960,
+        698
+      ],
+      "loc": {
+        "photo": null,
+        "data": null,
+        "mrz": {
+          "x": 0,
+          "y": 0,
+          "w": 960,
+          "h": 34,
+          "confidence": 0.97,
+          "evidence": "bottom band: 34 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "mrz",
+          "bbox": [
+            0,
+            0,
+            960,
+            34
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 34 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "698bfa379b5859ab_0088.jpg": {
+      "size": [
+        960,
+        1372
+      ],
+      "loc": {
+        "photo": {
+          "x": 79,
+          "y": 915,
+          "w": 184,
+          "h": 282,
+          "confidence": 0.99,
+          "evidence": "skin component (25007 px) inside light photo card"
+        },
+        "data": {
+          "x": 39,
+          "y": 915,
+          "w": 901,
+          "h": 362,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (317 rows)"
+        },
+        "mrz": {
+          "x": 30,
+          "y": 1303,
+          "w": 887,
+          "h": 26,
+          "confidence": 0.97,
+          "evidence": "bottom band: 23 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            79,
+            915,
+            184,
+            282
+          ],
+          "confidence": 0.99,
+          "evidence": "skin component (25007 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            39,
+            915,
+            901,
+            362
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (317 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            30,
+            1303,
+            887,
+            26
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 23 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "6b0e5919dd6f3ac8_0006.jpg": {
+      "size": [
+        600,
+        419
+      ],
+      "loc": {
+        "photo": {
+          "x": 0,
+          "y": 115,
+          "w": 180,
+          "h": 219,
+          "confidence": 0.99,
+          "evidence": "skin component (19619 px) inside light photo card"
+        },
+        "data": {
+          "x": 13,
+          "y": 115,
+          "w": 577,
+          "h": 175,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (175 rows)"
+        },
+        "mrz": {
+          "x": 26,
+          "y": 333,
+          "w": 552,
+          "h": 52,
+          "confidence": 0.97,
+          "evidence": "bottom band: 52 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            0,
+            115,
+            180,
+            219
+          ],
+          "confidence": 0.99,
+          "evidence": "skin component (19619 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            13,
+            115,
+            577,
+            175
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (175 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            26,
+            333,
+            552,
+            52
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 52 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "6b91117492dc24f3_0022.jpg": {
+      "size": [
+        960,
+        685
+      ],
+      "loc": {
+        "photo": {
+          "x": 4,
+          "y": 495,
+          "w": 956,
+          "h": 49,
+          "confidence": 0.99,
+          "evidence": "skin component (35138 px) inside light photo card"
+        },
+        "data": null,
+        "mrz": {
+          "x": 36,
+          "y": 543,
+          "w": 868,
+          "h": 75,
+          "confidence": 0.97,
+          "evidence": "bottom band: 75 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            4,
+            495,
+            956,
+            49
+          ],
+          "confidence": 0.99,
+          "evidence": "skin component (35138 px) inside light photo card"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            36,
+            543,
+            868,
+            75
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 75 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "6dafa3b35c792d06_0039.png": {
+      "size": [
+        960,
+        614
+      ],
+      "loc": {
+        "photo": {
+          "x": 493,
+          "y": 218,
+          "w": 342,
+          "h": 121,
+          "confidence": 0.815,
+          "evidence": "skin component (10599 px) inside light photo card"
+        },
+        "data": {
+          "x": 12,
+          "y": 218,
+          "w": 948,
+          "h": 291,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (291 rows)"
+        },
+        "mrz": {
+          "x": 28,
+          "y": 532,
+          "w": 932,
+          "h": 27,
+          "confidence": 0.97,
+          "evidence": "bottom band: 27 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            493,
+            218,
+            342,
+            121
+          ],
+          "confidence": 0.815,
+          "evidence": "skin component (10599 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            12,
+            218,
+            948,
+            291
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (291 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            28,
+            532,
+            932,
+            27
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 27 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "7294ad26ea8d95e0_0010.jpg": {
+      "size": [
+        960,
+        668
+      ],
+      "loc": {
+        "photo": {
+          "x": 88,
+          "y": 256,
+          "w": 82,
+          "h": 67,
+          "confidence": 0.597,
+          "evidence": "skin component (1864 px) inside light photo card"
+        },
+        "data": {
+          "x": 38,
+          "y": 256,
+          "w": 922,
+          "h": 238,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (238 rows)"
+        },
+        "mrz": {
+          "x": 41,
+          "y": 552,
+          "w": 919,
+          "h": 60,
+          "confidence": 0.97,
+          "evidence": "bottom band: 60 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            88,
+            256,
+            82,
+            67
+          ],
+          "confidence": 0.597,
+          "evidence": "skin component (1864 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            38,
+            256,
+            922,
+            238
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (238 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            41,
+            552,
+            919,
+            60
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 60 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "72ef4ce48bf27731_0002.jpg": {
+      "size": [
+        500,
+        686
+      ],
+      "loc": {
+        "photo": {
+          "x": 47,
+          "y": 468,
+          "w": 69,
+          "h": 67,
+          "confidence": 0.606,
+          "evidence": "skin component (2244 px) inside light photo card"
+        },
+        "data": {
+          "x": 15,
+          "y": 468,
+          "w": 485,
+          "h": 147,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (147 rows)"
+        },
+        "mrz": {
+          "x": 12,
+          "y": 618,
+          "w": 482,
+          "h": 50,
+          "confidence": 0.97,
+          "evidence": "bottom band: 50 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            47,
+            468,
+            69,
+            67
+          ],
+          "confidence": 0.606,
+          "evidence": "skin component (2244 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            15,
+            468,
+            485,
+            147
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (147 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            12,
+            618,
+            482,
+            50
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 50 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "7626df394c39f314_0020.png": {
+      "size": [
+        960,
+        657
+      ],
+      "loc": {
+        "photo": {
+          "x": 117,
+          "y": 240,
+          "w": 117,
+          "h": 121,
+          "confidence": 0.692,
+          "evidence": "skin component (5662 px) inside light photo card"
+        },
+        "data": {
+          "x": 68,
+          "y": 240,
+          "w": 833,
+          "h": 296,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (296 rows)"
+        },
+        "mrz": {
+          "x": 59,
+          "y": 559,
+          "w": 836,
+          "h": 28,
+          "confidence": 0.97,
+          "evidence": "bottom band: 28 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            117,
+            240,
+            117,
+            121
+          ],
+          "confidence": 0.692,
+          "evidence": "skin component (5662 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            68,
+            240,
+            833,
+            296
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (296 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            59,
+            559,
+            836,
+            28
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 28 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "78f45152a658f728_0012.jpg": {
+      "size": [
+        960,
+        637
+      ],
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 1,
+          "y": 30,
+          "w": 924,
+          "h": 71,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (71 rows)"
+        },
+        "mrz": {
+          "x": 0,
+          "y": 101,
+          "w": 954,
+          "h": 45,
+          "confidence": 0.97,
+          "evidence": "bottom band: 45 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "data",
+          "bbox": [
+            1,
+            30,
+            924,
+            71
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (71 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            0,
+            101,
+            954,
+            45
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 45 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "7c5899e1f86a07a0_0008.jpg": {
+      "size": [
+        960,
+        658
+      ],
+      "loc": {
+        "photo": {
+          "x": 1,
+          "y": 488,
+          "w": 959,
+          "h": 85,
+          "confidence": 0.99,
+          "evidence": "skin component (66761 px) inside light photo card"
+        },
+        "data": null,
+        "mrz": {
+          "x": 47,
+          "y": 572,
+          "w": 861,
+          "h": 29,
+          "confidence": 0.97,
+          "evidence": "bottom band: 29 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            1,
+            488,
+            959,
+            85
+          ],
+          "confidence": 0.99,
+          "evidence": "skin component (66761 px) inside light photo card"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            47,
+            572,
+            861,
+            29
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 29 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "7c6f47bad47d70e9_0230.jpg": {
+      "size": [
+        648,
+        431
+      ],
+      "loc": {
+        "photo": {
+          "x": 284,
+          "y": 38,
+          "w": 240,
+          "h": 198,
+          "confidence": 0.99,
+          "evidence": "skin component (21472 px) inside light photo card"
+        },
+        "data": {
+          "x": 19,
+          "y": 64,
+          "w": 629,
+          "h": 247,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (247 rows)"
+        },
+        "mrz": {
+          "x": 19,
+          "y": 342,
+          "w": 596,
+          "h": 54,
+          "confidence": 0.97,
+          "evidence": "bottom band: 54 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            284,
+            38,
+            240,
+            198
+          ],
+          "confidence": 0.99,
+          "evidence": "skin component (21472 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            19,
+            64,
+            629,
+            247
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (247 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            19,
+            342,
+            596,
+            54
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 54 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "8627765d2a1a0bf9_0049.jpg": {
+      "size": [
+        960,
+        1350
+      ],
+      "loc": {
+        "photo": {
+          "x": 0,
+          "y": 669,
+          "w": 958,
+          "h": 590,
+          "confidence": 0.99,
+          "evidence": "skin component (376588 px) inside light photo card"
+        },
+        "data": null,
+        "mrz": {
+          "x": 39,
+          "y": 1258,
+          "w": 878,
+          "h": 29,
+          "confidence": 0.97,
+          "evidence": "bottom band: 26 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            0,
+            669,
+            958,
+            590
+          ],
+          "confidence": 0.99,
+          "evidence": "skin component (376588 px) inside light photo card"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            39,
+            1258,
+            878,
+            29
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 26 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "86c6d990773daff2_0002.jpg": {
+      "size": [
+        600,
+        408
+      ],
+      "loc": {
+        "photo": {
+          "x": 52,
+          "y": 93,
+          "w": 452,
+          "h": 231,
+          "confidence": 0.99,
+          "evidence": "skin component (27558 px) inside light photo card"
+        },
+        "data": {
+          "x": 37,
+          "y": 167,
+          "w": 563,
+          "h": 99,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (99 rows)"
+        },
+        "mrz": {
+          "x": 21,
+          "y": 323,
+          "w": 571,
+          "h": 51,
+          "confidence": 0.97,
+          "evidence": "bottom band: 51 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            52,
+            93,
+            452,
+            231
+          ],
+          "confidence": 0.99,
+          "evidence": "skin component (27558 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            37,
+            167,
+            563,
+            99
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (99 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            21,
+            323,
+            571,
+            51
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 51 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "8a5e3bc18a6ff7d2_0043.jpg": {
+      "size": [
+        960,
+        1389
+      ],
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 52,
+          "y": 35,
+          "w": 887,
+          "h": 1127,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (974 rows)"
+        },
+        "mrz": {
+          "x": 58,
+          "y": 1222,
+          "w": 840,
+          "h": 75,
+          "confidence": 0.97,
+          "evidence": "bottom band: 65 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "data",
+          "bbox": [
+            52,
+            35,
+            887,
+            1127
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (974 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            58,
+            1222,
+            840,
+            75
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 65 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "8de1f04907363a2d_0000.jpg": {
+      "size": [
+        600,
+        421
+      ],
+      "loc": {
+        "photo": {
+          "x": 0,
+          "y": 74,
+          "w": 199,
+          "h": 272,
+          "confidence": 0.99,
+          "evidence": "skin component (22096 px) inside light photo card"
+        },
+        "data": {
+          "x": 34,
+          "y": 91,
+          "w": 502,
+          "h": 202,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (202 rows)"
+        },
+        "mrz": {
+          "x": 20,
+          "y": 345,
+          "w": 554,
+          "h": 53,
+          "confidence": 0.97,
+          "evidence": "bottom band: 53 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            0,
+            74,
+            199,
+            272
+          ],
+          "confidence": 0.99,
+          "evidence": "skin component (22096 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            34,
+            91,
+            502,
+            202
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (202 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            20,
+            345,
+            554,
+            53
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 53 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "90b464ea218a9909_0001.jpg": {
+      "size": [
+        960,
+        678
+      ],
+      "loc": {
+        "photo": {
+          "x": 794,
+          "y": 13,
+          "w": 75,
+          "h": 150,
+          "confidence": 0.591,
+          "evidence": "skin component (1622 px) inside light photo card"
+        },
+        "data": {
+          "x": 34,
+          "y": 220,
+          "w": 881,
+          "h": 343,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (343 rows)"
+        },
+        "mrz": {
+          "x": 43,
+          "y": 590,
+          "w": 881,
+          "h": 31,
+          "confidence": 0.97,
+          "evidence": "bottom band: 31 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            794,
+            13,
+            75,
+            150
+          ],
+          "confidence": 0.591,
+          "evidence": "skin component (1622 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            34,
+            220,
+            881,
+            343
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (343 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            43,
+            590,
+            881,
+            31
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 31 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "927cd546b5a8111d_0108.jpg": {
+      "size": [
+        960,
+        696
+      ],
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 149,
+          "y": 52,
+          "w": 690,
+          "h": 63,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (63 rows)"
+        },
+        "mrz": {
+          "x": 36,
+          "y": 115,
+          "w": 897,
+          "h": 50,
+          "confidence": 0.97,
+          "evidence": "bottom band: 50 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "data",
+          "bbox": [
+            149,
+            52,
+            690,
+            63
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (63 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            36,
+            115,
+            897,
+            50
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 50 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "95f9bd53a7df7606_0079.png": {
+      "size": [
+        960,
+        635
+      ],
+      "loc": {
+        "photo": {
+          "x": 97,
+          "y": 248,
+          "w": 166,
+          "h": 89,
+          "confidence": 0.68,
+          "evidence": "skin component (5189 px) inside light photo card"
+        },
+        "data": {
+          "x": 38,
+          "y": 248,
+          "w": 885,
+          "h": 326,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (326 rows)"
+        },
+        "mrz": {
+          "x": 285,
+          "y": 574,
+          "w": 598,
+          "h": 25,
+          "confidence": 0.97,
+          "evidence": "bottom band: 25 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            97,
+            248,
+            166,
+            89
+          ],
+          "confidence": 0.68,
+          "evidence": "skin component (5189 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            38,
+            248,
+            885,
+            326
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (326 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            285,
+            574,
+            598,
+            25
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 25 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "a495fb368b46ab35_0280.png": {
+      "size": [
+        462,
+        642
+      ],
+      "loc": {
+        "photo": {
+          "x": 0,
+          "y": 0,
+          "w": 461,
+          "h": 559,
+          "confidence": 0.99,
+          "evidence": "skin component (177141 px) inside light photo card"
+        },
+        "data": null,
+        "mrz": {
+          "x": 4,
+          "y": 605,
+          "w": 458,
+          "h": 19,
+          "confidence": 0.97,
+          "evidence": "bottom band: 19 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            0,
+            0,
+            461,
+            559
+          ],
+          "confidence": 0.99,
+          "evidence": "skin component (177141 px) inside light photo card"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            4,
+            605,
+            458,
+            19
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 19 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "a5964dd742a6c084_0053.jpg": {
+      "size": [
+        960,
+        1372
+      ],
+      "loc": {
+        "photo": {
+          "x": 204,
+          "y": 470,
+          "w": 78,
+          "h": 53,
+          "confidence": 0.584,
+          "evidence": "skin component (1378 px) inside light photo card"
+        },
+        "data": {
+          "x": 17,
+          "y": 470,
+          "w": 934,
+          "h": 864,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (756 rows)"
+        },
+        "mrz": {
+          "x": 17,
+          "y": 1334,
+          "w": 941,
+          "h": 35,
+          "confidence": 0.97,
+          "evidence": "bottom band: 31 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            204,
+            470,
+            78,
+            53
+          ],
+          "confidence": 0.584,
+          "evidence": "skin component (1378 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            17,
+            470,
+            934,
+            864
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (756 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            17,
+            1334,
+            941,
+            35
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 31 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "a60aae34a06f1867_0016.jpg": {
+      "size": [
+        960,
+        684
+      ],
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 0,
+          "y": 41,
+          "w": 960,
+          "h": 535,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (535 rows)"
+        },
+        "mrz": {
+          "x": 44,
+          "y": 603,
+          "w": 880,
+          "h": 29,
+          "confidence": 0.97,
+          "evidence": "bottom band: 29 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "data",
+          "bbox": [
+            0,
+            41,
+            960,
+            535
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (535 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            44,
+            603,
+            880,
+            29
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 29 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "a955e21ae58d8c1d_0013.jpg": {
+      "size": [
+        960,
+        677
+      ],
+      "loc": {
+        "photo": {
+          "x": 63,
+          "y": 196,
+          "w": 160,
+          "h": 223,
+          "confidence": 0.99,
+          "evidence": "skin component (24787 px) inside light photo card"
+        },
+        "data": {
+          "x": 7,
+          "y": 197,
+          "w": 943,
+          "h": 361,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (361 rows)"
+        },
+        "mrz": {
+          "x": 1,
+          "y": 580,
+          "w": 883,
+          "h": 29,
+          "confidence": 0.97,
+          "evidence": "bottom band: 29 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            63,
+            196,
+            160,
+            223
+          ],
+          "confidence": 0.99,
+          "evidence": "skin component (24787 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            7,
+            197,
+            943,
+            361
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (361 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            1,
+            580,
+            883,
+            29
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 29 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "ab01dc87d9ed045a_0068.jpg": {
+      "size": [
+        960,
+        1337
+      ],
+      "loc": {
+        "photo": {
+          "x": 0,
+          "y": 2,
+          "w": 959,
+          "h": 691,
+          "confidence": 0.99,
+          "evidence": "skin component (143557 px) inside light photo card"
+        },
+        "data": null,
+        "mrz": {
+          "x": 38,
+          "y": 1246,
+          "w": 869,
+          "h": 29,
+          "confidence": 0.97,
+          "evidence": "bottom band: 26 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            0,
+            2,
+            959,
+            691
+          ],
+          "confidence": 0.99,
+          "evidence": "skin component (143557 px) inside light photo card"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            38,
+            1246,
+            869,
+            29
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 26 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "acd3e9fd1ce9bd0a_0016.jpg": {
+      "size": [
+        600,
+        423
+      ],
+      "loc": {
+        "photo": {
+          "x": 74,
+          "y": 123,
+          "w": 91,
+          "h": 161,
+          "confidence": 0.762,
+          "evidence": "skin component (8486 px) inside light photo card"
+        },
+        "data": {
+          "x": 10,
+          "y": 124,
+          "w": 565,
+          "h": 190,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (190 rows)"
+        },
+        "mrz": {
+          "x": 24,
+          "y": 339,
+          "w": 548,
+          "h": 50,
+          "confidence": 0.97,
+          "evidence": "bottom band: 50 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            74,
+            123,
+            91,
+            161
+          ],
+          "confidence": 0.762,
+          "evidence": "skin component (8486 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            10,
+            124,
+            565,
+            190
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (190 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            24,
+            339,
+            548,
+            50
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 50 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "acf14e0c631ec935_0030.png": {
+      "size": [
+        960,
+        655
+      ],
+      "loc": {
+        "photo": {
+          "x": 781,
+          "y": 271,
+          "w": 145,
+          "h": 139,
+          "confidence": 0.63,
+          "evidence": "skin component (3209 px) inside light photo card"
+        },
+        "data": null,
+        "mrz": {
+          "x": 22,
+          "y": 596,
+          "w": 903,
+          "h": 31,
+          "confidence": 0.97,
+          "evidence": "bottom band: 31 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            781,
+            271,
+            145,
+            139
+          ],
+          "confidence": 0.63,
+          "evidence": "skin component (3209 px) inside light photo card"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            22,
+            596,
+            903,
+            31
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 31 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "ae5fdb36f7498291_0019.png": {
+      "size": [
+        711,
+        453
+      ],
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 29,
+          "y": 30,
+          "w": 652,
+          "h": 316,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (316 rows)"
+        },
+        "mrz": {
+          "x": 15,
+          "y": 377,
+          "w": 660,
+          "h": 59,
+          "confidence": 0.97,
+          "evidence": "bottom band: 59 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "data",
+          "bbox": [
+            29,
+            30,
+            652,
+            316
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (316 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            15,
+            377,
+            660,
+            59
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 59 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "b1442018a8167bf5_0046.jpg": {
+      "size": [
+        800,
+        1090
+      ],
+      "loc": {
+        "photo": {
+          "x": 93,
+          "y": 247,
+          "w": 103,
+          "h": 159,
+          "confidence": 0.714,
+          "evidence": "skin component (6543 px) inside light photo card"
+        },
+        "data": {
+          "x": 0,
+          "y": 247,
+          "w": 800,
+          "h": 681,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (681 rows)"
+        },
+        "mrz": {
+          "x": 0,
+          "y": 928,
+          "w": 800,
+          "h": 47,
+          "confidence": 0.97,
+          "evidence": "bottom band: 47 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            93,
+            247,
+            103,
+            159
+          ],
+          "confidence": 0.714,
+          "evidence": "skin component (6543 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            0,
+            247,
+            800,
+            681
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (681 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            0,
+            928,
+            800,
+            47
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 47 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "b284565582147454_0098.jpg": {
+      "size": [
+        563,
+        422
+      ],
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 34,
+          "y": 41,
+          "w": 501,
+          "h": 311,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (311 rows)"
+        },
+        "mrz": {
+          "x": 30,
+          "y": 363,
+          "w": 513,
+          "h": 20,
+          "confidence": 0.97,
+          "evidence": "bottom band: 20 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "data",
+          "bbox": [
+            34,
+            41,
+            501,
+            311
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (311 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            30,
+            363,
+            513,
+            20
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 20 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "b284565582147454_0115.jpg": {
+      "size": [
+        563,
+        422
+      ],
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 34,
+          "y": 41,
+          "w": 501,
+          "h": 311,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (311 rows)"
+        },
+        "mrz": {
+          "x": 30,
+          "y": 363,
+          "w": 513,
+          "h": 20,
+          "confidence": 0.97,
+          "evidence": "bottom band: 20 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "data",
+          "bbox": [
+            34,
+            41,
+            501,
+            311
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (311 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            30,
+            363,
+            513,
+            20
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 20 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "b2b5008f3839530d_0001.jpg": {
+      "size": [
+        600,
+        442
+      ],
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 33,
+          "y": 38,
+          "w": 541,
+          "h": 277,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (277 rows)"
+        },
+        "mrz": {
+          "x": 29,
+          "y": 345,
+          "w": 533,
+          "h": 49,
+          "confidence": 0.97,
+          "evidence": "bottom band: 49 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "data",
+          "bbox": [
+            33,
+            38,
+            541,
+            277
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (277 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            29,
+            345,
+            533,
+            49
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 49 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "b30dc79ee9550e9e_0024.jpg": {
+      "size": [
+        600,
+        423
+      ],
+      "loc": {
+        "photo": {
+          "x": 55,
+          "y": 137,
+          "w": 86,
+          "h": 149,
+          "confidence": 0.787,
+          "evidence": "skin component (9478 px) inside light photo card"
+        },
+        "data": {
+          "x": 0,
+          "y": 141,
+          "w": 572,
+          "h": 157,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (157 rows)"
+        },
+        "mrz": {
+          "x": 0,
+          "y": 333,
+          "w": 575,
+          "h": 51,
+          "confidence": 0.97,
+          "evidence": "bottom band: 51 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            55,
+            137,
+            86,
+            149
+          ],
+          "confidence": 0.787,
+          "evidence": "skin component (9478 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            0,
+            141,
+            572,
+            157
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (157 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            0,
+            333,
+            575,
+            51
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 51 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "b43dea2a9c578cd0_0092.jpg": {
+      "size": [
+        960,
+        915
+      ],
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 0,
+          "y": 30,
+          "w": 960,
+          "h": 838,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (838 rows)"
+        },
+        "mrz": {
+          "x": 0,
+          "y": 868,
+          "w": 960,
+          "h": 31,
+          "confidence": 0.97,
+          "evidence": "bottom band: 31 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "data",
+          "bbox": [
+            0,
+            30,
+            960,
+            838
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (838 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            0,
+            868,
+            960,
+            31
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 31 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "b7a97ca0edede07b_0164.jpg": {
+      "size": [
+        348,
+        843
+      ],
+      "loc": {
+        "photo": {
+          "x": 173,
+          "y": 116,
+          "w": 100,
+          "h": 113,
+          "confidence": 0.721,
+          "evidence": "skin component (6852 px) inside light photo card"
+        },
+        "data": {
+          "x": 1,
+          "y": 116,
+          "w": 344,
+          "h": 589,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (589 rows)"
+        },
+        "mrz": {
+          "x": 31,
+          "y": 707,
+          "w": 299,
+          "h": 55,
+          "confidence": 0.97,
+          "evidence": "bottom band: 55 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            173,
+            116,
+            100,
+            113
+          ],
+          "confidence": 0.721,
+          "evidence": "skin component (6852 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            1,
+            116,
+            344,
+            589
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (589 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            31,
+            707,
+            299,
+            55
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 55 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "bc1ddfd8c13b5ca9_0007.jpg": {
+      "size": [
+        600,
+        413
+      ],
+      "loc": {
+        "photo": {
+          "x": 192,
+          "y": 103,
+          "w": 240,
+          "h": 231,
+          "confidence": 0.99,
+          "evidence": "skin component (25533 px) inside light photo card"
+        },
+        "data": {
+          "x": 10,
+          "y": 111,
+          "w": 574,
+          "h": 174,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (174 rows)"
+        },
+        "mrz": {
+          "x": 23,
+          "y": 333,
+          "w": 543,
+          "h": 51,
+          "confidence": 0.97,
+          "evidence": "bottom band: 51 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            192,
+            103,
+            240,
+            231
+          ],
+          "confidence": 0.99,
+          "evidence": "skin component (25533 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            10,
+            111,
+            574,
+            174
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (174 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            23,
+            333,
+            543,
+            51
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 51 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "c0cbf7c176328f3d_0006.jpg": {
+      "size": [
+        600,
+        406
+      ],
+      "loc": {
+        "photo": {
+          "x": 45,
+          "y": 139,
+          "w": 81,
+          "h": 38,
+          "confidence": 0.608,
+          "evidence": "skin component (2301 px) inside light photo card"
+        },
+        "data": {
+          "x": 23,
+          "y": 139,
+          "w": 547,
+          "h": 158,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (158 rows)"
+        },
+        "mrz": {
+          "x": 20,
+          "y": 332,
+          "w": 580,
+          "h": 52,
+          "confidence": 0.97,
+          "evidence": "bottom band: 52 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            45,
+            139,
+            81,
+            38
+          ],
+          "confidence": 0.608,
+          "evidence": "skin component (2301 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            23,
+            139,
+            547,
+            158
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (158 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            20,
+            332,
+            580,
+            52
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 52 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "c1a15c65d128223e_0067.jpeg": {
+      "size": [
+        960,
+        1343
+      ],
+      "loc": {
+        "photo": {
+          "x": 404,
+          "y": 832,
+          "w": 353,
+          "h": 216,
+          "confidence": 0.99,
+          "evidence": "skin component (25034 px) inside light photo card"
+        },
+        "data": {
+          "x": 36,
+          "y": 964,
+          "w": 920,
+          "h": 274,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (245 rows)"
+        },
+        "mrz": {
+          "x": 32,
+          "y": 1261,
+          "w": 927,
+          "h": 22,
+          "confidence": 0.97,
+          "evidence": "bottom band: 20 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            404,
+            832,
+            353,
+            216
+          ],
+          "confidence": 0.99,
+          "evidence": "skin component (25034 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            36,
+            964,
+            920,
+            274
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (245 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            32,
+            1261,
+            927,
+            22
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 20 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "c1dc9ecd737e1e4c_0085.jpg": {
+      "size": [
+        960,
+        693
+      ],
+      "loc": {
+        "photo": {
+          "x": 32,
+          "y": 256,
+          "w": 917,
+          "h": 345,
+          "confidence": 0.99,
+          "evidence": "skin component (167104 px) inside light photo card"
+        },
+        "data": null,
+        "mrz": {
+          "x": 0,
+          "y": 600,
+          "w": 916,
+          "h": 29,
+          "confidence": 0.97,
+          "evidence": "bottom band: 29 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            32,
+            256,
+            917,
+            345
+          ],
+          "confidence": 0.99,
+          "evidence": "skin component (167104 px) inside light photo card"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            0,
+            600,
+            916,
+            29
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 29 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "c2aee55b9017575f_0028.jpg": {
+      "size": [
+        960,
+        670
+      ],
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 0,
+          "y": 37,
+          "w": 926,
+          "h": 515,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (515 rows)"
+        },
+        "mrz": {
+          "x": 0,
+          "y": 576,
+          "w": 906,
+          "h": 28,
+          "confidence": 0.97,
+          "evidence": "bottom band: 28 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "data",
+          "bbox": [
+            0,
+            37,
+            926,
+            515
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (515 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            0,
+            576,
+            906,
+            28
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 28 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "cb64e780ab32f735_0004.jpg": {
+      "size": [
+        960,
+        1362
+      ],
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 8,
+          "y": 45,
+          "w": 951,
+          "h": 1203,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (1060 rows)"
+        },
+        "mrz": {
+          "x": 28,
+          "y": 1272,
+          "w": 881,
+          "h": 30,
+          "confidence": 0.97,
+          "evidence": "bottom band: 26 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "data",
+          "bbox": [
+            8,
+            45,
+            951,
+            1203
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (1060 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            28,
+            1272,
+            881,
+            30
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 26 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "cd83b43756aff32d_0013.jpg": {
+      "size": [
+        600,
+        421
+      ],
+      "loc": {
+        "photo": {
+          "x": 543,
+          "y": 164,
+          "w": 57,
+          "h": 140,
+          "confidence": 0.615,
+          "evidence": "skin component (2608 px) inside light photo card"
+        },
+        "data": null,
+        "mrz": {
+          "x": 0,
+          "y": 330,
+          "w": 600,
+          "h": 51,
+          "confidence": 0.97,
+          "evidence": "bottom band: 51 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            543,
+            164,
+            57,
+            140
+          ],
+          "confidence": 0.615,
+          "evidence": "skin component (2608 px) inside light photo card"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            0,
+            330,
+            600,
+            51
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 51 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "cdcc06ad360b7849_0019.png": {
+      "size": [
+        1280,
+        1203
+      ],
+      "loc": {
+        "photo": {
+          "x": 375,
+          "y": 998,
+          "w": 250,
+          "h": 50,
+          "confidence": 0.744,
+          "evidence": "skin component (7772 px) inside light photo card"
+        },
+        "data": null,
+        "mrz": {
+          "x": 90,
+          "y": 1047,
+          "w": 672,
+          "h": 65,
+          "confidence": 0.97,
+          "evidence": "bottom band: 61 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            375,
+            998,
+            250,
+            50
+          ],
+          "confidence": 0.744,
+          "evidence": "skin component (7772 px) inside light photo card"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            90,
+            1047,
+            672,
+            65
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 61 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "dd6a2ea3ce305a5d_0192.jpg": {
+      "size": [
+        600,
+        841
+      ],
+      "loc": {
+        "photo": {
+          "x": 53,
+          "y": 496,
+          "w": 88,
+          "h": 159,
+          "confidence": 0.719,
+          "evidence": "skin component (6777 px) inside light photo card"
+        },
+        "data": {
+          "x": 25,
+          "y": 508,
+          "w": 543,
+          "h": 221,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (221 rows)"
+        },
+        "mrz": {
+          "x": 13,
+          "y": 748,
+          "w": 551,
+          "h": 50,
+          "confidence": 0.97,
+          "evidence": "bottom band: 50 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            53,
+            496,
+            88,
+            159
+          ],
+          "confidence": 0.719,
+          "evidence": "skin component (6777 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            25,
+            508,
+            543,
+            221
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (221 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            13,
+            748,
+            551,
+            50
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 50 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "e350cea71e824345_0007.jpg": {
+      "size": [
+        960,
+        669
+      ],
+      "loc": {
+        "photo": {
+          "x": 4,
+          "y": 3,
+          "w": 956,
+          "h": 157,
+          "confidence": 0.99,
+          "evidence": "skin component (86176 px) inside light photo card"
+        },
+        "data": null,
+        "mrz": {
+          "x": 0,
+          "y": 574,
+          "w": 960,
+          "h": 29,
+          "confidence": 0.97,
+          "evidence": "bottom band: 29 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            4,
+            3,
+            956,
+            157
+          ],
+          "confidence": 0.99,
+          "evidence": "skin component (86176 px) inside light photo card"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            0,
+            574,
+            960,
+            29
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 29 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "e564d4372e28b9ed_0018.jpg": {
+      "size": [
+        960,
+        664
+      ],
+      "loc": {
+        "photo": {
+          "x": 516,
+          "y": 421,
+          "w": 77,
+          "h": 49,
+          "confidence": 0.617,
+          "evidence": "skin component (2697 px) inside light photo card"
+        },
+        "data": {
+          "x": 0,
+          "y": 421,
+          "w": 960,
+          "h": 128,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (128 rows)"
+        },
+        "mrz": {
+          "x": 0,
+          "y": 574,
+          "w": 960,
+          "h": 29,
+          "confidence": 0.97,
+          "evidence": "bottom band: 29 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            516,
+            421,
+            77,
+            49
+          ],
+          "confidence": 0.617,
+          "evidence": "skin component (2697 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            0,
+            421,
+            960,
+            128
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (128 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            0,
+            574,
+            960,
+            29
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 29 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "e726442c11085334_0090.png": {
+      "size": [
+        960,
+        686
+      ],
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 11,
+          "y": 30,
+          "w": 948,
+          "h": 545,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (545 rows)"
+        },
+        "mrz": {
+          "x": 34,
+          "y": 596,
+          "w": 883,
+          "h": 30,
+          "confidence": 0.97,
+          "evidence": "bottom band: 30 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "data",
+          "bbox": [
+            11,
+            30,
+            948,
+            545
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (545 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            34,
+            596,
+            883,
+            30
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 30 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "f22471c46575ec04_0008.jpg": {
+      "size": [
+        960,
+        675
+      ],
+      "loc": {
+        "photo": {
+          "x": 45,
+          "y": 16,
+          "w": 169,
+          "h": 96,
+          "confidence": 0.694,
+          "evidence": "skin component (5747 px) inside light photo card"
+        },
+        "data": {
+          "x": 0,
+          "y": 39,
+          "w": 960,
+          "h": 523,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (523 rows)"
+        },
+        "mrz": {
+          "x": 0,
+          "y": 587,
+          "w": 915,
+          "h": 28,
+          "confidence": 0.97,
+          "evidence": "bottom band: 28 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            45,
+            16,
+            169,
+            96
+          ],
+          "confidence": 0.694,
+          "evidence": "skin component (5747 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            0,
+            39,
+            960,
+            523
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (523 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            0,
+            587,
+            915,
+            28
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 28 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "f385b0113d785dfd_0040.jpg": {
+      "size": [
+        960,
+        654
+      ],
+      "loc": {
+        "photo": {
+          "x": 404,
+          "y": 463,
+          "w": 331,
+          "h": 121,
+          "confidence": 0.99,
+          "evidence": "skin component (24417 px) inside light photo card"
+        },
+        "data": {
+          "x": 2,
+          "y": 463,
+          "w": 946,
+          "h": 97,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (97 rows)"
+        },
+        "mrz": {
+          "x": 40,
+          "y": 583,
+          "w": 870,
+          "h": 33,
+          "confidence": 0.97,
+          "evidence": "bottom band: 33 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            404,
+            463,
+            331,
+            121
+          ],
+          "confidence": 0.99,
+          "evidence": "skin component (24417 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            2,
+            463,
+            946,
+            97
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (97 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            40,
+            583,
+            870,
+            33
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 33 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "f46cf4a378fcd626_0015.jpg": {
+      "size": [
+        960,
+        662
+      ],
+      "loc": {
+        "photo": {
+          "x": 84,
+          "y": 197,
+          "w": 167,
+          "h": 214,
+          "confidence": 0.99,
+          "evidence": "skin component (24537 px) inside light photo card"
+        },
+        "data": {
+          "x": 0,
+          "y": 197,
+          "w": 960,
+          "h": 428,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (428 rows)"
+        },
+        "mrz": {
+          "x": 0,
+          "y": 625,
+          "w": 960,
+          "h": 37,
+          "confidence": 0.97,
+          "evidence": "bottom band: 37 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            84,
+            197,
+            167,
+            214
+          ],
+          "confidence": 0.99,
+          "evidence": "skin component (24537 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            0,
+            197,
+            960,
+            428
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (428 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            0,
+            625,
+            960,
+            37
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 37 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "f6132d0c5422d26a_0026.jpg": {
+      "size": [
+        960,
+        654
+      ],
+      "loc": {
+        "photo": {
+          "x": 798,
+          "y": 220,
+          "w": 63,
+          "h": 66,
+          "confidence": 0.596,
+          "evidence": "skin component (1850 px) inside light photo card"
+        },
+        "data": {
+          "x": 6,
+          "y": 228,
+          "w": 912,
+          "h": 306,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (306 rows)"
+        },
+        "mrz": {
+          "x": 41,
+          "y": 560,
+          "w": 864,
+          "h": 29,
+          "confidence": 0.97,
+          "evidence": "bottom band: 29 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            798,
+            220,
+            63,
+            66
+          ],
+          "confidence": 0.596,
+          "evidence": "skin component (1850 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            6,
+            228,
+            912,
+            306
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (306 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            41,
+            560,
+            864,
+            29
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 29 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "f6eeb483a66e8d94_0084.jpg": {
+      "size": [
+        960,
+        618
+      ],
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 26,
+          "y": 30,
+          "w": 934,
+          "h": 528,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (528 rows)"
+        },
+        "mrz": {
+          "x": 35,
+          "y": 575,
+          "w": 925,
+          "h": 32,
+          "confidence": 0.97,
+          "evidence": "bottom band: 32 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "data",
+          "bbox": [
+            26,
+            30,
+            934,
+            528
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (528 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            35,
+            575,
+            925,
+            32
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 32 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "f80334b200240666_0034.png": {
+      "size": [
+        581,
+        411
+      ],
+      "loc": {
+        "photo": {
+          "x": 27,
+          "y": 103,
+          "w": 158,
+          "h": 185,
+          "confidence": 0.936,
+          "evidence": "skin component (15440 px) inside light photo card"
+        },
+        "data": {
+          "x": 32,
+          "y": 103,
+          "w": 505,
+          "h": 195,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (195 rows)"
+        },
+        "mrz": {
+          "x": 23,
+          "y": 314,
+          "w": 527,
+          "h": 48,
+          "confidence": 0.97,
+          "evidence": "bottom band: 48 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            27,
+            103,
+            158,
+            185
+          ],
+          "confidence": 0.936,
+          "evidence": "skin component (15440 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            32,
+            103,
+            505,
+            195
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (195 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            23,
+            314,
+            527,
+            48
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 48 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "f91e9a99cca60c68_0099.jpg": {
+      "size": [
+        960,
+        1360
+      ],
+      "loc": {
+        "photo": {
+          "x": 111,
+          "y": 892,
+          "w": 134,
+          "h": 185,
+          "confidence": 0.847,
+          "evidence": "skin component (11897 px) inside light photo card"
+        },
+        "data": {
+          "x": 29,
+          "y": 892,
+          "w": 909,
+          "h": 299,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (264 rows)"
+        },
+        "mrz": {
+          "x": 6,
+          "y": 1251,
+          "w": 924,
+          "h": 95,
+          "confidence": 0.97,
+          "evidence": "bottom band: 84 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "photo",
+          "bbox": [
+            111,
+            892,
+            134,
+            185
+          ],
+          "confidence": 0.847,
+          "evidence": "skin component (11897 px) inside light photo card"
+        },
+        {
+          "label": "data",
+          "bbox": [
+            29,
+            892,
+            909,
+            299
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (264 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            6,
+            1251,
+            924,
+            95
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 84 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    },
+    "ffa1dc640314fa58_0089.png": {
+      "size": [
+        960,
+        659
+      ],
+      "loc": {
+        "photo": null,
+        "data": {
+          "x": 31,
+          "y": 30,
+          "w": 874,
+          "h": 523,
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (523 rows)"
+        },
+        "mrz": {
+          "x": 48,
+          "y": 573,
+          "w": 860,
+          "h": 31,
+          "confidence": 0.97,
+          "evidence": "bottom band: 31 dense dark rows (row projection > 15% width)"
+        }
+      },
+      "objects": [
+        {
+          "label": "data",
+          "bbox": [
+            31,
+            30,
+            874,
+            523
+          ],
+          "confidence": 0.92,
+          "evidence": "text-line density between photo and MRZ (523 rows)"
+        },
+        {
+          "label": "mrz",
+          "bbox": [
+            48,
+            573,
+            860,
+            31
+          ],
+          "confidence": 0.97,
+          "evidence": "bottom band: 31 dense dark rows (row projection > 15% width)"
+        }
+      ]
+    }
+  }
+}

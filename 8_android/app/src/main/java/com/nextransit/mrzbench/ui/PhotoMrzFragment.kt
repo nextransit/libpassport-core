@@ -15,6 +15,7 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.nextransit.mrzbench.R
@@ -27,6 +28,7 @@ import kotlinx.coroutines.withContext
 
 class PhotoMrzFragment : Fragment() {
     private lateinit var pick: Button
+    private lateinit var sample: Button
     private lateinit var run: Button
     private lateinit var status: TextView
     private lateinit var result: TextView
@@ -57,6 +59,7 @@ class PhotoMrzFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         pick = view.findViewById(R.id.btn_photo_pick)
+        sample = view.findViewById(R.id.btn_photo_sample)
         run = view.findViewById(R.id.btn_photo_run)
         status = view.findViewById(R.id.photo_status)
         result = view.findViewById(R.id.photo_result)
@@ -67,7 +70,64 @@ class PhotoMrzFragment : Fragment() {
         }
         run.isEnabled = false
         pick.setOnClickListener { picker.launch(arrayOf("image/jpeg", "image/png", "image/*")) }
+        sample.setOnClickListener { showSamplePicker() }
         run.setOnClickListener { startPipeline() }
+    }
+
+    private fun showSamplePicker() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val entries = withContext(Dispatchers.IO) { listSampleAssets() }
+            if (entries.isEmpty()) {
+                status.text = "no bundled samples found in assets/"
+                return@launch
+            }
+            val labels = entries.map { (label, _) -> label }.toTypedArray()
+            AlertDialog.Builder(requireContext())
+                .setTitle("Bundled samples (${entries.size})")
+                .setItems(labels) { dialog, which ->
+                    val (_, path) = entries[which]
+                    loadFromAssets(path)
+                }
+                .setNegativeButton(android.R.string.cancel) { d, _ -> d.dismiss() }
+                .show()
+        }
+    }
+
+    private fun listSampleAssets(): List<Pair<String, String>> {
+        val ctx = requireContext()
+        val results = mutableListOf<Pair<String, String>>()
+        val photoDirs = ctx.assets.list("Photo") ?: emptyArray()
+        for (dir in photoDirs.sorted()) {
+            val files = ctx.assets.list("Photo/$dir") ?: continue
+            for (f in files.sorted()) {
+                if (!f.endsWith(".jpg", true) && !f.endsWith(".jpeg", true) && !f.endsWith(".png", true)) continue
+                results += "Photo/$dir/$f" to "Photo/$dir/$f"
+            }
+        }
+        val picFiles = ctx.assets.list("pic") ?: emptyArray()
+        for (f in picFiles.sorted()) {
+            if (!f.endsWith(".jpg", true) && !f.endsWith(".jpeg", true) && !f.endsWith(".png", true)) continue
+            results += "pic/$f" to "pic/$f"
+        }
+        return results
+    }
+
+    private fun loadFromAssets(path: String) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val bitmap = withContext(Dispatchers.IO) {
+                    requireContext().assets.open(path).use { BitmapFactory.decodeStream(it) }
+                        ?: error("unsupported image")
+                }
+                source = bitmap
+                images["original"]?.setImageBitmap(bitmap)
+                status.text = "sample loaded $path  ${bitmap.width}x${bitmap.height}"
+                result.text = "ready to run"
+                run.isEnabled = true
+            } catch (t: Throwable) {
+                status.text = "sample load failed: ${t.javaClass.simpleName}"
+            }
+        }
     }
 
     private fun startPipeline() {
