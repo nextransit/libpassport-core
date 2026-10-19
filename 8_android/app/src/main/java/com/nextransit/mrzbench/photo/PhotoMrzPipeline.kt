@@ -33,6 +33,23 @@ data class PhotoMrzResult(
     val error: String = "",
 )
 
+data class PairRows(
+    val first: IntRange,
+    val second: IntRange,
+    val reflection: List<IntRange>,
+)
+
+data class StructureResult(
+    val source: Bitmap,
+    val work: Bitmap,
+    val pair: PairRows?,
+    val noReflection: Bitmap?,
+    val rectified: Bitmap?,
+    val mrzCrop: Bitmap?,
+    val timings: LinkedHashMap<String, Long>,
+    val error: String = "",
+)
+
 object PhotoMrzPipeline {
     private const val MAX_SIDE = 1250
     private const val GLYPH_W = 14
@@ -41,11 +58,6 @@ object PhotoMrzPipeline {
     private const val TARGET_H = GLYPH_H * 2 + 8
 
     private data class Gray(val width: Int, val height: Int, val pixels: IntArray)
-    private data class PairRows(
-        val first: IntRange,
-        val second: IntRange,
-        val reflection: List<IntRange>,
-    )
     private data class Band(
         val bitmap: Bitmap,
         val line1: Bitmap,
@@ -53,43 +65,20 @@ object PhotoMrzPipeline {
     )
 
     fun process(context: Context, source: Bitmap): PhotoMrzResult {
-        val timings = linkedMapOf<String, Long>()
         val allStart = System.nanoTime()
-        val workStart = System.nanoTime()
-        val scale = min(1.0, MAX_SIDE.toDouble() / max(source.width, source.height))
-        val work = if (scale < 1.0) {
-            Bitmap.createScaledBitmap(
-                source,
-                max(1, (source.width * scale).roundToInt()),
-                max(1, (source.height * scale).roundToInt()),
-                true,
-            )
-        } else source
-        val gray = grayscale(work)
-        val pair = findPair(gray)
-        timings["structure"] = elapsedMs(workStart)
-        if (pair == null) {
+        val structure = processStructure(source)
+        val timings = structure.timings
+        if (structure.error.isNotEmpty() || structure.pair == null) {
+            timings["total"] = elapsedMs(allStart)
             return PhotoMrzResult(
-                source, work, null, null, "", "", 0, 0,
-                "none", false, emptyMap(), timings,
-                "MRZ 双行未定位",
+                structure.source, structure.noReflection, structure.rectified,
+                structure.mrzCrop, "", "", 0, 0, "none", false, emptyMap(),
+                timings, structure.error.ifEmpty { "MRZ 双行未定位" },
             )
         }
 
-        val cropStart = System.nanoTime()
-        val cropBottom = pair.second.last + 1
-        val noReflection = Bitmap.createBitmap(work, 0, 0, work.width, cropBottom)
-        timings["remove reflection"] = elapsedMs(cropStart)
-
-        val rectStart = System.nanoTime()
-        val rectified = rectify(noReflection, gray, pair.first, pair.second)
-        timings["rectify"] = elapsedMs(rectStart)
-
-        val mrzCropStart = System.nanoTime()
-        val mrzCrop = cropPairClean(noReflection, pair.first, pair.second)
-        timings["MRZ crop"] = elapsedMs(mrzCropStart)
-
-        val nativeBand = nativeBand(source, pair.first, pair.second, scale)
+        val nativeBand = nativeBand(source, structure.pair.first, structure.pair.second,
+            scaleFor(structure.source))
         val ocrStart = System.nanoTime()
         val recognition = try {
             val paddle = PaddleOcrAndroid.recognize(context, nativeBand.line1, nativeBand.line2)
@@ -110,21 +99,50 @@ object PhotoMrzPipeline {
         val decodeOk = IcaoChecksum.line2Ok(recognition.line2)
         timings["total"] = elapsedMs(allStart)
         return PhotoMrzResult(
-            source,
-            noReflection,
-            rectified,
-            mrzCrop,
-            recognition.line1,
-            recognition.line2,
-            recognition.conf1,
-            recognition.conf2,
-            recognition.backend,
-            decodeOk,
-            fields,
-            timings,
-            recognition.note,
+            structure.source, structure.noReflection, structure.rectified,
+            structure.mrzCrop,
+            recognition.line1, recognition.line2, recognition.conf1, recognition.conf2,
+            recognition.backend, decodeOk, fields, timings, recognition.note,
         )
     }
+
+    fun processStructure(source: Bitmap): StructureResult {
+        val timings = linkedMapOf<String, Long>()
+        val workStart = System.nanoTime()
+        val scale = scaleFor(source)
+        val work = if (scale < 1.0) {
+            Bitmap.createScaledBitmap(
+                source,
+                max(1, (source.width * scale).roundToInt()),
+                max(1, (source.height * scale).roundToInt()),
+                true,
+            )
+        } else source
+        val gray = grayscale(work)
+        val pair = findPair(gray)
+        timings["structure"] = elapsedMs(workStart)
+        if (pair == null) {
+            return StructureResult(source, work, null, work, null, null, timings, "MRZ 双行未定位")
+        }
+
+        val cropStart = System.nanoTime()
+        val cropBottom = pair.second.last + 1
+        val noReflection = Bitmap.createBitmap(work, 0, 0, work.width, cropBottom)
+        timings["remove reflection"] = elapsedMs(cropStart)
+
+        val rectStart = System.nanoTime()
+        val rectified = rectify(noReflection, gray, pair.first, pair.second)
+        timings["rectify"] = elapsedMs(rectStart)
+
+        val mrzCropStart = System.nanoTime()
+        val mrzCrop = cropPairClean(noReflection, pair.first, pair.second)
+        timings["MRZ crop"] = elapsedMs(mrzCropStart)
+
+        return StructureResult(source, work, pair, noReflection, rectified, mrzCrop, timings)
+    }
+
+    private fun scaleFor(source: Bitmap): Double =
+        min(1.0, MAX_SIDE.toDouble() / max(source.width, source.height))
 
     private data class Recognition(
         val line1: String,
@@ -361,9 +379,9 @@ object PhotoMrzPipeline {
         val gray = IntArray(pixels.size)
         for (i in pixels.indices) {
             val c = pixels[i]
-            gray[i] = ((c shr 16 and 0xff) * 299 +
+            gray[i] = minOf(255, ((c shr 16 and 0xff) * 299 +
                 (c shr 8 and 0xff) * 587 +
-                (c and 0xff) * 114) / 1000
+                (c and 0xff) * 114 + 500) / 1000)
         }
         return Gray(bitmap.width, bitmap.height, gray)
     }
@@ -382,57 +400,121 @@ object PhotoMrzPipeline {
             rowInk[y] = ink
             edge[y] = energy
         }
-        val solid = BooleanArray(gray.height) {
-            rowInk[it] > gray.width * 0.90
+        val pass180 = mrzPairPass(gray, 180, rowInk, edge)
+        if (pass180 != null) return attachReflection(pass180, rowInk, gray.width)
+        val cands = ArrayList<PickResult>()
+        for (thr in intArrayOf(170, 160, 150)) {
+            val r = mrzPairPass(gray, thr, rowInk, edge)
+            if (r != null) cands += r
         }
-        val text = BooleanArray(gray.height) {
-            rowInk[it] > gray.width * 0.20 &&
-                rowInk[it] < gray.width * 0.90 &&
-                edge[it] > 1800
+        if (cands.isEmpty()) return null
+        val best = cands.maxBy { it.first.first }
+        return attachReflection(best, rowInk, gray.width)
+    }
+
+    private data class PickResult(val first: IntRange, val second: IntRange)
+
+    private fun mrzPairPass(
+        gray: Gray,
+        thr: Int,
+        rowInk180: IntArray,
+        edge: IntArray,
+    ): PickResult? {
+        val H = gray.height
+        val W = gray.width
+        val rowInkS = IntArray(H)
+        for (y in 0 until H) {
+            var ink = 0
+            for (x in 0 until W) if (gray.pixels[y * W + x] < thr) ink++
+            rowInkS[y] = ink
         }
-        val solidGroups = groups(solid, 5)
-        val candidate = solidGroups.filter {
-            it.first >= gray.height * 0.30 &&
-                it.first <= gray.height * 0.90 &&
-                it.last - it.first + 1 >= 11
+        val solid = BooleanArray(H) { rowInk180[it] > W * 0.90 }
+        val text = BooleanArray(H) {
+            rowInkS[it] > W * 0.20 && rowInkS[it] < W * 0.90 && edge[it] > 1800
         }
-        if (candidate.isEmpty()) return null
-        val solidTop = candidate.last().last + 1
-        val textGroups = groups(text, 4)
+        val solidB = groups(solid, 5)
+        val textB = groups(text, 4)
+        val cand = solidB.filter {
+            it.first >= H * 0.30 && it.first <= H * 0.90 &&
+                it.last - it.first + 1 >= 10
+        }
+        val sTop = if (cand.isNotEmpty()) cand.last().last + 1 else null
+
         fun lineShape(run: IntRange): Boolean {
             val h = run.last - run.first + 1
             if (h < 5 || h > 48) return false
-            val strong = BooleanArray(gray.width)
-            for (x in 0 until gray.width) {
+            val strong = BooleanArray(W)
+            for (x in 0 until W) {
                 var ink = 0
-                for (y in run) if (gray.pixels[y * gray.width + x] < 180) ink++
+                for (y in run) if (gray.pixels[y * W + x] < thr) ink++
                 strong[x] = ink >= 4
             }
-            val density = strong.count { it }.toDouble() / gray.width
-            val maxRun = groups(strong, 1).maxOfOrNull { it.last - it.first + 1 } ?: 0
-            return density <= 0.90 && maxRun <= max(160, (gray.width * 0.45).toInt())
+            val density = strong.count { it }.toDouble() / W
+            val maxGroup = groups(strong, 1).maxOfOrNull { it.last - it.first + 1 } ?: 0
+            return density <= 0.90 && maxGroup <= max(160, (W * 0.45).toInt())
         }
-        val above = textGroups.filter { it.last < solidTop - 1 }
-        for (i in 0 until above.size - 1) {
-            val first = above[i]
-            val second = above[i + 1]
-            val gap = second.first - first.last - 1
-            val h1 = first.last - first.first + 1
-            val h2 = second.last - second.first + 1
-            if (lineShape(first) && lineShape(second) &&
-                h2.toDouble() / h1 in 0.4..1.6 &&
-                gap in 0..max(8, (h1 * 3.0).toInt())
-            ) {
-                val reflection = rowInk.indices
-                    .filter { it > second.last && rowInk[it] > 180 }
-                return PairRows(first, second, if (reflection.isEmpty()) {
-                    emptyList()
-                } else {
-                    listOf(reflection.first()..reflection.last())
-                })
+
+        fun pick(runs: List<IntRange>): PickResult? {
+            var best: Triple<IntArray, IntRange, IntRange>? = null
+            for (i in 0 until runs.size - 1) {
+                val t1 = runs[i]
+                val h1 = t1.last - t1.first + 1
+                if (h1 < 4 || !lineShape(t1)) continue
+                val t2 = runs[i + 1]
+                val h2 = t2.last - t2.first + 1
+                val gap = t2.first - t1.last - 1
+                if (!lineShape(t2)) continue
+                if (h2.toDouble() / h1 !in 0.4..1.6) continue
+                val gapMax = max(8, (h1 * 3.0).toInt())
+                if (gap < 0 || gap > gapMax) continue
+                val rank = intArrayOf(-minOf(h1, h2), kotlin.math.abs(h1 - h2) + gap, gap)
+                if (best == null || compareInts(rank, best.first) < 0) {
+                    best = Triple(rank, t1, t2)
+                }
+            }
+            return best?.let { PickResult(it.second, it.third) }
+        }
+
+        if (sTop != null) {
+            val above = textB.filter { it.last < sTop - 1 }
+            if (above.size >= 2) pick(above)?.let { return it }
+            val below = textB.filter { it.first > sTop }
+            if (below.isNotEmpty()) pick(below)?.let { return it }
+        }
+        if (textB.size >= 2) return pick(textB)
+        return null
+    }
+
+    private fun compareInts(a: IntArray, b: IntArray): Int {
+        for (i in a.indices) {
+            if (a[i] != b[i]) return a[i] - b[i]
+        }
+        return 0
+    }
+
+    private fun attachReflection(
+        pair: PickResult,
+        rowInk: IntArray,
+        width: Int,
+    ): PairRows {
+        val (l1, l2) = pair
+        val l2Ink = IntArray(l2.last - l2.first + 1) { l2.first + it }
+            .map { rowInk[it] }
+            .sorted()
+        val med = l2Ink[l2Ink.size / 2]
+        val thr = maxOf((0.12 * med).toInt(), (0.02 * width).toInt())
+        val segs = ArrayList<IntRange>()
+        var start = -1
+        for (y in l2.last + 1 until rowInk.size) {
+            if (rowInk[y] > thr) {
+                if (start < 0) start = y
+            } else if (start >= 0) {
+                segs += start..(y - 1)
+                start = -1
             }
         }
-        return null
+        if (start >= 0) segs += start..(rowInk.size - 1)
+        return PairRows(l1, l2, segs)
     }
 
     private fun groups(mask: BooleanArray, minLength: Int): List<IntRange> {
