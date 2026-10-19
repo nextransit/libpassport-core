@@ -1,16 +1,14 @@
 package com.nextransit.mrzbench.photo
 
-import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import java.io.File
 
 /**
  * 改进点 F1（多阈值回退）/ F2（相对倒影）/ F3（边条框检测自适应 xpad）的可观测行为。
@@ -99,6 +97,161 @@ class PhotoMrzPipelineTest {
 
         println("===== PhotoMrzPipelineTest report =====\n$report")
         assertEquals("F1/F2/F3 regressions (see report). failures=$failures\n$report", 0, failures)
+    }
+
+    /**
+     * 全自动化批跑：7 张 fixture + 84 张 assets/pic。processStructure 是 5 步流水线的前 4 步
+     * （结构探测/倒影/矫正/crop），OCR 因 JNI 在 JVM test 中不可用，跳过。
+     * 打印每图详细时序与 F1/F2/F3 行为；末尾统计 pair 检出率/rectify 成功率/xpad 自适应率。
+     * 不做硬性断言（图片多样，pair 偶有失败/伪对是已知边界），只报告指标供人评估。
+     */
+    @Test
+    fun batch_runAllSampleImages() {
+        val pipeline = PhotoMrzPipeline
+        val report = StringBuilder()
+        val fixtures = listOf(
+            Fixture("fixture/Photo/3", "IMG_1792133000_003.jpg", "classpath"),
+            Fixture("fixture/Photo/4", "IMG_1792133002_004.jpg", "classpath"),
+            Fixture("fixture/Photo/5", "IMG_1792133232_005.jpg", "classpath"),
+            Fixture("fixture/Photo/6", "IMG_1792133581_006.jpg", "classpath"),
+            Fixture("fixture/Photo/7", "IMG_1792133649_007.jpg", "classpath"),
+            Fixture("fixture/Photo/8", "IMG_1792133682_008.jpg", "classpath"),
+            Fixture("fixture/Photo/lv", "2c793efe12276f9b_0258.jpg", "classpath"),
+        )
+
+        // 扫描 assets/pic/*.jpg|png|jpeg（main/assets 在测试运行时也可经 AssetManager 访问；
+        // 但 classpath 路径更简单——把它们拷到 test 临时目录再走同样的解码路径）。
+        val assetsRoot = locateAssetsRoot()
+        val picDir = File(assetsRoot, "pic")
+        val picFiles = picDir.listFiles { f -> f.isFile && f.name.matches(Regex(".*\\.(jpg|jpeg|png)$", RegexOption.IGNORE_CASE)) }
+            ?.toList()?.sortedBy { it.name }
+            ?: emptyList()
+        val picFixtures = picFiles.map { Fixture("assets/pic", it.name, "disk", it) }
+
+        val all = fixtures + picFixtures
+        report.append("===== 全自动化 Android 测试 (${all.size} 张) =====\n")
+
+        var pairOk = 0
+        var rectOk = 0
+        var noReflOk = 0
+        var xpadAdaptive = 0
+        var xpadZero = 0
+        var wallTotalMs = 0L
+        var sumRectifyMs = 0L
+        var maxRectifyMs = 0L
+        var maxTotalMs = 0L
+        val rows = mutableListOf<Triple<String, String, String>>() // (name, status, line)
+
+        for (f in all) {
+            val bmp = when (f.source) {
+                "classpath" -> {
+                    val cl = PhotoMrzPipelineTest::class.java.classLoader
+                    val res = cl?.getResourceAsStream("Photo/${f.subdir.substringAfter("fixture/Photo/")}/${f.file}")
+                        ?: cl?.getResourceAsStream("Photo/lv/${f.file}")
+                    res?.use { BitmapFactory.decodeStream(it) }
+                }
+                "disk" -> BitmapFactory.decodeFile(f.diskFile?.absolutePath)
+                else -> null
+            }
+            if (bmp == null) {
+                rows.add(Triple(f.label, "LOAD_FAIL", ""))
+                report.append("${f.label}/${f.file}: LOAD FAILED\n")
+                continue
+            }
+            val t0 = System.nanoTime()
+            val s = pipeline.processStructure(bmp)
+            val wall = (System.nanoTime() - t0) / 1_000_000
+            val struct = s.timings["structure"] ?: -1L
+            val ref = s.timings["remove reflection"] ?: -1L
+            val rec = s.timings["rectify"] ?: -1L
+            val crop = s.timings["MRZ crop"] ?: -1L
+            val total = s.timings["total"] ?: wall
+            val pair = s.pair
+            val xpad = s.xpadAdaptive
+            val noRefl = s.noReflection
+            val rect = s.rectified
+            val pOk = pair != null
+            val rOk = rect != null && rect.width == 616 && rect.height == 104
+            val nROk = noRefl != null
+            val xZero = xpad.first == 0 && xpad.second == 0
+            if (pOk) pairOk++
+            if (rOk) rectOk++
+            if (nROk) noReflOk++
+            if (xpad.first != 100 && xpad.second != 100) xpadAdaptive++
+            if (xZero) xpadZero++
+            wallTotalMs += wall
+            sumRectifyMs += rec
+            if (rec > maxRectifyMs) maxRectifyMs = rec
+            if (total > maxTotalMs) maxTotalMs = total
+
+            val status = when {
+                !pOk -> "NO_PAIR"
+                !rOk -> "RECT_FAIL"
+                else -> "OK"
+            }
+            val line = "src=${bmp.width}x${bmp.height} " +
+                "pair=${pair?.let { "(${it.first.first},${it.first.last})(${it.second.first},${it.second.last})" } ?: "NULL"} " +
+                "noRefl=${nROk} rect=${rect?.let { "${it.width}x${it.height}" } ?: "NULL"} " +
+                "xpad=(${xpad.first},${xpad.second}) " +
+                "struct=${struct}ms ref=${ref}ms rect=${rec}ms crop=${crop}ms total=${total}ms" +
+                (if (s.error.isNotEmpty()) " err='${s.error}'" else "")
+            rows.add(Triple(f.label, status, line))
+        }
+
+        // 详细表
+        report.append("\n----- 详细结果 -----\n")
+        for ((label, status, line) in rows) {
+            report.append("[${status.padEnd(10)}] $label  $line\n")
+        }
+
+        // 汇总
+        val n = all.size
+        report.append("\n----- 汇总 -----\n")
+        report.append("总图片:           $n\n")
+        report.append("pair 检出:        $pairOk / $n (${pct(pairOk, n)})\n")
+        report.append("rectify 成功:     $rectOk / $n (${pct(rectOk, n)})\n")
+        report.append("noReflection!=null: $noReflOk / $n (${pct(noReflOk, n)})\n")
+        report.append("xpad 自适应(非100): $xpadAdaptive / $n (${pct(xpadAdaptive, n)})\n")
+        report.append("xpad=(0,0) 无边:   $xpadZero / $n (${pct(xpadZero, n)})\n")
+        report.append("rectify 总耗时:   ${sumRectifyMs}ms  均值 ${sumRectifyMs / n}ms  最大 ${maxRectifyMs}ms\n")
+        report.append("总 wall 耗时:     ${wallTotalMs}ms  均值 ${wallTotalMs / n}ms  最大 ${maxTotalMs}ms\n")
+
+        println(report)
+        // 不做硬性断言（图片多样，已知 2 张伪对 1c6acd09/c1a15c65 会被检出 pair 但 OCR 失败）
+        assertTrue("report generated", report.isNotEmpty())
+    }
+
+    private fun pct(n: Int, total: Int): String =
+        if (total == 0) "0.0%" else String.format("%.1f%%", n * 100.0 / total)
+
+    private data class Fixture(
+        val subdir: String,
+        val file: String,
+        val source: String,           // "classpath" 或 "disk"
+        val diskFile: File? = null,
+    ) {
+        val label: String get() = "$subdir"
+    }
+
+    /**
+     * 找 app/src/main/assets 的根目录——Robolectric 把 assets 装到文件系统某处。
+     * 优先从 gradle known location 拿；备选是 test/resources 拷过去。
+     */
+    private fun locateAssetsRoot(): File {
+        // 1. 尝试 gradle 同步拷过来的：build/intermediates/merged_assets/debug/
+        val cwd = File("").absoluteFile
+        for (candidate in listOf(
+            File(cwd, "app/build/intermediates/merged_assets/debug"),
+            File(cwd, "build/intermediates/merged_assets/debug"),
+        )) {
+            val pic = File(candidate, "pic")
+            if (pic.isDirectory) return candidate
+        }
+        // 2. 兜底：源码路径
+        val src = File("/Users/zhouyong/Desktop/work/Decard/gitlab/passport/8_android/app/src/main/assets")
+        if (src.isDirectory) return src
+        // 3. 最后的兜底：src/test/resources/assets-pic/（若有人手工拷）
+        return File("src/test/resources")
     }
 
     private fun loadJpeg(c: Case): Bitmap? {
