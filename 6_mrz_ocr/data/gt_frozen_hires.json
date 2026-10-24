@@ -61,11 +61,13 @@
    ],
    "pad": 10,
    "line2": "0981489<<5MLT6811118M2006268<<<<<<<<<<<<<<06",
-   "line1": "P<MLTMIGALLBF<<GIOWANND<<<<<<<<<<<<<<<<<<<<<",
+   "line1": "P<MLTMICALLEF<<GIOVANNI<<<<<<<<<<<<<<<<<<<<<",
    "tier": "human_adjudicated",
    "votes": 2,
    "reads": 6,
-   "line2_alts": []
+   "line2_alts": [],
+   "line1_tier": "human_adjudicated",
+   "adjudication_note": " | line1 hand-read by user (2026-10-24), issuer MLT consistent with line2 nationality"
   },
   {
    "id": "b1442018a8167bf5_0029.jpg",
