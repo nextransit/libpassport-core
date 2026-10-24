@@ -924,10 +924,38 @@ static int segment_line_grid(const uint8_t *bin, int W, int H,
      * steps keeps the whole 44-cell grid aligned; integer pitch keeps
      * synthetic corpora (integral pitch) bit-identical. */
     const double PSTEP = 0.25;
+    /* Fractional-pitch guard.  A fractional pitch candidate is only
+     * accepted when it beats the best INTEGRAL candidate by a clear
+     * margin.  On images whose true pitch is integral (synthetic
+     * corpora; most >=300dpi scans) a fractional L can win by a hair
+     * purely by fitting noise, and a 0.25px pitch error accumulates
+     * into a ~10px (1/3 cell) mis-slice at cell 43: measured 14/238
+     * fits on the realistic eval subset, -6.9pp full-match.  A genuine
+     * fractional pitch (real-photo crops render at e.g. 12.43 px) wins
+     * by a wide margin because every integral alternative
+     * progressively misaligns the far end.  MRZ_OCR_FRAC_GUARD
+     * overrides the margin ratio (0 disables the guard). */
+    double guard = 0.90;
+    {
+        static double g = -2.0;
+        if (g < -1.0) {
+            const char *e = getenv("MRZ_OCR_FRAC_GUARD");
+            g = 0.90;
+            if (e && e[0]) {
+                double v = atof(e);
+                if (v >= 0.0 && v <= 1.0) g = v;
+            }
+        }
+        guard = g;
+    }
     double best_c0 = -1; double best_L = 0; double best_cost = 0;
+    /* Per-track winners: integral pitch vs fractional pitch. */
+    double int_c0 = -1, int_L = 0, int_cost = 0;
+    double fr_c0 = -1, fr_L = 0, fr_cost = 0;
     for (int li = 0; li < nL; ++li) {
         double L = Lcand[li];
         if (L <= 0) continue;
+        int is_frac = fabs(L - round(L)) > 1e-9;
         double c0_min = first_center - (double)cell / 2.0;
         double c0_max = first_center + (double)cell / 2.0;
         int nsteps = (int)((c0_max - c0_min) / PSTEP) + 1;
@@ -949,10 +977,25 @@ static int segment_line_grid(const uint8_t *bin, int W, int H,
                         cost += wt[dx + 2] * col[x];
                     }
             }
-            if (best_c0 < 0 || cost < best_cost) {
-                best_cost = cost; best_c0 = c0d; best_L = L;
+            if (is_frac) {
+                if (fr_c0 < 0 || cost < fr_cost) { fr_cost = cost; fr_c0 = c0d; fr_L = L; }
+            } else {
+                if (int_c0 < 0 || cost < int_cost) { int_cost = cost; int_c0 = c0d; int_L = L; }
             }
         }
+    }
+    /* Global winner across the two tracks... */
+    if (int_c0 < 0)              { best_c0 = fr_c0;  best_L = fr_L;  best_cost = fr_cost; }
+    else if (fr_c0 < 0)          { best_c0 = int_c0; best_L = int_L; best_cost = int_cost; }
+    else if (fr_cost < int_cost) { best_c0 = fr_c0;  best_L = fr_L;  best_cost = fr_cost; }
+    else                         { best_c0 = int_c0; best_L = int_L; best_cost = int_cost; }
+    /* ...then the guard: a fractional win that is not decisively
+     * cheaper than the integral track is noise fitting; fall back to
+     * the integral grid.  When no integral candidate exists (a crop
+     * whose fitted pitch admits none) the fractional winner stands. */
+    if (fr_c0 >= 0 && int_c0 >= 0 && fr_cost < int_cost &&
+        (double)fr_cost > (double)int_cost * guard) {
+        best_c0 = int_c0; best_L = int_L; best_cost = int_cost;
     }
     free(col);
     if (best_c0 < 0) return -1;
@@ -961,8 +1004,11 @@ static int segment_line_grid(const uint8_t *bin, int W, int H,
         if (griddbg < 0) { const char *e = getenv("MRZ_OCR_GRID"); griddbg = (e && e[0] && strcmp(e,"0") != 0) ? 1 : 0; }
         if (griddbg)
             fprintf(stderr, "GRID W=%d H=%d nrun=%d medw=%d cell=%d Lmin=%d Lmax=%d "
-                            "L0=%d Lfit=%.3f -> c0=%.3f L=%.3f span43=%.1f\n",
-                    W, H, nrun, medw, cell, Lmin, Lmax, L0, Lfit, best_c0, best_L, 43.0 * best_L);
+                            "L0=%d Lfit=%.3f -> c0=%.3f L=%.3f span43=%.1f "
+                            "intL=%.2f/%d frL=%.2f/%d guard=%.2f\n",
+                    W, H, nrun, medw, cell, Lmin, Lmax, L0, Lfit, best_c0, best_L,
+                    43.0 * best_L, int_L, int_c0 >= 0 ? int_cost : -1,
+                    fr_L, fr_c0 >= 0 ? fr_cost : -1, guard);
     }
 
     int n = 0;
