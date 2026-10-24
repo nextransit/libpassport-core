@@ -367,3 +367,29 @@ cksum&wrong 0/11、p50 7.3ms；fuse 5/11（仍劣于 cnn，维持 opt-in）。
 beam 校验通过但读错（O/E + USH/USA + optional 区两处 <→6，4 字符）、
 1 张单字符等价误读（42 位 0→<，两者 mod 值相同）。
 模型共识 GT 的 7/11 属乐观值，人工冻结后 6/10 为真实基线。
+
+## 2026-10-24 多引擎共识 GT 工具（回答"能否规模化重取正确解析"）
+
+新增 tools/mrz_engines.py（tesseract 5 + ocrb.traineddata，与 C 管线零
+共享的独立引擎）与 tools/build_gt_multiengine.py（三读 × 三 pad 共识）。
+
+关键校准与修复：
+- tesseract(ocrb) 对冻结 GT 实测：line2 字符 51.1%/70.8%/82.0%
+  （passport/assets/hires）。字符准确率不足以独立作 GT 源，且其错误
+  呈系统性 mod-10 中性混淆（8↔B 等），校验闭合读数可能是幻觉——
+  定位为"佐证者"而非"确立者"：line2 由 native 族闭合、tesseract
+  一致→升 A、矛盾→标记。
+- 修复 solve() 对已合法读数返回 (None,None,None) 被当未闭合丢弃的
+  bug（tesseract 裸读 10/10 合法却零投票）；build_frozen_gt_hires
+  同修。native line1 读数未采集导致 44 列全"争议"的 bug 同修。
+
+验收（10 张人工冻结 GT）：
+- line2 自动闭合与人工 GT 一致 **10/10**（6 native 闭合 + 4 tesseract
+  闭合），零人工参与——即"line2 可以全自动取回正确结果"；
+- line1 无校验位不可自动证明：自动候选 4/10 精确，每张仅 2-8 个
+  争议列，人工只需核对争议位而非 88 字符。
+
+47 页全量：10 张 tier-B（= 已冻结 GT）+ 1 张 tier-C（line1 争议 8 列）
++ 35 张排除（打码/低于产品分辨率/有色底，与前两轮人工复核一致，
+无新增可标注页）。结论：该工具把"图→正确 MRZ"的自动上限推到了
+line2 全自动 + line1 争议列人工；物理不可读页无解。

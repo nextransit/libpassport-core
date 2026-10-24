@@ -160,13 +160,17 @@ def main() -> int:
                 r1, r2 = decode(ppm, head)
                 n_reads += 1
                 if len(r2) == 44:
-                    # solve() returns (None, None, None) for an input that
-                    # already passes all five check digits -- and a tuple of
-                    # None is truthy, so the naive `if fixed:` votes for the
-                    # key None. Unpack and guard on the string itself.
-                    res = solve(r2)
-                    if res and isinstance(res[0], str) and len(res[0]) == 44:
-                        cand2[res[0]] += 1
+                    # A read that already passes all five check digits is
+                    # closed as-is: solve() returns (None, None, None) for
+                    # exactly those inputs, and a tuple of Nones is truthy,
+                    # so the naive `if fixed:` votes for the key None.
+                    # Both cases must be handled explicitly.
+                    if l2_ok(r2):
+                        cand2[r2] += 1
+                    else:
+                        res = solve(r2)
+                        if res and isinstance(res[0], str) and len(res[0]) == 44:
+                            cand2[res[0]] += 1
                 if len(r1) == 44:
                     cand1[r1] += 1
         if not cand2:
