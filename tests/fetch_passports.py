@@ -118,13 +118,19 @@ def search_titles(term, budget=300):
     return
 
 
-def file_urls(titles):
-    """Batch imageinfo -> {title: url}, 50 titles per request."""
+def file_urls(titles, width=800):
+    """Batch imageinfo -> {title: url}, 50 titles per request.
+
+    `width` is the requested thumbnail width in px. 800 was the legacy
+    default; 1600 is what the recognition domain wants -- the MRZ band
+    of a full data page at 800px lands near 20px/char, below the pitch
+    the grid segmenter and the CNN were calibrated for (>=26)."""
     urls = {}
     for i in range(0, len(titles), 50):
         batch = titles[i:i + 50]
         d = api_get(dict(action="query", titles="|".join(batch),
-                         prop="imageinfo", iiprop="url|size", iiurlwidth="800"))
+                         prop="imageinfo", iiprop="url|size",
+                         iiurlwidth=str(width)))
         if not d:
             continue
         for pg in d.get("query", {}).get("pages", {}).values():
@@ -175,6 +181,10 @@ def is_passport_page(data):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--min", type=int, default=500)
+    ap.add_argument("--width", type=int, default=800,
+                    help="requested thumbnail width in px (1600 for the "
+                         "hi-res recognition-domain corpus; keep the --out "
+                         "dir separate so resolutions never mix)")
     ap.add_argument("--out", default=os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "pic"))
     ap.add_argument("--purge", action="store_true",
@@ -241,7 +251,7 @@ def main():
         seen_md5.add(f.rsplit("_", 1)[0])
     n = 0
 
-    urlmap = file_urls(titles)
+    urlmap = file_urls(titles, args.width)
     items = []
     for title in titles:
         name = title.split(":", 1)[1]
