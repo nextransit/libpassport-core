@@ -261,3 +261,27 @@
 | 2026-10-24 13:08 | data/corpus_eval | cnn | 97.71% | 97.77% | 67.03% | 98.26% | 7.0 |
 | 2026-10-24 13:09 | data/corpus_eval | traditional | 63.57% | 42.46% | 0.00% | 2.17% | 5.1 |
 | 2026-10-24 13:09 | data/corpus_eval | cnn | 97.71% | 97.77% | 67.03% | 98.26% | 7.1 |
+
+## 2026-10-24 Line 头双 band 重训（v2）
+
+诊断：10-24 上午的 line 重训失败（passport 14/41、assets 0/32）根因是
+**训练 band 与评测 band 分布不一致**——export_omtest_slices 走 Android
+fast-path band（fast_pair + 自适应 x-pad + 宽度降采样），eval_frozen 走
+GT crop + 仅上下 10px pad、不缩放。快照权重恰好对两侧都鲁棒，重训后
+过拟合单侧。
+
+修复：新增 `tools/export_gt_band_slices.py`，按 eval_frozen 逐字节复刻
+裁切、标签直接用冻结 GT（passport_corrected 41 + assets 32 的 line2，
+join gt_passport_manual 18 条 line1）；与新 grid 重导的 Android-band
+slices 合并（7304 slices）后重训两个 line 头。
+
+| date | corpus | method | exact | char | cksum | cksum&wrong |
+|------|--------|--------|-------|------|-------|-------------|
+| 2026-10-24 15:00 | gt_frozen_passport (41) | cnn (v2 dual-band) | **38/41** | 99.83% | **41/41** | 3/41 |
+| 2026-10-24 15:00 | gt_frozen_assets (32) | cnn (v2 dual-band) | **23/32** | 93.96% | **27/32** | 4/32 |
+| （前值） | gt_frozen_passport (41) | cnn (快照) | 37/41 | 99.17% | 40/41 | 3/41 |
+| （前值） | gt_frozen_assets (32) | cnn (快照) | 21/32 | 84.45% | 21/32 | 0/32 |
+
+CRNN 头尚未跟上 line conv 的特征迁移（plain CRNN 0/41、25% char），
+需要按新特征重新导出 + 重训（tools/export_crnn_features.py +
+train_crnn_seq.py），fuse 在那之前保持 opt-in。
