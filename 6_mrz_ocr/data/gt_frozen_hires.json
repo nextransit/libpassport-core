@@ -2,22 +2,6 @@
  "set": "hires",
  "records": [
   {
-   "id": "0f8ca80a606c2330_0036.jpg",
-   "crop": [
-    0,
-    1222,
-    995,
-    120
-   ],
-   "pad": 10,
-   "line2": "G050000007CHN9310140M02000400400000035553560",
-   "line1": "P<CHNIHANG<Y<UUUGNUUUG<E<<<<<<<<<<<<<<<<<<<<",
-   "tier": "consensus",
-   "votes": 3,
-   "reads": 6,
-   "line2_alts": []
-  },
-  {
    "id": "2c00c41ac0552ed5_0035.jpg",
    "crop": [
     0,
