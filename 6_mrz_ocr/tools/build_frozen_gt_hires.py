@@ -38,10 +38,14 @@ from collections import Counter
 from pathlib import Path
 
 from PIL import Image
+import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 from fix_gt_checksum import solve  # noqa: E402  (checksum repair solver)
+# The Android fast-path locator, byte-identical to the device pre-crop
+# (fastPair -> adaptiveXpad -> nativeBand in PhotoMrzPipeline.kt).
+from export_omtest_slices import adaptive_xpad, fast_pair, native_band  # noqa: E402
 
 TOOL = ROOT / "build" / "mrz_ocr_cnn_tool"
 PADS = (4, 10, 18)
@@ -105,21 +109,40 @@ def main() -> int:
             stats["unreadable"] += 1
             continue
         Wd, H = rgb.size
-        full = tmp / f"{img.stem}_full.ppm"
-        rgb.save(str(full), format="PPM")
 
-        # 1. locate the band with the C tool on the full page (geometry only).
-        l1, l2 = decode(full, "cnn")
-        probe = subprocess.run([str(TOOL), str(full)], capture_output=True,
-                               text=True, timeout=120,
-                               env=dict(os.environ, MRZ_OCR_LINE_MODELS="1"))
-        m = re.search(r"band\.x band\.y band\.w band\.h : (\d+) (\d+) (\d+) (\d+)",
-                      probe.stdout)
-        if not m:
-            stats["no_band"] += 1
-            adjudicate.append({"id": img.name, "reason": "no_band"})
+        # 1. locate the MRZ band with the Android fast path. The C tool's
+        #    locate_band degenerates to the full frame on document scans
+        #    (first hires run: band 1920x1332, cksum 0/59), so it cannot
+        #    supply this crop; fast_pair is what the product actually runs
+        #    and it works on full pages.
+        #
+        #    fast_pair's stride-4 sampling is calibrated for device photos
+        #    (~1500-2500px wide). Narrow scans (a 600px Kosovo page) lose
+        #    the thin OCR-B strokes under it, so pages below ~900px are
+        #    upscaled to device scale first and the band rect is mapped
+        #    back. The original function is untouched -- the omtest/line
+        #    training path must stay byte-identical to the device.
+        arr = np.asarray(rgb, dtype=np.uint32)
+        gray = ((arr[:, :, 0] * 299 + arr[:, :, 1] * 587 +
+                 arr[:, :, 2] * 114 + 500) // 1000).astype(np.uint8)
+        scale = 1.0
+        if Wd < 900:
+            scale = 1500.0 / Wd
+            gray = np.asarray(
+                Image.fromarray(gray).resize(
+                    (int(Wd * scale), int(H * scale)), Image.BILINEAR),
+                dtype=np.uint8)
+        pair = fast_pair(gray)
+        if pair is None:
+            stats["no_pair"] += 1
+            adjudicate.append({"id": img.name, "reason": "fast_pair_no_pair"})
             continue
-        bx, by, bw, bh = (int(m.group(i)) for i in range(1, 5))
+        xp = adaptive_xpad(gray, pair)
+        top, bot = native_band(gray, pair[0], pair[1], xp[0], xp[1])
+        bx = int(xp[0] / scale)
+        by = int(top / scale)
+        bw = int(Wd - xp[0] / scale - xp[1] / scale)
+        bh = int((bot - top) / scale)
         if bw < 400 or bh < 30:
             stats["tiny_band"] += 1
             adjudicate.append({"id": img.name, "reason": f"tiny_band {bw}x{bh}"})

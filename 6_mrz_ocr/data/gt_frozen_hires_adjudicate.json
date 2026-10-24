@@ -1,18 +1,11 @@
 [
  {
   "id": "03d55c05caa2cabf_0048.jpg",
-  "reason": "no_cksum_candidate",
-  "reads": 6
+  "reason": "fast_pair_no_pair"
  },
  {
   "id": "0e367dac7b38e947_0021.jpg",
-  "reason": "no_cksum_candidate",
-  "reads": 6
- },
- {
-  "id": "0f8ca80a606c2330_0036.jpg",
-  "reason": "no_cksum_candidate",
-  "reads": 6
+  "reason": "fast_pair_no_pair"
  },
  {
   "id": "161203e9325cd667_0019.jpg",
@@ -36,8 +29,7 @@
  },
  {
   "id": "1e891157d540fc5a_0013.jpg",
-  "reason": "no_cksum_candidate",
-  "reads": 6
+  "reason": "fast_pair_no_pair"
  },
  {
   "id": "21d84a13f98d12bf_0054.jpg",
@@ -56,13 +48,11 @@
  },
  {
   "id": "31c4a1e64c4f7d4e_0012.jpg",
-  "reason": "no_cksum_candidate",
-  "reads": 6
+  "reason": "fast_pair_no_pair"
  },
  {
   "id": "3446a3b3d3751e01_0043.jpg",
-  "reason": "no_cksum_candidate",
-  "reads": 6
+  "reason": "fast_pair_no_pair"
  },
  {
   "id": "4339efed00afb1c3_0007.jpg",
@@ -76,17 +66,11 @@
  },
  {
   "id": "5e9e855493a8457a_0014.jpg",
-  "reason": "no_cksum_candidate",
-  "reads": 6
+  "reason": "fast_pair_no_pair"
  },
  {
   "id": "634a934a6172592d_0015.jpg",
-  "reason": "tiny_band 348x461"
- },
- {
-  "id": "636096c202beb44e_0004.jpg",
-  "reason": "no_cksum_candidate",
-  "reads": 6
+  "reason": "tiny_band 348x37"
  },
  {
   "id": "72ef4ce48bf27731_0003.jpg",
@@ -110,33 +94,37 @@
  },
  {
   "id": "86c6d990773daff2_0002.jpg",
-  "reason": "no_cksum_candidate",
-  "reads": 6
+  "reason": "split_vote",
+  "top": [
+   [
+    "048M48VNN3MRT6811118M200626804664XNNN6NNNN24",
+    2
+   ],
+   [
+    "8484489889HEY6811118M2006268<6<<<66<<<<<<808",
+    1
+   ]
+  ]
  },
  {
   "id": "8831df1912eb2b99_0050.jpg",
-  "reason": "no_cksum_candidate",
-  "reads": 6
+  "reason": "fast_pair_no_pair"
  },
  {
   "id": "8a841f87fef0baec_0022.jpg",
-  "reason": "no_cksum_candidate",
-  "reads": 6
+  "reason": "fast_pair_no_pair"
  },
  {
   "id": "9465d484a1a0dc08_0032.jpg",
-  "reason": "no_cksum_candidate",
-  "reads": 6
+  "reason": "fast_pair_no_pair"
  },
  {
   "id": "9876eb156243de0e_0030.jpg",
-  "reason": "no_cksum_candidate",
-  "reads": 6
+  "reason": "fast_pair_no_pair"
  },
  {
   "id": "9ccca19943d2a556_0057.jpg",
-  "reason": "no_cksum_candidate",
-  "reads": 6
+  "reason": "fast_pair_no_pair"
  },
  {
   "id": "a01fd1ce7ba7bd41_0049.jpg",
@@ -145,8 +133,7 @@
  },
  {
   "id": "a584e1bfcc576a0a_0040.jpg",
-  "reason": "no_cksum_candidate",
-  "reads": 6
+  "reason": "fast_pair_no_pair"
  },
  {
   "id": "b0d54ce71b124c33_0038.jpg",
@@ -155,11 +142,20 @@
  },
  {
   "id": "b1442018a8167bf5_0029.jpg",
-  "reason": "no_cksum_candidate",
-  "reads": 6
+  "reason": "split_vote",
+  "top": [
+   [
+    "O000077347USH6502056F30101495001001206695838",
+    2
+   ],
+   [
+    "0000071347USM6502056F3010149500100120<095838",
+    1
+   ]
+  ]
  },
  {
-  "id": "b2b5008f3839530d_0001.jpg",
+  "id": "b9afd04e9d9f3dec_0042.jpg",
   "reason": "no_cksum_candidate",
   "reads": 6
  },
@@ -175,8 +171,7 @@
  },
  {
   "id": "daa3245a24e6c8fe_0058.jpg",
-  "reason": "no_cksum_candidate",
-  "reads": 6
+  "reason": "fast_pair_no_pair"
  },
  {
   "id": "dd4895defaeb9e2d_0055.jpg",
@@ -185,8 +180,17 @@
  },
  {
   "id": "dd6a2ea3ce305a5d_0026.jpg",
-  "reason": "no_cksum_candidate",
-  "reads": 6
+  "reason": "split_vote",
+  "top": [
+   [
+    "6451331382PAK6609302F1003145<<<<<<<<<<<<<<04",
+    2
+   ],
+   [
+    "6411331182BHC6609302F1003145<<<<<Z<<<<<<<<54",
+    2
+   ]
+  ]
  },
  {
   "id": "ecdbb504ddcc089d_0045.jpg",
@@ -195,13 +199,25 @@
  },
  {
   "id": "eff956d1ca02831b_0023.jpg",
-  "reason": "no_cksum_candidate",
-  "reads": 6
+  "reason": "fast_pair_no_pair"
  },
  {
   "id": "f0b4236c22f4dbd9_0059.jpg",
-  "reason": "no_cksum_candidate",
-  "reads": 6
+  "reason": "split_vote",
+  "top": [
+   [
+    "8068888888BHE8088608F88060806868868688888888",
+    1
+   ],
+   [
+    "0000000000UMU0000000M0000000000K000000000000",
+    1
+   ],
+   [
+    "0888888888BBB0088808M88088888888888888880868",
+    1
+   ]
+  ]
  },
  {
   "id": "f11760eab986eebf_0009.jpg",
@@ -215,16 +231,10 @@
  },
  {
   "id": "f5c522df4fb53e77_0034.jpg",
-  "reason": "no_cksum_candidate",
-  "reads": 6
+  "reason": "fast_pair_no_pair"
  },
  {
   "id": "fed5b44bae585a99_0044.jpg",
-  "reason": "no_cksum_candidate",
-  "reads": 6
- },
- {
-  "id": "ff4263d6d463017a_0008.jpg",
   "reason": "no_cksum_candidate",
   "reads": 6
  },
@@ -239,9 +249,12 @@
   "reads": 6
  },
  {
+  "id": "4c5f5e1654002cd0_0033.png",
+  "reason": "fast_pair_no_pair"
+ },
+ {
   "id": "594dc21795d7f471_0041.png",
-  "reason": "no_cksum_candidate",
-  "reads": 6
+  "reason": "fast_pair_no_pair"
  },
  {
   "id": "ae5fdb36f7498291_0016.png",
@@ -255,6 +268,11 @@
  },
  {
   "id": "e4f312034d96c615_0052.png",
+  "reason": "no_cksum_candidate",
+  "reads": 6
+ },
+ {
+  "id": "f80334b200240666_0028.png",
   "reason": "no_cksum_candidate",
   "reads": 6
  }

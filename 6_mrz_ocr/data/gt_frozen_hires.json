@@ -2,16 +2,32 @@
  "set": "hires",
  "records": [
   {
-   "id": "2c00c41ac0552ed5_0035.jpg",
+   "id": "0f8ca80a606c2330_0036.jpg",
    "crop": [
-    14,
-    32,
-    559,
-    346
+    0,
+    1222,
+    995,
+    120
    ],
    "pad": 10,
-   "line2": "80O0000000MYS9302165M2408312930216148MMP4472",
-   "line1": "P<MYSMAHATHIR<BIN<IDRUS<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "G050000007CHN9310140M02000400400000035553560",
+   "line1": "P<CHNIHANG<Y<UUUGNUUUG<E<<<<<<<<<<<<<<<<<<<<",
+   "tier": "consensus",
+   "votes": 3,
+   "reads": 6,
+   "line2_alts": []
+  },
+  {
+   "id": "2c00c41ac0552ed5_0035.jpg",
+   "crop": [
+    0,
+    324,
+    600,
+    64
+   ],
+   "pad": 10,
+   "line2": "M0Q0000000MYS9302165M24084824NN2A8166MMPSS82",
+   "line1": "P<NYSNAHAYHIR<BIN<IDBUS<<<<<<<<<<<<<<<<<<<<<",
    "tier": "consensus",
    "votes": 3,
    "reads": 6,
@@ -20,103 +36,180 @@
   {
    "id": "3cf4f7395699414c_0031.jpg",
    "crop": [
-    20,
-    1524,
-    1833,
-    1223
+    0,
+    2429,
+    1920,
+    181
    ],
    "pad": 10,
-   "line2": "5P6C120142NEU6503101F2403096999999990<<<<<84",
-   "line1": "P<HLDDE<BHUIJN<<WILLEKE<LIEEEOYYE<<<<<<<<<<<",
+   "line2": "5MFC120142NLO6503101F2403096999999990<<<<<84",
+   "line1": "P<HLDDE<BRUIJN<<WILLEKE<LIEEEOYYE<<<<<<<<<<<",
    "tier": "consensus",
    "votes": 3,
    "reads": 6,
    "line2_alts": [
-    "388712O142HLN6503101F2403096999999990<<<<<84"
+    "8864120102HLN6503101F2403096999999990<<<<<84"
    ]
   },
   {
-   "id": "b9afd04e9d9f3dec_0042.jpg",
+   "id": "636096c202beb44e_0004.jpg",
    "crop": [
     0,
-    56,
-    1920,
-    1247
+    324,
+    600,
+    63
    ],
    "pad": 10,
-   "line2": "22085271F0UEE2228802F0000044F72111IP8288<044",
-   "line1": "P<PAA<<<<<<<<KHN<<<<<<<<<HHH<U<<<<<<<<<<<<<<",
+   "line2": "1700000499BNY7000076F220616120QQQQQQ<<<<<<60",
+   "line1": "P<PRTGARCAO<DR<MAGALHAKS<<INES<<<<<<<<<<<<<<",
    "tier": "consensus",
    "votes": 3,
    "reads": 6,
    "line2_alts": []
   },
   {
-   "id": "cb64e780ab32f735_0006.jpg",
+   "id": "86c6d990773daff2_0002.jpg",
    "crop": [
     0,
-    2,
-    960,
-    1353
+    316,
+    600,
+    63
    ],
    "pad": 10,
-   "line2": "1A12318330SVK1111112F34091871111111111295<06",
-   "line1": "P<SNKSPFCYMFN<<NYORKA<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "048M48VNN3MRT6811118M200626804664XNNN6NNNN24",
+   "line1": "P<MLTMIGALLBF<<GIOWANND<<<<<<<<<<<<<<<<<<<<<",
+   "tier": "adjudicate",
+   "votes": 2,
+   "reads": 6,
+   "line2_alts": [
+    "8484489889HEY6811118M2006268<6<<<66<<<<<<808"
+   ]
+  },
+  {
+   "id": "b1442018a8167bf5_0029.jpg",
+   "crop": [
+    53,
+    941,
+    693,
+    86
+   ],
+   "pad": 10,
+   "line2": "O000077347USH6502056F30101495001001206695838",
+   "line1": "",
+   "tier": "adjudicate",
+   "votes": 2,
+   "reads": 6,
+   "line2_alts": [
+    "0000071347USM6502056F3010149500100120<095838"
+   ]
+  },
+  {
+   "id": "b2b5008f3839530d_0001.jpg",
+   "crop": [
+    0,
+    339,
+    600,
+    60
+   ],
+   "pad": 10,
+   "line2": "M0N0062122SVN7811182F261212218IIA785M565EK14",
+   "line1": "P<SNNNIORDC<<ANA<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "tier": "consensus",
    "votes": 3,
    "reads": 6,
    "line2_alts": [
-    "IW12318830BUC1111112F34091871111111111<<<<06"
+    "1898061102BUN7811182F26121221B11B781B1010640"
+   ]
+  },
+  {
+   "id": "cb64e780ab32f735_0006.jpg",
+   "crop": [
+    0,
+    1204,
+    960,
+    118
+   ],
+   "pad": 10,
+   "line2": "Y812318830SVK1111112F34091871111111111535906",
+   "line1": "P<SNKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<",
+   "tier": "consensus",
+   "votes": 3,
+   "reads": 6,
+   "line2_alts": [
+    "IC12318830VUP1111112F34091871111111111<<<<06"
+   ]
+  },
+  {
+   "id": "dd6a2ea3ce305a5d_0026.jpg",
+   "crop": [
+    0,
+    742,
+    600,
+    61
+   ],
+   "pad": 10,
+   "line2": "6451331382PAK6609302F1003145<<<<<<<<<<<<<<04",
+   "line1": "",
+   "tier": "adjudicate",
+   "votes": 2,
+   "reads": 6,
+   "line2_alts": [
+    "6411331182BHC6609302F1003145<<<<<Z<<<<<<<<54"
+   ]
+  },
+  {
+   "id": "f0b4236c22f4dbd9_0059.jpg",
+   "crop": [
+    0,
+    1005,
+    1920,
+    227
+   ],
+   "pad": 10,
+   "line2": "8068888888BHE8088608F88060806868868688888888",
+   "line1": "",
+   "tier": "adjudicate",
+   "votes": 1,
+   "reads": 6,
+   "line2_alts": [
+    "0000000000UMU0000000M0000000000K000000000000",
+    "0888888888BBB0088808M88088888888888888880868"
+   ]
+  },
+  {
+   "id": "ff4263d6d463017a_0008.jpg",
+   "crop": [
+    0,
+    790,
+    1404,
+    152
+   ],
+   "pad": 10,
+   "line2": "33000000<0UKV9108242F23092571234S678<0<<<<70",
+   "line1": "P<UKHAKAGYENKO<<MARIANA<<<<<<<<<<<<<<<<<<<<<",
+   "tier": "consensus",
+   "votes": 3,
+   "reads": 6,
+   "line2_alts": [
+    "YYGMMMMG<0HCK9108242F230925712345675<0222270"
    ]
   },
   {
    "id": "19a681e72277d117_0025.png",
    "crop": [
     0,
-    16,
+    422,
     852,
-    474
+    81
    ],
    "pad": 10,
-   "line2": "DBA0000004DBN7301131M2512015<<<<<<<<<<<<2204",
-   "line1": "P<PNRYLOREZ<SALOM<<JUAN<DIEGO<<<<<<<<<<<<<<<",
-   "tier": "consensus",
-   "votes": 3,
-   "reads": 6,
-   "line2_alts": []
-  },
-  {
-   "id": "4c5f5e1654002cd0_0033.png",
-   "crop": [
-    0,
-    324,
-    537,
-    406
-   ],
-   "pad": 10,
-   "line2": "BE06399482UAA6401171F1812051900781200<129676",
-   "line1": "P<UWNORANA<<HICHELLR<<<<<<<<<<<<<<<<<<<<<<<<",
-   "tier": "consensus",
-   "votes": 3,
-   "reads": 6,
-   "line2_alts": []
-  },
-  {
-   "id": "f80334b200240666_0028.png",
-   "crop": [
-    17,
-    28,
-    534,
-    330
-   ],
-   "pad": 10,
-   "line2": "AAMO000000AAS5702147M3101023000000000<<<<<08",
-   "line1": "P<ARGGONZALES<RODRIGUEI<MARIANA<FLORENCIA<<<",
+   "line2": "P6AB0OOO04PEH7301131M2512015<<<<<<KCKKKCKL16",
+   "line1": "P<PERFLOREZ<SALOM<<JUAN<DSFGO<<<<<<<<<<<<<<<",
    "tier": "consensus",
    "votes": 3,
    "reads": 6,
    "line2_alts": [
-    "BBA0000000HNN9702101M3303023000000000<<<<848"
+    "88A0000M06BBN7301131M25120152072202222220212"
    ]
   }
  ]

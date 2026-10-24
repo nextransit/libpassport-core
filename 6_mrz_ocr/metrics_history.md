@@ -312,3 +312,24 @@ pads(4,10,18) × 双头 → ICAO 校验修复（复用 fix_gt_checksum.solve）�
 注意：草案 GT 来自当前模型共识，仅作冻结起点；adjudicate/consensus 级
 需人工过目后才能作为评测基线（与 build_frozen_gt 的独立性原则的差距
 已在脚本 docstring 声明）。eval_frozen 支持 --set hires。
+
+### 2026-10-24 hires GT 构建器切换到 Android 快速路径定位器
+
+locate_band 在整页扫描件上退化为全图 → 改用 export_omtest_slices 的
+fast_pair/adaptive_xpad/native_band（与 Android 逐位一致）；窄于 900px
+的页面先放大到 1500px 设备尺度再定位、坐标映射回原页（600px Kosovo 页
+的 stride-4 采样丢笔画问题）。
+
+| 轮次 | 定位器 | 有候选 | consensus | 待裁决 |
+|---|---|---|---|---|
+| 1 | locate_band（退化） | 7 | 7 | 52 |
+| 2 | fast_pair | 12 | 9 | 50 |
+| 3 | fast_pair + 尺度归一 | 12 | 8+4 split | 51 |
+
+cnn 基线（12 张草案 GT，in-domain 上界）：8/12 exact、87.69% char、
+cksum 8/12、cksum&wrong 0/12、p50 7.7ms（紧 band 后整页处理开销消失）。
+
+语料可用率硬上限：抽查确认 no_candidate 桶以打码页为主（Angola/India/
+Thailand 的 MRZ 关键字段均被上传者涂黑），47/59 排除属于语料选择问题
+而非算法问题。hires 域要扩容需在抓取侧过滤（is_passport_page 增强 +
+拒绝含大面积色块的页面）。
