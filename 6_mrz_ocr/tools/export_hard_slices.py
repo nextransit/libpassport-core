@@ -1,16 +1,23 @@
 #!/usr/bin/env python3
 """Export CNN misclassified character slices for trainer feedback.
 
-Runs the C pipeline (MRZ_OCR_DUMP=1) over the evaluation corpus,
-compares each recognised line against the ground truth, and writes
-the 16x12 glyph patches where the CNN was WRONG (or low-confidence)
-alongside their ground-truth label to an .npz.  This is the
-"real edge slices -> trainer" loop: the next train_cnn_real run can
-upsample these exact patches instead of adding blind synthetic noise.
+Runs the C pipeline (MRZ_OCR_DUMP=1) over a corpus, compares each
+recognised line against the ground truth, and writes the 16x12 glyph
+patches where the CNN was WRONG (or low-confidence) alongside their
+ground-truth label to an .npz.  This is the "real edge slices ->
+trainer" loop: the next train_cnn_real run can upsample these exact
+patches instead of adding blind synthetic noise.
+
+LEAKAGE WARNING: the default corpus is the TRAIN corpus on purpose.
+Slices mined from data/corpus_eval and fed back through
+train_cnn_real.py --mix-hard-slices train the model on the very
+images the regression gate scores, which silently invalidates every
+later gate comparison.  Never point --corpus at data/corpus_eval
+unless the .npz is used for ANALYSIS ONLY.
 
 Usage:
   python3 tools/export_hard_slices.py \
-      --corpus data/corpus_eval \
+      --corpus data/corpus_train \
       --tool build/mrz_ocr_cnn_tool \
       --out data/hard_slices.npz
 """
@@ -30,7 +37,7 @@ def load_dump(path: str) -> np.ndarray:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--corpus", default="data/corpus_eval")
+    ap.add_argument("--corpus", default="data/corpus_train")
     ap.add_argument("--tool", default="build/mrz_ocr_cnn_tool")
     ap.add_argument("--out", default="data/hard_slices.npz")
     ap.add_argument("--low-conf-thresh", type=int, default=80,

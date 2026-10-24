@@ -32,7 +32,10 @@ ap.add_argument("--mix-synthetic", type=int, default=0,
                 help="blend N synthetic v2-renderer samples per class")
 ap.add_argument("--mix-hard-slices", default="",
                 help=".npz from tools/export_hard_slices.py; upsample the "
-                     "real misclassified 16x12 patches into TRAIN data")
+                     "misclassified 16x12 patches into TRAIN data. The npz "
+                     "must come from the TRAIN corpus (or an independent "
+                     "labelled set) -- eval-derived slices leak the gate "
+                     "corpus into training")
 ap.add_argument("--line-index", type=int, choices=[0, 1], default=-1,
                 help="train only line 1 (0) or line 2 (1); -1 mixes both")
 ap.add_argument("--max-images", type=int, default=0,
@@ -53,7 +56,10 @@ def split_images():
     random.seed(42)
     random.shuffle(imgs)
     n_val = max(1, int(len(imgs) * a.val_frac))
-    n_val = min(n_val, 10)
+    # The old cap of 10 images left best-state selection to ~880 glyphs
+    # (val noise +-0.1pp/glyph); 60 images keep the split honest without
+    # starving the train half.
+    n_val = min(n_val, 60)
     val_imgs = set(imgs[:n_val])
     tr_imgs = [p for p in imgs if p not in val_imgs]
     return tr_imgs, val_imgs
@@ -67,7 +73,10 @@ def gather(imgs):
                 continue
             for c, ch in enumerate(line):
                 if ch not in GI: continue
-                fs = sorted(glob.glob(str(imgdir/f'mrz_dump_img_l{li}_c{c:02d}_r*_w*.ppm')))
+                # Dump names carry the window geometry too:
+                # mrz_dump_<tag>_l<line>_c<col>_x<x>_r<r>_w<w>.ppm --
+                # the _x segment must be globbed or nothing matches.
+                fs = sorted(glob.glob(str(imgdir/f'mrz_dump_img_l{li}_c{c:02d}_x*_r*_w*.ppm')))
                 if not fs: continue
                 if len(fs) > 1:
                     raise RuntimeError(
@@ -91,7 +100,11 @@ def generate_dumps():
         records = sorted(random.Random(0).sample(records, a.max_images),
                          key=lambda r: r['id'])
         print(f"subsampled corpus to {len(records)} images", flush=True)
-    env = dict(os.environ); env['MRZ_OCR_DUMP']='1'
+    # Dump tag MUST match the glob in gather() below ('img'): the C
+    # dump helper uses the env value as the filename tag, so a
+    # value like '1' produces mrz_dump_1_* files the gatherer
+    # never finds (silently empty dataset -> ZeroDivisionError).
+    env = dict(os.environ); env['MRZ_OCR_DUMP']='img'
     # Rebuild the workdir from scratch: leftover folders from an older
     # corpus would silently pair old glyphs with new labels.
     if ROOT.exists():
@@ -103,7 +116,7 @@ def generate_dumps():
         # Clean the shared /tmp dump dir before EVERY run: dump file
         # names contain only (line, col, size) so two runs with the
         # same shapes would collide and glob could pick a stale glyph.
-        for f in glob.glob('/tmp/mrz_dump_img_*.ppm'):
+        for f in glob.glob('/tmp/mrz_dump_*.ppm'):
             os.remove(f)
         r = subprocess.run([a.tool, str(p)], capture_output=True,
                            text=True, timeout=20, env=env)
@@ -180,7 +193,7 @@ class Net(nn.Module):
 torch.manual_seed(1)
 model=Net()
 opt=torch.optim.Adam(model.parameters(),lr=0.02)
-sched=torch.optim.lr_scheduler.CosineAnnealingLR(opt,T_max=60)
+sched=torch.optim.lr_scheduler.CosineAnnealingLR(opt,T_max=a.epochs)
 bs=512
 best=0.0; best_state=None
 for ep in range(a.epochs):
