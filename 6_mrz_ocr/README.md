@@ -7,8 +7,8 @@ Three recognition backends share the band / line / segmentation stage.
 
 | backend | how it classifies | when to use |
 |---|---|---|
-| **fused** (`mrz_ocr_recognise_fuse`) | the per-character CNN head AND the CRNN sequence head, combined in log space with a confidence gate | **the product path** |
-| CNN (`mrz_ocr_recognise_cnn`) | per-character CNN head only | fallback / A/B |
+| **CNN** (`mrz_ocr_recognise_cnn`) | per-character CNN head only | **the shipping path** |
+| fused (`mrz_ocr_recognise_fuse`) | the per-character CNN head AND the CRNN sequence head, combined in log space with a confidence gate | opt-in A/B (Android backend 3), see the caveat below |
 | template (`mrz_ocr_recognise`) | template-bank matching | legacy A/B only |
 
 The fused engine exists because the two heads fail on DIFFERENT cells.
@@ -22,8 +22,13 @@ fused             : 22/41 exact, 96.90% char, 18 checksum-valid-but-wrong
 ```
 
 The CRNN sequence head does NOT generalise on its own with this corpus
-(41 photos, labels verifiable only at the 5 check-digit positions), so
-it is used as a complement to the CNN head, not as a replacement.  See
+(41 photos, labels verifiable only at the 5 check-digit positions), and
+the fusion is NOT the default any more: on the frozen assets set the
+fused engine scores 8/32 exact against the plain CNN's 21/32, because
+the gate lets the CRNN outvote the CNN on cells where the CNN is right.
+Fusion only pays for itself where the CRNN head is trustworthy, which
+today is the 41-photo passport set (+1/41 over the CNN) -- ship the
+plain CNN and turn fusion on per deployment after a frozen-GT A/B. See
 `../outputs/crnn_optimization_2026-10-23.md` for the full analysis and
 `tools/cv_crnn.py` to reproduce the cross-validation.
 
