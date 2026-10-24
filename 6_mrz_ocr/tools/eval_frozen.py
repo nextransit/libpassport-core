@@ -37,6 +37,7 @@ ROOT = Path(__file__).resolve().parents[1]
 TOOL = ROOT / "build" / "mrz_ocr_cnn_tool"
 OMTEST = ROOT.parent / "tmp" / "omtest"
 ASSETS = ROOT.parent / "assets" / "pic"
+HIRES = ROOT.parent / "assets" / "pic_hires"
 
 W = (7, 3, 1)
 
@@ -97,6 +98,10 @@ def image_for(which: str, rec):
             for jpg in d.glob("*.jpg"):
                 if jpg.stem == Path(name).stem:
                     return jpg
+    elif which == "hires":
+        p = HIRES / name
+        if p.exists():
+            return p
     else:
         p = ASSETS / name
         if p.exists():
@@ -106,7 +111,7 @@ def image_for(which: str, rec):
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--set", choices=("passport", "assets", "passport_corrected"), required=True)
+    ap.add_argument("--set", choices=("passport", "assets", "passport_corrected", "hires"), required=True)
     ap.add_argument("--out", default="")
     ap.add_argument("--pads", default="")
     args = ap.parse_args()

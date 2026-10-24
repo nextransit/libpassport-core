@@ -294,3 +294,21 @@ train_crnn_seq.py），fuse 在那之前保持 opt-in。
 CRNN 头按新 line-conv 特征重训后从崩溃（25% char）恢复到 in-domain
 74%/55% char；fuse 默认旋钮下 passport 与 cnn 打平、assets 仍 -1 张，
 维持 opt-in。fuse 阈值调优需以 cv_crnn 分组 CV 为准，不在冻结集上拍。
+
+## 2026-10-24 高清语料（assets/pic_hires，1600px 抓取）首轮基线
+
+tests/fetch_passports.py --width 1600 抓取 60 张（p50 宽 1080，源图不足
+1600 的按原尺寸）。整页直喂当前管线：59/59 定位成功但 44+44 仅 25/59、
+cksum 0/59、seg score p50=56——`locate_band` 在整页扫描件上退化为全图
+（与 9 月结论一致），产品路径依赖 Kotlin locateFast 先裁 band。
+
+新增 tools/build_frozen_gt_hires.py：工具自定位 band（仅几何）→
+pads(4,10,18) × 双头 → ICAO 校验修复（复用 fix_gt_checksum.solve）→
+共识分级（checksum_unanimous / consensus / adjudicate）。首轮：
+7/59 张达成 consensus 级草案 GT（无全票），52 张进入待裁决清单
+（gt_frozen_hires_adjudicate.json）。修复了 solve() 返回
+(None,None,None)（输入已通过校验或无解）被当真值导致 None 计票的 bug。
+
+注意：草案 GT 来自当前模型共识，仅作冻结起点；adjudicate/consensus 级
+需人工过目后才能作为评测基线（与 build_frozen_gt 的独立性原则的差距
+已在脚本 docstring 声明）。eval_frozen 支持 --set hires。

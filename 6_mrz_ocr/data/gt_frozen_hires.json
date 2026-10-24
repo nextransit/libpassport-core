@@ -1,0 +1,123 @@
+{
+ "set": "hires",
+ "records": [
+  {
+   "id": "2c00c41ac0552ed5_0035.jpg",
+   "crop": [
+    14,
+    32,
+    559,
+    346
+   ],
+   "pad": 10,
+   "line2": "80O0000000MYS9302165M2408312930216148MMP4472",
+   "line1": "P<MYSMAHATHIR<BIN<IDRUS<<<<<<<<<<<<<<<<<<<<<",
+   "tier": "consensus",
+   "votes": 3,
+   "reads": 6,
+   "line2_alts": []
+  },
+  {
+   "id": "3cf4f7395699414c_0031.jpg",
+   "crop": [
+    20,
+    1524,
+    1833,
+    1223
+   ],
+   "pad": 10,
+   "line2": "5P6C120142NEU6503101F2403096999999990<<<<<84",
+   "line1": "P<HLDDE<BHUIJN<<WILLEKE<LIEEEOYYE<<<<<<<<<<<",
+   "tier": "consensus",
+   "votes": 3,
+   "reads": 6,
+   "line2_alts": [
+    "388712O142HLN6503101F2403096999999990<<<<<84"
+   ]
+  },
+  {
+   "id": "b9afd04e9d9f3dec_0042.jpg",
+   "crop": [
+    0,
+    56,
+    1920,
+    1247
+   ],
+   "pad": 10,
+   "line2": "22085271F0UEE2228802F0000044F72111IP8288<044",
+   "line1": "P<PAA<<<<<<<<KHN<<<<<<<<<HHH<U<<<<<<<<<<<<<<",
+   "tier": "consensus",
+   "votes": 3,
+   "reads": 6,
+   "line2_alts": []
+  },
+  {
+   "id": "cb64e780ab32f735_0006.jpg",
+   "crop": [
+    0,
+    2,
+    960,
+    1353
+   ],
+   "pad": 10,
+   "line2": "1A12318330SVK1111112F34091871111111111295<06",
+   "line1": "P<SNKSPFCYMFN<<NYORKA<<<<<<<<<<<<<<<<<<<<<<<",
+   "tier": "consensus",
+   "votes": 3,
+   "reads": 6,
+   "line2_alts": [
+    "IW12318830BUC1111112F34091871111111111<<<<06"
+   ]
+  },
+  {
+   "id": "19a681e72277d117_0025.png",
+   "crop": [
+    0,
+    16,
+    852,
+    474
+   ],
+   "pad": 10,
+   "line2": "DBA0000004DBN7301131M2512015<<<<<<<<<<<<2204",
+   "line1": "P<PNRYLOREZ<SALOM<<JUAN<DIEGO<<<<<<<<<<<<<<<",
+   "tier": "consensus",
+   "votes": 3,
+   "reads": 6,
+   "line2_alts": []
+  },
+  {
+   "id": "4c5f5e1654002cd0_0033.png",
+   "crop": [
+    0,
+    324,
+    537,
+    406
+   ],
+   "pad": 10,
+   "line2": "BE06399482UAA6401171F1812051900781200<129676",
+   "line1": "P<UWNORANA<<HICHELLR<<<<<<<<<<<<<<<<<<<<<<<<",
+   "tier": "consensus",
+   "votes": 3,
+   "reads": 6,
+   "line2_alts": []
+  },
+  {
+   "id": "f80334b200240666_0028.png",
+   "crop": [
+    17,
+    28,
+    534,
+    330
+   ],
+   "pad": 10,
+   "line2": "AAMO000000AAS5702147M3101023000000000<<<<<08",
+   "line1": "P<ARGGONZALES<RODRIGUEI<MARIANA<FLORENCIA<<<",
+   "tier": "consensus",
+   "votes": 3,
+   "reads": 6,
+   "line2_alts": [
+    "BBA0000000HNN9702101M3303023000000000<<<<848"
+   ]
+  }
+ ]
+}
