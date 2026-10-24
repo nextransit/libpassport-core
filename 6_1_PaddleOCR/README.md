@@ -14,7 +14,7 @@ When `paddlepaddle` becomes installable on this platform:
 1.  `pip install paddlepaddle`
 2.  Implement `paddle_ocr_tool.py` next to this README, mirroring
     the stdout contract in 6_2_Tesseract/tesseract_tool.py.
-3.  Add the tool path to `tests/gui.py` and `tests/gui_ctk.py`:
+3.  Add the tool path to `tests/gui.py`:
 
     ```python
     PADDLE_TOOL = ROOT / "6_1_PaddleOCR" / "paddle_ocr_tool.py"

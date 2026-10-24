@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Theme regression scan for PassportGUI (tests/gui.py + tests/gui_ctk.py).
+"""Theme regression scan for PassportGUI (tests/gui.py).
 
 Asserts:
   dark mode  -> zero light-coloured surfaces (mean RGB > 225) anywhere in the
@@ -7,7 +7,7 @@ Asserts:
   light mode -> zero dark-coloured surfaces (mean RGB < 60), styles light.
 
 Usage:
-    python gui_theme_scan.py [gui|gui_ctk]
+    python gui_theme_scan.py
 
 Exit code 0 = PASS, 1 = FAIL. Must run on a real display (macOS ok).
 """
@@ -118,7 +118,7 @@ def run_checks(mod_name, theme, want_light):
 
 def main():
     mod_name = sys.argv[1] if len(sys.argv) > 1 else "gui"
-    if mod_name not in ("gui", "gui_ctk"):
+    if mod_name != "gui":
         print(f"unknown module {mod_name}")
         return 2
     sys.path.insert(0, str(Path(__file__).resolve().parent))
