@@ -285,3 +285,12 @@ slices 合并（7304 slices）后重训两个 line 头。
 CRNN 头尚未跟上 line conv 的特征迁移（plain CRNN 0/41、25% char），
 需要按新特征重新导出 + 重训（tools/export_crnn_features.py +
 train_crnn_seq.py），fuse 在那之前保持 opt-in。
+
+| 2026-10-24 15:20 | gt_frozen_passport (41) | crnn (重导特征+重训) | 0/41 | 74.22% | 27/41 | 27/41 |
+| 2026-10-24 15:20 | gt_frozen_passport (41) | fuse | 38/41 | 99.83% | 41/41 | 3/41 |
+| 2026-10-24 15:20 | gt_frozen_assets (32) | crnn (重导特征+重训) | 0/32 | 54.62% | 13/32 | 13/32 |
+| 2026-10-24 15:20 | gt_frozen_assets (32) | fuse | 22/32 | 93.75% | 27/32 | 5/32 |
+
+CRNN 头按新 line-conv 特征重训后从崩溃（25% char）恢复到 in-domain
+74%/55% char；fuse 默认旋钮下 passport 与 cnn 打平、assets 仍 -1 张，
+维持 opt-in。fuse 阈值调优需以 cv_crnn 分组 CV 为准，不在冻结集上拍。

@@ -63,11 +63,12 @@ def l2_ok(l2: str) -> bool:
     return l2[43] == str(cd(l2[0:10] + l2[13:20] + l2[21:28] + l2[28:43]))
 
 
-def decode(ppm: Path, crnn: int):
+def decode(ppm: Path, mode: str):
     env = dict(os.environ)
     env["MRZ_OCR_LINE_MODELS"] = "1"
     env["MRZ_OCR_PAR"] = "0"
-    env["MRZ_OCR_CRNN"] = "1" if crnn else "0"
+    env["MRZ_OCR_CRNN"] = "1" if mode in ("crnn", "fuse") else "0"
+    env["MRZ_OCR_FUSE"] = "1" if mode == "fuse" else "0"
     t0 = time.perf_counter()
     p = subprocess.run([str(TOOL), str(ppm)], capture_output=True,
                        text=True, timeout=120, env=env)
@@ -125,7 +126,7 @@ def main() -> int:
             continue
         H, Wd = rgb.shape[:2]
         x, y, w, h = rec["crop"]
-        per = {0: {}, 1: {}}
+        per = {m: {} for m in ("cnn", "crnn", "fuse")}
         for pad in pads:
             band = rgb[max(0, y - pad):min(H, y + h + pad),
                        max(0, x):min(Wd, x + w)]
@@ -134,14 +135,15 @@ def main() -> int:
             ppm = tmp / f"{Path(rec['id']).stem}_{pad}.ppm"
             Image.fromarray(cv2.cvtColor(band, cv2.COLOR_BGR2RGB)).save(
                 str(ppm), format="PPM")
-            for crnn in (0, 1):
-                per[crnn][pad] = decode(ppm, crnn)
-        if not per[0] or not per[1]:
+            for m in per:
+                per[m][pad] = decode(ppm, m)
+        if not per["cnn"] or not per["crnn"]:
             continue
         mid = pads[len(pads) // 2]
         rows.append({
             "id": rec["id"], "gt": rec["line2"],
-            "cnn": per[0][mid], "crnn": per[1][mid],
+            "cnn": per["cnn"][mid], "crnn": per["crnn"][mid],
+            "fuse": per["fuse"].get(mid),
         })
 
     n = len(rows)
@@ -152,10 +154,12 @@ def main() -> int:
     print(f"{'head':6} {'exact':>9} {'char':>9} {'cksum':>9} {'cksum&wrong':>13} "
           f"{'p50':>8} {'p95':>8}")
     out = {}
-    for head in ("cnn", "crnn"):
+    for head in ("cnn", "crnn", "fuse"):
         exact = char = cksum = ckw = 0
         ms = []
         for r in rows:
+            if r.get(head) is None:
+                continue
             l1, l2, c1, c2, t = r[head]
             ms.append(t)
             if l2 == r["gt"]:
