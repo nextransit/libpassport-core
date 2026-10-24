@@ -1,0 +1,485 @@
+{
+ "set": "assets",
+ "records": [
+  {
+   "id": "239e042aba0c3ab2_0102.jpg",
+   "line1": "",
+   "line2": "DLM00000M8CHN8509037F150501819200001N4X<8892",
+   "votes": 3,
+   "band_h": 68,
+   "tier": "consensus",
+   "crop": [
+    48,
+    555,
+    912,
+    68
+   ],
+   "pad": 10
+  },
+  {
+   "id": "23f16a7d9b6ab9da_0062.jpg",
+   "line1": "",
+   "line2": "4400000147UKH8307255M19080333052125257S5S500",
+   "votes": 3,
+   "band_h": 77,
+   "tier": "consensus",
+   "crop": [
+    10,
+    323,
+    547,
+    77
+   ],
+   "pad": 10
+  },
+  {
+   "id": "2c793efe12276f9b_0258.jpg",
+   "line1": "",
+   "line2": "LV90008223LVA6612016F2501121111111<11G1MCK72",
+   "votes": 2,
+   "band_h": 447,
+   "tier": "consensus",
+   "crop": [
+    7,
+    143,
+    950,
+    447
+   ],
+   "pad": 10
+  },
+  {
+   "id": "31611582cbf14d7f_0018.jpg",
+   "line1": "",
+   "line2": "BHNQO0RQQ8PBR8404028M0800004X4W46469SQ46AQ02",
+   "votes": 3,
+   "band_h": 96,
+   "tier": "consensus",
+   "crop": [
+    64,
+    718,
+    1141,
+    96
+   ],
+   "pad": 10
+  },
+  {
+   "id": "4086f51e94e9c5c7_0007.jpg",
+   "line1": "",
+   "line2": "1100000000HUS8008046F09022745<555<55<<<<KK08",
+   "votes": 3,
+   "band_h": 67,
+   "tier": "consensus",
+   "crop": [
+    0,
+    559,
+    906,
+    67
+   ],
+   "pad": 10
+  },
+  {
+   "id": "41ab45d4bde758dc_0306.jpg",
+   "line1": "",
+   "line2": "<1IO003642HCB7503153M230801030LVB52<<<<<<986",
+   "votes": 3,
+   "band_h": 67,
+   "tier": "consensus",
+   "crop": [
+    49,
+    550,
+    853,
+    67
+   ],
+   "pad": 10
+  },
+  {
+   "id": "43ecb49033fb30c1_0073.jpg",
+   "line1": "",
+   "line2": "741M216522UST2300209F9707014<<<<<<<<<<<C<<20",
+   "votes": 3,
+   "band_h": 63,
+   "tier": "consensus",
+   "crop": [
+    58,
+    1220,
+    827,
+    63
+   ],
+   "pad": 10
+  },
+  {
+   "id": "4c5f5e1654002cd0_0050.png",
+   "line1": "",
+   "line2": "9M01391481USA6401171F1812051900Z81200KR2Y666",
+   "votes": 2,
+   "band_h": 387,
+   "tier": "consensus",
+   "crop": [
+    2,
+    343,
+    535,
+    387
+   ],
+   "pad": 10
+  },
+  {
+   "id": "52f421c92ccf6ba4_0136.jpg",
+   "line1": "",
+   "line2": "API0130386BID9105045M2509013<88888DDDP<<<<82",
+   "votes": 3,
+   "band_h": 66,
+   "tier": "consensus",
+   "crop": [
+    4,
+    519,
+    887,
+    66
+   ],
+   "pad": 10
+  },
+  {
+   "id": "58b7776585fe04f3_0024.jpg",
+   "line1": "",
+   "line2": "Y9656N63M0SSL4<48086<62222222222222222262222",
+   "votes": 3,
+   "band_h": 52,
+   "tier": "consensus",
+   "crop": [
+    0,
+    1194,
+    956,
+    52
+   ],
+   "pad": 10
+  },
+  {
+   "id": "6b0e5919dd6f3ac8_0006.jpg",
+   "line1": "",
+   "line2": "K8M0002549KSP8001014F25010178999999990044444",
+   "votes": 3,
+   "band_h": 43,
+   "tier": "consensus",
+   "crop": [
+    34,
+    338,
+    536,
+    43
+   ],
+   "pad": 10
+  },
+  {
+   "id": "6b91117492dc24f3_0022.jpg",
+   "line1": "",
+   "line2": "2G20705S15DMN7803048M24111853000361455555550",
+   "votes": 3,
+   "band_h": 65,
+   "tier": "consensus",
+   "crop": [
+    44,
+    548,
+    852,
+    65
+   ],
+   "pad": 10
+  },
+  {
+   "id": "72ef4ce48bf27731_0002.jpg",
+   "line1": "",
+   "line2": "999998NNN0NNN0000000M0000000N00000000N84NN00",
+   "votes": 3,
+   "band_h": 324,
+   "tier": "consensus",
+   "crop": [
+    1,
+    338,
+    499,
+    324
+   ],
+   "pad": 10
+  },
+  {
+   "id": "7626df394c39f314_0020.png",
+   "line1": "",
+   "line2": "B0000000<7BHA9001284M3212161000000006<<<<<66",
+   "votes": 3,
+   "band_h": 65,
+   "tier": "consensus",
+   "crop": [
+    67,
+    518,
+    820,
+    65
+   ],
+   "pad": 10
+  },
+  {
+   "id": "7c5899e1f86a07a0_0008.jpg",
+   "line1": "",
+   "line2": "OOO0000060FTB9003118M2901020490091110652<286",
+   "votes": 3,
+   "band_h": 68,
+   "tier": "consensus",
+   "crop": [
+    55,
+    529,
+    845,
+    68
+   ],
+   "pad": 10
+  },
+  {
+   "id": "8a5e3bc18a6ff7d2_0043.jpg",
+   "line1": "",
+   "line2": "8PPC120142MEO6301101F2403096999999990<<<<<86",
+   "votes": 3,
+   "band_h": 65,
+   "tier": "consensus",
+   "crop": [
+    67,
+    1227,
+    822,
+    65
+   ],
+   "pad": 10
+  },
+  {
+   "id": "a495fb368b46ab35_0280.png",
+   "line1": "",
+   "line2": "D622Y2SY96CHN8310291F19042204C0CHXHEH8H88984",
+   "votes": 3,
+   "band_h": 229,
+   "tier": "consensus",
+   "crop": [
+    10,
+    390,
+    452,
+    229
+   ],
+   "pad": 10
+  },
+  {
+   "id": "a60aae34a06f1867_0016.jpg",
+   "line1": "",
+   "line2": "X3000000<0UKH9108242F23092571234567890<<<<70",
+   "votes": 2,
+   "band_h": 70,
+   "tier": "consensus",
+   "crop": [
+    52,
+    557,
+    864,
+    70
+   ],
+   "pad": 10
+  },
+  {
+   "id": "ab01dc87d9ed045a_0068.jpg",
+   "line1": "",
+   "line2": "G050G000C7CHN9310140M02000400400000055555360",
+   "votes": 2,
+   "band_h": 64,
+   "tier": "consensus",
+   "crop": [
+    47,
+    1204,
+    851,
+    64
+   ],
+   "pad": 10
+  },
+  {
+   "id": "acd3e9fd1ce9bd0a_0016.jpg",
+   "line1": "",
+   "line2": "<49G755163GBA8812049F2509286999<<<9<99999904",
+   "votes": 3,
+   "band_h": 156,
+   "tier": "consensus",
+   "crop": [
+    10,
+    229,
+    565,
+    156
+   ],
+   "pad": 10
+  },
+  {
+   "id": "acf14e0c631ec935_0030.png",
+   "line1": "",
+   "line2": "0000OOOOO0UOO0000000M00000000QNNNNNNNNNNNN00",
+   "votes": 3,
+   "band_h": 102,
+   "tier": "consensus",
+   "crop": [
+    11,
+    551,
+    946,
+    102
+   ],
+   "pad": 10
+  },
+  {
+   "id": "b2b5008f3839530d_0001.jpg",
+   "line1": "",
+   "line2": "M0N0062122SVN7811182F261212218IIA785M565EK14",
+   "votes": 3,
+   "band_h": 86,
+   "tier": "consensus",
+   "crop": [
+    19,
+    351,
+    563,
+    86
+   ],
+   "pad": 10
+  },
+  {
+   "id": "b30dc79ee9550e9e_0024.jpg",
+   "line1": "",
+   "line2": "A450M2NMN5ISK1212123F29020491212M2NY23HNNN62",
+   "votes": 3,
+   "band_h": 43,
+   "tier": "consensus",
+   "crop": [
+    0,
+    337,
+    567,
+    43
+   ],
+   "pad": 10
+  },
+  {
+   "id": "b7a97ca0edede07b_0164.jpg",
+   "line1": "",
+   "line2": "L480000384PML8306122M16073035555555555555502",
+   "votes": 3,
+   "band_h": 24,
+   "tier": "consensus",
+   "crop": [
+    13,
+    795,
+    315,
+    24
+   ],
+   "pad": 10
+  },
+  {
+   "id": "bc1ddfd8c13b5ca9_0007.jpg",
+   "line1": "",
+   "line2": "UMM1023318MMA7307122F29030355NNNNNNN5NN54402",
+   "votes": 3,
+   "band_h": 43,
+   "tier": "consensus",
+   "crop": [
+    31,
+    337,
+    527,
+    43
+   ],
+   "pad": 10
+  },
+  {
+   "id": "c2aee55b9017575f_0028.jpg",
+   "line1": "",
+   "line2": "5200360198HBS5608087M2002156<<<<<<<<<<<<<<08",
+   "votes": 3,
+   "band_h": 67,
+   "tier": "consensus",
+   "crop": [
+    0,
+    533,
+    898,
+    67
+   ],
+   "pad": 10
+  },
+  {
+   "id": "cd83b43756aff32d_0013.jpg",
+   "line1": "",
+   "line2": "0M10070071HAV8212258F140701955535SSKKKKKKK56",
+   "votes": 3,
+   "band_h": 41,
+   "tier": "consensus",
+   "crop": [
+    0,
+    335,
+    600,
+    41
+   ],
+   "pad": 10
+  },
+  {
+   "id": "e350cea71e824345_0007.jpg",
+   "line1": "",
+   "line2": "3000000001BGH8508018F150320945040M0M33NNNN54",
+   "votes": 3,
+   "band_h": 68,
+   "tier": "consensus",
+   "crop": [
+    0,
+    531,
+    960,
+    68
+   ],
+   "pad": 10
+  },
+  {
+   "id": "f22471c46575ec04_0008.jpg",
+   "line1": "",
+   "line2": "KP12345673AUC0012315F33113075555555555<5<<58",
+   "votes": 3,
+   "band_h": 67,
+   "tier": "consensus",
+   "crop": [
+    0,
+    543,
+    907,
+    67
+   ],
+   "pad": 10
+  },
+  {
+   "id": "f6132d0c5422d26a_0026.jpg",
+   "line1": "",
+   "line2": "6C40022514AOX5604230M3004157<<<<<<<<<<2<<<66",
+   "votes": 3,
+   "band_h": 68,
+   "tier": "consensus",
+   "crop": [
+    49,
+    517,
+    848,
+    68
+   ],
+   "pad": 10
+  },
+  {
+   "id": "f80334b200240666_0034.png",
+   "line1": "",
+   "line2": "84M0000000AHG5702147M3303023000D00000<<<<<16",
+   "votes": 3,
+   "band_h": 40,
+   "tier": "consensus",
+   "crop": [
+    31,
+    318,
+    511,
+    40
+   ],
+   "pad": 10
+  },
+  {
+   "id": "ffa1dc640314fa58_0089.png",
+   "line1": "",
+   "line2": "8KMPM4M672MMH7112214M220101821M27MN428B<<<00",
+   "votes": 3,
+   "band_h": 68,
+   "tier": "consensus",
+   "crop": [
+    55,
+    531,
+    845,
+    68
+   ],
+   "pad": 10
+  }
+ ]
+}

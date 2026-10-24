@@ -59,6 +59,10 @@ typedef struct {
 
 void cnn_default_init(cnn_t *net);
 
+/* Initialise one of the optional domain-specific MRZ models.
+ * line_index 0 targets TD3 line 1; line_index 1 targets TD3 line 2. */
+void cnn_line_init(cnn_t *net, int line_index);
+
 /* Run the conv net on one grayscale glyph. Fills `probs` (CNN_OUT
  * floats) with softmax probabilities and returns argmax class. */
 int cnn_forward(const cnn_t *net,

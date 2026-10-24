@@ -1,0 +1,136 @@
+{
+ "note": "Hand-read from tmp/PassPortPhoto crops by a vision model. line2_verified=1 means all five ICAO check digits close, which is 1e-5 strong evidence the transcription is right. line2_verified=0 means one character in the optional-data field (cols 28..41) is still uncertain: the check digits localise the error to one value class but cannot pick the glyph, because 0/A/K/U/< are checksum-equivalent. line1 has no check digits and is transcription-only. | 2026-10-22: four records carried a 45-character line2 (impossible for TD3). The correct 44-character form was determined from the check digits alone, not from the recogniser: dropping the duplicated character is the only single deletion that makes all five digits close, and for 30-AB col 31 also had to be O rather than 0. See line2_fix. | 2026-10-22 (2nd pass): line1 of 30-B also began with \"PO\" instead of \"P<\" (TD3 requires P<). Remaining line1 discrepancies (30-D names, 30-H names, 29-T col5, 29-U) are in the name field, which has no check digits -- they are recorded as unresolvable by arithmetic and flagged in the report rather than guessed.",
+ "records": [
+  {
+   "id": "2026-9-29-A",
+   "line1": "P<CHNYUN<<YAOYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E0132B7855CHN0110141M3105179GB682050108G0B88",
+   "line2_len": 44,
+   "line2_verified": 0
+  },
+  {
+   "id": "2026-9-29-B",
+   "line1": "P<CHNZHAO<<YONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E216923764CHN6703222M3510203H01JE61P966FG406",
+   "line2_len": 44,
+   "line2_verified": 0
+  },
+  {
+   "id": "2026-9-29-D",
+   "line1": "P<CHNBAO<<HUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E797044113CHN9004300F3405226GE0660IR06BA1310",
+   "line2_len": 44,
+   "line2_verified": 0
+  },
+  {
+   "id": "2026-9-29-L",
+   "line1": "P<CHNGU<<YINGYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E665282843CHN8807054M2810216001Z0321I9808660",
+   "line2_len": 44,
+   "line2_verified": 0
+  },
+  {
+   "id": "2026-9-29-N",
+   "line1": "P<CHNSU<<SHUYUE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E653505611CHN8409285F3001167B0BS1G1886G20864",
+   "line2_len": 44,
+   "line2_verified": 0
+  },
+  {
+   "id": "2026-9-29-O",
+   "line1": "P<CHNWEN<<YUEYUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E421853076CHN7906282F3506190JJ6MVT1JVTBGC610",
+   "line2_len": 44,
+   "line2_verified": 1
+  },
+  {
+   "id": "2026-9-29-P",
+   "line1": "P<CHNWU<<FANGYAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E766622355CHN0011293F2604181Y861DEUSDLKZG542",
+   "line2_len": 44,
+   "line2_verified": 1
+  },
+  {
+   "id": "2026-9-29-R",
+   "line1": "P<CHNXI<<YU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E123241791CHN6208185M36010409K94WG6UGCK6FR64",
+   "line2_len": 44,
+   "line2_verified": 1
+  },
+  {
+   "id": "2026-9-29-T",
+   "line1": "P<CHNYUAN<<YUESUI<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E0755268S1CHN9004012M27090195GI5BBISB85B1026",
+   "line2_len": 44,
+   "line2_verified": 0
+  },
+  {
+   "id": "2026-9-29-U",
+   "line1": "P<CHNYUE<<YUESHU<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E158193223CHN7807091M2505233356G5111B07S6134",
+   "line2_len": 44,
+   "line2_verified": 0
+  },
+  {
+   "id": "2026-9-30-B",
+   "line1": "P<CHNHU<<HAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E187424516CHN8706216M2406086LKPKOFLA<<<<A936",
+   "line2_len": 44,
+   "line2_verified": 1,
+   "line1_fix": "line1[1] was O, must be <"
+  },
+  {
+   "id": "2026-9-30-D",
+   "line1": "AKCHNZHOU<<QIANG<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "KE00345952CHN9207156M2912095A911<611158<<<14",
+   "line2_len": 45,
+   "line2_verified": 1,
+   "line2_fix": "deleted a duplicated 9 at col 22/23"
+  },
+  {
+   "id": "2026-9-30-H",
+   "line1": "AKCHNYANG<<ZHEN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "KE90003518CHN9707014F2912268A911<121101<<<72",
+   "line2_len": 45,
+   "line2_verified": 1,
+   "line2_fix": "deleted a duplicated 1 at col 23/24"
+  },
+  {
+   "id": "2026-9-30-AB",
+   "line1": "P<CHNBAO<<YUEYA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E602701156CHN6901084F2808222Q75OWNC9HSVEJZ42",
+   "line2_len": 45,
+   "line2_verified": 1,
+   "line2_fix": "deleted a duplicated 3 at col 23, and col 31 0->O"
+  },
+  {
+   "id": "2026-9-30-AD",
+   "line1": "P<CHNCAI<<FANGMENG<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E277194572CHN9601189F30052246MN1TZC2X4MC4X60",
+   "line2_len": 45,
+   "line2_verified": 1,
+   "line2_fix": "deleted a duplicated 0 at col 22/23/24"
+  },
+  {
+   "id": "2026-9-30-AE",
+   "line1": "P<CHNCHANG<<NI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E309178198CHN9612202F2702261G3JPA90J2I<K6266",
+   "line2_len": 44,
+   "line2_verified": 0
+  },
+  {
+   "id": "2026-9-30-AF",
+   "line1": "P<CHNCHEN<<DAJUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E646452438CHN0211196M3203075FIJJWA3L9OZU0054",
+   "line2_len": 44,
+   "line2_verified": 0
+  },
+  {
+   "id": "2026-9-30-AH",
+   "line1": "P<CHNCUI<<LIYI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E581043494CHN7012299F3110201S1UBJ2E<3D3PLJ56",
+   "line2_len": 44,
+   "line2_verified": 1
+  }
+ ]
+}

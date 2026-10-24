@@ -33,9 +33,11 @@ ap.add_argument("--mix-synthetic", type=int, default=0,
 ap.add_argument("--mix-hard-slices", default="",
                 help=".npz from tools/export_hard_slices.py; upsample the "
                      "real misclassified 16x12 patches into TRAIN data")
+ap.add_argument("--line-index", type=int, choices=[0, 1], default=-1,
+                help="train only line 1 (0) or line 2 (1); -1 mixes both")
 ap.add_argument("--max-images", type=int, default=0,
                 help="subsample the corpus to N images (0 = all); "
-                     "deterministic pick, keeps the loop fast")
+                "deterministic pick, keeps the loop fast")
 a = ap.parse_args()
 
 ROOT = Path(a.workdir)
@@ -45,10 +47,13 @@ GI = {c: i for i, c in enumerate(GLYPHS)}
 
 # hold out ~15% of images for validation
 def split_images():
-    imgs = sorted(ROOT.glob('img_*'))
+    # 接受任何名字的语料目录 (合成语料用 img_* 前缀, 真实照片用日期/序列名),
+    # 只要目录内含 meta.json 即为一个样本.
+    imgs = sorted(p for p in ROOT.iterdir() if p.is_dir() and (p / 'meta.json').exists())
     random.seed(42)
     random.shuffle(imgs)
-    n_val = max(10, int(len(imgs)*a.val_frac))
+    n_val = max(1, int(len(imgs) * a.val_frac))
+    n_val = min(n_val, 10)
     val_imgs = set(imgs[:n_val])
     tr_imgs = [p for p in imgs if p not in val_imgs]
     return tr_imgs, val_imgs
@@ -58,6 +63,8 @@ def gather(imgs):
     for imgdir in imgs:
         meta = json.loads((imgdir/'meta.json').read_text())
         for li, line in ((0, meta['line1']), (1, meta['line2'])):
+            if a.line_index >= 0 and li != a.line_index:
+                continue
             for c, ch in enumerate(line):
                 if ch not in GI: continue
                 fs = sorted(glob.glob(str(imgdir/f'mrz_dump_img_l{li}_c{c:02d}_r*_w*.ppm')))
@@ -210,27 +217,30 @@ def emit(best_state, path):
     Wf2=best_state['fc2.weight']; bf2=best_state['fc2.bias']
     mean=np.zeros(12*16,np.float32); std=np.ones(12*16,np.float32)
     def fmt(a): return ", ".join(f"{v:.8f}f" for v in np.asarray(a).ravel())
-    out=["/* Auto-generated: trained on C-side dumped inference glyphs. Do not edit. */",
-         "#ifndef MRZ_OCR_CNN_WEIGHTS_H","#define MRZ_OCR_CNN_WEIGHTS_H","","#include <stdint.h>","#include \"cnn.h\"","",
-         f"static const float DEFAULT_IN_MEAN[CNN_IN_H * CNN_IN_W] = {{"]
+    prefix = "DEFAULT" if a.line_index < 0 else f"LINE{a.line_index + 1}"
+    guard = f"MRZ_OCR_CNN_WEIGHTS_{prefix}_H"
+    out=[f"/* Auto-generated: C-side glyphs, line_index={a.line_index}. Do not edit. */",
+         f"#ifndef {guard}", f"#define {guard}", "",
+         "#include <stdint.h>", "#include \"cnn.h\"", "",
+         f"static const float {prefix}_IN_MEAN[CNN_IN_H * CNN_IN_W] = {{"]
     for i in range(0,len(mean),8): out.append("    "+fmt(mean[i:i+8])+",")
-    out.append("};"); out.append(f"static const float DEFAULT_IN_STD[CNN_IN_H*CNN_IN_W] = {{")
+    out.append("};"); out.append(f"static const float {prefix}_IN_STD[CNN_IN_H*CNN_IN_W] = {{")
     for i in range(0,len(std),8): out.append("    "+fmt(std[i:i+8])+",")
     out.append("};")
-    out.append("static const float DEFAULT_CONV1_W[CNN_K*CNN_K*1*CNN_C1] = {"+
+    out.append(f"static const float {prefix}_CONV1_W[CNN_K*CNN_K*1*CNN_C1] = {{"+
                ",".join(fmt(W1.ravel()[i:i+8]) for i in range(0,9*C1,8))+",};")
-    out.append("static const float DEFAULT_CONV1_B[CNN_C1] = {"+fmt(b1)+"};")
-    out.append("static const float DEFAULT_CONV2_W[CNN_K*CNN_K*CNN_C1*CNN_C2] = {"+
+    out.append(f"static const float {prefix}_CONV1_B[CNN_C1] = {{"+fmt(b1)+"};")
+    out.append(f"static const float {prefix}_CONV2_W[CNN_K*CNN_K*CNN_C1*CNN_C2] = {{"+
                ",".join(fmt(W2.ravel()[i:i+8]) for i in range(0,9*C1*C2,8))+",};")
-    out.append("static const float DEFAULT_CONV2_B[CNN_C2] = {"+fmt(b2)+"};")
-    out.append("static const float DEFAULT_CONV3_W[CNN_C2*CNN_C3] = {"+fmt(W3)+"};")
-    out.append("static const float DEFAULT_CONV3_B[CNN_C3] = {"+fmt(b3)+"};")
-    out.append("static const float DEFAULT_FC1_W[CNN_FLAT*CNN_HIDDEN] = {"+
+    out.append(f"static const float {prefix}_CONV2_B[CNN_C2] = {{"+fmt(b2)+"};")
+    out.append(f"static const float {prefix}_CONV3_W[CNN_C2*CNN_C3] = {{"+fmt(W3)+"};")
+    out.append(f"static const float {prefix}_CONV3_B[CNN_C3] = {{"+fmt(b3)+"};")
+    out.append(f"static const float {prefix}_FC1_W[CNN_FLAT*CNN_HIDDEN] = {{"+
                ",".join(fmt(Wf1.ravel()[i:i+8]) for i in range(0,96*HID,8))+",};")
-    out.append("static const float DEFAULT_FC1_B[CNN_HIDDEN] = {"+fmt(bf1)+"};")
-    out.append("static const float DEFAULT_FC2_W[CNN_HIDDEN*CNN_OUT] = {"+
+    out.append(f"static const float {prefix}_FC1_B[CNN_HIDDEN] = {{"+fmt(bf1)+"};")
+    out.append(f"static const float {prefix}_FC2_W[CNN_HIDDEN*CNN_OUT] = {{"+
                ",".join(fmt(Wf2.ravel()[i:i+8]) for i in range(0,HID*37,8))+",};")
-    out.append("static const float DEFAULT_FC2_B[CNN_OUT] = {"+fmt(bf2)+"};")
+    out.append(f"static const float {prefix}_FC2_B[CNN_OUT] = {{"+fmt(bf2)+"};")
     out.append("#endif")
     Path(path).write_text("\n".join(out)+"\n")
     print("wrote", path, "best_val", best, flush=True)

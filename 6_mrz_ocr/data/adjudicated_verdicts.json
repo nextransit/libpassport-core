@@ -1,0 +1,25 @@
+{
+  "_note": "逐字符像素判定：pic_scan1/2026-9-29-X 的文件名直接写 id。ours=CNN 读数正确，label=板端 fixmrz 修复标签正确。依据：OCR-B 字形 ASCII 渲染（0=窄椭圆无横杠，O=圆；B=右侧双弧，8=上下圈；Z=顶横+斜线，2=顶弧底横；S 无横杠，5 顶平+右竖；1 无衬线，7=顶横+斜下，T=顶横+中竖）。",
+  "verdicts": {
+    "pic_scan1/2026-9-29-A":  {"36":"ours","40":"ours","41":"ours"},
+    "pic_scan1/2026-9-29-C":  {"29":"ours","31":"ours"},
+    "pic_scan1/2026-9-29-E":  {"33":"ours"},
+    "pic_scan1/2026-9-29-F":  {"38":"ours","41":"ours"},
+    "pic_scan1/2026-9-29-G":  {"31":"ours"},
+    "pic_scan1/2026-9-29-H":  {"34":"ours","39":"ours","41":"ours"},
+    "pic_scan1/2026-9-29-I":  {"40":"ours"},
+    "pic_scan1/2026-9-29-J":  {"1":"ours","6":"ours"},
+    "pic_scan1/2026-9-29-K":  {"30":"ours","36":"ours","37":"ours"},
+    "pic_scan1/2026-9-29-M":  {"1":"ours","6":"ours","29":"ours","33":"ours","37":"ours","38":"ours","41":"ours"},
+    "pic_scan1/2026-9-29-Q":  {"31":"ours","32":"ours"},
+    "pic_scan1/2026-9-29-S":  {"28":"ours","36":"ours"},
+    "pic_scan1/2026-9-29-U":  {"0":"label","2":"label","3":"label","4":"label","7":"label","17":"label","21":"label","22":"label","32":"label","36":"label","41":"label","42":"label"},
+    "pic_scan1/2026-9-29-W":  {"29":"ours"},
+    "pic_scan2/2026-9-30-F":  {"28":"ours","40":"ours"},
+    "pic_scan3/2026-9-30-AC":   {"28":"ours","40":"label"},
+    "pic_scan3/2026-9-30-AC_R": {"28":"ours","40":"label"},
+    "pic_scan3/2026-9-30-AG":   {"28":"label","39":"ours"},
+    "pic_scan3/2026-9-30-AI":   {"28":"ours","36":"ours"},
+    "pic_scan3/2026-9-30-AJ":   {"28":"ours","29":"ours","32":"ours","36":"ours","39":"ours","41":"ours"}
+  }
+}

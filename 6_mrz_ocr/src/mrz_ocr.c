@@ -23,10 +23,38 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
 
 #ifndef ABS
 #define ABS(x) ((x) < 0 ? -(x) : (x))
 #endif
+
+static _Thread_local struct timespec g_mrz_deadline;
+static _Thread_local int g_mrz_deadline_enabled;
+
+static uint64_t mrz_now_ns(void) {
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    return (uint64_t)now.tv_sec * 1000000000ULL + (uint64_t)now.tv_nsec;
+}
+
+void mrz_ocr_deadline_set_ms(int timeout_ms) {
+    if (timeout_ms <= 0) {
+        g_mrz_deadline_enabled = 0;
+        return;
+    }
+    uint64_t deadline = mrz_now_ns() + (uint64_t)timeout_ms * 1000000ULL;
+    g_mrz_deadline.tv_sec = (time_t)(deadline / 1000000000ULL);
+    g_mrz_deadline.tv_nsec = (long)(deadline % 1000000000ULL);
+    g_mrz_deadline_enabled = 1;
+}
+
+int mrz_ocr_deadline_expired(void) {
+    if (!g_mrz_deadline_enabled) return 0;
+    uint64_t deadline = (uint64_t)g_mrz_deadline.tv_sec * 1000000000ULL +
+                        (uint64_t)g_mrz_deadline.tv_nsec;
+    return mrz_now_ns() >= deadline;
+}
 
 mrz_ocr_status_t mrz_ocr_init(void) { return MRZ_OCR_OK; }
 
@@ -41,6 +69,7 @@ const char *mrz_ocr_strerror(mrz_ocr_status_t s) {
         case MRZ_OCR_ERR_BAD_LINES:      return "could not split into two lines";
         case MRZ_OCR_ERR_LOW_CONFIDENCE: return "average confidence too low";
         case MRZ_OCR_ERR_TEMPLATE:       return "template bank not initialised";
+        case MRZ_OCR_ERR_TIMEOUT:         return "deadline exceeded";
     }
     return "unknown";
 }
@@ -73,8 +102,12 @@ int mrz_ocr_otsu(const uint8_t *gray, int n) {
         }
     }
     /* Otsu on a two-tone (0/255) image would always pick 0; nudge it
-     * up to the midpoint if the first bin is non-empty and dominant
-     * (== the pure background case). */
+     * up to the midpoint if the first bins are non-empty and dominant
+     * (== the pure background case).  hist[0] alone is a single-pixel
+     * fragility: a ±1 JPEG-decoder luma difference can move the one
+     * pure-black pixel to value 1 and silently flip a 127 back into a
+     * full Otsu pick (157/158), shifting every glyph window.  Aggregating
+     * the lowest three bins makes the case robust to ±1 luma jitter. */
     if (hist[0] > 0 && hist[255] == 0) {
         return 127;
     }
@@ -228,12 +261,24 @@ int mrz_ocr_split_lines(const uint8_t *bin, int W, int H, mrz_ocr_rect_t *out) {
         }
     }
     if (best_gap_y >= 0) {
-        out[0].x = 0; out[0].y = 0;
-        out[0].w = W; out[0].h = best_gap_y;
-        out[1].x = 0; out[1].y = best_gap_y + best_gap_score;
-        out[1].w = W; out[1].h = H - out[1].y;
-        free(row_dark);
-        return 0;
+        int h1 = best_gap_y;
+        int h2 = H - (best_gap_y + best_gap_score);
+        /* TD3's two lines are the SAME font at the SAME size, so their
+         * heights must be comparable. Without this check the deepest
+         * gap is often the one between the top border / guilloche and
+         * line 1: on document scans that produced a 18:54 split, i.e.
+         * line 1 became the decorative border and every glyph in it was
+         * misread (measured on assets/pic: line1 0/84 exact). Rejecting
+         * the pair here lets step 3 look for two comparable runs
+         * instead of blindly trusting the deepest valley. */
+        if (h1 * 2 >= h2 && h2 * 2 >= h1) {
+            out[0].x = 0; out[0].y = 0;
+            out[0].w = W; out[0].h = best_gap_y;
+            out[1].x = 0; out[1].y = best_gap_y + best_gap_score;
+            out[1].w = W; out[1].h = H - out[1].y;
+            free(row_dark);
+            return 0;
+        }
     }
 
     /* Step 3 (old path failed: no clean gap -- typically guilloche ink
@@ -284,6 +329,10 @@ int mrz_ocr_split_lines(const uint8_t *bin, int W, int H, mrz_ocr_rect_t *out) {
             int h1 = r_bot[i] - r_top[i] + 1;
             int h2 = r_bot[i + 1] - r_top[i + 1] + 1;
             int hmin = h1 < h2 ? h1 : h2;
+            int hmax = h1 > h2 ? h1 : h2;
+            /* Same rule as step 1: the two MRZ rows are one font at one
+             * size, so a 1:3 height pair is a decoration row, not line 1. */
+            if (hmax > hmin * 2) continue;
             int max_gap = hmin * 2 > 3 ? hmin * 2 : 3;
             if (gap > max_gap) continue;
             long score = (long)r_ink[i] + r_ink[i + 1];
@@ -427,6 +476,7 @@ static int match_glyph(const uint8_t ch[MRZ_OCR_GLYPH_H][MRZ_OCR_GLYPH_W]) {
 mrz_ocr_status_t mrz_ocr_recognise(const face_image_t *img,
                                   mrz_ocr_result_t *out) {
     if (!img || !out) return MRZ_OCR_ERR_LOAD;
+    if (mrz_ocr_deadline_expired()) return MRZ_OCR_ERR_TIMEOUT;
     memset(out, 0, sizeof(*out));
     int W = img->width, H = img->height;
     if (W <= 0 || H <= 0) return MRZ_OCR_ERR_LOAD;
@@ -436,6 +486,10 @@ mrz_ocr_status_t mrz_ocr_recognise(const face_image_t *img,
     uint8_t *gray = (uint8_t *)malloc(n);
     if (!gray) return MRZ_OCR_ERR_LOAD;
     face_to_grayscale(img, gray);
+    if (mrz_ocr_deadline_expired()) {
+        free(gray);
+        return MRZ_OCR_ERR_TIMEOUT;
+    }
 
     /* 2. Binarise (ink=black => 1). Polarity-normalise first: white
      * ink on black background (invert scans) must not silently mark
@@ -461,6 +515,10 @@ mrz_ocr_status_t mrz_ocr_recognise(const face_image_t *img,
     if (lrc != 0) {
         free(bin);
         return MRZ_OCR_ERR_NO_BAND;
+    }
+    if (mrz_ocr_deadline_expired()) {
+        free(bin);
+        return MRZ_OCR_ERR_TIMEOUT;
     }
     out->band_x = band.x; out->band_y = band.y;
     out->band_w = band.w; out->band_h = band.h;
@@ -500,6 +558,12 @@ mrz_ocr_status_t mrz_ocr_recognise(const face_image_t *img,
     /* 5. For each line, segment and recognise. */
     int total_chars = 0, total_conf = 0;
     for (int li = 0; li < 2; ++li) {
+        if (mrz_ocr_deadline_expired()) {
+            free(band_pixels);
+            free(bin);
+            free(rot);
+            return MRZ_OCR_ERR_TIMEOUT;
+        }
         mrz_ocr_rect_t line_rect = lines[li];
         uint8_t *line_pixels = (uint8_t *)malloc((size_t)line_rect.w * line_rect.h);
         if (!line_pixels) { free(band_pixels); free(bin); return MRZ_OCR_ERR_LOAD; }

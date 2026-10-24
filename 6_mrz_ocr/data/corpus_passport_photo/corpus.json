@@ -1,0 +1,169 @@
+{
+ "note": "line2 is consensus-verified; line1 is the CRNN read and is NOT ground truth",
+ "crop": "board TextBox band, +8px, full width",
+ "n": 18,
+ "records": [
+  {
+   "file": "2026-9-29-A.ppm",
+   "source": "/Users/zhouyong/gitlab/passport/tmp/omtest/pic_scan1/2026-9-29-A.jpg",
+   "line1": "P<CHNYON<<<AOT<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E0132B7855CHN0110141M3105179GB682050708G0B88",
+   "votes": 3,
+   "tier": "consensus",
+   "band_h": 91
+  },
+  {
+   "file": "2026-9-29-B.ppm",
+   "source": "/Users/zhouyong/gitlab/passport/tmp/omtest/pic_scan1/2026-9-29-B.jpg",
+   "line1": "P<CHNZHAO<<YONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E216923764CHN6703222M3510203H01JE6IP966FG406",
+   "votes": 6,
+   "tier": "consensus",
+   "band_h": 92
+  },
+  {
+   "file": "2026-9-29-D.ppm",
+   "source": "/Users/zhouyong/gitlab/passport/tmp/omtest/pic_scan1/2026-9-29-D.jpg",
+   "line1": "P<CHNBAO<<HUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E797044113CHN9004300F3405226GE0660IR06BAI310",
+   "votes": 5,
+   "tier": "consensus",
+   "band_h": 91
+  },
+  {
+   "file": "2026-9-29-L.ppm",
+   "source": "/Users/zhouyong/gitlab/passport/tmp/omtest/pic_scan1/2026-9-29-L.jpg",
+   "line1": "P<CHNGU<<YINGYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E665282843CHN8807054M28102160012032119B08660",
+   "votes": 6,
+   "tier": "consensus",
+   "band_h": 92
+  },
+  {
+   "file": "2026-9-29-N.ppm",
+   "source": "/Users/zhouyong/gitlab/passport/tmp/omtest/pic_scan1/2026-9-29-N.jpg",
+   "line1": "P<CHNSU<<SHUYUE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E653505611CHN8409285F3001167B0BS1G1886G2O864",
+   "votes": 6,
+   "tier": "consensus",
+   "band_h": 92
+  },
+  {
+   "file": "2026-9-29-O.ppm",
+   "source": "/Users/zhouyong/gitlab/passport/tmp/omtest/pic_scan1/2026-9-29-O.jpg",
+   "line1": "P<CHNWEN<<YUEYUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E421853076CHN7906282F3506190JJ6MVT1JVTBGC610",
+   "votes": 6,
+   "tier": "consensus",
+   "band_h": 91
+  },
+  {
+   "file": "2026-9-29-P.ppm",
+   "source": "/Users/zhouyong/gitlab/passport/tmp/omtest/pic_scan1/2026-9-29-P.jpg",
+   "line1": "P<CHNWU<<FANGYAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E766622355CHN0011293F2604181Y861DEUSDLKZG542",
+   "votes": 6,
+   "tier": "consensus",
+   "band_h": 92
+  },
+  {
+   "file": "2026-9-29-R.ppm",
+   "source": "/Users/zhouyong/gitlab/passport/tmp/omtest/pic_scan1/2026-9-29-R.jpg",
+   "line1": "P<CHNXI<<YU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E123241791CHN6208185M36010409K94WG6UGCK6FR64",
+   "votes": 6,
+   "tier": "consensus",
+   "band_h": 92
+  },
+  {
+   "file": "2026-9-29-T.ppm",
+   "source": "/Users/zhouyong/gitlab/passport/tmp/omtest/pic_scan1/2026-9-29-T.jpg",
+   "line1": "P<CHNYUAN<<YUESUI<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E0755268S1CHN9004012M27090195GI5BBISB85B1O26",
+   "votes": 6,
+   "tier": "consensus",
+   "band_h": 93
+  },
+  {
+   "file": "2026-9-29-U.ppm",
+   "source": "/Users/zhouyong/gitlab/passport/tmp/omtest/pic_scan1/2026-9-29-U.jpg",
+   "line1": "P<CHNYUE<<YUESHU<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E158193223CHN7807091M2505233356G5111BO7S6134",
+   "votes": 3,
+   "tier": "consensus",
+   "band_h": 95
+  },
+  {
+   "file": "2026-9-30-B.ppm",
+   "source": "/Users/zhouyong/gitlab/passport/tmp/omtest/pic_scan2/2026-9-30-B.jpg",
+   "line1": "P<CHHNU<<NAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E187424516CHN8706216M2406086LKPKOFLA<<<<A936",
+   "votes": 3,
+   "tier": "consensus",
+   "band_h": 111
+  },
+  {
+   "file": "2026-9-30-D.ppm",
+   "source": "/Users/zhouyong/gitlab/passport/tmp/omtest/pic_scan2/2026-9-30-D.jpg",
+   "line1": "P<CNNBNQU<<V<<<A<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "KE00345952CHN9207156M2912095A911<611158<<<14",
+   "votes": 3,
+   "tier": "consensus",
+   "band_h": 105
+  },
+  {
+   "file": "2026-9-30-H.ppm",
+   "source": "/Users/zhouyong/gitlab/passport/tmp/omtest/pic_scan2/2026-9-30-H.jpg",
+   "line1": "P<HGHUUNDG<<JHCO<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "KE90003518CHN9707014F2912268A911<121101<<<72",
+   "votes": 3,
+   "tier": "consensus",
+   "band_h": 105
+  },
+  {
+   "file": "2026-9-30-AB.ppm",
+   "source": "/Users/zhouyong/gitlab/passport/tmp/omtest/pic_scan3/2026-9-30-AB.jpg",
+   "line1": "P<CHNBAO<<YUEYA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E602701156CHN6901084F2808222Q75OWNC9HSVEJZ42",
+   "votes": 6,
+   "tier": "consensus",
+   "band_h": 91
+  },
+  {
+   "file": "2026-9-30-AD.ppm",
+   "source": "/Users/zhouyong/gitlab/passport/tmp/omtest/pic_scan3/2026-9-30-AD.jpg",
+   "line1": "P<HHHY<<<<FAHUN<N<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E277194572CHN9601189F30052246MN1TZC2X4MC4X60",
+   "votes": 3,
+   "tier": "consensus",
+   "band_h": 90
+  },
+  {
+   "file": "2026-9-30-AE.ppm",
+   "source": "/Users/zhouyong/gitlab/passport/tmp/omtest/pic_scan3/2026-9-30-AE.jpg",
+   "line1": "P<CHNCHANG<<NI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E309178198CHN9612202F2702261G3JPA90J2I<K6Z66",
+   "votes": 6,
+   "tier": "consensus",
+   "band_h": 87
+  },
+  {
+   "file": "2026-9-30-AF.ppm",
+   "source": "/Users/zhouyong/gitlab/passport/tmp/omtest/pic_scan3/2026-9-30-AF.jpg",
+   "line1": "P<CHNCHEN<<DAJUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E646452438CHN0211196M3203075FIJJWA3L90ZU0054",
+   "votes": 6,
+   "tier": "consensus",
+   "band_h": 90
+  },
+  {
+   "file": "2026-9-30-AH.ppm",
+   "source": "/Users/zhouyong/gitlab/passport/tmp/omtest/pic_scan3/2026-9-30-AH.jpg",
+   "line1": "P<CHNCUI<<LIYI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E581043494CHN7012299F3110201S1UBJ2E<3D3PLJ56",
+   "votes": 6,
+   "tier": "consensus",
+   "band_h": 90
+  }
+ ]
+}

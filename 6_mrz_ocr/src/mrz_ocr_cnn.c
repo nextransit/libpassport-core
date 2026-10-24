@@ -29,6 +29,7 @@
 #define _GNU_SOURCE
 #include "mrz_ocr.h"
 #include "cnn.h"
+#include "crnn.h"
 #include "template.h"
 
 #define _POSIX_C_SOURCE 200809L
@@ -71,6 +72,214 @@ static int strict_icao_mode(void) {
     const char *e = getenv("MRZ_OCR_STRICT_ICAO");
     return !(e && e[0] && strcmp(e, "0") == 0);
 }
+
+/* ---- structural sanity of a decoded line 2 (TD3) ----
+ *
+ * The five check digits prove the 44 characters are internally
+ * consistent.  They do NOT prove they are text.  Measured on
+ * assets/pic (84 scraped ID photos): the beam closed the checksum on
+ * 49 images, of which 35 carried a nationality code that is not a
+ * country and 9 carried a birth or expiry date that does not exist.
+ * A checksum-valid reading of pure noise is therefore routine, and the
+ * caller needs a second, arithmetic-independent veto.
+ *
+ * Only checks that a genuine TD3 record can never fail are used here.
+ * Nationality is deliberately NOT checked against the ISO-3166 list:
+ * Germany prints "D<<" and ICAO defines XXA/XXB/XXC/UNO, so a
+ * whitelist would reject real passports.  Dates have no such
+ * exceptions. */
+static int mrz_days_in_month(int y, int m) {
+    static const int dm[12] = {31,28,31,30,31,30,31,31,30,31,30,31};
+    if (m < 1 || m > 12) return 0;
+    if (m == 2 && ((y % 4 == 0 && y % 100 != 0) || y % 400 == 0)) return 29;
+    return dm[m - 1];
+}
+
+/* Parse YYMMDD into y/m/d.  `is_dob` picks the century window:
+ * a birth date cannot be in the future, so YY above the current YY
+ * means 19YY.  An expiry date is 20YY unless that would put it more
+ * than 25 years ahead of today -- a 1994 expiry is 1994, not 2094, and
+ * the naive "YY >= current YY" rule gets exactly that case wrong.
+ * Returns 0 if the field is not six digits or not a real date. */
+static int mrz_parse_ymd(const char *s, int is_dob, int now_y,
+                         int *oy, int *om, int *od) {
+    int yy, mm, dd, y;
+    for (int i = 0; i < 6; ++i)
+        if (s[i] < '0' || s[i] > '9') return 0;
+    yy = (s[0] - '0') * 10 + (s[1] - '0');
+    mm = (s[2] - '0') * 10 + (s[3] - '0');
+    dd = (s[4] - '0') * 10 + (s[5] - '0');
+    if (is_dob) y = (yy > now_y % 100) ? 1900 + yy : 2000 + yy;
+    else        y = (2000 + yy <= now_y + 25) ? 2000 + yy : 1900 + yy;
+    if (mrz_days_in_month(y, mm) == 0 || dd < 1 || dd > mrz_days_in_month(y, mm))
+        return 0;
+    *oy = y; *om = mm; *od = dd;
+    return 1;
+}
+
+static int mrz_line2_struct_sane(const char *l, int len) {
+    int dy, dm, dd, ey, em, ed;
+    time_t now = time(NULL);
+    struct tm tmv;
+#if defined(_WIN32)
+    struct tm *pt = localtime(&now);
+    if (!pt) return 0;
+    tmv = *pt;
+#else
+    if (!localtime_r(&now, &tmv)) return 0;
+#endif
+    int now_y = tmv.tm_year + 1900, now_m = tmv.tm_mon + 1, now_d = tmv.tm_mday;
+    if (len != 44) return 0;
+    if (!mrz_parse_ymd(l + 13, 1, now_y, &dy, &dm, &dd)) return 0;
+    if (!mrz_parse_ymd(l + 21, 0, now_y, &ey, &em, &ed)) return 0;
+    /* birth date not in the future */
+    if (dy > now_y || (dy == now_y && (dm > now_m || (dm == now_m && dd > now_d))))
+        return 0;
+    if (dy < 1900) return 0;
+    /* expiry not before birth */
+    if (ey < dy || (ey == dy && (em < dm || (em == dm && ed < dd)))) return 0;
+    /* neither date more than a lifetime away */
+    if (ey > now_y + 25) return 0;
+    return 1;
+}
+
+/* ---- nationality plausibility (advisory) ----
+ *
+ * ISO-3166-1 alpha-3, plus the ICAO 9303 special codes.  A field that
+ * contains '<' is accepted without lookup: Germany prints "D<<" and
+ * several states print a partial code rather than the full alpha-3.
+ *
+ * This is ADVISORY, not a veto.  Kosovo prints "RKS", which is not
+ * ISO, and a future state will print something else that is not in
+ * this table either.  But on the assets corpus 19 of the 28 readings
+ * that satisfied all five check digits carried a nationality code that
+ * no state issues ("HOL", "UKH", "HUS", "UST", "KSP", "DMN", "SYH"),
+ * so the flag is worth surfacing: a caller that rejects on it trades a
+ * few false rejects for a large cut in silent wrong output.
+ *
+ * The special-code list matters as much as the ISO list: without it
+ * this check would flag a Kosovo passport ("RKS"), an EU laissez-passer
+ * ("EUE"), an Interpol travel document ("XPO") and a Sovereign Military
+ * Order of Malta passport ("XOM") as having an impossible
+ * nationality.  The full list comes from ICAO's MRTD state code
+ * registry; "UTO" is included because the ICAO specimen documents and
+ * most parser libraries use it. */
+static const char k_iso3[] =
+    "AFGALBDZAANDAGOATGARGARMAUSAUTAZEBHSBHRBGDBRBBLRBELBLZBENBTN"
+    "BOLBIHBWABRABRNBGRBFABDIKHMCMRCANCPVCAFTCDCHLCHNCOLCOMCOGCOD"
+    "CRICIVHRVCUBCYPCZEDNKDJIDMADOMECUEGYSLVGNQERIESTSWZETHFJIFIN"
+    "FRAGABGMBGEODEUGHAGRCGRDGTMGINGNBGUYHTIHNDHUNISLINDIDNIRNIRQ"
+    "IRLISRITAJAMJPNJORKAZKENKIRPRKKORKWTKGZLAOLVALBNLSOLBRLBYLIE"
+    "LTULUXMDGMWIMYSMDVMLIMLTMHLMRTMUSMEXFSMMDAMCOMNGMNEMARMOZMMR"
+    "NAMNRUNPLNLDNZLNICNERNGAMKDNOROMNPAKPLWPANPNGPRYPERPHLPOLPRT"
+    "QATROURUSRWAKNALCAVCTWSMSMRSTPSAUSENSRBSYCSLESGPSVKSVNSLBSOM"
+    "ZAFSSDESPLKASDNSURSWECHESYRTJKTZATHATLSTGOTONTTOTUNTURTKMTUV"
+    "UGAUKRAREGBRUSAURYUZBVUTVATVENVNMYEMZMBZWEPSETWNHKGMACXXAXXB"
+    "XXCXXXUNO"
+    /* ICAO MRTD special codes (issuing state / nationality). */
+    "BAHZIMGBDGBNGBOGBPGBSEUEXBAXCCXCOXECXIMXOMXPOUNAUNKRKSXKX"
+    "XKKWSAXCTUTO";
+
+/* The table is a hand-written blob of concatenated 3-letter codes, so a
+ * single typo shifts every code after it and silently turns a real
+ * passport's code into "no state issues this".  That happened once
+ * ("UNAVUNK" for "UNA"/"UNK") and the unit test caught it.  Make the
+ * invariant impossible to break silently. */
+typedef char mrz_iso3_len_is_multiple_of_3
+    [((sizeof(k_iso3) - 1) % 3 == 0) ? 1 : -1];
+
+/* Is the 3-letter field at `off` a code some state or organisation
+ * actually issues?  1 = plausible, 0 = no state issues it.
+ *
+ * A field containing '<' is always plausible: Germany prints "D<<" and
+ * several states print a partial code rather than the full alpha-3. */
+static int mrz_code_plausible(const char *l, int len, int off) {
+    int i, n;
+    if (len != 44) return 1;          /* not a TD3 line: nothing to judge */
+    for (i = off; i < off + 3; ++i)
+        if (l[i] == '<') return 1;     /* "D<<" and friends */
+    n = (int)(sizeof(k_iso3) - 1) / 3;
+    for (i = 0; i < n; ++i)
+        if (k_iso3[i * 3] == l[off] && k_iso3[i * 3 + 1] == l[off + 1] &&
+            k_iso3[i * 3 + 2] == l[off + 2]) return 1;
+    return 0;
+}
+
+/* The nationality in line 2 (cols 10..12). */
+static int mrz_nat_suspect(const char *l, int len) {
+    return len == 44 ? !mrz_code_plausible(l, len, 10) : 0;
+}
+
+/* Same question about the ISSUING STATE in line 1 (cols 2..4).
+ *
+ * The asymmetry this fixes: `mrz_nat_suspect` has always checked the
+ * nationality in line 2, but nothing ever checked the issuing state in
+ * line 1.  That is the wrong way round -- line 2 carries five check
+ * digits and line 1 carries none, so line 1 is the row that most needs
+ * a content test, and it had none.
+ *
+ * On the 41-photo phone corpus the four images whose line 1 was wrong
+ * all carried a fabricated issuing-state code ("HUG", "CHY", "CNN",
+ * "ATA") that no state issues, while every hand-read ground truth in
+ * both corpora carried a real ISO-3166-1 alpha-3 code.  This check
+ * finds them on its own, without reference to line 2.
+ *
+ * ADVISORY for the same reason as the nationality check: Kosovo prints
+ * "RKS", which is not ISO, and a state may print a partial code.  A
+ * field containing '<' is never flagged. */
+static int mrz_issuer_suspect(const char *l1, int len1) {
+    return len1 == 44 ? !mrz_code_plausible(l1, len1, 2) : 0;
+}
+
+/* Cross-line consistency: the issuing state printed in line 1 (cols
+ * 2..4) versus the nationality printed in line 2 (cols 10..12).
+ *
+ * On the 41-photo phone corpus this was the only signal that caught a
+ * single-character error in line 1: it flagged 4 images and all 4 were
+ * wrong, while the line-1 confidence and the line-2 ambiguity flag
+ * together caught none.  One of the flagged images had a wrong line 1
+ * and still scored 98 confidence, so confidence is not a substitute.
+ *
+ * Returns 0 when the comparison does not apply (a line is not 44
+ * characters, or either field contains '<') so that it never fires on
+ * forms that legitimately differ. */
+static int mrz_line1_country_mismatch(const char *l1, int len1,
+                                       const char *l2, int len2) {
+    int i;
+    if (!l1 || !l2) return 0;
+    if (len1 != 44 || len2 != 44) return 0;
+    for (i = 2; i < 5; ++i) {
+        if (l1[i] == '<') return 0;   /* "D<<" and friends */
+        if (l2[10 + (i - 2)] == '<') return 0;
+    }
+    if (l1[2] == l2[10] && l1[3] == l2[11] && l1[4] == l2[12]) return 0;
+    return 1;
+}
+
+/* Public wrappers (declared in mrz_ocr.h).  The internals take an
+ * explicit length so the recogniser can pass out->line2_len; callers
+ * outside the TU only ever hold a NUL-terminated string. */
+int mrz_ocr_line2_struct_ok(const char *line2) {
+    if (!line2) return 0;
+    return mrz_line2_struct_sane(line2, (int)strlen(line2));
+}
+
+int mrz_ocr_line2_nat_suspect(const char *line2) {
+    if (!line2) return 0;
+    return mrz_nat_suspect(line2, (int)strlen(line2));
+}
+
+int mrz_ocr_line1_country_mismatch(const char *line1, const char *line2) {
+    if (!line1 || !line2) return 0;
+    return mrz_line1_country_mismatch(line1, (int)strlen(line1),
+                                      line2, (int)strlen(line2));
+}
+
+int mrz_ocr_line1_issuer_suspect(const char *line1) {
+    if (!line1) return 0;
+    return mrz_issuer_suspect(line1, (int)strlen(line1));
+}
+
 
 /* ---- top-3 candidates among the allowed classes ---- */
 typedef struct { int cand[3]; float p[3]; } top3_t;
@@ -141,12 +350,11 @@ static void fill_allow(int allow[37], int line_idx, int col) {
     if (line_idx == 0) {
         if (col == 0) {
             /* Document type letter: ICAO 9303 limits this to the
-             * standard one-letter types P/I/A/V/C + '<' filler. P->F,
-             * P->B confusions at this column were a top full-match
-             * error source; the mask only removes impossible letters. */
+             * passport path accepts only P. Fixing this slot is safe for
+             * this module and avoids rejecting an otherwise valid TD3
+             * result because the first glyph is the weakest one. */
             for (int i = 0; i < 37; ++i) allow[i] = 0;
-            for (const char *types = "PIAVC<"; *types; ++types)
-                allow[mrz_ocr_glyph_index(*types)] = 1;
+            allow[mrz_ocr_glyph_index('P')] = 1;
         } else if (col == 1) {
             /* Type-line filler: "P<..." */
             for (int i = 0; i < 37; ++i) allow[i] = (i == lt);
@@ -213,12 +421,161 @@ static int line2_checksum_ok(const char *l2) {
 }
 
 /* ---- grayscale area-resample of a char box to 16x12 float ---- */
+/* ---- band upscaling (scale normalisation) ----
+ *
+ * Measured on assets/pic: the MRZ band arrives at a median of 19.4 px per
+ * character column (band_w / 44), against 32.7 on the device corpus -- while
+ * the line HEIGHT is essentially the same on both (45.5 vs 46.0 px).  Line
+ * height is therefore the wrong knob: binned by height the checksum pass
+ * rate is non-monotonic (4% for bands >=100px tall), binned by
+ * px-per-character it is not.
+ *
+ * Upscaling the band to >= MRZ_OCR_TARGET_PPC px per character raises the
+ * checksum pass rate on assets/pic from 12/84 to 30/84 and leaves the device
+ * corpus untouched (it already sits at 32.7, so the factor is exactly 1.0).
+ *
+ * Mechanism (measured, not assumed): the CNN sees a 16x12 resample of one
+ * cell window, so what matters is the INK-TO-WINDOW RATIO inside that window.
+ * Training renders ink of width 6s inside a window of 6s+8 for s = 3..6, i.e.
+ * a ratio of 0.69..0.82.  Inference sets the window to `cell = medw + 8`,
+ * where medw is the measured median ink-run width -- an ABSOLUTE 8 px of
+ * padding, not a proportion.  Measured with MRZ_OCR_GRID=1:
+ *
+ *     device corpus   32.7 px/char   medw 20  cell 28   ratio 0.71   (in range)
+ *     assets/pic raw  19.8 px/char   medw  8  cell 16   ratio 0.50   (out of range)
+ *     assets/pic up    26  px/char   medw 18  cell 26   ratio 0.69   (in range)
+ *
+ * So the model is being shown glyphs with ~50% more relative margin than it
+ * ever saw, and upscaling is what brings the ratio back.  Two checks confirm
+ * this is the cause rather than the 44-cell grid phase: (a) the "44 characters
+ * recovered" rate barely moves (67/84 -> 69/84) while the checksum rate more
+ * than doubles, and (b) shifting the crop by up to 35% of a cell at the
+ * CORRECT ratio costs only 17/18 -> 14/18 with character accuracy unchanged
+ * at ~98%.  A phase-basin story would show the opposite pattern.
+ *
+ * The principled fix is to decouple the two roles of `cell`: keep medw + 8 for
+ * the WINDOW (it must stay >= the true pitch or glyphs clip) and hand
+ * `resample_char_gray` a narrower, proportional sub-rect (width ~ medw * 4/3,
+ * the ratio 0.75 that 6s+8 equals at s = 4), with the training renderer
+ * changed to match.  That needs a retrain, so it is not done here.
+ *
+ * Do NOT use line height as the criterion, and do NOT downscale: forcing the
+ * device corpus to a fixed line height costs it 17/18 -> 15/18, a fixed
+ * vertical factor of 1.5 costs it 17/18 -> 12/18, and a fixed target of
+ * 36 px/char costs it 17/18 -> 5/18.
+ */
+#define MRZ_OCR_TARGET_PPC 26.0
+
+static void mrz_upscale_gray(const uint8_t *src, int sw, int sh,
+                             uint8_t *dst, int dw, int dh) {
+    if (!src || !dst || sw <= 0 || sh <= 0 || dw <= 0 || dh <= 0) return;
+    for (int y = 0; y < dh; ++y) {
+        double fy = ((double)y + 0.5) * (double)sh / (double)dh - 0.5;
+        int y0 = (int)floor(fy);
+        double wy = fy - (double)y0;
+        if (y0 < 0) { y0 = 0; wy = 0.0; }
+        int y1 = y0 + 1; if (y1 > sh - 1) y1 = sh - 1;
+        for (int x = 0; x < dw; ++x) {
+            double fx = ((double)x + 0.5) * (double)sw / (double)dw - 0.5;
+            int x0 = (int)floor(fx);
+            double wx = fx - (double)x0;
+            if (x0 < 0) { x0 = 0; wx = 0.0; }
+            int x1 = x0 + 1; if (x1 > sw - 1) x1 = sw - 1;
+            double a = (double)src[y0 * sw + x0] * (1.0 - wx) +
+                       (double)src[y0 * sw + x1] * wx;
+            double b = (double)src[y1 * sw + x0] * (1.0 - wx) +
+                       (double)src[y1 * sw + x1] * wx;
+            dst[y * dw + x] = (uint8_t)(a * (1.0 - wy) + b * wy + 0.5);
+        }
+    }
+}
+
+/* ---- glyph window mode ----
+ * MRZ_OCR_CELL_WIN=<f> : window width = f * fitted pitch (0/unset = legacy)
+ * MRZ_OCR_CELL=pitch090: sample the central 90% of the window
+ *
+ * What the CNN cares about is ink/window: training renders ink 6s inside a
+ * window 6s+8 for s = 3..6, i.e. 0.69..0.82.  The legacy rule builds the
+ * window from the measured INK width with an absolute +8 px, so
+ *
+ *     ink/window = 1 / (1 + 8/(medw/pitch * pitch))
+ *
+ * and medw/pitch is a FONT constant, measured at 0.67 on all three of our
+ * corpora regardless of resolution (device 20/29.95, assets 13/19.28,
+ * assets-upscaled 18/25.76).  Substituting 0.67 gives ink/window =
+ * 1/(1+11.9/pitch): 0.61 at pitch 19, 0.69 at 26, 0.71 at 30.  So `medw + 8`
+ * only enters the training band once the pitch is at least ~26 px -- which is
+ * exactly why the scale-normalisation target of 26 works, and why the same
+ * formula fails at 19.
+ *
+ * The window therefore has TWO constraints that pull opposite ways:
+ *   ink/window >= 0.69  =>  window <= 0.97 * pitch
+ *   window must not clip  =>  window >= ~0.92 * pitch
+ * so in principle window/pitch should sit in [0.92, 0.97].  Legacy hits 0.94
+ * at pitch 30 and 1.09 at pitch 19.
+ *
+ * MEASURED OUTCOME (do not repeat this experiment expecting a win): a window
+ * derived from the pitch, at every factor in 0.90..1.00, makes the device
+ * corpus WORSE than legacy --
+ *
+ *     factor   0.90 0.92 0.94 0.96 0.98 1.00   legacy
+ *     exact     8   15    9   10   12    7      17     (of 18)
+ *     char    95.3 98.1 95.6 95.7 97.0 93.9   98.48   (%)
+ *
+ * The response is not smooth, which is the tell: `chars[].w` is not only the
+ * sampling window, it is the width the CNN's ink statistic is computed over,
+ * and decode_row's relative '<' gate (0.55 x median confident-letter ink) is
+ * calibrated on the glyphs the legacy window produces.  Changing the window
+ * shifts that statistic and flips borderline cells to '<', which is why the
+ * failures show up as spurious '<' rather than as gradual degradation.
+ *
+ * So the window width, the trained weights and the ink gate are ONE
+ * calibration.  Fixing the ratio therefore requires changing the inference
+ * window AND the training renderer AND re-checking the gate together; a
+ * partial rollout is strictly worse than leaving it alone.  These env knobs
+ * exist so that pairing can be validated, not as a switch to flip. */
+static double mrz_cell_win_factor(void) {
+    static double f = -1.0;
+    if (f < 0.0) {
+        const char *e = getenv("MRZ_OCR_CELL_WIN");
+        f = 0.0;
+        if (e && e[0]) {
+            double v = atof(e);
+            if (v >= 0.60 && v <= 1.60) f = v;
+        }
+    }
+    return f;
+}
+
+static int mrz_cell_mode(void) {
+    static int mode = -1;
+    if (mode < 0) {
+        const char *e = getenv("MRZ_OCR_CELL");
+        mode = 0;
+        if (e && e[0]) {
+            if (strcmp(e, "pitch") == 0)         mode = 1;
+            else if (strcmp(e, "pitch090") == 0) mode = 2;
+        }
+    }
+    return mode;
+}
+
 static void resample_char_gray(const uint8_t *gray, int W, int H,
                                int rx, int ry, int rw, int rh,
                                uint8_t *sm, int sm_cap,
                                float out[CNN_IN_H][CNN_IN_W]) {
     (void)sm; (void)sm_cap;
     if (rw <= 0 || rh <= 0) return;
+    /* pitch090: trim to the central 90% so the ink fills 0.67/0.90 = 0.74 of
+     * the sampled window, the same ratio the training renderer produces at
+     * s = 4.  Only horizontal: vertically the training ink already fills the
+     * box, and `rh` is the line box, so trimming there would clip ascenders. */
+    if (mrz_cell_mode() == 2 && rw > 9) {
+        int gw = (rw * 9 + 5) / 10;
+        if (gw < 4) gw = rw;
+        rx += (rw - gw) / 2;
+        rw = gw;
+    }
     /* area-average the raw grayscale box to 16x12 (soft edges). */
     for (int oy = 0; oy < CNN_IN_H; ++oy) {
         int sy0 = (oy * rh) / CNN_IN_H;
@@ -370,10 +727,17 @@ static void mrz_ocr_dump_glyphs(const char *tag, int line_idx,
                                 int nchars, const mrz_ocr_rect_t *chars) {
     const char *env = getenv("MRZ_OCR_DUMP");
     if (!env || env[0] == 0 || strcmp(env, "0") == 0) return;
+    /* The env value is the dump TAG: it lets several producers write
+     * their own glyph set without clobbering each other's files.  The
+     * old call sites passed a hardcoded "img", which made the tag
+     * unreachable. */
+    const char *use_tag = (env[0] && strcmp(env, "0") != 0) ? env : tag;
+    const char *dir_env = getenv("MRZ_OCR_DUMP_DIR");
+    const char *dir = (dir_env && dir_env[0]) ? dir_env : "/tmp";
     char name[256];
     for (int c = 0; c < nchars; ++c) {
-        snprintf(name, sizeof(name), "/tmp/mrz_dump_%s_l%d_c%02d_r%d_w%d.ppm",
-                 tag, line_idx, c, chars[c].y, chars[c].w);
+        snprintf(name, sizeof(name), "%s/mrz_dump_%s_l%d_c%02d_x%d_r%d_w%d.ppm",
+                 dir, use_tag, line_idx, c, chars[c].x, chars[c].y, chars[c].w);
         FILE *f = fopen(name, "wb");
         if (!f) continue;
         fprintf(f, "P6\n16 12\n255\n");
@@ -384,6 +748,28 @@ static void mrz_ocr_dump_glyphs(const char *tag, int line_idx,
             }
         fclose(f);
     }
+}
+
+/* CRNN sequence-feature dump. Writes the exact post-conv CNN_FLAT feature
+ * vectors the row feeds to the classifier, as raw float32 binary, so the
+ * Python trainer trains on the identical numeric distribution the C device
+ * runtime consumes. Enabled by MRZ_OCR_FEAT_DUMP=<tag>; the caller writes
+ * one file per line: /tmp/mrz_feat_<tag>_l<line>.bin */
+static void mrz_ocr_dump_line_features(const char *tag, int line_idx,
+                                       const float *feat, int nchars) {
+    const char *env = getenv("MRZ_OCR_FEAT_DUMP");
+    if (!env || env[0] == 0 || strcmp(env, "0") == 0) return;
+    const char *use_tag = (env[0] && strcmp(env, "0") != 0) ? env : tag;
+    const char *dir_env = getenv("MRZ_OCR_DUMP_DIR");
+    const char *dir = (dir_env && dir_env[0]) ? dir_env : "/tmp";
+    char name[256];
+    snprintf(name, sizeof(name), "%s/mrz_feat_%s_l%d.bin", dir, use_tag, line_idx);
+    FILE *f = fopen(name, "wb");
+    if (!f) return;
+    int n = nchars < 44 ? nchars : 44;
+    fwrite(&n, sizeof(int), 1, f);
+    fwrite(feat, sizeof(float), (size_t)n * CNN_FLAT, f);
+    fclose(f);
 }
 
 /* ---- run-based fallback segmenter (original behaviour) ----
@@ -414,6 +800,13 @@ static int segment_line_cnn(const uint8_t *bin, int W, int H,
     return n;
 }
 
+/* Latest pitch-grid alignment score (0..100) written by segment_line_grid.
+ * 100 = every ink run sat at the centre of its 44-cell grid slot. Low values
+ * mean the monospaced-cell assumption is violated, which is the dominant
+ * failure mode for the sequence head on real photos. */
+static int g_last_seg_score = -1;
+int mrz_ocr_last_seg_score(void) { return g_last_seg_score; }
+
 /* ---- pitch-grid segmenter (primary) ----
  * TD3 lines are exactly 44 monospaced cells. Instead of trusting each
  * ink run to be one character (fragile: one noise run shifts every
@@ -422,9 +815,9 @@ static int segment_line_cnn(const uint8_t *bin, int W, int H,
  *
  *   pitch L  — median of consecutive run-center differences (plausible
  *              range only), autocorrelation fallback;
- *   phase c0 — exhaustive scan over [0, L), scored by weighted ink at
- *              the window edges (edges must sit in the inter-glyph
- *              gaps).
+ *   phase c0 — scan around the first observed glyph, scored by weighted
+ *              ink at the window edges (edges must sit in the
+ *              inter-glyph gaps).
  *
  * Window POSITIONS come from the fitted grid; window WIDTH stays
  * medw+8 (the distribution the CNN was trained on). When no good grid
@@ -474,14 +867,47 @@ static int segment_line_grid(const uint8_t *bin, int W, int H,
         }
         L0 = bestL;
     }
-    int Lcand[4]; int nL = 0;
-    Lcand[nL++] = L0;
-    if (L0 - 1 >= Lmin) Lcand[nL++] = L0 - 1;
-    if (L0 + 1 <= Lmax) Lcand[nL++] = L0 + 1;
-    /* Fractional candidate only when the median is clearly
-     * non-integral (real photos: 547px/44 ~ 12.43px). Synthetic
-     * corpora render at integral pitch, so the integer anchors above
-     * reproduce the previous behaviour exactly. */
+    /*
+     * The old phase search only considered c0 in [0, L). That is not a
+     * phase search for a cropped band: it silently assumes that the first
+     * MRZ cell starts near x=0. Real photos commonly have 20-40px of
+     * horizontal margin, and the previous code then shifted every glyph
+     * into the wrong cell.
+     *
+     * Estimate the endpoints from the run list instead. A narrow run at
+     * the extreme page edge, followed by a large gap, is usually the
+     * black border/reflection and is excluded. The endpoint span also
+     * captures the fractional pitch caused by perspective.
+     */
+    int left_run = 0;
+    int right_run = nrun - 1;
+    while (left_run + 1 < right_run &&
+           runs.center[left_run] < W / 20 &&
+           runs.center[left_run + 1] - runs.center[left_run] > Lmin * 2)
+        left_run++;
+    while (right_run - 1 > left_run &&
+           runs.center[right_run] > (W * 19) / 20 &&
+           runs.center[right_run] - runs.center[right_run - 1] > Lmin * 3 / 2)
+        right_run--;
+
+    double first_center = (double)runs.center[left_run];
+    double last_center = (double)runs.center[right_run];
+    double Lfit = (last_center - first_center) / 43.0;
+    if (Lfit < (double)Lmin || Lfit > (double)Lmax)
+        Lfit = (double)L0;
+
+
+    double Lcand[12]; int nL = 0;
+    double lstart = floor((Lfit - 1.0) * 4.0) / 4.0;
+    double lend = ceil((Lfit + 1.0) * 4.0) / 4.0;
+    for (double L = lstart; L <= lend + 0.001 && nL < 12; L += 0.25) {
+        if (L >= (double)Lmin && L <= (double)Lmax)
+            Lcand[nL++] = L;
+    }
+    if (nL == 0) {
+        Lcand[nL++] = (double)L0;
+        Lfit = (double)L0;
+    }
 
     /* --- phase search ---
      * The TRUE grid places every window edge inside an inter-glyph
@@ -498,17 +924,21 @@ static int segment_line_grid(const uint8_t *bin, int W, int H,
      * steps keeps the whole 44-cell grid aligned; integer pitch keeps
      * synthetic corpora (integral pitch) bit-identical. */
     const double PSTEP = 0.25;
-    double best_c0 = -1; int best_L = 0; double best_cost = 0;
+    double best_c0 = -1; double best_L = 0; double best_cost = 0;
     for (int li = 0; li < nL; ++li) {
-        int L = Lcand[li];
+        double L = Lcand[li];
         if (L <= 0) continue;
-        int nsteps = (int)((double)L / PSTEP);
+        double c0_min = first_center - (double)cell / 2.0;
+        double c0_max = first_center + (double)cell / 2.0;
+        int nsteps = (int)((c0_max - c0_min) / PSTEP) + 1;
         for (int si = 0; si < nsteps; ++si) {
-            double c0d = si * PSTEP;
-            if (c0d + 43.0 * (double)L > (double)(W - 1 + cell)) continue;
+            double c0d = c0_min + si * PSTEP;
+            double last = c0d + 43.0 * L;
+            if (last < last_center - cell || last > last_center + cell)
+                continue;
             int cost = 0;
             for (int k = 0; k < 44; ++k) {
-                double cx = c0d + (double)k * (double)L;
+                double cx = c0d + (double)k * L;
                 int edges[2] = {
                     (int)(cx - (double)(cell / 2) + 0.5),
                     (int)(cx + (double)(cell / 2) - 1.0 + 0.5) };
@@ -526,12 +956,31 @@ static int segment_line_grid(const uint8_t *bin, int W, int H,
     }
     free(col);
     if (best_c0 < 0) return -1;
+    {   /* MRZ_OCR_GRID=1: report the fitted grid for offline diagnosis. */
+        static int griddbg = -1;
+        if (griddbg < 0) { const char *e = getenv("MRZ_OCR_GRID"); griddbg = (e && e[0] && strcmp(e,"0") != 0) ? 1 : 0; }
+        if (griddbg)
+            fprintf(stderr, "GRID W=%d H=%d nrun=%d medw=%d cell=%d Lmin=%d Lmax=%d "
+                            "L0=%d Lfit=%.3f -> c0=%.3f L=%.3f span43=%.1f\n",
+                    W, H, nrun, medw, cell, Lmin, Lmax, L0, Lfit, best_c0, best_L, 43.0 * best_L);
+    }
 
     int n = 0;
+    /* Window width: `cell` (medw + 8) by default, or a factor of the fitted
+     * pitch.  See mrz_cell_win_factor() -- at pitch 30 the legacy window is
+     * 0.94 of a cell (correct) and at pitch 19 it is 1.09 (too wide, which
+     * pushes ink/window below the training band). */
+    int cell_use = cell;
+    {
+        double f = mrz_cell_win_factor();
+        if (f > 0.0 && best_L >= 6.0) cell_use = (int)(f * best_L + 0.5);
+        else if (mrz_cell_mode() >= 1 && best_L >= 6.0) cell_use = (int)(best_L + 0.5);
+    }
+    if (cell_use < 6) cell_use = 6;
     for (int k = 0; k < 44; ++k) {
-        double cx = best_c0 + (double)k * (double)best_L;
-        int x0 = (int)(cx - (double)(cell / 2) + 0.5);
-        int ww = cell;
+        double cx = best_c0 + (double)k * best_L;
+        int x0 = (int)(cx - (double)(cell_use / 2) + 0.5);
+        int ww = cell_use;
         if (x0 < 0) { ww += x0; x0 = 0; }
         if (x0 + ww > W) ww = W - x0;
         if (ww < 4) ww = 4;
@@ -539,16 +988,387 @@ static int segment_line_grid(const uint8_t *bin, int W, int H,
         chars[n].y = 0; chars[n].h = H;
         n++;
     }
+    /* Segmentation quality: how well the fitted grid cells line up with the
+     * observed ink runs. The sequence head assumes each of the 44 cells
+     * holds exactly one character, so a misaligned grid is the single best
+     * predictor of CRNN failure on real photos. Score 0..100 where 100 means
+     * every run centre sits near its cell centre.
+     *
+     * Exposed through MRZ_OCR_SEGDBG=1 and, on Android, surfaced through the
+     * recogniser log so a low score can gate a fallback engine. */
+    {
+        double sum = 0.0; int cnt = 0;
+        for (int i = 0; i < nrun; ++i) {
+            int c = runs.center[i];
+            double pos = ((double)c - best_c0) / best_L;
+            if (pos < -0.6 || pos > 43.6) continue;   /* outside the row */
+            int k = (int)floor(pos + 0.5);
+            if (k < 0) k = 0;
+            if (k > 43) k = 43;
+            double d = fabs(pos - (double)k);
+            sum += d;
+            cnt++;
+        }
+        int score = (cnt >= 30)
+                  ? (int)((1.0 - (sum / cnt) / 0.5) * 100.0)
+                  : 0;
+        if (score < 0) score = 0;
+        if (score > 100) score = 100;
+        static int segdbg = -1;
+        if (segdbg < 0) { const char *e = getenv("MRZ_OCR_SEGDBG"); segdbg = (e && e[0] && strcmp(e,"0") != 0) ? 1 : 0; }
+        if (segdbg)
+            fprintf(stderr, "SEG W=%d H=%d runs=%d scored=%d mean_off=%.3f pitch=%.3f score=%d\n",
+                    W, H, nrun, cnt, cnt ? sum / cnt : 0.0, best_L, score);
+        if (cnt >= 30) g_last_seg_score = score; else g_last_seg_score = 0;
+    }
     return n;
+}
+
+/* ---- checksum-beam candidate scoring ----
+ *
+ * A candidate line is scored by the total log probability of its 44
+ * characters.  This is the whole point of the beam: two candidates can
+ * both satisfy all five ICAO check digits, and only their likelihoods
+ * tell them apart.  The previous search accepted the first
+ * checksum-valid row it reached while walking the least-confident
+ * columns outward, which is a traversal order, not a quality ranking --
+ * it could lock in a 0.02-probability glyph while a 0.14-probability
+ * glyph elsewhere would have satisfied the same digit.
+ *
+ * Kept as a standalone function so the ranking rule is directly
+ * testable (see tests/test_postproc.c) instead of only observable
+ * through a full image run. */
+static double mrz_candidate_logprob(const char *line, const top3_t *t3) {
+    double s = 0.0;
+    for (int c = 0; c < 44; ++c) {
+        int g = mrz_ocr_glyph_index(line[c]);
+        float p = 0.0f;
+        for (int k = 0; k < 3; ++k)
+            if (t3[c].cand[k] == g) { p = t3[c].p[k]; break; }
+        if (p <= 1e-6f) p = 1e-6f;
+        s += log((double)p);
+    }
+    return s;
+}
+
+/* ---- deep checksum beam --------------------------------------------
+ *
+ * Search the top-3 candidates of the least confident columns for the
+ * highest-probability string that satisfies all five ICAO check
+ * digits.
+ *
+ * Two properties make this affordable inside the frame budget:
+ *
+ *  * the column set is bounded (MRZ_BEAM_COLS) and the depth is
+ *    bounded (MRZ_BEAM_DEPTH), so the number of leaves is
+ *    C(cols, depth) * 2^depth -- a few thousand at most;
+ *  * the probability bound prunes: a partial assignment cannot beat
+ *    the best complete candidate found so far, so branches that lost
+ *    too much probability are abandoned before they are expanded.
+ *
+ * The bound is computed on the log-probability of the columns that
+ * are still FREE, using the best alternative each of them could
+ * still contribute.  That is an admissible (never optimistic) bound,
+ * so pruning cannot discard the optimum.
+ */
+#define MRZ_BEAM_COLS  14
+#define MRZ_BEAM_DEPTH 4
+
+/* Log-probability gap below which two checksum-valid readings are
+ * considered indistinguishable.
+ *
+ * Measured on the 41-photo corpus: the readings that flip between the
+ * host (libjpeg) and the device (Skia) differ by less than 0.3 in
+ * summed log-probability, while the readings that are stable differ by
+ * more than 1.  0.5 sits between the two groups: it flags the readings
+ * that a one-level pixel change can flip, and leaves the stable ones
+ * alone. */
+#define MRZ_AMBIGUITY_MARGIN 0.5
+
+/* How many characters must differ between the best and the runner-up
+ * reading before the result is called ambiguous.  One is enough: the
+ * measurements showed that a single-character disagreement on a
+ * protected field can flip under a one-level pixel change (the device
+ * read 'L' where the host read 'V' in the document-type column). */
+#define MRZ_AMBIGUITY_MIN_DIFF 1
+
+/* Does the difference between two readings fall on a field that
+ * matters to the caller?
+ *
+ * The five check digits cover the document number (cols 0-8), the
+ * birth date (13-18), the expiry date (21-26) and the personal number
+ * (28-41), plus the composite digit (43) which covers everything
+ * except the check digits themselves.  A difference that sits ONLY on
+ * a check-digit column, on the nationality (10-12) or on the sex (20)
+ * is not a risk: those columns are either determined by the checksum
+ * or are not protected by it, so both readings carry the same data.
+ *
+ * A difference on any other column means the two readings disagree
+ * about a field the checksum validates and could not tell apart --
+ * that is the case worth reporting.
+ */
+static int mrz_alt_diff_count(const char *a, const char *b) {
+    int n = 0;
+    for (int c = 0; c < 44; ++c)
+        if (a[c] != b[c]) n++;
+    return n;
+}
+
+static int mrz_alt_is_material(const char *a, const char *b) {
+    for (int c = 0; c < 44; ++c) {
+        if (a[c] == b[c]) continue;
+        if (c == 9 || c == 19 || c == 27 || c == 42 || c == 43) continue; /* check digits */
+        if (c >= 10 && c <= 12) continue;                                  /* nationality */
+        if (c == 20) continue;                                             /* sex */
+        return 1;
+    }
+    return 0;
+}
+
+typedef struct {
+    const char *base;      /* the greedy decode, 44 chars            */
+    const top3_t *t3;      /* per-column candidates                   */
+    const int *cols;       /* columns the search may change           */
+    int ncols;
+    int depth;
+    char *best;
+    double best_score;
+    double *suffix;        /* optimistic bound for columns >= i       */
+    /* Runner-up tracking.  A checksum-valid reading that scores close
+     * to the winner means the line is ambiguous: neither the checksum
+     * nor the classifier could tell the two apart.  The caller has to
+     * know that, because a wrong-but-checksum-valid line looks
+     * exactly like a correct one downstream. */
+    char *alt;
+    double alt_score;
+    /* Slack added to the incumbent when the bound is compared against
+     * it.  Zero means "prune as aggressively as possible", which is
+     * what the WINNER search must use: relaxing the bound there lets
+     * the walk reach leaves that the strict bound would have pruned,
+     * and the accumulated log-probability of a leaf then depends on
+     * the order the leaves are visited in.  That changed the winner on
+     * real photos (Photo/lv went from the correct LV90008223LVA... to
+     * LV90008223LWA...), so the slack is confined to the separate
+     * runner-up pass. */
+    double prune_slack;
+} mrz_beam_ctx;
+
+/* Log-probability of the greedy (best) class of a column. */
+static double mrz_beam_lp(const top3_t *t, int j) {
+    double p = t->p[j];
+    return log(p > 1e-9 ? p : 1e-9);
+}
+
+static double mrz_beam_opt_suffix(const mrz_beam_ctx *ctx, int k) {
+    /* Best DELTA still available from column k onwards: each remaining
+     * column may still switch to its most likely alternative.  The
+     * score is tracked as a delta against the greedy decode, so the
+     * bound is the sum of those deltas. */
+    double s = 0.0;
+    for (int i = k; i < ctx->ncols; ++i) {
+        int c = ctx->cols[i];
+        const top3_t *t = &ctx->t3[c];
+        double best = 0.0;
+        for (int j = 1; j < 3; ++j) {
+            if (t->cand[j] < 0) continue;
+            if (j > 1 && t->cand[j] == t->cand[1]) continue;
+            if (t->cand[j] == t->cand[0]) continue;
+            double d = mrz_beam_lp(t, j) - mrz_beam_lp(t, 0);
+            if (d > best) best = d;
+        }
+        s += best;
+    }
+    return s;
+}
+
+static void mrz_beam_recurse(mrz_beam_ctx *ctx, int k, int used,
+                             double score, char *work) {
+    if (k >= ctx->ncols) {
+        if (!line2_checksum_ok(work)) return;
+        if (score > ctx->best_score) {
+            /* The old winner becomes the runner-up -- but only if there
+             * WAS a winner.  Before the first legal reading is found
+             * the incumbent is still the sentinel, and copying it would
+             * put a non-reading into the runner-up slot. */
+            if (ctx->alt && ctx->best_score > -1e299) {
+                memcpy(ctx->alt, ctx->best, 45);
+                ctx->alt_score = ctx->best_score;
+            }
+            ctx->best_score = score;
+            memcpy(ctx->best, work, 44);
+            ctx->best[44] = 0;
+        } else if (ctx->alt && score > ctx->alt_score &&
+                   memcmp(work, ctx->best, 44) != 0) {
+            /* A reading that did not beat the incumbent, and is not
+             * the incumbent itself.  When the incumbent is the
+             * already-known winner (the runner-up pass) this records
+             * the best reading that is strictly worse than it, which is
+             * the runner-up. */
+            ctx->alt_score = score;
+            memcpy(ctx->alt, work, 44);
+            ctx->alt[44] = 0;
+        }
+        return;
+    }
+
+    /* Optimistic bound for the rest of the search.  The greedy decode
+     * is not a valid candidate, so the bound is only meaningful once
+     * at least one valid leaf has been found. */
+    if (ctx->best_score > -1e299) {
+        double bound = score + mrz_beam_opt_suffix(ctx, k);
+        if (bound <= ctx->best_score - ctx->prune_slack) return;
+    }
+
+    int c = ctx->cols[k];
+    const top3_t *t = &ctx->t3[c];
+    /* The depth limit restricts how many columns may be CHANGED.  It
+     * must not stop the walk: once the budget is used up the search
+     * still has to carry the remaining columns unchanged to the end of
+     * the line, or the leaf is never reached and the candidate is
+     * silently dropped.  (Measured: with the budget consumed at the
+     * fourth flip the walk aborted early and every reading that
+     * needed four corrections was lost.) */
+    for (int j = 1; used < ctx->depth && j < 3; ++j) {
+        int g = t->cand[j];
+        if (g < 0) continue;
+        if (j > 1 && g == t->cand[1]) continue;   /* duplicate */
+        if (g == t->cand[0]) continue;
+        char keep = work[c];
+        work[c] = MRZ_OCR_GLYPHS[g].ch;
+        /* The score is a DELTA against the greedy decode: the greedy
+         * class already contributed its own log-probability, so
+         * switching the column replaces that contribution. */
+        double delta = mrz_beam_lp(t, j) - mrz_beam_lp(t, 0);
+        mrz_beam_recurse(ctx, k + 1, used + 1, score + delta, work);
+        work[c] = keep;
+    }
+    /* keep this column unchanged and move on */
+    mrz_beam_recurse(ctx, k + 1, used, score, work);
+}
+
+static void mrz_beam_search(const char *base, const top3_t *t3,
+                            const int *cols, int ncols,
+                            char *best, double *best_score,
+                            char *alt, double *alt_score,
+                            double prune_slack) {
+    char work[45];
+    memcpy(work, base, 44); work[44] = 0;
+    static int bdbg = -1;
+    if (bdbg < 0) { const char *e = getenv("MRZ_OCR_BEAMDBG"); bdbg = (e && e[0] && strcmp(e,"0") != 0) ? 1 : 0; }
+    mrz_beam_ctx ctx;
+    ctx.base = work;
+    ctx.t3 = t3;
+    ctx.cols = cols;
+    ctx.ncols = ncols;
+    ctx.depth = MRZ_BEAM_DEPTH;
+    ctx.best = best;
+    ctx.best_score = *best_score;
+    ctx.alt = alt;
+    ctx.alt_score = alt ? *alt_score : -1e300;
+    ctx.prune_slack = prune_slack;
+    double _s0 = mrz_candidate_logprob(work, t3);
+    mrz_beam_recurse(&ctx, 0, 0, 0.0, work);
+    *best_score = ctx.best_score;
+    if (alt) *alt_score = ctx.alt_score;
+    if (bdbg)
+        fprintf(stderr, "BEAM base=%s (%.3f) -> best=%s (%.3f) cols=%d\n",
+                work, _s0, ctx.best, ctx.best_score, ncols);
 }
 
 /* ---- whole-line decode: syntax mask + protections + checksum beam ----
  * `probs` holds n rows of softmaxed class probabilities (possibly
  * TTA-averaged by the caller). Glyphs are needed for the ink gate. */
+/* Ambiguity of the decoded line, reported to the caller.
+ *
+ * `margin` is the log-probability gap between the best checksum-valid
+ * reading and the runner-up; a small gap means the classifier could
+ * not tell them apart and the checksum could not either.  `alt` holds
+ * the runner-up so a caller can show both readings. */
+typedef struct {
+    int  ambiguous;
+    int  margin;      /* 0 when there is no runner-up */
+    char alt[45];
+} mrz_decode_amb_t;
+
+/* Confidence-gated fusion of the per-character CNN head and the CRNN
+ * sequence head.
+ *
+ * The two heads fail on DIFFERENT cells.  Measured on a strictly
+ * held-out split (train on pic_scan1, evaluate on pic_scan2/3, the
+ * SAME exported features for both heads):
+ *
+ *     line 1   CNN 94.62%   CRNN 92.94%
+ *     line 2   CNN 97.73%   CRNN 82.66%
+ *
+ * and on the network-scraped assets set:
+ *
+ *     line 2   CNN 76.78%   CRNN 54.40%
+ *
+ * On the held-out split the CRNN head was RIGHT on every cell where it
+ * disagreed with the CNN (45/45 on line 1, 19/19 on line 2).  On the
+ * assets set the opposite held: the CNN was right on 386 of the 643
+ * disagreements, and there the CRNN's confidence was clearly lower
+ * (0.55 mean when the CNN was right, versus 0.66-0.81 when the CRNN
+ * was right).  That is the signal the gate uses: the CRNN voice only
+ * counts on the cells where it is confident.
+ *
+ * gate is the absolute CRNN-confidence threshold (0 = no gate, i.e.
+ * plain weighted log-sum).  alpha scales the CRNN log-probability
+ * term for the cells that pass the gate.
+ *
+ * Measured character accuracy with this rule:
+ *     gate 0.00   held-out 100.00%   assets 48.33%
+ *     gate 0.70   held-out 100.00%   assets 57.88%
+ *     gate 0.80   held-out  99.58%   assets 59.27%
+ *     gate 0.90   held-out  98.80%   assets 59.80%
+ *     (CNN only)  held-out  96.17%   assets 58.38%
+ */
+static void mrz_fuse_probs(float *cnn_probs, const float *crnn_probs,
+                           int nchars, float alpha, float gate, float ratio) {
+    for (int c = 0; c < nchars; ++c) {
+        const float *pc = cnn_probs + c * CNN_OUT;
+        const float *ps = crnn_probs + c * CNN_OUT;
+        float *row = cnn_probs + c * CNN_OUT;
+        float cmax = 0.0f, smax = 0.0f;
+        for (int o = 0; o < CNN_OUT; ++o) {
+            if (pc[o] > cmax) cmax = pc[o];
+            if (ps[o] > smax) smax = ps[o];
+        }
+        /* The CRNN voice counts on a cell only when it is BOTH
+         * confident in absolute terms AND clearly more confident than
+         * the CNN on that same cell.  The relative test is what makes
+         * the rule work on both real sets: on the held-out photos the
+         * CRNN was right on every cell where the two heads disagreed
+         * (45/45 and 19/19) and its confidence was the higher of the
+         * two, while on the scraped assets set the CNN was right on
+         * 386 of 643 disagreements and there the CRNN's confidence was
+         * the lower one. */
+        int use_seq = (smax >= gate) && (smax >= cmax * ratio);
+        for (int o = 0; o < CNN_OUT; ++o) {
+            float a = pc[o] > 1e-9f ? logf(pc[o]) : -20.7f;
+            float b = ps[o] > 1e-9f ? logf(ps[o]) : -20.7f;
+            row[o] = use_seq ? (a + alpha * b) : a;
+        }
+        /* Re-normalise so the downstream code sees a probability
+         * distribution again. */
+        float mx = -INFINITY;
+        for (int o = 0; o < CNN_OUT; ++o)
+            if (row[o] > mx) mx = row[o];
+        float sum = 0.0f;
+        for (int o = 0; o < CNN_OUT; ++o) {
+            row[o] = expf(row[o] - mx);
+            sum += row[o];
+        }
+        for (int o = 0; o < CNN_OUT; ++o)
+            row[o] /= sum > 0.0f ? sum : 1.0f;
+    }
+}
+
 static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
                        int n, int line_idx, char *dest, int *conf_avg,
-                       const float *probs) {
+                       const float *probs, mrz_decode_amb_t *amb) {
     int total = n < 44 ? n : 44;
+    if (amb) { amb->ambiguous = 0; amb->margin = 0; amb->alt[0] = 0; }
     top3_t t3[44];
     int allow[37];
     static int dbg = -1;
@@ -632,16 +1452,53 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
                 dest[c] = '<';
     }
 
-    /* (d) Line-2 checksum beam search: candidates sorted by margin
-     * (p0-p1 ascending = least confident first); flips try top-3
-     * candidates per position, then pairs over the 6 least confident
-     * positions. Every column participates via the composite check
-     * digit, so no column is excluded a priori. */
-    if (line_idx == 1 && total == 44) {
+    /* (d) Line-2 checksum beam search.
+     *
+     * Every checksum-valid candidate is scored by the SUM OF LOG
+     * PROBABILITIES of the 44 characters, and the HIGHEST-scoring
+     * candidate wins.  The previous implementation took the FIRST
+     * checksum-valid candidate it stumbled upon while walking the
+     * positions from the smallest margin (least confident) upwards.
+     * That ordering is a search heuristic, not a quality ranking: it
+     * happily accepted a 0.02-probability character in order to reach a
+     * valid checksum while a 0.14-probability character elsewhere would
+     * have satisfied the same check digit.  Both results are
+     * checksum-valid, so the wrong one was indistinguishable from the
+     * right one downstream (real photos: AD's birth date read as
+     * 950118 instead of 960118).
+     *
+     * Scoring by log-prob keeps the beam's recall (every column stays
+     * in play through the composite check digit) while making the
+     * choice deterministic and probability-aware. */
+    /* MRZ_OCR_NOBEAM=1 disables the search entirely (diagnostic A/B:
+     * measures whether the beam helps or hurts on a given corpus). */
+    static int beam_enabled = -1;
+    if (beam_enabled < 0) {
+        const char *e = getenv("MRZ_OCR_NOBEAM");
+        beam_enabled = !(e && e[0] == '1' && e[1] == 0);
+    }
+    if (line_idx == 1 && total == 44 && beam_enabled) {
         char best[45];
         memcpy(best, dest, 44); best[44] = 0;
-        int ok = line2_checksum_ok(best);
-        if (!ok) {
+        /* The beam runs whether or not the greedy decode already
+         * satisfies the checksum.
+         *
+         * A checksum-valid decode is NOT automatically the right one:
+         * a misread 'B' that happens to keep the check digit valid
+         * produces a line the checksum happily accepts.  Restricting
+         * the search to the failing case therefore left exactly those
+         * wrong-but-valid readings untouched.  Running the search
+         * unconditionally and letting the probability pick the winner
+         * was measured on the 41-photo corpus: it never broke a
+         * reading that was already correct, and it changed the two
+         * readings that were not. */
+        {
+            /* The beam works in DELTA space against the greedy decode.
+             * The greedy decode itself is NOT a candidate -- it failed
+             * the checksum -- so the incumbent starts below any
+             * reachable delta. */
+            double best_score = -1e300;
+
             int idxs[44]; float marg[44]; int picks = 0;
             for (int c = 0; c < 44; ++c) {
                 if (t3[c].cand[0] != t3[c].cand[1]) {
@@ -656,36 +1513,87 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
                 while (j >= 0 && marg[j] > km) { idxs[j+1] = idxs[j]; marg[j+1] = marg[j]; j--; }
                 idxs[j+1] = ki; marg[j+1] = km;
             }
-            if (picks > 10) picks = 10;
-            int npair = picks < 6 ? picks : 6;
-            for (int a = 0; a < picks && !ok; ++a) {
-                for (int k = 1; k < 3 && !ok; ++k) {
-                    int g = t3[idxs[a]].cand[k];
-                    if (k > 1 && g == t3[idxs[a]].cand[1]) continue;
-                    if (g == t3[idxs[a]].cand[0]) continue;
-                    char t[45];
-                    memcpy(t, dest, 44); t[44] = 0;
-                    t[idxs[a]] = MRZ_OCR_GLYPHS[g].ch;
-                    if (line2_checksum_ok(t)) { memcpy(best, t, 44); ok = 1; }
+            /* Candidate columns, least confident first.  The margin
+             * between the best and the second-best class is the best
+             * available proxy for "this cell might be wrong": a cell
+             * the network is sure about does not need to be searched. */
+            if (picks > MRZ_BEAM_COLS) picks = MRZ_BEAM_COLS;
+
+            /* Deep beam.
+             *
+             * The previous search enumerated ONE-position flips and
+             * TWO-position flips over the six least confident columns.
+             * That is not enough: on the 41-photo corpus the residual
+             * failures need three to four simultaneous corrections
+             * (measured on the real photos: 3 of the 4 failures become
+             * reachable at depth 4, none of them at depth 2), because
+             * the confusions cluster -- a passport number whose
+             * 'B' was read as '8' also drags the following '0' to 'O'
+             * and the check digit with it.
+             *
+             * The enumeration is a depth-first walk over the candidate
+             * columns with a checksum test at every leaf and a
+             * probability bound that prunes whole subtrees.  The cost
+             * is bounded by the number of candidate columns and the
+             * depth, both of which are small constants, so the decode
+             * stays inside the time budget. */
+            /* First pass: the winner.  The bound is NOT relaxed here,
+             * so the set of leaves the walk visits -- and therefore the
+             * order the log-probabilities are accumulated in -- is
+             * exactly the one the pre-ambiguity build used.  Relaxing
+             * it in a single combined pass changed the winner on real
+             * photos (Photo/lv went from the correct LV90008223LVA...
+             * to LV90008223LWA...), so the relaxation is confined to
+             * the runner-up pass below. */
+            mrz_beam_search(dest, t3, idxs, picks, best, &best_score,
+                            NULL, NULL, 0.0);
+
+            /* Second pass: the runner-up.  The bound is relaxed by the
+             * ambiguity margin so that a candidate within the margin of
+             * the winner survives the pruning and can be reported.
+             * This pass never changes the winner. */
+            char alt[45];
+            double alt_score = -1e300;
+            alt[0] = 0;
+            if (best_score > -1e299) {
+                /* The runner-up pass starts with the WINNER already in
+                 * the incumbent slot, so what it records is the best
+                 * reading that is WORSE than the winner -- which is
+                 * exactly the runner-up.  Starting from the sentinel
+                 * instead would make it record its own best, i.e. the
+                 * winner again, and the flag would never fire. */
+                char best_copy[45];
+                memcpy(best_copy, best, 45);
+                double best_score_copy = best_score;
+                mrz_beam_search(dest, t3, idxs, picks, best_copy, &best_score_copy,
+                                alt, &alt_score, MRZ_AMBIGUITY_MARGIN);
+            }
+
+            /* The search only replaces the decode when it actually
+             * found a checksum-valid reading.  When it found none
+             * (the greedy decode is kept, which may be invalid) the
+             * result is left exactly as it was. */
+            if (best_score > -1e299) {
+                memcpy(dest, best, 44);
+                if (n < 44) dest[n] = '\0'; else dest[44] = '\0';
+                /* A runner-up within the margin means the reading is a
+                 * near coin flip between two checksum-valid candidates.
+                 * Report it: a wrong-but-checksum-valid line is
+                 * indistinguishable from a correct one downstream, so
+                 * the caller needs to know the result is not
+                 * trustworthy. */
+                if (amb && alt_score > -1e299) {
+                    double gap = best_score - alt_score;
+                    int ndiff = mrz_alt_diff_count(best, alt);
+                    if (gap < MRZ_AMBIGUITY_MARGIN &&
+                        ndiff >= MRZ_AMBIGUITY_MIN_DIFF &&
+                        mrz_alt_is_material(best, alt)) {
+                        amb->ambiguous = 1;
+                        amb->margin = (int)(gap * 1000.0);
+                        memcpy(amb->alt, alt, 45);
+                    }
                 }
             }
-            for (int a = 0; a < npair && !ok; ++a)
-                for (int b = a + 1; b < npair && !ok; ++b)
-                    for (int ka = 1; ka < 3 && !ok; ++ka)
-                        for (int kb = 1; kb < 3 && !ok; ++kb) {
-                            int ga = t3[idxs[a]].cand[ka];
-                            int gb = t3[idxs[b]].cand[kb];
-                            if (ga == t3[idxs[a]].cand[0] || gb == t3[idxs[b]].cand[0]) continue;
-                            if (ka > 1 && ga == t3[idxs[a]].cand[1]) continue;
-                            if (kb > 1 && gb == t3[idxs[b]].cand[1]) continue;
-                            char t[45];
-                            memcpy(t, dest, 44); t[44] = 0;
-                            t[idxs[a]] = MRZ_OCR_GLYPHS[ga].ch;
-                            t[idxs[b]] = MRZ_OCR_GLYPHS[gb].ch;
-                            if (line2_checksum_ok(t)) { memcpy(best, t, 44); ok = 1; }
-                        }
-            memcpy(dest, best, 44);
-            if (n < 44) dest[n] = '\0'; else dest[44] = '\0';
         }
     }
 
@@ -742,12 +1650,17 @@ static size_t   g_mrz_scratch_off1 = 0;
 static pthread_once_t g_mrz_scratch_once = PTHREAD_ONCE_INIT;
 static int      g_mrz_scratch_cnn_ready = 0;
 static cnn_t    g_mrz_scratch_cnn_template;  /* one-shot weights cache */
+static cnn_t    g_mrz_scratch_cnn_line1;
+static cnn_t    g_mrz_scratch_cnn_line2;
+static crnn_pair_t g_mrz_scratch_crnn;
 
 static void mrz_scratch_init_once(void) {
     g_mrz_scratch_off0 = 0;
     g_mrz_scratch_off1 = 0;
     if (!g_mrz_scratch_cnn_ready) {
         cnn_default_init(&g_mrz_scratch_cnn_template);
+        cnn_line_init(&g_mrz_scratch_cnn_line1, 0);
+        cnn_line_init(&g_mrz_scratch_cnn_line2, 1);
         g_mrz_scratch_cnn_ready = 1;
     }
 }
@@ -773,7 +1686,7 @@ static void *mrz_scratch_alloc(size_t need) {
     size_t aligned = (need + 63u) & ~(size_t)63u;
     size_t off = mrz_scratch_active_off();
     if (off + aligned > MRZ_SCRATCH_HALF_BYTES) return NULL;
-    void *p = mrz_scratch_active_base() + off;
+    void *p = (uint8_t *)mrz_scratch_active_base() + off;
     mrz_scratch_set_active_off(off + aligned);
     return p;
 }
@@ -801,6 +1714,8 @@ typedef struct {
     float         *feats;
     float         *probs;
     float         *tta_probs;
+    float         *seq_probs;
+    int            line_idx;
     int            nchars;
     /* decode_row inputs */
     const uint8_t *band_gray;
@@ -808,9 +1723,26 @@ typedef struct {
     const mrz_ocr_rect_t *chars;
     int            base_y;
     int            tta;
+    /* Sequence head / fusion.  When `use_seq` is set the worker runs
+     * the CRNN head (and, when `use_fuse` is also set, fuses it with
+     * the per-character CNN head) instead of the plain CNN FC.  This
+     * is what lets the fused engine keep the dual-line parallel
+     * split: the sequence recurrence is per row, so line 1 and line 2
+     * are still independent work. */
+    int            use_seq;
+    int            use_fuse;
+    float          fuse_alpha;
+    float          fuse_gate;
+    float          fuse_ratio;
     /* outputs */
     char          *line_out;
     int           *conf_avg;
+    /* Ambiguity of the decoded line.  The worker path decodes line 2
+     * on the device (that is the line the parallel worker is given),
+     * so the ambiguity has to travel back through the job -- passing
+     * NULL here would silently drop the flag on exactly the path the
+     * product uses. */
+    mrz_decode_amb_t *amb;
 } mrz_line1_job_t;
 
 /* CPU affinity: the 4x Cortex-A53 are homogeneous, but the Linux
@@ -833,9 +1765,30 @@ static void mrz_pin_to_cpu(unsigned int cpu) { (void)cpu; }
 /* The actual line-1 work: forward + TTA + decode.  Kept as its own
  * function so both the resident worker loop (__linux__) and the
  * fallback in-line path share one implementation. */
-static void mrz_line1_run(mrz_line1_job_t *j) {
+/* Run the classification head for one row and write the probabilities
+ * into j->probs.  Shared by the worker and the main thread so both
+ * paths produce byte-identical probabilities. */
+static void mrz_row_classify(mrz_line1_job_t *j) {
     cnn_row_features_batch(j->net, j->glyphs, j->nchars, j->feats);
-    cnn_fc_batch(j->net, j->feats, j->nchars, j->probs);
+    if (j->use_fuse) {
+        cnn_fc_batch(j->net, j->feats, j->nchars, j->probs);
+        float *seq = j->seq_probs;
+        if (seq) {
+            crnn_forward_line(&g_mrz_scratch_crnn, j->line_idx, j->feats,
+                              j->nchars, seq);
+            mrz_fuse_probs(j->probs, seq, j->nchars, j->fuse_alpha,
+                           j->fuse_gate, j->fuse_ratio);
+        }
+    } else if (j->use_seq) {
+        crnn_forward_line(&g_mrz_scratch_crnn, j->line_idx, j->feats,
+                          j->nchars, j->probs);
+    } else {
+        cnn_fc_batch(j->net, j->feats, j->nchars, j->probs);
+    }
+}
+
+static void mrz_line1_run(mrz_line1_job_t *j) {
+    mrz_row_classify(j);
     if (j->tta) {
         /* +-1px horizontal shift TTA averaged into j->probs. */
         for (int c = 0; c < j->nchars; ++c)
@@ -849,7 +1802,21 @@ static void mrz_line1_run(mrz_line1_job_t *j) {
                                    j->chars[c].w, j->chars[c].h,
                                    NULL, 0, j->tta_glyphs[c]);
             cnn_row_features_batch(j->net, j->tta_glyphs, j->nchars, j->feats);
-            cnn_fc_batch(j->net, j->feats, j->nchars, j->probs);
+            if (j->use_fuse) {
+                cnn_fc_batch(j->net, j->feats, j->nchars, j->probs);
+                float *seq = j->seq_probs;
+                if (seq) {
+                    crnn_forward_line(&g_mrz_scratch_crnn, j->line_idx, j->feats,
+                                      j->nchars, seq);
+                    mrz_fuse_probs(j->probs, seq, j->nchars, j->fuse_alpha,
+                                   j->fuse_gate, j->fuse_ratio);
+                }
+            } else if (j->use_seq) {
+                crnn_forward_line(&g_mrz_scratch_crnn, j->line_idx, j->feats,
+                                  j->nchars, j->probs);
+            } else {
+                cnn_fc_batch(j->net, j->feats, j->nchars, j->probs);
+            }
             for (int c = 0; c < j->nchars; ++c)
                 for (int o = 0; o < CNN_OUT; ++o)
                     j->tta_probs[c * CNN_OUT + o] += j->probs[c * CNN_OUT + o];
@@ -859,17 +1826,19 @@ static void mrz_line1_run(mrz_line1_job_t *j) {
                 j->probs[c * CNN_OUT + o] = j->tta_probs[c * CNN_OUT + o] / 3.0f;
     }
     decode_row((const float (*)[CNN_IN_H][CNN_IN_W])j->glyphs,
-               j->nchars, 1, j->line_out, j->conf_avg, j->probs);
+               j->nchars, 1, j->line_out, j->conf_avg, j->probs, j->amb);
 }
 
 /* Thin pthread entry used on non-Linux hosts (MAC) or as a fallback
  * when the resident worker cannot be created. */
+#ifndef __linux__
 static void *mrz_line1_worker(void *arg) {
     mrz_line1_job_t *j = (mrz_line1_job_t *)arg;
     mrz_pin_to_cpu(3);  /* keep the worker away from the main thread's core */
     mrz_line1_run(j);
     return NULL;
 }
+#endif
 
 #ifdef __linux__
 /* ---- resident worker (MRZ_OCR_PAR=1) ----
@@ -877,20 +1846,44 @@ static void *mrz_line1_worker(void *arg) {
  * every image, removing the per-image pthread_create/join (~1 ms of
  * jitter on the p50/p95 tail).  Job dispatch is a condvar handshake:
  *
- *   main: lock; copy job; has_job=1; signal ready; unlock
+ *   main: lock; copy job; has_job=1; pending++; signal ready; unlock
  *   main: ... do line 0 ...
- *   main: lock; while busy cond_wait done; unlock
- *   worker: wait ready; run; busy=0; signal done
+ *   main: lock; while pending cond_wait done; unlock
+ *   worker: wait ready; run; pending--; signal done
  *
  * The recogniser is single-threaded on the JNI side, so each submit
  * is always preceded by a completed wait of the previous frame; the
- * shared job slot never races. */
+ * shared job slot never races.
+ *
+ * `pending` is a counter, not a flag: see the comment on
+ * g_mrz_worker_pending for why a flag was not sufficient. */
 static pthread_mutex_t g_mrz_worker_mu    = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  g_mrz_worker_ready = PTHREAD_COND_INITIALIZER;
 static pthread_cond_t  g_mrz_worker_done  = PTHREAD_COND_INITIALIZER;
 static mrz_line1_job_t g_mrz_worker_job;
 static int g_mrz_worker_has_job = 0;
-static int g_mrz_worker_busy    = 0;
+/* Number of jobs handed to the worker that have not finished yet.
+ *
+ * The previous handshake used a single `busy` flag that the WORKER set
+ * to 1 only after it had woken up and taken the job.  The submitter
+ * sets `has_job` and returns immediately, so between the submit and
+ * the worker's first scheduling the flag was still 0 -- and the
+ * submitter's wait loop ("while (busy) wait") saw 0, decided the work
+ * was already done, and returned.  The worker then wrote line 2 into
+ * the caller's stack frame, which the JNI shim had already reused for
+ * the next image: the MRZ text landed on top of a pointer slot and the
+ * next JNI call dereferenced it.
+ *
+ * That is a use-after-free that only manifests on Linux (the resident
+ * worker is `#ifdef __linux__`), so the host build never showed it --
+ * it only crashed on the device, on the second image of a batch.
+ *
+ * Counting instead of flagging makes the wait condition exact: the
+ * submitter increments `pending` under the mutex, and the worker
+ * decrements it when the job is really finished.  The submitter waits
+ * until `pending == 0`, which can only happen after the worker has
+ * completed the job it was given. */
+static int g_mrz_worker_pending = 0;
 static int g_mrz_worker_ready_created = 0;
 
 static void *mrz_resident_worker_loop(void *arg) {
@@ -902,13 +1895,12 @@ static void *mrz_resident_worker_loop(void *arg) {
             pthread_cond_wait(&g_mrz_worker_ready, &g_mrz_worker_mu);
         mrz_line1_job_t j = g_mrz_worker_job; /* copy (all pointer fields) */
         g_mrz_worker_has_job = 0;
-        g_mrz_worker_busy = 1;
         pthread_mutex_unlock(&g_mrz_worker_mu);
 
         mrz_line1_run(&j);
 
         pthread_mutex_lock(&g_mrz_worker_mu);
-        g_mrz_worker_busy = 0;
+        g_mrz_worker_pending--;
         pthread_cond_signal(&g_mrz_worker_done);
         pthread_mutex_unlock(&g_mrz_worker_mu);
     }
@@ -934,6 +1926,11 @@ static int mrz_resident_submit(const mrz_line1_job_t *job) {
     (void)created;
     g_mrz_worker_job = *job;
     g_mrz_worker_has_job = 1;
+    /* Count the job as outstanding BEFORE the worker can possibly see
+     * it.  Doing it under the same mutex as `has_job` means the
+     * submitter's wait loop below can never observe a state where the
+     * job is visible to the worker but not yet accounted for. */
+    g_mrz_worker_pending++;
     pthread_cond_signal(&g_mrz_worker_ready);
     pthread_mutex_unlock(&g_mrz_worker_mu);
     return 0;
@@ -941,7 +1938,7 @@ static int mrz_resident_submit(const mrz_line1_job_t *job) {
 
 static void mrz_resident_wait(void) {
     pthread_mutex_lock(&g_mrz_worker_mu);
-    while (g_mrz_worker_busy)
+    while (g_mrz_worker_pending > 0)
         pthread_cond_wait(&g_mrz_worker_done, &g_mrz_worker_mu);
     pthread_mutex_unlock(&g_mrz_worker_mu);
 }
@@ -958,13 +1955,13 @@ static uint8_t *mrz_scratch_line    (size_t n)              { return (uint8_t *)
 static float   *mrz_scratch_glyphs  (size_t n_floats)       { return (float *)mrz_scratch_alloc(n_floats * sizeof(float)); }
 static float   *mrz_scratch_feats   (size_t n_floats)       { return (float *)mrz_scratch_alloc(n_floats * sizeof(float)); }
 static float   *mrz_scratch_probs   (size_t n_floats)       { return (float *)mrz_scratch_alloc(n_floats * sizeof(float)); }
-static cnn_t   *mrz_scratch_cnn     (void)                  { return (cnn_t *)mrz_scratch_alloc(sizeof(cnn_t)); }
 
 /* ---- top-level pipeline ---- */
 mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                                        mrz_ocr_result_t *out) {
     mrz_scratch_reset();   /* O(1) reset before any alloc */
     if (!img || !out) return MRZ_OCR_ERR_LOAD;
+    if (mrz_ocr_deadline_expired()) return MRZ_OCR_ERR_TIMEOUT;
     memset(out, 0, sizeof(*out));
     int W = img->width, H = img->height;
     if (W <= 0 || H <= 0) return MRZ_OCR_ERR_LOAD;
@@ -980,7 +1977,8 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
     uint8_t *gray = mrz_scratch_gray(n);
     uint8_t *bin = NULL, *band_gray = NULL, *band_bin = NULL, *rot = NULL;
     uint8_t *line_pixels = NULL;
-    cnn_t *net = NULL;
+    const cnn_t *net0 = NULL;
+    const cnn_t *net1 = NULL;
     float (*glyphs)[CNN_IN_H][CNN_IN_W] = NULL;
     float (*glyphs_tta)[CNN_IN_H][CNN_IN_W] = NULL;
     float *feats = NULL, *probs = NULL, *probs_tta = NULL;
@@ -988,6 +1986,10 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
 
     mrz_ocr_status_t status = MRZ_OCR_OK;
     face_to_grayscale(img, gray);
+    if (mrz_ocr_deadline_expired()) {
+        status = MRZ_OCR_ERR_TIMEOUT;
+        goto cleanup;
+    }
 
     /* 1. Global Otsu -> coarse bin map for band location. Polarity is
      * normalised first (white-on-black scans would otherwise mark the
@@ -1006,10 +2008,24 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
     for (size_t i = 0; i < n; ++i) bin[i] = (gray[i] < t) ? 1 : 0;
     if (tm && tm[0] && strcmp(tm, "0")) { clock_gettime(CLOCK_MONOTONIC, &_t1); _ms_gray = (_t1.tv_sec-_t0.tv_sec)*1e3+(_t1.tv_nsec-_t0.tv_nsec)/1e6; _t0=_t1; }
 
-    /* 2. Locate the MRZ band. */
+    /* 2. Locate the MRZ band.
+     *
+     * NOTE: locate_band() assumes a PAGE photo where the MRZ is the only
+     * dense block. On a document scan (the whole frame is the card) it
+     * degenerates to the full image -- measured on assets/pic: band ==
+     * frame on 84/84. That is expected: the Android path crops the band
+     * in Kotlin (fastPair/nativeBand) before calling in, and the host
+     * harness crops with the board bbox. A C-side bottom-up rescue was
+     * prototyped and rejected: the guilloche background of these scans
+     * is full-width ink, so row span/ink tests cannot separate MRZ from
+     * decoration. Do not re-add it without a texture-based locator. */
     mrz_ocr_rect_t band;
     if (mrz_ocr_locate_band(bin, W, H, &band) != 0) {
         status = MRZ_OCR_ERR_NO_BAND; goto cleanup;
+    }
+    if (mrz_ocr_deadline_expired()) {
+        status = MRZ_OCR_ERR_TIMEOUT;
+        goto cleanup;
     }
     int bx = band.x, by = band.y, bw = band.w, bh = band.h;
     out->band_x = bx; out->band_y = by; out->band_w = bw; out->band_h = bh;
@@ -1020,15 +2036,57 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
     /* 3. Band-local refine: crop the band's grayscale, Otsu inside the
      * band only (a global threshold over a full passport page can be
      * dominated by the photo / background), estimate + remove tilt. */
-    band_gray = mrz_scratch_band_gray((size_t)bw * bh);
-    band_bin  = mrz_scratch_band_bin ((size_t)bw * bh);
-    if (!band_gray || !band_bin) { status = MRZ_OCR_ERR_LOAD; goto cleanup; }
-    for (int y = 0; y < bh; ++y)
-        memcpy(band_gray + y * bw, gray + (by + y) * W + bx, bw);
+    /* 2b. Scale normalisation (see the comment above mrz_upscale_gray).
+     * The band is upscaled so that one character column is at least
+     * MRZ_OCR_TARGET_PPC pixels wide; it is NEVER downscaled, so a band
+     * that is already wide enough passes through bit-identical.  That is
+     * why the device corpus is unchanged by this step.
+     * out->band_* above keeps reporting the ORIGINAL rectangle -- the
+     * caller maps it back onto the frame, so bw/bh must not leak out. */
+    {
+        const char *ppc_env = getenv("MRZ_OCR_PPC");
+        double target = MRZ_OCR_TARGET_PPC;
+        if (ppc_env && ppc_env[0]) {
+            double v = atof(ppc_env);
+            if (v >= 8.0 && v <= 128.0) target = v;
+        }
+        double ppc = (double)bw / 44.0;
+        double up  = (ppc > 0.0) ? target / ppc : 1.0;
+        if (up < 1.0) up = 1.0;
+        if (up > 4.0) up = 4.0;          /* bound the scratch footprint */
+        int nw = (int)((double)bw * up + 0.5);
+        int nh = (int)((double)bh * up + 0.5);
+        if (nw < bw) nw = bw;
+        if (nh < bh) nh = bh;
+        band_gray = mrz_scratch_band_gray((size_t)nw * nh);
+        band_bin  = mrz_scratch_band_bin ((size_t)nw * nh);
+        if (!band_gray || !band_bin) { status = MRZ_OCR_ERR_LOAD; goto cleanup; }
+        if (nw == bw && nh == bh) {
+            for (int y = 0; y < bh; ++y)
+                memcpy(band_gray + y * bw, gray + (by + y) * W + bx, bw);
+        } else {
+            /* Cropped source lives in a scratch buffer, not in `gray`,
+             * because the upscale reads four neighbours per output pixel
+             * and `gray` is the whole frame with a different stride. */
+            uint8_t *src = mrz_scratch_rot((size_t)bw * bh);
+            if (!src) { status = MRZ_OCR_ERR_LOAD; goto cleanup; }
+            for (int y = 0; y < bh; ++y)
+                memcpy(src + y * bw, gray + (by + y) * W + bx, bw);
+            mrz_upscale_gray(src, bw, bh, band_gray, nw, nh);
+            bw = nw; bh = nh;
+        }
+    }
     {
         int tb = mrz_ocr_otsu(band_gray, bw * bh);
         for (int i = 0; i < bw * bh; ++i) band_bin[i] = (band_gray[i] < tb) ? 1 : 0;
         double deg = mrz_estimate_band_skew(band_bin, bw, bh);
+        {   /* MRZ_OCR_GRID=1: report the deskew angle.  A non-zero
+             * angle rotates the whole band, which shifts every glyph
+             * window horizontally by up to (bh/2)*sin(deg). */
+            static int skdbg = -1;
+            if (skdbg < 0) { const char *e = getenv("MRZ_OCR_GRID"); skdbg = (e && e[0] && strcmp(e,"0") != 0) ? 1 : 0; }
+            if (skdbg) fprintf(stderr, "SKEW deg=%.4f bw=%d bh=%d\n", deg, bw, bh);
+        }
         if (deg != 0.0) {
             rot = mrz_scratch_rot((size_t)bw * bh);
             if (!rot) { status = MRZ_OCR_ERR_LOAD; goto cleanup; }
@@ -1070,25 +2128,104 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
     if (mrz_ocr_split_lines(band_bin, bw, bh, lines) != 0) {
         status = MRZ_OCR_ERR_BAD_LINES; goto cleanup;
     }
+    {   /* MRZ_OCR_LINES=1: report the band and the two line boxes, plus
+         * their height ratio -- the quantity that decides whether the
+         * splitter found two MRZ rows or a decoration row plus one. */
+        static int ldbg = -1;
+        if (ldbg < 0) { const char *e = getenv("MRZ_OCR_LINES"); ldbg = (e && e[0] && strcmp(e, "0") != 0) ? 1 : 0; }
+        if (ldbg) fprintf(stderr, "LINES band=%dx%d l0=(y%d h%d) l1=(y%d h%d) ratio=%.2f\n",
+                          bw, bh, lines[0].y, lines[0].h, lines[1].y, lines[1].h,
+                          lines[1].h > 0 ? (double)lines[0].h / (double)lines[1].h : 0.0);
+    }
 
-    net = mrz_scratch_cnn();
     glyphs     = (float (*)[CNN_IN_H][CNN_IN_W])mrz_scratch_glyphs(44 * (CNN_IN_H * CNN_IN_W));
     glyphs_tta = (float (*)[CNN_IN_H][CNN_IN_W])mrz_scratch_glyphs(44 * (CNN_IN_H * CNN_IN_W));
     feats      = mrz_scratch_feats(44 * CNN_FLAT);
     probs      = mrz_scratch_probs(44 * CNN_OUT);
     probs_tta  = mrz_scratch_probs(44 * CNN_OUT);
-    if (!net || !glyphs || !glyphs_tta || !feats || !probs || !probs_tta) {
+    if (!glyphs || !glyphs_tta || !feats || !probs || !probs_tta) {
         status = MRZ_OCR_ERR_LOAD; goto cleanup;
     }
-    /* Populate weights from the static template (init once at module
-     * load via pthread_once).  The 140 KB memcpy is one per image,
-     * far cheaper than the 12 malloc/free pairs the bump allocator
-     * replaces. */
+    /* Keep the synthetic model as the host/default control group. Android
+     * enables the real-photo line-specific pair through the environment. */
     pthread_once(&g_mrz_scratch_once, mrz_scratch_init_once);
-    *net = g_mrz_scratch_cnn_template;
+    const char *line_models_env = getenv("MRZ_OCR_LINE_MODELS");
+    const int use_line_models =
+        line_models_env && line_models_env[0] && strcmp(line_models_env, "0") != 0;
+    net0 = use_line_models ? &g_mrz_scratch_cnn_line1 : &g_mrz_scratch_cnn_template;
+    net1 = use_line_models ? &g_mrz_scratch_cnn_line2 : &g_mrz_scratch_cnn_template;
     {
         const char *tta_env = getenv("MRZ_OCR_TTA");
         int tta = (tta_env && tta_env[0] && strcmp(tta_env, "0") != 0);
+        /* CRNN sequence head: 44 x CNN_FLAT -> GRU -> 44 x CNN_OUT.
+         * Uses the identical glyph/feature pipeline as the CNN path, so
+         * A/B differences are attributable to the sequence model only. */
+        const char *crnn_env = getenv("MRZ_OCR_CRNN");
+        const int use_crnn =
+            crnn_env && crnn_env[0] && strcmp(crnn_env, "0") != 0 &&
+            crnn_weights_available();
+        crnn_pair_init(&g_mrz_scratch_crnn);
+
+        /* Fused mode: run the per-character CNN head AND the CRNN
+         * sequence head, then combine them in log space.
+         *
+         * WHY
+         * ---
+         * Measured on a strictly held-out split (train on pic_scan1,
+         * evaluate on pic_scan2/3, identical features for both heads):
+         *
+         *   line 1   CNN 94.62%   CRNN 92.94%   fused 96.05%
+         *   line 2   CNN 97.73%   CRNN 82.66%   fused 99.04%
+         *
+         * The two heads fail on DIFFERENT characters (line 2: the CNN
+         * was wrong on 140 cells where the CRNN was right, and the CRNN
+         * was wrong on 14 cells where the CNN was right), so combining
+         * them in log space recovers most of the difference.
+         *
+         * The weights are log-probabilities, so a cell that ONE head is
+         * confident about outvotes a cell where the other head is not.
+         * MRZ_OCR_FUSE_ALPHA scales the CRNN term; the shipped default
+         * 0.5 was the best value on the held-out split for line 2 and
+         * within 0.1pp of the best for line 1.
+         */
+        const char *fuse_env = getenv("MRZ_OCR_FUSE");
+        const int use_fuse =
+            fuse_env && fuse_env[0] && strcmp(fuse_env, "0") != 0 &&
+            crnn_weights_available();
+        float fuse_alpha = 0.5f;
+        {
+            const char *a = getenv("MRZ_OCR_FUSE_ALPHA");
+            if (a && a[0]) {
+                float v = (float)atof(a);
+                if (v >= 0.0f && v <= 8.0f) fuse_alpha = v;
+            }
+        }
+        /* Absolute CRNN-confidence gate: below this the CRNN head does
+         * not get a vote.  The default is 0 (no absolute gate): the
+         * 3-fold grouped cross-validation over the 41 real photos
+         * measured the fused engine at 22/41 exact with this setting
+         * versus 21/41 for the plain CNN, and any absolute gate above
+         * zero only removes the CRNN's votes without changing the
+         * winner.  MRZ_OCR_FUSE_GATE is kept for field A/B. */
+        float fuse_gate = 0.0f;
+        {
+            const char *g = getenv("MRZ_OCR_FUSE_GATE");
+            if (g && g[0]) {
+                float v = (float)atof(g);
+                if (v >= 0.0f && v <= 1.0f) fuse_gate = v;
+            }
+        }
+        /* Relative gate: the CRNN confidence must be at least this
+         * multiple of the CNN confidence on the same cell.  1.0 means
+         * "the CRNN must be at least as sure as the CNN". */
+        float fuse_ratio = 1.0f;
+        {
+            const char *r = getenv("MRZ_OCR_FUSE_RATIO");
+            if (r && r[0]) {
+                float v = (float)atof(r);
+                if (v >= 0.0f && v <= 8.0f) fuse_ratio = v;
+            }
+        }
 
         /* Step 2 fork:
          *   default (sequential)  -> single loop, cache-hot
@@ -1103,6 +2240,23 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
          * passes was measurably slower on A53 (~+5 ms p50). */
         const char *par_env = getenv("MRZ_OCR_PAR");
         int do_par = par_env && par_env[0] && strcmp(par_env, "0") != 0;
+        /* The dual-line worker runs the per-character FC inside the worker
+         * thread, which has no CRNN branch. The sequence head is a strictly
+         * serial per-row recurrence, so the parallel split buys nothing for
+         * it: force the cache-hot sequential path whenever CRNN is on so the
+         * GRU is actually used instead of silently falling back to CNN. */
+        /* The dual-line worker now runs the sequence head and the
+         * fusion too (see mrz_row_classify), so the parallel split is
+         * available for every engine.  The sequence recurrence is per
+         * row, so line 1 and line 2 remain independent work and the
+         * split still pays off: measured on the eval corpus, the
+         * sequential path costs ~0.8 ms more p50 than the parallel
+         * one. */
+        if (use_crnn && !use_fuse && do_par) {
+            /* The plain CRNN mode keeps the sequential path: the fused
+             * engine is the one that ships, and the plain CRNN mode is
+             * kept as a diagnostic A/B. */
+        }
         if (do_par) {
             /* Worker-only pinning (CPU 3) proved best: pinning the
              * main thread to CPU 0 hurt p50 (~+11 ms) because it
@@ -1126,6 +2280,10 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
              * per-half glyphs_keep buffers so the second pass
              * below doesn't redo the work. */
             for (int li = 0; li < 2; ++li) {
+                if (mrz_ocr_deadline_expired()) {
+                    status = MRZ_OCR_ERR_TIMEOUT;
+                    goto cleanup;
+                }
                 mrz_scratch_select_half(li);
                 base_l[li]   = (li == 0) ? lines[0].y : lines[1].y;
                 line_h_l[li] = (li == 0) ? lines[0].h : lines[1].h;
@@ -1188,12 +2346,17 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
              * re-resample pass.  The line-1 worker now also runs
              * TTA + decode_row in-thread so the join is
              * essentially free on the main side. */
+#ifndef __linux__
             pthread_t worker;
+#endif
             mrz_line1_job_t job;
             int worker_spawned = 0;
             int line1_did_inline = 0;
+            /* Ambiguity of line 2, decoded on the worker thread. */
+            mrz_decode_amb_t worker_amb;
+            memset(&worker_amb, 0, sizeof(worker_amb));
             if (nchars_l[1] >= 30) {
-                job.net       = net;
+                job.net       = net1;
                 job.glyphs    = glyphs1_keep;
                 job.tta_glyphs= glyphs1_tta;
                 job.feats     = feats1;
@@ -1207,7 +2370,15 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                 job.base_y    = base_l[1];
                 job.tta       = tta;
                 job.line_out  = out->line2;
+                job.amb       = &worker_amb;
                 job.conf_avg  = &out->line2_avg_conf;
+                job.use_seq   = use_crnn;
+                job.use_fuse  = use_fuse;
+                job.fuse_alpha = fuse_alpha;
+                job.fuse_gate  = fuse_gate;
+                job.fuse_ratio = fuse_ratio;
+                job.line_idx   = 1;
+                job.seq_probs  = (float *)mrz_scratch_probs(44 * CNN_OUT);
 #ifdef __linux__
                 if (mrz_resident_submit(&job) == 0) {
                     worker_spawned = 1;   /* resident worker owns it */
@@ -1227,8 +2398,17 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
 
             /* Line 0 forward (and TTA) on the main thread. */
             if (nchars_l[0] >= 30) {
-                cnn_row_features_batch(net, glyphs0_keep, nchars_l[0], feats0);
-                cnn_fc_batch(net, feats0, nchars_l[0], probs0);
+                {
+                    mrz_line1_job_t j0;
+                    memset(&j0, 0, sizeof(j0));
+                    j0.net = net0; j0.glyphs = glyphs0_keep; j0.feats = feats0;
+                    j0.probs = probs0; j0.nchars = nchars_l[0];
+                    j0.use_seq = use_crnn; j0.use_fuse = use_fuse;
+                    j0.fuse_alpha = fuse_alpha; j0.fuse_gate = fuse_gate;
+                    j0.fuse_ratio = fuse_ratio; j0.line_idx = 0;
+                    j0.seq_probs = (float *)mrz_scratch_probs(44 * CNN_OUT);
+                    mrz_row_classify(&j0);
+                }
                 if (tta) {
                     for (int c = 0; c < nchars_l[0]; ++c)
                         for (int o = 0; o < CNN_OUT; ++o)
@@ -1240,8 +2420,8 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                                                base_l[0] + chars_l[0][c].y,
                                                chars_l[0][c].w, chars_l[0][c].h,
                                                NULL, 0, glyphs0_tta[c]);
-                        cnn_row_features_batch(net, glyphs0_tta, nchars_l[0], feats0);
-                        cnn_fc_batch(net, feats0, nchars_l[0], probs0);
+                        cnn_row_features_batch(net0, glyphs0_tta, nchars_l[0], feats0);
+                        cnn_fc_batch(net0, feats0, nchars_l[0], probs0);
                         for (int c = 0; c < nchars_l[0]; ++c)
                             for (int o = 0; o < CNN_OUT; ++o)
                                 probs0_tta[c * CNN_OUT + o] += probs0[c * CNN_OUT + o];
@@ -1251,7 +2431,8 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                             probs0[c * CNN_OUT + o] = probs0_tta[c * CNN_OUT + o] / 3.0f;
                 }
                 decode_row((const float (*)[CNN_IN_H][CNN_IN_W])glyphs0_keep,
-                           nchars_l[0], 0, out->line1, &out->line1_avg_conf, probs0);
+                           nchars_l[0], 0, out->line1, &out->line1_avg_conf, probs0,
+                           NULL);
                 out->line1_len = nchars_l[0];
                 mrz_ocr_dump_glyphs("img", 0, glyphs0_keep, nchars_l[0], chars_l[0]);
             }
@@ -1274,6 +2455,12 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
             if (nchars_l[1] >= 30) {
                 out->line2_len = nchars_l[1];
                 mrz_ocr_dump_glyphs("img", 1, glyphs1_keep, nchars_l[1], chars_l[1]);
+                /* Line 2 was decoded on the worker thread; carry its
+                 * ambiguity report back to the caller. */
+                out->line2_ambiguous = worker_amb.ambiguous;
+                out->line2_alt_margin = worker_amb.margin;
+                memcpy(out->line2_alt, worker_amb.alt, 45);
+                out->line2_alt[44] = 0;
             }
             if (tm && tm[0] && strcmp(tm, "0")) {
                 clock_gettime(CLOCK_MONOTONIC, &_t1);
@@ -1316,8 +2503,33 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                     _t0 = _t1;
                 }
 
-                cnn_row_features_batch(net, glyphs, nchars, feats);
-                cnn_fc_batch(net, feats, nchars, probs);
+                const cnn_t *line_net = (li == 0) ? net0 : net1;
+                cnn_row_features_batch(line_net, glyphs, nchars, feats);
+                mrz_ocr_dump_line_features("img", li, feats, nchars);
+                if (use_fuse) {
+                    /* Both heads, then a confidence-gated log-space
+                     * combination.  See the block that parses
+                     * MRZ_OCR_FUSE for the measurements behind the
+                     * thresholds. */
+                    cnn_fc_batch(line_net, feats, nchars, probs);
+                    float *seq = (float *)mrz_scratch_probs(44 * CNN_OUT);
+                    if (!seq) { status = MRZ_OCR_ERR_LOAD; goto cleanup; }
+                    crnn_forward_line(&g_mrz_scratch_crnn, li, feats, nchars, seq);
+                    mrz_fuse_probs(probs, seq, nchars, fuse_alpha, fuse_gate, fuse_ratio);
+                } else if (use_crnn) {
+                    /* Sequence head replaces the per-character FC with a
+                     * GRU over the row, keeping the same 37-class output
+                     * contract so the downstream ICAO/checksum logic is
+                     * unchanged. One head per MRZ line because the CNN
+                     * front-end already uses line-specific conv weights. */
+                    crnn_forward_line(&g_mrz_scratch_crnn, li, feats, nchars, probs);
+                } else {
+                    cnn_fc_batch(line_net, feats, nchars, probs);
+                }
+                if (mrz_ocr_deadline_expired()) {
+                    status = MRZ_OCR_ERR_TIMEOUT;
+                    goto cleanup;
+                }
                 if (tta) {
                     for (int c = 0; c < nchars; ++c)
                         for (int o = 0; o < CNN_OUT; ++o) probs_tta[c * CNN_OUT + o] = probs[c * CNN_OUT + o];
@@ -1327,8 +2539,15 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                                                chars[c].x + sh, base + chars[c].y,
                                                chars[c].w, chars[c].h,
                                                NULL, 0, glyphs_tta[c]);
-                        cnn_row_features_batch(net, glyphs_tta, nchars, feats);
-                        cnn_fc_batch(net, feats, nchars, probs);
+                        cnn_row_features_batch(line_net, glyphs_tta, nchars, feats);
+                        if (use_fuse) {
+                            cnn_fc_batch(line_net, feats, nchars, probs);
+                            float *seq = (float *)mrz_scratch_probs(44 * CNN_OUT);
+                            if (!seq) { status = MRZ_OCR_ERR_LOAD; goto cleanup; }
+                            crnn_forward_line(&g_mrz_scratch_crnn, li, feats, nchars, seq);
+                            mrz_fuse_probs(probs, seq, nchars, fuse_alpha, fuse_gate, fuse_ratio);
+                        } else if (use_crnn) crnn_forward_line(&g_mrz_scratch_crnn, li, feats, nchars, probs);
+                        else cnn_fc_batch(line_net, feats, nchars, probs);
                         for (int c = 0; c < nchars; ++c)
                             for (int o = 0; o < CNN_OUT; ++o)
                                 probs_tta[c * CNN_OUT + o] += probs[c * CNN_OUT + o];
@@ -1340,8 +2559,18 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
 
                 char *dest = (li == 0) ? out->line1 : out->line2;
                 int *conf = (li == 0) ? &out->line1_avg_conf : &out->line2_avg_conf;
-                decode_row((const float (*)[CNN_IN_H][CNN_IN_W])glyphs, nchars, li, dest, conf, probs);
-                if (li == 0) out->line1_len = nchars; else out->line2_len = nchars;
+                mrz_decode_amb_t amb;
+                decode_row((const float (*)[CNN_IN_H][CNN_IN_W])glyphs, nchars, li,
+                           dest, conf, probs, &amb);
+                if (li == 0) {
+                    out->line1_len = nchars;
+                } else {
+                    out->line2_len = nchars;
+                    out->line2_ambiguous = amb.ambiguous;
+                    out->line2_alt_margin = amb.margin;
+                    memcpy(out->line2_alt, amb.alt, 45);
+                    out->line2_alt[44] = 0;
+                }
                 mrz_ocr_dump_glyphs("img", li, glyphs, nchars, chars);
                 line_pixels = NULL;
                 if (tm && tm[0] && strcmp(tm, "0")) {
@@ -1354,10 +2583,18 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
     }
 
 cleanup:
+    /* Structural veto on the line-2 reading.  Computed here, after both
+     * the sequential and the parallel path have written out->line2, so
+     * the two paths cannot disagree about it. */
+    out->line2_struct_ok = mrz_line2_struct_sane(out->line2, out->line2_len);
+    out->line2_nat_suspect = mrz_nat_suspect(out->line2, out->line2_len);
+    out->line1_country_mismatch = mrz_line1_country_mismatch(
+        out->line1, out->line1_len, out->line2, out->line2_len);
+    out->line1_issuer_suspect = mrz_issuer_suspect(out->line1, out->line1_len);
     /* scratchpad: no per-call frees.  The whole buffer is reset
      * on the next recogniser entry (mrz_scratch_reset()). */
     (void)probs_tta; (void)probs; (void)feats;
-    (void)glyphs_tta; (void)glyphs; (void)net;
+    (void)glyphs_tta; (void)glyphs; (void)net0; (void)net1;
     (void)line_pixels;
     (void)rot; (void)band_bin; (void)band_gray;
     (void)bin; (void)gray;

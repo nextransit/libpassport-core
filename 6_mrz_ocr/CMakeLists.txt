@@ -10,7 +10,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../3_face_recognition
                  ${CMAKE_CURRENT_BINARY_DIR}/face_build)
 
 find_library(M_LIB m)
-add_library(mrz_ocr STATIC src/template.c src/mrz_geom.c src/mrz_ocr.c src/mrz_ocr_cnn.c src/cnn.c)
+add_library(mrz_ocr STATIC src/template.c src/mrz_geom.c src/mrz_ocr.c src/mrz_ocr_cnn.c src/mrz_ocr_crnn.c src/crnn.c src/cnn.c)
 target_include_directories(mrz_ocr PUBLIC include src)
 target_link_libraries(mrz_ocr PUBLIC face ${M_LIB})
 
@@ -39,6 +39,17 @@ add_test(NAME mrz_postproc COMMAND test_postproc)
 
 # In-process golden test: both backends must reproduce a rendered
 # ICAO-valid record exactly, no external corpus files required.
+add_executable(check_line_weights tools/check_line_weights.c)
+target_link_libraries(check_line_weights PRIVATE mrz_ocr)
 add_executable(test_golden tests/test_golden.c)
 target_link_libraries(test_golden PRIVATE mrz_ocr)
 add_test(NAME mrz_golden COMMAND test_golden)
+
+add_executable(test_crnn tests/test_crnn.c)
+target_link_libraries(test_crnn PRIVATE mrz_ocr)
+add_test(NAME mrz_crnn_contract COMMAND test_crnn)
+
+# Numeric parity between the exported C weights and the reference
+# implementation of the same head (fed a features file).
+add_executable(test_crnn_parity tests/test_crnn_parity.c)
+target_link_libraries(test_crnn_parity PRIVATE mrz_ocr)

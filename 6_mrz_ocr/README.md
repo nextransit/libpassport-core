@@ -3,9 +3,35 @@
 Recognises ICAO 9303 TD3 (passport) MRZ strings from raster images.
 Pure C (float32 inference), no third-party runtime dependencies.
 
-Two recognition backends share the band / line / segmentation stage.
-The CNN backend is the product path; the template backend is kept as a
-legacy A/B comparison.
+Three recognition backends share the band / line / segmentation stage.
+
+| backend | how it classifies | when to use |
+|---|---|---|
+| **fused** (`mrz_ocr_recognise_fuse`) | the per-character CNN head AND the CRNN sequence head, combined in log space with a confidence gate | **the product path** |
+| CNN (`mrz_ocr_recognise_cnn`) | per-character CNN head only | fallback / A/B |
+| template (`mrz_ocr_recognise`) | template-bank matching | legacy A/B only |
+
+The fused engine exists because the two heads fail on DIFFERENT cells.
+Measured on a 3-fold **grouped** cross-validation over the 41 real
+photos (each photo is held out of the fold that trained it):
+
+```
+per-character CNN : 21/41 exact, 96.78% char, 19 checksum-valid-but-wrong
+CRNN alone        :  0/41 exact, 67.35% char, 18 checksum-valid-but-wrong
+fused             : 22/41 exact, 96.90% char, 18 checksum-valid-but-wrong
+```
+
+The CRNN sequence head does NOT generalise on its own with this corpus
+(41 photos, labels verifiable only at the 5 check-digit positions), so
+it is used as a complement to the CNN head, not as a replacement.  See
+`../outputs/crnn_optimization_2026-10-23.md` for the full analysis and
+`tools/cv_crnn.py` to reproduce the cross-validation.
+
+Fusion knobs (environment, for field A/B): `MRZ_OCR_FUSE=1`,
+`MRZ_OCR_FUSE_GATE` (absolute CRNN-confidence threshold, default 0),
+`MRZ_OCR_FUSE_RATIO` (CRNN must be this many times as confident as the
+CNN, default 1.0), `MRZ_OCR_FUSE_ALPHA` (weight of the CRNN log term,
+default 0.5).
 
 ## Pipeline (CNN backend)
 

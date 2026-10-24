@@ -10,6 +10,8 @@
  */
 #include "cnn.h"
 #include "cnn_weights.h"
+#include "cnn_weights_line1.h"
+#include "cnn_weights_line2.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -29,6 +31,57 @@ void cnn_default_init(cnn_t *net) {
     memcpy(net->fc1_b,  DEFAULT_FC1_B,   sizeof(net->fc1_b));
     memcpy(net->fc2_w,  DEFAULT_FC2_W,   sizeof(net->fc2_w));
     memcpy(net->fc2_b,  DEFAULT_FC2_B,   sizeof(net->fc2_b));
+}
+
+static void cnn_init_arrays(
+        cnn_t *net,
+        const float *in_mean,
+        const float *in_std,
+        const float *conv1_w,
+        const float *conv1_b,
+        const float *conv2_w,
+        const float *conv2_b,
+        const float *conv3_w,
+        const float *conv3_b,
+        const float *fc1_w,
+        const float *fc1_b,
+        const float *fc2_w,
+        const float *fc2_b) {
+    memset(net, 0, sizeof(*net));
+    memcpy(net->in_mean, in_mean, sizeof(net->in_mean));
+    memcpy(net->in_std, in_std, sizeof(net->in_std));
+    memcpy(net->conv1_w, conv1_w, sizeof(net->conv1_w));
+    memcpy(net->conv1_b, conv1_b, sizeof(net->conv1_b));
+    memcpy(net->conv2_w, conv2_w, sizeof(net->conv2_w));
+    memcpy(net->conv2_b, conv2_b, sizeof(net->conv2_b));
+    memcpy(net->conv3_w, conv3_w, sizeof(net->conv3_w));
+    memcpy(net->conv3_b, conv3_b, sizeof(net->conv3_b));
+    memcpy(net->fc1_w, fc1_w, sizeof(net->fc1_w));
+    memcpy(net->fc1_b, fc1_b, sizeof(net->fc1_b));
+    memcpy(net->fc2_w, fc2_w, sizeof(net->fc2_w));
+    memcpy(net->fc2_b, fc2_b, sizeof(net->fc2_b));
+}
+
+void cnn_line_init(cnn_t *net, int line_index) {
+    if (line_index == 0) {
+        cnn_init_arrays(
+            net,
+            LINE1_IN_MEAN, LINE1_IN_STD,
+            LINE1_CONV1_W, LINE1_CONV1_B,
+            LINE1_CONV2_W, LINE1_CONV2_B,
+            LINE1_CONV3_W, LINE1_CONV3_B,
+            LINE1_FC1_W, LINE1_FC1_B,
+            LINE1_FC2_W, LINE1_FC2_B);
+    } else {
+        cnn_init_arrays(
+            net,
+            LINE2_IN_MEAN, LINE2_IN_STD,
+            LINE2_CONV1_W, LINE2_CONV1_B,
+            LINE2_CONV2_W, LINE2_CONV2_B,
+            LINE2_CONV3_W, LINE2_CONV3_B,
+            LINE2_FC1_W, LINE2_FC1_B,
+            LINE2_FC2_W, LINE2_FC2_B);
+    }
 }
 
 /* normalise into padded xp (pad 1), then conv1+ReLU.

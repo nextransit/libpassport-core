@@ -1,0 +1,50 @@
+{
+ "note": "assets/pic 的 84 张里，只有这 9 张的 line2 同时满足：五个校验位闭合 + 日期结构可能 + 国籍码真实。它只适合当 smoke 集（回归时确认这 9 张仍然读得出来），不能当准确率基准——内容本身仍未与原件核对。",
+ "records": [
+  {
+   "file": "0f9780b8e1e3cc21_0008.jpg",
+   "line2": "3400072370USA6707046F1608078910000193N113S38",
+   "line1": "P<OGDJHJJJECEGGGGUGG<<<<<<<<<<<<<<<<<<<<<<<<"
+  },
+  {
+   "file": "239e042aba0c3ab2_0102.jpg",
+   "line2": "DLM00000M8CHN8509037F150501819200001N4X<8892",
+   "line1": "P<EANYKNG<<ZNAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+  },
+  {
+   "file": "28a42952ba25584a_0078.png",
+   "line2": "Q100547988CHN8410124F1907173192044155<<5<<46",
+   "line1": "P<CHNNOCELNPONBPJLBLO<<<<<<<<<<<<<<<<<<<<<<<"
+  },
+  {
+   "file": "2c793efe12276f9b_0258.jpg",
+   "line2": "LV90008223LVA6612016F2501121111111<11G1MCK72",
+   "line1": "P<LVAOIOLKALNA<<LTFNE<MARA<<<<<<<<<<<<<<<<<<"
+  },
+  {
+   "file": "4023a0d69dbd6cf7_0120.jpg",
+   "line2": "DE00000003CHN8509037F2611158NK00NFNB555<A912",
+   "line1": "P<GHNYANG<<SHAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+  },
+  {
+   "file": "4c5f5e1654002cd0_0050.png",
+   "line2": "9M01391481USA6401171F1812051900Z81200KR2Y666",
+   "line1": "P<USAGGANA<<NJGHELEE<<<<<<<<<<<<<<<<<<<<<<<<"
+  },
+  {
+   "file": "a495fb368b46ab35_0280.png",
+   "line2": "D622Y2SY96CHN8310291F19042204C0CHXHEH8H88984",
+   "line1": "P<GHNGESHS<<YANGBEN<<<<<<<<<<<<<<<<<<<<<<<<<"
+  },
+  {
+   "file": "b2b5008f3839530d_0001.jpg",
+   "line2": "M0N0062122SVN7811182F261212218IIA785M565EK14",
+   "line1": "P<SVNVSOREG<<AHA<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+  },
+  {
+   "file": "cb64e780ab32f735_0004.jpg",
+   "line2": "XM12818830SVK1111112F34091871111111111<KKK06",
+   "line1": "P<SVRGPEGINEH<<VYORKA<<<<<<<<<<<<<<<<<<<<<<<"
+  }
+ ]
+}
