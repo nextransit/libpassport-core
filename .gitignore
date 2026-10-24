@@ -54,3 +54,8 @@ skills/
 
 # PaddleOCR local tesseract scratch (band crops, tsv, batch lists)
 tests/.paddle_local_tmp/
+Photo/
+tmp/
+
+# mrz_ocr bench scratch images
+6_mrz_ocr/data/_*.ppm
