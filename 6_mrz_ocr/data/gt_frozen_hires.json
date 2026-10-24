@@ -60,14 +60,12 @@
     63
    ],
    "pad": 10,
-   "line2": "048M48VNN3MRT6811118M200626804664XNNN6NNNN24",
+   "line2": "0981489<<5MLT6811118M2006268<<<<<<<<<<<<<<06",
    "line1": "P<MLTMIGALLBF<<GIOWANND<<<<<<<<<<<<<<<<<<<<<",
-   "tier": "adjudicate",
+   "tier": "human_adjudicated",
    "votes": 2,
    "reads": 6,
-   "line2_alts": [
-    "8484489889HEY6811118M2006268<6<<<66<<<<<<808"
-   ]
+   "line2_alts": []
   },
   {
    "id": "b1442018a8167bf5_0029.jpg",
@@ -78,14 +76,12 @@
     86
    ],
    "pad": 10,
-   "line2": "O000077347USH6502056F30101495001001206695838",
+   "line2": "E000077347USA6502056F3010149500100120<095838",
    "line1": "",
-   "tier": "adjudicate",
+   "tier": "human_adjudicated",
    "votes": 2,
    "reads": 6,
-   "line2_alts": [
-    "0000071347USM6502056F3010149500100120<095838"
-   ]
+   "line2_alts": []
   },
   {
    "id": "b2b5008f3839530d_0001.jpg",
@@ -132,33 +128,13 @@
     61
    ],
    "pad": 10,
-   "line2": "6451331382PAK6609302F1003145<<<<<<<<<<<<<<04",
+   "line2": "6451331382PRK6609302F1003145<<<<<<<<<<<<<<04",
    "line1": "",
-   "tier": "adjudicate",
+   "tier": "human_adjudicated",
    "votes": 2,
    "reads": 6,
-   "line2_alts": [
-    "6411331182BHC6609302F1003145<<<<<Z<<<<<<<<54"
-   ]
-  },
-  {
-   "id": "f0b4236c22f4dbd9_0059.jpg",
-   "crop": [
-    0,
-    1005,
-    1920,
-    227
-   ],
-   "pad": 10,
-   "line2": "8068888888BHE8088608F88060806868868688888888",
-   "line1": "",
-   "tier": "adjudicate",
-   "votes": 1,
-   "reads": 6,
-   "line2_alts": [
-    "0000000000UMU0000000M0000000000K000000000000",
-    "0888888888BBB0088808M88088888888888888880868"
-   ]
+   "line2_alts": [],
+   "adjudication_note": "human transcription was 43 chars; unique checksum-valid completion inserts 0 at pos 42; nationality read PRK by eye vs model PAK (not checksum-covered, human authoritative)"
   },
   {
    "id": "ff4263d6d463017a_0008.jpg",
