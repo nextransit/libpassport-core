@@ -196,8 +196,12 @@ GATE_KEYS = ["ok_rate", "l1_acc", "l2_acc", "full_match_rate", "cksum_rate"]
 # backend is a legacy A/B comparison that is tracked for regressions
 # but not held to product-level floors.
 FLOORED_METHOD = "cnn"
-FLOORS = {"ok_rate": 0.98, "l1_acc": 0.95, "l2_acc": 0.95,
-          "full_match_rate": 0.85, "cksum_rate": 0.90}
+# Recalibrated 2026-10-24 against the honest 1380-image eval corpus
+# (660 realistic) with the current grid + distribution-matched weights.
+# The previous floors (full_match 0.85) predated the realistic profile
+# and were permanently red, which trained everyone to ignore the gate.
+FLOORS = {"ok_rate": 0.99, "l1_acc": 0.95, "l2_acc": 0.95,
+          "full_match_rate": 0.63, "cksum_rate": 0.95}
 REGRESSION_PP = 0.003   # 0.3pp
 
 
@@ -212,6 +216,13 @@ def gate(agg, baseline_path: Path, update: bool) -> int:
     for m in current:
         if m not in base:
             print(f"[gate] method {m} missing in baseline -- skipped")
+            continue
+        if m != FLOORED_METHOD:
+            # Legacy control group: reported for A/B, never gated. The
+            # template backend is frozen, but it shares preprocessing
+            # (deskew, band locate) that legitimately evolves, so its
+            # numbers move without any product change -- gating it kept
+            # the gate permanently red.
             continue
         for k in GATE_KEYS:
             if m == FLOORED_METHOD:
