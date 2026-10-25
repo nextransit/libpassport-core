@@ -3071,8 +3071,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                     indra_tmp = None
                     try:
                         import tempfile as _tempfile
+                        from PIL import Image as _Image
                         if native_band is not None:
-                            tmp_dir2 = _P(__file__).resolve().parents[1] / \
+                            tmp_dir2 = Path(__file__).resolve().parents[1] / \
                                 "10_ocr_research"
                             tmp_dir2.mkdir(parents=True, exist_ok=True)
                             indra_tmp = _tempfile.NamedTemporaryFile(
