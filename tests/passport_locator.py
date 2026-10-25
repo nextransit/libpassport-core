@@ -416,6 +416,43 @@ def _locate_mrz(gray):
     if chosen is None:
         return None
     y0, y1 = chosen
+    # Two-line completion: when the single-line fallback fired, the box
+    # covers only ONE MRZ line and the OCR stage can never recover the
+    # other (it is not in the crop). If a second line-like dense
+    # sub-segment sits just above (gap <= 2.5x the chosen line height,
+    # similar height) or below, extend the box to cover both. Real
+    # OCR-B pairs keep near-equal heights; unrelated body text does
+    # not, which keeps this from absorbing paragraphs.
+    band_h = y1 - y0
+    local_dense = [i for i in range(max(0, y0 - int(3 * band_h) - 8),
+                                    min(H, y1 + int(3 * band_h) + 8))
+                   if dense[i]]
+    if local_dense:
+        # sub-segments around the chosen band
+        segs = []
+        s2 = p2 = local_dense[0]
+        for r2 in local_dense[1:]:
+            if r2 - p2 <= 4:
+                p2 = r2
+            else:
+                segs.append([s2, p2]); s2 = p2 = r2
+        segs.append([s2, p2])
+        cur = [sg for sg in segs if sg[0] <= y1 and sg[1] >= y0]
+        if cur:
+            cur_top = min(sg[0] for sg in cur)
+            cur_bot = max(sg[1] for sg in cur)
+            others = [sg for sg in segs if sg not in cur]
+            for o in others:
+                oh = o[1] - o[0]
+                if not (6 <= oh <= 60):
+                    continue
+                if abs(oh - band_h) > 0.65 * max(oh, band_h):
+                    continue
+                gap = (o[0] - cur_bot) if o[0] > cur_bot else (cur_top - o[1])
+                if 0 < gap <= max(25, 2.5 * max(oh, band_h)):
+                    # keep the lowest two: prefer the pair closest below
+                    y0 = min(y0, o[0]); y1 = max(y1, o[1])
+                    band_h = y1 - y0
     # x range: from column density inside the band.
     band = gray[y0:y1 + 1]
     cd = _col_density(band)
