@@ -3915,6 +3915,113 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 pass
 
     # ---- direct-image recognition (jpg/png on demand) ---------------
+    def _ocr_photo_engines(self, path):
+        """Photo -> structure -> de-reflection -> clean band -> engines.
+
+        Shared by the '图片直接识别' action so it runs the same pipeline
+        the photo tab uses (restore two-line detector, reflection
+        removal, native-resolution stacked band, multi-engine OCR) and
+        reports every engine's verdict instead of trusting one weak
+        backend.
+
+        Returns a dict shaped like passport_pipeline.process_image plus
+        an "engines" list: {grade, verified, loc, ocr, decode, reason,
+        engines[], band_rgb, work2, scale}.
+        """
+        import sys as _sys
+        from pathlib import Path as _P
+        import time as _time
+        _sys.path.insert(0, str(_P(__file__).resolve().parents[1] /
+                                "passport_photo_restore" / "src"))
+        from restore import (load, _gray, detect_structure,  # type: ignore
+                             drop_reflection, crop_pair_clean)
+        import cv2 as _cv2
+        from PIL import Image as _Image
+
+        out = {"grade": "REJECT", "verified": False, "loc": {}, "ocr": {},
+               "decode": {}, "reason": "", "engines": [], "band_rgb": None,
+               "work2": None, "scale": 1.0}
+        rgb = _cv2.cvtColor(_cv2.imread(path), _cv2.COLOR_BGR2RGB)
+        if rgb is None:
+            out["reason"] = "无法读取图片"
+            return out
+        work, scale = load(rgb, max_side=1250)
+        g = _gray(work)
+        st = detect_structure(g)
+        work2, st2, refl = drop_reflection(work, st)
+        pair = st2.get("mrz_pair")
+        out["work2"] = work2
+        out["scale"] = scale
+        if not pair:
+            out["reason"] = "未在照片中定位到 MRZ 双行"
+            return out
+        (a0, a1), (b0, b1) = pair
+        H0, W0 = rgb.shape[:2]
+        out["loc"] = {"mrz": {
+            "x": max(0, int(round(a0 / scale))),
+            "y": max(0, int(round(b1 / scale))),
+            "w": W0, "h": max(1, int(round((b1 - a0) / scale))),
+            "confidence": 0.99,
+            "evidence": "restore.detect_structure two-line pair"}}
+        band_rgb, _info = crop_pair_clean(work2, st2, clear_rows=2)
+        out["band_rgb"] = band_rgb
+        methods = self._rst_selected_methods()
+        band_path = None
+        tmp = None
+        try:
+            native_band = self._rst_native_mrz_band(rgb, pair, scale)
+            needs_file = any(m in ("traditional", "cnn") for m in methods)
+            if needs_file:
+                tmp_dir = _P(__file__).resolve().parents[1] / "10_ocr_research"
+                tmp_dir.mkdir(parents=True, exist_ok=True)
+                tmp = tempfile.NamedTemporaryFile(
+                    suffix=".ppm", prefix="_gui_direct_",
+                    dir=str(tmp_dir), delete=False)
+                band_path = _P(tmp.name)
+                tmp.close()
+                _Image.fromarray(native_band).save(str(band_path),
+                                                   format="PPM")
+            results, _ms = self._rst_run_ocr_methods(
+                rgb, pair, scale, band_path, methods,
+                native_band=native_band, source_path=path)
+        finally:
+            if tmp is not None:
+                try:
+                    band_path.unlink()
+                except OSError:
+                    pass
+        out["engines"] = results
+        # Pick the best engine: MRZ-shape first, then decode, then
+        # engine status (never let a page-decoration read win).
+        best = max(results, key=lambda r: (
+            int(_rst_mrz_shaped(r.get("line1"), r.get("line2"))),
+            int(r.get("decode_ok", False)),
+            int(r.get("engine_ok", False)),
+            r.get("conf1", 0) + r.get("conf2", 0),
+            -r.get("ms", 0.0),
+        )) if results else None
+        if best is None:
+            out["reason"] = "没有可用的识别引擎"
+            return out
+        l1 = best.get("line1") or ""
+        l2 = best.get("line2") or ""
+        out["ocr"] = {"line1": l1, "line2": l2,
+                      "conf1": best.get("conf1", 0),
+                      "conf2": best.get("conf2", 0),
+                      "ok": bool(best.get("engine_ok")),
+                      "band": best.get("band", "")}
+        out["decode"] = {"ok": bool(best.get("decode_ok")),
+                         "fields": {}, "err": best.get("raw_decode_error", "")}
+        if best.get("decode_ok"):
+            out["verified"] = True
+            out["grade"] = "PASS"
+            out["reason"] = (f"{best.get('label', '')} 识别并通过校验")
+        else:
+            out["grade"] = "SUSPECT"
+            out["reason"] = (f"{best.get('label', '')} 识别到 MRZ，"
+                             f"校验未通过")
+        return out
+
     def _ocr_pick_and_recognize(self):
         """Open a file picker for a single JPG/PNG/PPM, render its
         thumbnail in the right pane, then run mrz_ocr_tool + mrz_tool
@@ -3961,17 +4068,13 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             self.after(0, lambda: self._set_status_bar(
                 "MRZ OCR 识别中…", 50, done=0, total=1))
             try:
-                # Modern pipeline: locate -> crop -> CNN OCR -> decode.
-                # The previous direct pass fed the FULL photo to the
-                # legacy traditional tool and reported its "pipeline ran"
-                # status as 判定 PASS even when it had not read the MRZ
-                # at all; the pipeline grades honestly instead.
-                import sys as _sys
-                from pathlib import Path as _P
-                _sys.path.insert(0, str(_P(__file__).resolve().parent))
-                import passport_pipeline as _pp
+                # Full photo pipeline: structure detect -> de-reflection
+                # -> native band -> multi-engine OCR. The previous
+                # direct pass fed the FULL photo to the legacy
+                # traditional tool and reported its "pipeline ran"
+                # status as 判定 PASS even when nothing MRZ was read.
                 t0 = time.time()
-                rec = _pp.process_image(_P(path))
+                rec = self._ocr_photo_engines(path)
                 proc_ms = (time.time() - t0) * 1000
             except Exception as e:  # noqa: BLE001
                 err = e
@@ -4052,6 +4155,19 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                                ("有效期", "exp"), ("性别", "sex")):
                 tw.insert("end", f"  {k_zh}: {fields.get(k_en, '-')}\n", "lab")
         tw.insert("end", f"\n说明: {rec.get('reason', '')}\n", "lab")
+        # Per-engine breakdown so a weak backend never hides a strong one.
+        engines = rec.get("engines") or []
+        if len(engines) > 1:
+            tw.insert("end", "\n各引擎结果:\n", "hdr")
+            for e in engines:
+                tag = "okline" if e.get("decode_ok") else (
+                    "mm" if e.get("engine_ok") else "lab")
+                tw.insert("end",
+                          f"  ◆ {e.get('label', e.get('method', '?')):<12} "
+                          f"{'PASS' if e.get('decode_ok') else ('OK' if e.get('engine_ok') else 'FAIL')}"
+                          f"  {e.get('ms', 0):.0f} ms\n", tag)
+                if e.get("note"):
+                    tw.insert("end", f"      {e['note']}\n", "lab")
         tw.configure(state="disabled")
         # Persist for the preview overlay: the tool's band coords are
         # relative to the OCR crop; make them absolute for the overlay.
