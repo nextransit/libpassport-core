@@ -62,8 +62,9 @@ METHOD_LABELS = {
     "cnn":         "轻量CNN",
     "tesseract":   "Tesseract",
     "paddle":      "PaddleOCR",
+    "indra":       "IndraOCR",
 }
-METHOD_ORDER = ["traditional", "cnn", "tesseract", "paddle"]
+METHOD_ORDER = ["traditional", "cnn", "tesseract", "paddle", "indra"]
 
 FACE_DATA_DIR = ROOT / "3_face_recognition" / "data"
 FACE_SAMPLES = {
@@ -505,6 +506,48 @@ def _rst_decode_candidates(line1s, line2s):
         args=[], returncode=2, stdout="", stderr="no MRZ candidate decoded")
 
 
+_RST_GT_CACHE = None
+
+
+def _rst_gt_lookup(base):
+    """按文件名(base)查找 corpus_real 的正确 MRZ (GT)。
+
+    数据源: 6_mrz_ocr/data/corpus_real/corpus.json (records[].id 形如
+    "pic_scan1/2026-9-29-A", line1/line2 为板端 fixmrz 弱标签)。
+    匹配规则: id 的最后一段 == 图片文件名(不含扩展名)。
+    """
+    global _RST_GT_CACHE
+    if _RST_GT_CACHE is None:
+        _gt_json = ROOT / "6_mrz_ocr" / "data" / "corpus_real" / "corpus.json"
+        try:
+            _RST_GT_CACHE = {
+                r["id"].split("/")[-1]: r
+                for r in json.loads(_gt_json.read_text())["records"]
+            }
+        except Exception:
+            _RST_GT_CACHE = {}
+    return _RST_GT_CACHE.get(base)
+
+
+def _rst_gt_compare(pred_line1, pred_line2, gt_line1, gt_line2):
+    """GT vs Pred 逐字符对比: 返回 (acc1, acc2, 对比文本行列表)。"""
+    def char_acc(a, b):
+        n = max(len(a or ""), len(b or ""))
+        if n == 0:
+            return 0.0
+        return sum(1 for i in range(n)
+                   if (a[i] if i < len(a) else "_") ==
+                   (b[i] if i < len(b) else "_")) / n
+    a1, a2 = char_acc(pred_line1, gt_line1), char_acc(pred_line2, gt_line2)
+    rows = [
+        f"GT  line1: {gt_line1 or '<无>'}",
+        f"PRED l1  : {pred_line1 or '<未提取>'}   (acc {a1*100:.1f}%)",
+        f"GT  line2: {gt_line2 or '<无>'}",
+        f"PRED l2  : {pred_line2 or '<未提取>'}   (acc {a2*100:.1f}%)",
+    ]
+    return a1, a2, rows
+
+
 def _rst_parse_kv_output(text):
     """Parse the small key/value stdout contract shared by OCR tools."""
     out = {}
@@ -594,6 +637,73 @@ def _rst_run_paddle_inprocess(img_path):
         raw.append(f"result.note     : {note}")
     raw.append(f"ms: {ms:.1f}")
     return "\n".join(raw), (0 if ok else 1), error
+
+
+_RST_INDRA_MODULE = None
+_RST_INDRA_LOCK = threading.Lock()
+_RST_INDRA_WARMUP_STARTED = False
+
+
+def _rst_mrz_shaped(line1, line2):
+    """Cheap structural sanity for a TD3 OCR result.
+
+    Guards the "preferred engine" choice against engines that run their
+    own detection on the FULL photo and lock onto page decoration
+    (document titles like 'PASSPORT / PASSEPORT / CESKA REPUBLIKA'
+    satisfy '44 uppercase chars' but are not MRZ). A real TD3 line pair
+    always has: 44 chars per line, [A-Z0-9<] only, line1 col1 == '<'
+    (doc-type filler), and digits at most of the five line-2 check
+    positions."""
+    if not line1 or not line2:
+        return False
+    if len(line1) != 44 or len(line2) != 44:
+        return False
+    charset = set("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<")
+    if any(c not in charset for c in line1 + line2):
+        return False
+    if line1[1] != "<":
+        return False
+    digit_cols = (9, 19, 27, 42, 43)
+    digits = sum(1 for i in digit_cols if line2[i].isdigit())
+    return digits >= 3
+
+
+def _rst_prepare_indra():
+    """Import the Indra MRZ helper once and warm its ONNX sessions."""
+    global _RST_INDRA_MODULE
+    with _RST_INDRA_LOCK:
+        module = _RST_INDRA_MODULE
+        if module is None:
+            indra_dir = ROOT / "11_indra"
+            if str(indra_dir) not in sys.path:
+                sys.path.insert(0, str(indra_dir))
+            import importlib
+            module = importlib.import_module("mrz_indra")
+        module.engine()
+        _RST_INDRA_MODULE = module
+    return module
+
+
+def _rst_indra_warmup():
+    """Prepare Indra in a background thread before the first run."""
+    try:
+        _rst_prepare_indra()
+    except Exception:
+        # The actual run still reports the concrete initialization error.
+        pass
+
+
+def _rst_run_indra_inprocess(img_path):
+    """Run the cached Indra engine on a full-page photo.
+
+    Indra detects and reads the text lines itself, so it gets the whole
+    page instead of the cropped MRZ band the other tools use.
+    """
+    module = _rst_prepare_indra()
+    result = module.read_mrz(img_path)
+    stdout = module.format_kv(result)
+    error = "" if result.get("ok") else result.get("note", "indra 未识别到 MRZ")
+    return stdout, (0 if result.get("ok") else 1), error
 
 
 # ---------------------------------------------------------------------------
@@ -1528,6 +1638,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 "cnn": "#6c2bd9" if light else "#c084fc",
                 "tesseract": "#027a48" if light else "#2ee6a8",
                 "paddle": "#0b5cad" if light else "#5aa9ff",
+                "indra": "#b45309" if light else "#fbbf24",
             }
             for method, color in method_colors.items():
                 rst.tag_configure(
@@ -2351,21 +2462,23 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                                 highlightcolor=pal["accent"])
         self.loc_info.pack(fill="both", expand=True)
 
-    # ---- 照片→MRZ 流水线 tab（矫正+去影 -> MRZ 粗定位 -> 识别 -> 解码）----
+    # ---- 照片→MRZ 流水线 tab（去影 -> MRZ 粗定位 -> 识别 -> 解码）----
     def _build_restore_tab(self):
-        """护照机照片 → 5 步流水线，4 张图 + 1 段文字（线性排列）。
+        """护照机照片 → 4 步流水线，3 张图 + 1 段文字（线性排列）。
 
         每张图都是上一步的派生，视觉上严格对应流水线：
           ① 原图 (含反射)
           ② 去影图 (裁掉 MRZ 下方全部倒影, 原图基础上)
-          ③ 矫正图 (去影图透视拉直到矩形)
-          ④ MRZ 区图 (从矫正图裁出 line1+line2 紧贴矩形)
-          ⑤ MRZ 识别 + 解码 + 各阶段耗时
+          ③ MRZ 区图 (OCR 真正吃的那条带, 保留自然形态不拉伸)
+          ④ MRZ 识别 + 解码 + 各阶段耗时
+
+        原来第 3 格是「矫正图」（透视拉直），已移除：它不参与 OCR，
+        而且比自然 crop 更差（见 _build_restore_tab 里 labels 处的说明）。
         """
         pal = self._pal
         f = self.tab_restore
 
-        top = ttk.LabelFrame(f, text="护照照片 → MRZ（①原图 ②去影 ③矫正 ④MRZ区 ⑤识别/解码）")
+        top = ttk.LabelFrame(f, text="护照照片 → MRZ（①原图 ②去影 ③MRZ区 ④识别/解码）")
         top.pack(fill="x", padx=4, pady=(4, 0))
         row = ttk.Frame(top); row.pack(fill="x", padx=8, pady=4)
         ttk.Label(row, text="样本:").pack(side="left")
@@ -2416,9 +2529,20 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         # 4 张图线性排列 (上下分两行, 上 4 小图, 下 1 信息文本)
         body = ttk.Frame(f); body.pack(fill="both", expand=True, padx=4, pady=(4, 6))
 
-        # 上排：4 个等宽 canvas
+        # 上排：3 个等宽 canvas
+        #
+        # 原来有 4 格，第 3 格是「矫正图」（透视拉直后的 MRZ）。它被删掉
+        # 的理由和 Android 端删 rectified stage 完全一样：
+        #   * 它从不参与 OCR（OCR 读的是第 4 格的 crop_pair_clean）；
+        #   * 它比不处理更差：把矫正图喂给同一个 mrz_ocr_cnn_tool，
+        #     assets/pic 上 ICAO 通过 2/72，自然 crop 是 3/72；
+        #   * 它的页面四边形估计（_mrzh_quad 的 page_span）用亮度百分位
+        #     找页面边界，对整体偏亮的照片会把整幅图当成页面，
+        #     矫正后整张照片被压成 44 格 x 2 行，画面完全乱掉。
+        # native 侧的 deskew + 44 格 pitch-grid 已经在识别内部做完了，
+        # 所以第 3 格现在直接显示「MRZ 区（OCR 输入）」。
         imgs = ttk.Frame(body); imgs.pack(fill="both", expand=True)
-        for c in range(4):
+        for c in range(3):
             imgs.columnconfigure(c, weight=1, uniform="rst_col")
         imgs.rowconfigure(0, weight=1)
 
@@ -2428,8 +2552,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         labels = [
             ("① 原图（含镜片反射）", "src"),
             ("② 去影图（MRZ 下方倒影已裁掉）", "nor"),
-            ("③ 矫正图（去影图透视拉直）", "rect"),
-            ("④ MRZ 区（OCR 输入：反射清干净）", "band"),
+            ("③ MRZ 区（OCR 输入：反射清干净）", "band"),
         ]
         for col, (title, key) in enumerate(labels):
             cell = ttk.Frame(imgs)
@@ -2454,6 +2577,52 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         info = ttk.Frame(body); info.pack(fill="both", expand=False)
         ttk.Label(info, text="⑤ MRZ 识别 + 解码 + 阶段耗时",
                   font=("TkDefaultFont", 10, "bold")).pack(anchor="w")
+
+        # ⑤-a: 两行 OCR 结果 TextEdit（只读）—— 直接呈现 line1/line2 原文
+        mrz_lines = ttk.Frame(info); mrz_lines.pack(fill="x", pady=(2, 0))
+        for col, label in enumerate(("OCR line1", "OCR line2")):
+            cell = ttk.Frame(mrz_lines); cell.pack(side="left", fill="x",
+                                                   expand=True, padx=(0, 4))
+            ttk.Label(cell, text=label,
+                      font=("TkDefaultFont", 9, "bold")).pack(anchor="w")
+            var = tk.StringVar(value="")
+            t = ttk.Entry(cell, textvariable=var, font=("Menlo", 11),
+                          style="Field.TEntry")
+            t.pack(fill="x")
+            if col == 0:
+                self.rst_mrz1_var = var
+                self.rst_mrz1_edit = t
+            else:
+                self.rst_mrz2_var = var
+                self.rst_mrz2_edit = t
+
+        # ⑤-b: 证件详细信息控件组（mrz_tool decode 的字段）
+        doc = ttk.LabelFrame(info, text="证件信息（MRZ decode）")
+        doc.pack(fill="x", pady=(4, 0))
+        self.rst_doc_fields = {}
+        _rst_doc_spec = [
+            ("doc_type", "证件类型"),
+            ("issuing_state", "签发国"),
+            ("surname", "姓"),
+            ("given_names", "名"),
+            ("passport_no", "护照号"),
+            ("nationality", "国籍"),
+            ("birth_yymmdd", "出生日期"),
+            ("sex", "性别"),
+            ("expiry_yymmdd", "有效期"),
+            ("personal_no", "个人号码"),
+            ("composite_ck", "合成校验"),
+        ]
+        for i, (key, label) in enumerate(_rst_doc_spec):
+            r = ttk.Frame(doc); r.grid(row=i // 3, column=(i % 3) * 2,
+                                       sticky="w", padx=(4, 8), pady=1)
+            ttk.Label(r, text=label, width=9, anchor="w",
+                      font=("TkDefaultFont", 9)).pack(side="left")
+            var = tk.StringVar(value="")
+            ttk.Label(r, textvariable=var, width=16, anchor="w",
+                      font=("Menlo", 9), foreground=pal["accent"]).pack(side="left")
+            self.rst_doc_fields[key] = var
+
         info_text = ttk.Frame(info)
         info_text.pack(fill="both", expand=True)
         self.rst_info = tk.Text(
@@ -2473,7 +2642,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
 
         # 兼容旧字段名 (避免破坏别处可能引用)
         self.rst_canvas = self.rst_canvases[0]
-        self.rst_canvas2 = self.rst_canvases[3]
+        self.rst_canvas2 = self.rst_canvases[2]
 
     def _rst_resolve_path(self):
         path = self.rst_sample_path.get() if hasattr(self, "rst_sample_path") else ""
@@ -2544,8 +2713,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         from PIL import Image
         img = Image.open(path).convert("RGB")
         self._rst_fit_to(0, img, footer=f"{img.width}×{img.height}")
-        # 清空其余 3 格
-        for i in (1, 2, 3):
+        # 清空其余 2 格
+        for i in (1, 2):
             self.rst_canvases[i].delete("all")
 
     def _rst_zoom_open(self, idx, title):
@@ -2678,6 +2847,19 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             daemon=True,
         ).start()
 
+    def _rst_request_indra_warmup(self):
+        """Start Indra initialization without blocking the Tk event loop."""
+        global _RST_INDRA_WARMUP_STARTED
+        with _RST_INDRA_LOCK:
+            if _RST_INDRA_MODULE is not None or _RST_INDRA_WARMUP_STARTED:
+                return
+            _RST_INDRA_WARMUP_STARTED = True
+        threading.Thread(
+            target=_rst_indra_warmup,
+            name="indra-mrz-warmup",
+            daemon=True,
+        ).start()
+
     def _rst_selected_methods(self):
         if self.rst_method_both.get():
             return list(METHOD_ORDER)
@@ -2717,7 +2899,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         return out
 
     def _rst_run_ocr_methods(self, rgb, pair, scale, band_path, methods,
-                             native_band=None):
+                             native_band=None, source_path=None):
         """Run selected OCR backends against the same cleaned MRZ image."""
         import time as _time
         from concurrent.futures import ThreadPoolExecutor
@@ -2727,6 +2909,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             "traditional": ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_tool",
             "cnn": ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_cnn_tool",
             "paddle": ROOT / "6_1_PaddleOCR" / "paddle_v6.py",
+            "indra": ROOT / "11_indra" / "mrz_indra.py",
         }
 
         def failed(method, started, error):
@@ -2872,6 +3055,11 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 if method == "paddle":
                     stdout, returncode, stderr = _rst_run_paddle_inprocess(
                         native_band if native_band is not None else band_path)
+                elif method == "indra":
+                    if source_path is None:
+                        return failed(method, started, "缺少原图路径")
+                    stdout, returncode, stderr = _rst_run_indra_inprocess(
+                        source_path)
                 else:
                     argv = [str(tool), str(band_path)]
                     proc = subprocess.run(
@@ -2975,6 +3163,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         wall_started = _time.perf_counter()
         if "paddle" in methods:
             self._rst_request_paddle_warmup()
+        if "indra" in methods:
+            self._rst_request_indra_warmup()
         if len(methods) == 1:
             results = [run_one(methods[0])]
         else:
@@ -2989,7 +3179,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         return results, (_time.perf_counter() - wall_started) * 1000.0
 
     def _rst_run(self):
-        """5 步流水线: 原图 → 去影 → 矫正 → MRZ区 → 识别/解码."""
+        """4 步流水线: 原图 → 去影 → MRZ区 → 识别/解码."""
         import sys as _sys
         from pathlib import Path as _P
         import time as _time
@@ -3003,8 +3193,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             _sys.path.insert(0, str(_P(__file__).resolve().parents[1] /
                                     "passport_photo_restore" / "src"))
             from restore import (load, _gray, detect_structure,  # type: ignore
-                                 rectify_pair, drop_reflection,
-                                 crop_pair_clean)
+                                 drop_reflection, crop_pair_clean)
             import cv2 as _cv2
             from PIL import Image as _Image
 
@@ -3044,38 +3233,25 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                              badge=badge2,
                              badge_color=badge2_color)
 
-            # ③ 矫正图: 对裁后图做 line1/line2 各自单应
-            t0 = _time.perf_counter()
-            rect = None
-            if pair:
-                rect, _info = rectify_pair(work2, st2)
-            stages.append(("③矫正(单应)", (_time.perf_counter() - t0) * 1000))
-            if rect is not None:
-                self._rst_fit_to(2, _Image.fromarray(rect),
-                                 footer=f"{rect.shape[1]}×{rect.shape[0]}",
-                                 badge="44格×2行紧贴",
-                                 badge_color="ok")
-            else:
-                self.rst_canvases[2].delete("all")
-                self.rst_canvases[2].create_text(
-                    4, 8, text="(无 MRZ pair, 无法矫正)", anchor="nw",
-                    fill=self._pal["err"], font=("Menlo", 9, "bold"))
-
-            # ④ MRZ 区: 不拉伸自然形态 crop (保留 CNN 工具内部 deskew 假设)
+            # ③ MRZ 区: 不拉伸自然形态 crop (保留 CNN 工具内部 deskew 假设)
+            #
+            # 这一格以前是「矫正图（透视拉直）」，现在直接放 OCR 真正吃
+            # 的 crop。矫正图被移除的理由见上面 labels 处的说明：它不参与
+            # OCR，而且比自然 crop 更差。
             t0 = _time.perf_counter()
             band_rgb = None
             if pair:
                 # OCR 输入: crop_pair_clean, 剔除 line1 紧邻反射
                 band_rgb, _band_info = crop_pair_clean(work2, st2, clear_rows=2)
-            stages.append(("④MRZ区(crop)", (_time.perf_counter() - t0) * 1000))
+            stages.append(("③MRZ区(crop)", (_time.perf_counter() - t0) * 1000))
             if band_rgb is not None:
-                self._rst_fit_to(3, _Image.fromarray(band_rgb),
+                self._rst_fit_to(2, _Image.fromarray(band_rgb),
                                  footer=f"{band_rgb.shape[1]}×{band_rgb.shape[0]}",
                                  badge="OCR 输入",
                                  badge_color="ok")
             else:
-                self.rst_canvases[3].delete("all")
-                self.rst_canvases[3].create_text(
+                self.rst_canvases[2].delete("all")
+                self.rst_canvases[2].create_text(
                     4, 8, text="(无 MRZ)", anchor="nw",
                     fill=self._pal["err"], font=("Menlo", 9, "bold"))
 
@@ -3105,8 +3281,12 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
 
             ocr_results = []
             ocr_wall_ms = 0.0
-            if pair and band_rgb is not None:
+            if (pair and band_rgb is not None) or "indra" in methods:
                 methods = self._rst_selected_methods()
+                if not (pair and band_rgb is not None):
+                    # Indra runs its own detection, so it still works when
+                    # the structure stage found no MRZ pair.
+                    methods = ["indra"]
                 band_path = None
                 tmp = None
                 native_band = None
@@ -3130,7 +3310,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                             str(band_path), format="PPM")
                     ocr_results, ocr_wall_ms = self._rst_run_ocr_methods(
                         rgb, pair, scale, band_path, methods,
-                        native_band=native_band)
+                        native_band=native_band, source_path=path)
                 finally:
                     if tmp is not None:
                         try:
@@ -3147,9 +3327,15 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             if ocr_results:
                 # 推荐真实 decode 通过且未落到后备引擎的方案；同等结果
                 # 再按置信率和耗时排序，避免把“引擎 OK”误当成 MRZ 有效。
+                # MRZ-shape gate FIRST: an engine that read page
+                # decoration instead of the MRZ (Indra runs its own
+                # detection on the full photo) must never become the
+                # "final MRZ" just because its engine reported OK.
                 preferred = max(
                     ocr_results,
                     key=lambda result: (
+                        int(_rst_mrz_shaped(result.get("line1"),
+                                            result.get("line2"))),
                         int(result["decode_ok"]),
                         int(not result.get("backend", "").endswith("fallback")),
                         int(result["engine_ok"]),
@@ -3161,6 +3347,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 preferred_backend = preferred.get("backend", "")
                 if preferred_backend.endswith("fallback"):
                     preferred_label += f" -> {preferred_backend.split(' -> ', 1)[-1]}"
+                if not _rst_mrz_shaped(preferred.get("line1"),
+                                       preferred.get("line2")):
+                    preferred_label += "（非MRZ结构：引擎读到的是页面装饰文字）"
                 lines.extend([
                     f"推荐方案: {preferred_label}  "
                     f"{'PASS' if preferred['decode_ok'] else 'FAIL'}",
@@ -3168,6 +3357,50 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                     f"最终 MRZ line2: {preferred.get('line2') or '<未提取>'}",
                     "",
                 ])
+                # GT vs Pred 正确数据对比（corpus_real 弱标签）
+                gt = _rst_gt_lookup(os.path.splitext(os.path.basename(path))[0])
+                if gt and preferred.get("line1") is not None:
+                    acc1, acc2, gt_rows = _rst_gt_compare(
+                        preferred.get("line1"), preferred.get("line2"),
+                        gt.get("line1"), gt.get("line2"))
+                    lines.append("GT vs Pred 逐字符对比（正确数据）:")
+                    lines.extend(gt_rows)
+                    lines.append(
+                        f"对比结果: line1 准确率 {acc1*100:.1f}%  "
+                        f"line2 准确率 {acc2*100:.1f}%")
+                    lines.append("")
+
+            # 填充两行 OCR 结果 TextEdit 与证件信息控件组
+            pl1 = (preferred.get("line1") or "") if ocr_results else ""
+            pl2 = (preferred.get("line2") or "") if ocr_results else ""
+            self.rst_mrz1_var.set(pl1)
+            self.rst_mrz2_var.set(pl2)
+            doc_kv = {}
+            if ocr_results and preferred.get("decode"):
+                doc_kv = _rst_parse_kv_output(preferred["decode"])
+            _rst_doc_spec = [
+                ("doc_type", "证件类型"),
+                ("issuing_state", "签发国"),
+                ("surname", "姓"),
+                ("given_names", "名"),
+                ("passport_no", "护照号"),
+                ("nationality", "国籍"),
+                ("birth_yymmdd", "出生日期"),
+                ("sex", "性别"),
+                ("expiry_yymmdd", "有效期"),
+                ("personal_no", "个人号码"),
+                ("composite_ck", "合成校验"),
+            ]
+            for key, _label in _rst_doc_spec:
+                val = doc_kv.get(key, "")
+                # 取单引号内的值，忽略 "ck=2" 等校验后缀
+                import re as _re
+                m = _re.search(r"'([^']*)'", val)
+                if m:
+                    val = m.group(1)
+                var = self.rst_doc_fields.get(key)
+                if var is not None:
+                    var.set(val.strip())
 
             total = sum(ms for _, ms in stages)
             lines.append("")
