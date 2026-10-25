@@ -29,11 +29,57 @@ def _sys_path_ready() -> None:
         sys.path.insert(0, d)
 
 
+def _locate_via_restore(work, scale):
+    """MRZ rect from the restore-project's two-line structure detector.
+
+    passport_locator's row-density fallback boxes the whole lower text
+    block on landscape scans (Czech specimen: y=270 h=107 covering the
+    printed data zone instead of the MRZ pair at y=331). detect_structure
+    finds the OCR-B double-line pair directly; convert the pair to the
+    same rect schema locate_regions returns. Returns None on any failure
+    so the caller falls back to the legacy locator.
+    """
+    try:
+        import numpy as _np
+        import sys as _sys
+        restore_src = str(ROOT / "passport_photo_restore" / "src")
+        if restore_src not in _sys.path:
+            _sys.path.insert(0, restore_src)
+        from restore import detect_structure  # type: ignore
+        g = _np.asarray(work.convert("L"))
+        st = detect_structure(g)
+        pair = st.get("mrz_pair")
+        if not pair or len(pair) != 2:
+            return None
+        H, W = g.shape
+        (a0, a1), (b0, b1) = pair
+        if b0 <= a1:  # lines must not overlap
+            return None
+        # x extent from column ink inside the two rows.
+        band = g[a0:b1 + 1]
+        cols = _np.where(band.min(axis=0) < 128)[0]
+        if len(cols) < W * 0.5:
+            return None
+        x0, x1 = int(cols[0]), int(cols[-1])
+        y0 = max(0, int(a0) - 4)
+        y1 = min(H - 1, int(b1) + 4)
+        return {"photo": None, "data": None,
+                "mrz": {"x": x0, "y": y0, "w": x1 - x0 + 1,
+                        "h": y1 - y0 + 1, "confidence": 0.99,
+                        "pair": [[int(a0), int(a1)], [int(b0), int(b1)]],
+                        "evidence": "restore.detect_structure two-line pair"}}
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def locate(image: Path, max_side: int = 1200):
     """Return locate_regions dict for a passport image.
 
     Region detection runs on a downscaled copy (max side ~`max_side`) for
     speed; box coordinates are scaled back to the full-res image.
+    The restore-project two-line detector is tried first (it locates the
+    OCR-B pair itself rather than any dense text block); the legacy
+    locate_regions heuristic is the fallback.
     """
     _sys_path_ready()
     from PIL import Image
@@ -46,13 +92,18 @@ def locate(image: Path, max_side: int = 1200):
         scale = max_side / max(fw, fh)
         work = img.resize((max(1, int(fw * scale)),
                            max(1, int(fh * scale))), Image.LANCZOS)
-    loc = locate_regions(work)
+    loc = _locate_via_restore(work, scale) or locate_regions(work)
     img.close()
     if loc and scale != 1.0:
         for k, v in loc.items():
             if v:
                 for key in ("x", "y", "w", "h"):
                     v[key] = int(round(v[key] / scale))
+        pair = (loc.get("mrz") or {}).get("pair")
+        if pair:
+            loc["mrz"]["pair"] = [
+                [int(round(r[0] / scale)), int(round(r[1] / scale))]
+                for r in pair]
     return loc
 
 

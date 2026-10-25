@@ -3956,94 +3956,125 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
 
         def worker():
             err = None
-            kv = {}
+            rec = {}
             proc_ms = 0.0
             self.after(0, lambda: self._set_status_bar(
                 "MRZ OCR 识别中…", 50, done=0, total=1))
             try:
+                # Modern pipeline: locate -> crop -> CNN OCR -> decode.
+                # The previous direct pass fed the FULL photo to the
+                # legacy traditional tool and reported its "pipeline ran"
+                # status as 判定 PASS even when it had not read the MRZ
+                # at all; the pipeline grades honestly instead.
+                import sys as _sys
                 from pathlib import Path as _P
+                _sys.path.insert(0, str(_P(__file__).resolve().parent))
+                import passport_pipeline as _pp
                 t0 = time.time()
-                proc = subprocess.run(
-                    [str(ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_tool"), path],
-                    text=True, capture_output=True, timeout=20)
+                rec = _pp.process_image(_P(path))
                 proc_ms = (time.time() - t0) * 1000
-                for ln in (proc.stdout or "").splitlines():
-                    ln = ln.strip()
-                    if not ln or ":" not in ln:
-                        continue
-                    k, _, v = ln.partition(":")
-                    kv[k.strip()] = v.strip()
             except Exception as e:  # noqa: BLE001
                 err = e
             self.after(0, lambda: self._ocr_render_picked_result(
-                path, kv, proc_ms, err))
+                path, rec, proc_ms, err))
 
         threading.Thread(target=worker, daemon=True).start()
 
-    def _ocr_render_picked_result(self, path, kv, proc_ms, err):
-        """Paint the picked-image OCR result into the diff pane and
-        enable the picker / run buttons again."""
+    def _ocr_render_picked_result(self, path, rec, proc_ms, err):
+        """Paint the picked-image pipeline result into the diff pane.
+
+        `rec` is a passport_pipeline.process_image record (nested: ocr /
+        decode / loc). The 判定 tiers reflect what ACTUALLY happened:
+          PASS    = locate + OCR 44x2 + decode checksums all pass
+          SUSPECT = MRZ located; OCR may have produced (unverified) lines
+          REJECT  = no MRZ region found
+        """
         tw = self.ocr_diff_text
         tw.configure(state="normal")
         tw.delete("1.0", "end")
         chip = self._pal["chip"]
         if err:
             self._set_status_bar(f"识别失败: {err}", 0)
+            tw.insert("end", f"识别失败: {err}\n", "mm")
+            tw.configure(state="disabled")
+            return
+        self._set_status_bar("识别完成", 100, done=1, total=1)
+        rec = rec or {}
+        ocr = rec.get("ocr") or {}
+        loc = rec.get("loc") or {}
+        l1 = ocr.get("line1") or ""
+        l2 = ocr.get("line2") or ""
+        c1 = ocr.get("conf1") or 0
+        c2 = ocr.get("conf2") or 0
+        verified = bool(rec.get("verified"))
+        shaped = _rst_mrz_shaped(l1, l2)
+        located = bool(loc.get("mrz"))
+        if verified:
+            verdict, vtag = "PASS（定位+OCR+校验全部通过）✅", "okline"
+        elif located and shaped:
+            verdict, vtag = "SUSPECT（识别到 MRZ，校验未通过）⚠️", "mm"
+        elif located:
+            verdict, vtag = ("SUSPECT（定位到 MRZ 区，"
+                             "OCR 未识别出有效两行）⚠️"), "mm"
         else:
-            self._set_status_bar("识别完成", 100, done=1, total=1)
-        ok = kv.get("result.ok", "FAIL").upper() == "OK"
-        c1 = int(kv.get("result.conf1", "0") or 0)
-        c2 = int(kv.get("result.conf2", "0") or 0)
-        # Confidence header (parity with corpus diff pane).
-        line1_conf = (f"line1 conf={c1}% ("
-                      f"{'PASS' if c1 >= 70 else 'WARN' if c1 >= 40 else 'FAIL'})")
-        line2_conf = (f"line2 conf={c2}% ("
-                      f"{'PASS' if c2 >= 70 else 'WARN' if c2 >= 40 else 'FAIL'})")
-        ok_tag = "okline" if ok else "lab"
+            verdict, vtag = "REJECT（未定位到 MRZ 区）❌", "mm"
+        tw.insert("end", f"样本  : {os.path.basename(path)}\n", "hdr")
+        tw.insert("end", f"耗时  : {proc_ms:.0f} ms\n", "lab")
+        tw.insert("end", f"判定  : {verdict}\n", vtag)
         tw.insert("end",
-                  f"样本  : {os.path.basename(path)}\n", "hdr")
-        tw.insert("end",
-                  f"耗时  : {proc_ms:.0f} ms\n", "lab")
-        tw.insert("end",
-                  f"判定  : {'PASS  ✅' if ok else 'FAIL  ❌'}\n", ok_tag)
-        tw.insert("end",
-                  f"{line1_conf}    {line2_conf}\n\n", "lab")
-        # Parsed fields + raw stdout/stderr for forensic look.
-        fields = [
-            ("line1",  kv.get("result.line1", "-")),
-            ("line2",  kv.get("result.line2", "-")),
-            ("name",   kv.get("result.name",  "-")),
-            ("doc",    kv.get("result.doc",   "-")),
-            ("nat",    kv.get("result.nat",   "-")),
-            ("dob",    kv.get("result.dob",   "-")),
-            ("exp",    kv.get("result.exp",   "-")),
-            ("sex",    kv.get("result.sex",   "-")),
-            ("band",   kv.get("band.x band.y band.w band.h", "-")),
-        ]
-        tw.insert("end", "字段解析:\n", "hdr")
-        for k, v in fields:
-            tw.insert("end", f"  {k:6} : {v}\n", "lab")
-        if err is not None:
-            tw.insert("end", "\n[error]\n", "mm")
-            tw.insert("end", f"{err}\n", "lab")
+                  f"line1 conf={c1}% ({'PASS' if c1 >= 70 else 'WARN' if c1 >= 40 else 'FAIL'})    "
+                  f"line2 conf={c2}% ({'PASS' if c2 >= 70 else 'WARN' if c2 >= 40 else 'FAIL'})\n\n",
+                  "lab")
+        tw.insert("end", "MRZ 识别:\n", "hdr")
+        tw.insert("end", f"  line1: {l1 or '（未提取）'}\n", "lab")
+        tw.insert("end", f"  line2: {l2 or '（未提取）'}\n", "lab")
+        mr = loc.get("mrz")
+        if mr:
+            tw.insert("end",
+                      f"  MRZ区: x={mr['x']} y={mr['y']} w={mr['w']} h={mr['h']}"
+                      f"  置信度 {mr.get('confidence', 0):.2f}\n", "lab")
+        # Parsed fields: verified decode first, raw TD3 parse otherwise.
+        fields = (rec.get("decode") or {}).get("fields") or {}
+        raw_mode = False
+        if not fields and len(l1) == 44 and len(l2) == 44:
+            sur = l1[5:].split("<")[0]
+            giv = [p for p in l1[5:].split("<")[1:] if p]
+            fields = {"name": f"{sur}, {' '.join(giv)}".strip(", "),
+                      "doc": l2[0:9].replace("<", ""),
+                      "nat": l2[10:13], "dob": l2[13:19],
+                      "exp": l2[21:27], "sex": l2[20]}
+            raw_mode = True
+        if fields:
+            tw.insert("end", "\n字段解析%s:\n" % (
+                "（校验未通过 —— 原始识读值）" if raw_mode else ":"), "hdr")
+            for k_zh, k_en in (("姓名", "name"), ("证件号", "doc"),
+                               ("国籍", "nat"), ("出生", "dob"),
+                               ("有效期", "exp"), ("性别", "sex")):
+                tw.insert("end", f"  {k_zh}: {fields.get(k_en, '-')}\n", "lab")
+        tw.insert("end", f"\n说明: {rec.get('reason', '')}\n", "lab")
         tw.configure(state="disabled")
-        # Persist the parsed result so the next single-sample preview /
-        # confidence header picks it up. Whole-image OCR means the band
-        # coordinates are absolute (no crop offset).
+        # Persist for the preview overlay: the tool's band coords are
+        # relative to the OCR crop; make them absolute for the overlay.
         cid = f"_picked:{os.path.basename(path)}"
         self._ocr_last = getattr(self, "_ocr_last", {})
+        crop = ocr.get("crop") or {"x": 0, "y": 0}
+        band_abs = ""
+        raw_band = ocr.get("band") or ""
+        parts = raw_band.split()
+        if len(parts) == 4:
+            try:
+                bx, by, bw, bh = (int(v) for v in parts)
+                band_abs = f"{crop['x'] + bx} {crop['y'] + by} {bw} {bh}"
+            except ValueError:
+                band_abs = raw_band
         self._ocr_last[cid] = {
             "cnn": {
-                "line1": kv.get("result.line1", ""),
-                "line2": kv.get("result.line2", ""),
-                "conf1": c1, "conf2": c2,
-                "band":  kv.get("band.x band.y band.w band.h", ""),
-                "crop_offset": (0, 0),
-                "ok":    ok, "ms": proc_ms,
+                "line1": l1, "line2": l2, "conf1": c1, "conf2": c2,
+                "band": band_abs,
+                "crop_offset": (crop.get("x", 0), crop.get("y", 0)),
+                "ok": bool(ocr.get("ok")), "ms": proc_ms,
             }
         }
-        # Re-render the right-side preview so the region overlay uses
-        # the freshly fetched band/conf.
         self._preview_last_pm = self._ocr_last[cid]["cnn"]
         try:
             self._update_preview_image()
@@ -4058,6 +4089,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             self.ocr_run_btn.configure(state="normal")
         except tk.TclError:
             pass
+        self._set_status_bar("识别完成", 100, done=1, total=1)
 
     def _ocr_set_sashes(self):
         body = getattr(self, "_ocr_body", None)
