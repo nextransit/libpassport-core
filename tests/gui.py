@@ -493,6 +493,21 @@ def _rst_tesseract_candidates(rgb, pair, scale, psm_by_row=None,
     return line_candidates[0], line_candidates[1], "\n".join(raw_parts), ""
 
 
+def _rst_decode_ok(completed):
+    """True only when the real decoder ACCEPTED the lines.
+
+    mrz_tool exits 0 even for rejected input (it reports "decode
+    failed: ..." on stderr and leaves stdout empty), so the exit code
+    alone marks empty / malformed results as verified. The reliable
+    signal is a non-empty stdout carrying the parsed TD3 fields."""
+    if completed is None or completed.returncode != 0:
+        return False
+    out = completed.stdout or ""
+    if "decode failed" in (completed.stderr or "").lower():
+        return False
+    return "doc_type" in out
+
+
 def _rst_decode_candidates(line1s, line2s):
     """Return the first OCR candidate accepted by the real decoder."""
     for line1 in line1s:
@@ -500,7 +515,7 @@ def _rst_decode_candidates(line1s, line2s):
             decoded = subprocess.run(
                 [str(MRZ_TOOL), "decode", f"{line1}\n{line2}"],
                 text=True, capture_output=True, timeout=10)
-            if decoded.returncode == 0:
+            if _rst_decode_ok(decoded):
                 return line1, line2, report, raw, decoded
     return "", "", [], "", subprocess.CompletedProcess(
         args=[], returncode=2, stdout="", stderr="no MRZ candidate decoded")
@@ -2510,7 +2525,10 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         method_row.pack(fill="x", padx=8, pady=(0, 4))
         ttk.Label(method_row, text="识别方案:").pack(side="left")
         self.rst_methods = tk.StringVar(value="tesseract")
-        self.rst_method_both = tk.BooleanVar(value=False)
+        # Full ensemble by default: each engine covers the others'
+        # blind spots on real photos (C CNN skipped at low res,
+        # Tesseract misses rows, Indra needs a cleaned band).
+        self.rst_method_both = tk.BooleanVar(value=True)
         self._rst_last_method = "tesseract"
         for key in METHOD_ORDER:
             ttk.Radiobutton(
@@ -2977,7 +2995,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                         "engine_ok": bool(line1s and line2s),
                         "engine_status": "OK" if (line1s and line2s)
                         else "FAIL",
-                        "decode_ok": decoded.returncode == 0,
+                        "decode_ok": _rst_decode_ok(decoded),
                         "conf1": 0,
                         "conf2": 0,
                         "repair": repair,
@@ -3034,7 +3052,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                             result["line2"] = fixed2
                             result["repair"] = repair
                             result["decode"] = fixed_decoded.stdout.strip()
-                            result["decode_ok"] = fixed_decoded.returncode == 0
+                            result["decode_ok"] = _rst_decode_ok(fixed_decoded)
                             result["backend"] = (
                                 "cnn (low-res skip) -> tesseract-fallback")
                             result["note"] = (
@@ -3114,7 +3132,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                     "engine_ok": kv.get("result.ok") == "OK",
                     "engine_status": (
                         "OK" if kv.get("result.ok") == "OK" else "FAIL"),
-                    "decode_ok": decoded.returncode == 0,
+                    "decode_ok": _rst_decode_ok(decoded),
                     "conf1": int(kv.get("result.conf1", "0") or 0),
                     "conf2": int(kv.get("result.conf2", "0") or 0),
                     "repair": [],
@@ -3171,7 +3189,12 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                             result["line2"] = fixed2
                             result["repair"] = repair
                             result["decode"] = fixed_decoded.stdout.strip()
-                            result["decode_ok"] = True
+                            # The rescue only "passes" when the decoder
+                            # really accepted the rescued lines; a failed
+                            # rescue must not claim decode_ok (it used to
+                            # be hard-coded True, which turned empty
+                            # results into a verified verdict).
+                            result["decode_ok"] = _rst_decode_ok(fixed_decoded)
                             result["backend"] = (
                                 f"{backend or method} -> tesseract-fallback")
                             result["engine_status"] = (
@@ -3475,7 +3498,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                         and result.get("backend", "").endswith("fallback")
                     ):
                         raw_decode_status = (
-                            "PASS" if raw_decode_rc == 0 else "FAIL")
+                            "PASS" if result.get("decode_ok") else "FAIL")
                         self.rst_info.insert(
                             "end",
                             f"  原始 MRZ decode: {raw_decode_status} "
@@ -3851,13 +3874,13 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 f"result.ok   : {kv.get('result.ok', '-')}   "
                 f"conf1={kv.get('result.conf1', '-')}%   "
                 f"conf2={kv.get('result.conf2', '-')}%",
-                "" if decode_proc.returncode == 0 else
-                "[!] mrz_tool decode 返回非 0 (说明 OCR 出的两行不是合法 ICAO 字符，"
+                "" if _rst_decode_ok(decode_proc) else
+                "[!] mrz_tool decode 未通过 (说明 OCR 出的两行不是合法 ICAO 字符，"
                 "常见原因：合成样本 / 低分辨率 / MRZ 区定位过窄)",
                 "",
                 self._synth_hint(int(kv.get("result.conf1", "0") or 0),
                                    int(kv.get("result.conf2", "0") or 0),
-                                   decode_proc.returncode == 0),
+                                   _rst_decode_ok(decode_proc)),
                 # Even when OCR says "OK", the output characters may
                 # be garbage (mrz_ocr_tool has no language model so
                 # it can output A/M/W/V/L/J/Z placeholders that look
@@ -3929,6 +3952,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         engines[], band_rgb, work2, scale}.
         """
         import sys as _sys
+        import tempfile
         from pathlib import Path as _P
         import time as _time
         _sys.path.insert(0, str(_P(__file__).resolve().parents[1] /
@@ -3965,7 +3989,14 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             "evidence": "restore.detect_structure two-line pair"}}
         band_rgb, _info = crop_pair_clean(work2, st2, clear_rows=2)
         out["band_rgb"] = band_rgb
+        # The direct-recognition path benefits from every engine: the
+        # C CNN is skipped on low-resolution photos, Tesseract misses
+        # rows on some pages, and Indra is strongest on the cleaned
+        # band. Run the full set unless the user narrowed the photo
+        # tab's selection to a single method.
         methods = self._rst_selected_methods()
+        if len(methods) == 1 and self.rst_method_both.get():
+            methods = list(METHOD_ORDER)
         band_path = None
         tmp = None
         try:
@@ -4012,14 +4043,30 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                       "band": best.get("band", "")}
         out["decode"] = {"ok": bool(best.get("decode_ok")),
                          "fields": {}, "err": best.get("raw_decode_error", "")}
-        if best.get("decode_ok"):
+        # Verdict order:
+        #   1. the real decoder accepted a pair -> PASS (it validated all
+        #      five ICAO check digits; stronger than any shape heuristic);
+        #   2. some engine returned a TD3-shaped pair but decode failed
+        #      -> SUSPECT (an MRZ attempt that did not verify);
+        #   3. neither -> REJECT: the engines read page body text (a
+        #      legal-notice page is 44 uppercase chars too), so there is
+        #      no MRZ to report.
+        decoded_any = any(r.get("decode_ok") for r in results)
+        shaped_any = any(_rst_mrz_shaped(r.get("line1"), r.get("line2"))
+                         for r in results)
+        if decoded_any:
             out["verified"] = True
             out["grade"] = "PASS"
-            out["reason"] = (f"{best.get('label', '')} 识别并通过校验")
-        else:
+            out["reason"] = f"{best.get('label', '')} 识别并通过校验"
+        elif shaped_any:
             out["grade"] = "SUSPECT"
-            out["reason"] = (f"{best.get('label', '')} 识别到 MRZ，"
-                             f"校验未通过")
+            out["reason"] = f"{best.get('label', '')} 识别到 MRZ，校验未通过"
+        else:
+            out["grade"] = "REJECT"
+            out["reason"] = ("未识别到 MRZ：引擎读到的是页面正文，"
+                             "不是 MRZ 字符行")
+            out["ocr"] = {"line1": "", "line2": "", "conf1": 0, "conf2": 0,
+                          "ok": False, "band": best.get("band", "")}
         return out
 
     def _ocr_pick_and_recognize(self):
