@@ -3058,8 +3058,38 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 elif method == "indra":
                     if source_path is None:
                         return failed(method, started, "缺少原图路径")
-                    stdout, returncode, stderr = _rst_run_indra_inprocess(
-                        source_path)
+                    # Indra detects lines itself. Given the FULL page it
+                    # can lock onto printed document titles near the top
+                    # (Czech specimen: band.y=14 vs the real MRZ at
+                    # y=331) — its "MRZ" then has nothing to do with the
+                    # clean band shown in stage ③. When the structure
+                    # stage already located the pair, constrain Indra to
+                    # the same cleaned band every other engine reads;
+                    # keep the full-photo pass ONLY for the no-pair
+                    # fallback where the structure stage failed.
+                    indra_input = source_path
+                    indra_tmp = None
+                    try:
+                        import tempfile as _tempfile
+                        if native_band is not None:
+                            tmp_dir2 = _P(__file__).resolve().parents[1] / \
+                                "10_ocr_research"
+                            tmp_dir2.mkdir(parents=True, exist_ok=True)
+                            indra_tmp = _tempfile.NamedTemporaryFile(
+                                suffix=".ppm", prefix="_gui_indra_",
+                                dir=str(tmp_dir2), delete=False)
+                            _Image.fromarray(native_band).save(
+                                indra_tmp.name, format="PPM")
+                            indra_tmp.close()
+                            indra_input = indra_tmp.name
+                        stdout, returncode, stderr = \
+                            _rst_run_indra_inprocess(indra_input)
+                    finally:
+                        if indra_tmp is not None:
+                            try:
+                                os.unlink(indra_tmp.name)
+                            except OSError:
+                                pass
                 else:
                     argv = [str(tool), str(band_path)]
                     proc = subprocess.run(
@@ -3293,7 +3323,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 try:
                     needs_file_band = any(
                         method in ("traditional", "cnn") for method in methods)
-                    if "paddle" in methods or needs_file_band:
+                    if ("paddle" in methods or needs_file_band
+                            or "indra" in methods):
                         native_band = self._rst_native_mrz_band(
                             rgb, pair, scale)
                     if needs_file_band:
