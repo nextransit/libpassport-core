@@ -4926,8 +4926,37 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 else:
                     tw.insert("end", f"  {k_zh}: 未定位\n", "mm")
             tw.insert("end", "\nMRZ 识别结果:\n", "hdr")
-            fields = rec.get("fields") or {}
+            # passport_pipeline.process_image nests the OCR payload under
+            # rec["ocr"] and the parsed fields under rec["decode"]["fields"];
+            # flat keys are only present on legacy wrapper records.
+            ocr_rec = rec.get("ocr") or {}
+            fields = (rec.get("fields")
+                      or (rec.get("decode") or {}).get("fields") or {})
+            fields_raw = False
+            if not fields:
+                # Decode rejected the lines (check-digit mismatch) but the
+                # OCR still produced two 44-char lines: show the raw
+                # positionally-parsed TD3 fields, clearly marked as
+                # unverified, instead of an empty report.
+                _l1 = ocr_rec.get("line1") or ""
+                _l2 = ocr_rec.get("line2") or ""
+                if len(_l1) == 44 and len(_l2) == 44:
+                    _sur = _l1[5:].split("<")[0]
+                    _giv = [p for p in _l1[5:].split("<")[1:] if p]
+                    fields = {
+                        "name": f"{_sur}, {' '.join(_giv)}".strip(", "),
+                        "doc": _l2[0:9].replace("<", ""),
+                        "nat": _l2[10:13],
+                        "dob": _l2[13:19],
+                        "exp": _l2[21:27],
+                        "sex": _l2[20],
+                    }
+                    fields_raw = True
             if fields:
+                if fields_raw:
+                    tw.insert("end",
+                              "  （校验未通过 —— 以下为原始识读值）\n",
+                              "mm")
                 for k_zh, k_en in (
                         ("姓名", "name"), ("证件号", "doc"),
                         ("国籍", "nat"), ("出生", "dob"),
@@ -4937,8 +4966,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             else:
                 tw.insert("end",
                     "  （passport_pipeline 未返回解析字段）\n", "lab")
-            c1 = rec.get("conf1", 0) or 0
-            c2 = rec.get("conf2", 0) or 0
+            c1 = rec.get("conf1") or ocr_rec.get("conf1") or 0
+            c2 = rec.get("conf2") or ocr_rec.get("conf2") or 0
             tw.insert("end", "\n置信率:\n", "hdr")
             tw.insert("end", f"  line1 conf={c1}% "
                 f"({'PASS' if c1 >= 70 else 'WARN' if c1 >= 40 else 'FAIL'})\n",
@@ -4947,8 +4976,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 f"({'PASS' if c2 >= 70 else 'WARN' if c2 >= 40 else 'FAIL'})\n",
                 "lab")
             gt = self._gt_for(name)
-            l1 = rec.get("line1", "") or ""
-            l2 = rec.get("line2", "") or ""
+            l1 = rec.get("line1") or ocr_rec.get("line1") or ""
+            l2 = rec.get("line2") or ocr_rec.get("line2") or ""
             if gt:
                 self._render_diff_block(tw, "Line1 咬合 (GT vs Pred)", gt[0], l1)
                 self._render_diff_block(tw, "Line2 咬合 (GT vs Pred)", gt[1], l2)
