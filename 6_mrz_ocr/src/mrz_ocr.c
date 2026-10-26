@@ -129,6 +129,13 @@ int mrz_ocr_locate_band(const uint8_t *bin, int W, int H, mrz_ocr_rect_t *out) {
     if (!row_dark) return -1;
     /* Threshold: a row is "dense" if at least 15% of its pixels are ink. */
     int threshold = (int)(W * 0.10);
+    /* Rows that are ~full-width ink are device/取景框 black bars, not MRZ
+     * rows (real MRZ ink peaks far below W; e.g. 0.4-0.65 W on real
+     * photos). Counting them as dense runs lets the black bar merge into
+     * the band and inflates the row-dark peak, which then breaks
+     * split_lines()' gap thresholds (gap_thr = peak/6). Exclude them
+     * from run detection so the band and the peak stay text-only. */
+    int max_text_dark = (int)(W * 0.90);
     for (int y = 0; y < H; ++y) {
         int c = 0;
         for (int x = 0; x < W; ++x) if (bin[y * W + x]) c++;
@@ -152,7 +159,7 @@ int mrz_ocr_locate_band(const uint8_t *bin, int W, int H, mrz_ocr_rect_t *out) {
     int max_gap = H / 8;
     int max_run_h = 0;
     for (int y = 0; y < H; ++y) {
-        if (row_dark[y] >= threshold) {
+        if (row_dark[y] >= threshold && row_dark[y] < max_text_dark) {
             if (top < 0) top = y;
         } else {
             if (top >= 0 && y - top >= min_run_h) {

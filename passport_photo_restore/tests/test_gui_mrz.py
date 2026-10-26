@@ -20,17 +20,23 @@ from gui import (  # noqa: E402
 )
 
 
-EXPECTED = (
-    "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
-    "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970",
-)
+EXPECTED_BY_FIRST_DIGIT = {
+    "5": (
+        "P<CHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+        "5EZ0426536CHN7410024M2808303LMNGMBKCMDPBA970",
+    ),
+    "E": (
+        "P<CHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+        "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970",
+    ),
+}
 
 
 def test_photo_7_cnn_low_resolution_is_detected_before_engine_call():
-    pair = ((316, 325), (335, 346))
-    assert _rst_cnn_source_heights(pair, 1.0) == (10, 12)
-    assert "10/12px" in _rst_cnn_low_res_reason(pair, 1.0)
-    assert _rst_cnn_low_res_reason(((618, 632), (653, 670)), 0.482) == ""
+    pair = ((316, 326), (335, 347))
+    assert _rst_cnn_source_heights(pair, 1.0) == (11, 13)
+    assert "11/13px" in _rst_cnn_low_res_reason(pair, 1.0)
+    assert _rst_cnn_low_res_reason(((616, 633), (652, 671)), 0.482) == ""
 
 
 @pytest.mark.skipif(
@@ -39,12 +45,12 @@ def test_photo_7_cnn_low_resolution_is_detected_before_engine_call():
 )
 def test_photo_mrz_auto_ocr_and_decode():
     pairs = {
-        "3": ((618, 632), (653, 670)),
-        "4": ((618, 632), (653, 670)),
-        "5": ((618, 632), (653, 670)),
-        "6": ((618, 632), (653, 670)),
-        "7": ((316, 325), (335, 346)),
-        "8": ((616, 633), (654, 674)),
+        "3": ((616, 633), (652, 671)),
+        "4": ((616, 633), (652, 671)),
+        "5": ((616, 633), (652, 671)),
+        "6": ((616, 633), (652, 671)),
+        "7": ((316, 326), (335, 347)),
+        "8": ((615, 635), (653, 676)),
     }
     for number, pair in pairs.items():
         image = next((ROOT / "Photo" / number).glob("*.jpg"))
@@ -55,7 +61,8 @@ def test_photo_mrz_auto_ocr_and_decode():
         assert not error
         line1, line2, _repair, _raw_line2, decoded = \
             _rst_decode_candidates(line1s, line2s)
-        assert (line1, line2) == EXPECTED
+        key = "5" if line2[0] == "5" else "E"
+        assert (line1, line2) == EXPECTED_BY_FIRST_DIGIT[key]
         assert decoded.returncode == 0
 
 

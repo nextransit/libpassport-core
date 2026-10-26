@@ -99,11 +99,18 @@ def _mrz_line1_candidates(text):
     for start in range(max(0, len(clean) - 43)):
         line = clean[start:start + 44]
         if (len(line) == 44 and line[0] in doc_types
-                and line[1] in "<ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                and line[2:5].isalpha()
-                and sum(ch.isalpha() for ch in line[5:]) >= 3):
-            if line not in found:
-                found.append(line)
+                    and line[1] in "<ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                    and line[2:5].isalpha()
+                    and sum(ch.isalpha() for ch in line[5:]) >= 3):
+                if line not in found:
+                    found.append(line)
+                # Tesseract often reads the empty second slot ('<') of a
+                # standard P< line as O/0. Emit the corrected variant so
+                # the 'P<' candidate outranks the 'PO' one in decode.
+                if line[0] == "P" and line[1] in "O0":
+                    alt = line[0] + "<" + line[2:]
+                    if alt not in found:
+                        found.append(alt)
     return found
 
 
@@ -487,7 +494,7 @@ def _rst_tesseract_candidates(rgb, pair, scale, psm_by_row=None,
             absorb(run_jobs(missing_jobs, "memory" if capi is not None
                             else "file"))
     line_candidates[0].sort(
-        key=lambda line: (line[0] != "P", line[1] not in "<O",
+        key=lambda line: (line[0] != "P", line[1] != "<",
                           -line[5:].count("<")))
     line_candidates[1].sort(key=lambda item: item[:3])
     return line_candidates[0], line_candidates[1], "\n".join(raw_parts), ""
@@ -681,6 +688,18 @@ def _rst_mrz_shaped(line1, line2):
     digit_cols = (9, 19, 27, 42, 43)
     digits = sum(1 for i in digit_cols if line2[i].isdigit())
     return digits >= 3
+
+
+def _hyp_rank(result):
+    """Order two bottom-of-page hypotheses: verified > MRZ-shaped >
+    anything else."""
+    r = result or {}
+    if r.get("verified"):
+        return 3
+    for e in r.get("engines") or []:
+        if _rst_mrz_shaped(e.get("line1"), e.get("line2")):
+            return 2
+    return 1
 
 
 def _rst_prepare_indra():
@@ -3972,13 +3991,53 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         work, scale = load(rgb, max_side=1250)
         g = _gray(work)
         st = detect_structure(g)
-        work2, st2, refl = drop_reflection(work, st)
+        # Two hypotheses about the page bottom:
+        #   A) the crop that drops the detected reflection (default);
+        #   B) the untouched page.
+        # On pages whose lower half is dense print the reflection
+        # detector reads it as a mirror and crops the REAL MRZ away
+        # (US sample passport: the crop lands on the signature block).
+        # Run A; if it does not verify, run B and keep the better one.
+        hyp_a = self._ocr_photo_hypothesis(path, rgb, work, st, drop_reflection)
+        result = hyp_a
+        if not hyp_a.get("verified"):
+            hyp_b = self._ocr_photo_hypothesis(path, rgb, work, st, None)
+            if _hyp_rank(hyp_b) > _hyp_rank(hyp_a):
+                result = hyp_b
+                result["no_reflection_crop"] = True
+        out.update(result)
+        return out
+    def _ocr_photo_hypothesis(self, path, rgb, work, st, cropper):
+        """Run detection + engines for one bottom-of-page hypothesis.
+
+        cropper: drop_reflection (hypothesis A, default) or None
+        (hypothesis B, the untouched page). Returns this run's result.
+        """
+        import sys as _sys
+        from pathlib import Path as _P
+        import tempfile
+        from PIL import Image as _Image
+        _sys.path.insert(0, str(_P(__file__).resolve().parents[1] /
+                                "passport_photo_restore" / "src"))
+        from restore import (drop_reflection,  # type: ignore
+                             crop_pair_clean)
+
+        out = {"grade": "REJECT", "verified": False, "loc": {}, "ocr": {},
+               "decode": {}, "reason": "", "engines": [], "band_rgb": None,
+               "work2": work, "scale": 1.0, "pair": None}
+        if cropper is not None:
+            work2, st2, _refl = cropper(work, st)
+        else:
+            work2, st2 = work, st
         pair = st2.get("mrz_pair")
-        out["work2"] = work2
-        out["scale"] = scale
         if not pair:
             out["reason"] = "未在照片中定位到 MRZ 双行"
             return out
+        scale = 1.0
+        try:
+            scale = work.shape[0] / max(1, rgb.shape[0])
+        except Exception:
+            scale = 1.0
         (a0, a1), (b0, b1) = pair
         H0, W0 = rgb.shape[:2]
         out["loc"] = {"mrz": {
@@ -4068,6 +4127,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             out["ocr"] = {"line1": "", "line2": "", "conf1": 0, "conf2": 0,
                           "ok": False, "band": best.get("band", "")}
         return out
+
 
     def _ocr_pick_and_recognize(self):
         """Open a file picker for a single JPG/PNG/PPM, render its

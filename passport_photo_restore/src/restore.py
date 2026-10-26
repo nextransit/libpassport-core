@@ -9,8 +9,12 @@
                        - MRZ 两行（最后一条 solid 黑带上方的连续 text 段）
                        - 倒影行段（相对行墨量判定，仅 line2 下方）
   crop_pair(rgb, st)  从定位结果裁出严格 MRZ 双行（天然去除底部倒影）
+  crop_pair_clean(work, st)
+                       上面那条的加强版：擦掉 line1/line2 紧邻的反射行。
+                       **这是识别真正吃的那条带**（OCR 输入）。
   rectify_pair(work, st)
-                       两行分别单应矫正 -> 标准 44格x2行矩形
+                       两行分别单应矫正 -> 标准 44格x2行矩形。
+                       展示/调研用，不是识别路径——见它的 docstring。
   restore(f)          端到端：load -> detect -> crop -> (可选)rectify
 """
 from __future__ import annotations
@@ -113,49 +117,70 @@ def _mrz_pair_pass(g, thr, row_ink180, E):
     H, W = g.shape
     row_ink_s = (g < thr).sum(axis=1)
     solid = row_ink180 > 0.9 * W
-    text = (row_ink_s > 0.2 * W) & (row_ink_s < 0.9 * W) & (E > 1800)
+    # 墨量上下限 0.16W/0.98W（原 0.2W/0.9W，后放宽 0.12W）：
+    # 实拍护照 MRZ 行墨量常在 0.2W~0.9W 边缘抖动，旧窗口会把真实
+    # MRZ 行首尾截断甚至整行并入“页面边框”候选，导致 pick() 从
+    # 数据区文字里选错 pair（GUI 照片→MRZ 手动测试 2026-9-30-AD/AF/G
+    # 均因此定位错、OCR unreadable）。
+    # 但 0.12W 太低：护照页数据区的浅底纹/小字墨量（0.12W~0.16W）处处
+    # 越过下界，把真实 line1 桥接进上方的大 text-run，line_groups 因
+    # h>48 直接判 0，真实 line1 永远成不了候选；pick() 只能拿真实
+    # line2（独立 run）配上其下方反射/黑带前缘，整个 pair 错位
+    # （Photo/3-6 实测：真实 line1 在 work y613-633、line2 y650-672，
+    #  旧逻辑返回 work ((652,671),(704,719)) → 原图把 line2 当 line1、
+    #  全宽黑带当 line2，OCR 全错）。
+    # 0.16W 恰好把数据区底纹（work 实测墨量 150-430）挡在 MRZ 行
+    # （峰值 480+/540+）之下，真实双行各自独立成 run 且字符段数达标。
+    text = (row_ink_s > 0.16 * W) & (row_ink_s < 0.98 * W) & (E > 1800)
     solid_b = _run_groups(solid, min_len=5)
     text_b = _run_groups(text, min_len=4)
     cand = [b for b in solid_b
             if int(H * 0.3) <= b[0] <= int(H * 0.9) and b[1] - b[0] >= 10]
     s_top = cand[-1][1] + 1 if cand else None
 
-    def line_shape(t):
-        """Reject page edges and borders that look like dense text runs."""
+    def line_groups(t):
+        """Return number of separated glyph columns; 0 for non-MRZ rows.
+
+        A real MRZ row has ~44 glyphs -> >=40 short runs across the width.
+        Page borders / dense underlines merge into one long run and score
+        few groups; 反射/装饰行 also score few groups. 旧实现按 density/
+        max_group 阈值拒边框, 但实拍 MRZ 行墨量接近 0.9W 时会被当成
+        “页面边框”整行排除, 导致定位落入数据区文字。这里改为字符段
+        数判据, 天然区分 44 字符 MRZ 行与普通文字/边框/反射行。
+        """
         y0, y1 = t
         h = y1 - y0 + 1
-        if h < 5 or h > 48:
-            return None
+        if not (5 <= h <= 48):
+            return 0
         band = g[y0:y1 + 1] < thr
         col_ink = band.sum(axis=0)
         strong = col_ink >= 4
         groups = _run_groups(strong, min_len=1)
+        # 一行的墨迹横跨过长(>0.45W 连续)是边框/下缘线, 不是 MRZ 字符行
         max_group = max((b - a + 1 for a, b in groups), default=0)
-        density = float(strong.mean())
-        # A real MRZ row has many separated glyph strokes.  The lower
-        # passport edge is almost continuous and has very high density.
-        if density > 0.90 or max_group > max(160, int(W * 0.45)):
-            return None
-        return density, len(groups), max_group
+        if max_group > max(160, int(W * 0.45)):
+            return 0
+        return len(groups)
 
     def pick(runs):
         candidates = []
         for i, t1 in enumerate(runs[:-1]):
+            g1 = line_groups(t1)
+            if g1 < 40:
+                continue
             h1 = t1[1] - t1[0] + 1
-            if h1 < 4:
-                continue
-            if line_shape(t1) is None:
-                continue
             t2 = runs[i + 1]
             h2 = t2[1] - t2[0] + 1
             gap = t2[0] - t1[1] - 1
-            if line_shape(t2) is None:
+            g2 = line_groups(t2)
+            if g2 < 40:
                 continue
-            if (0.4 <= h2 / h1 <= 1.6) and (0 <= gap <= max(8, int(3.0 * h1))):
-                # Prefer the pair with the most stable, largest glyphs.
-                # The second term breaks the small-photo edge case where
-                # the lower page border forms a short pseudo-row.
-                rank = (-min(h1, h2), abs(h1 - h2) + gap, gap)
+            # 真实 MRZ 双行: 行高接近(0.4~1.6), 行距约为行高量级。
+            # gap/h 比值区间排除两类假对: 倒影大间距(>2.0)与数据区
+            # 紧贴小字(<0.25), 字符段数又排除普通文本/边框行。
+            ratio = gap / max(1, min(h1, h2))
+            if (0.4 <= h2 / h1 <= 1.6) and (0.25 <= ratio <= 2.0):
+                rank = (-min(h1, h2), -(g1 + g2), abs(h1 - h2) + gap, gap)
                 candidates.append((rank, t1, t2))
         if not candidates:
             return None
@@ -396,6 +421,20 @@ def rectify_pair(work_rgb, st, tgt_w=TGT_W, tgt_h=TGT_H):
 
     反射倒影下方的连续 text 段不再被纳入 MRZ 带。每行字符严格匹配训练分布
     (GLYPH_W x GLYPH_H)。返回 (rgb, info) 或 (None, None)。
+
+    注意：这不是生产识别路径
+    ------------------------
+    识别走的是 6_mrz_ocr 的 native 流水线，它自己做 deskew（墨点旋转投影）
+    + 44 格 pitch-grid + 逐格面积重采样，比这里的单应更准。这个函数保留下来
+    是因为它对「页面的四个角在哪」这件事给了一个人眼可看的答案，在调研
+    (10_ocr_research/probe_backends.py) 和回归测试里仍被用到。
+
+    但它**不应**被当作识别前的预处理：
+      * 它对「MRZ 在哪」的估计靠 _mrzh_quad 的页面亮区估计，在整体偏亮的
+        照片上会把整幅图当成页面，矫正后整张照片被压成 44 格 x 2 行；
+      * 实测：把矫正图喂给同一个 mrz_ocr_cnn_tool，assets/pic 上 ICAO
+        通过 2/72，而自然 crop（crop_pair_clean）是 3/72。
+    要给识别用的图，用 crop_pair_clean()。
     """
     pair = st.get("mrz_pair")
     if not pair:
@@ -432,7 +471,10 @@ def rectify_pair(work_rgb, st, tgt_w=TGT_W, tgt_h=TGT_H):
 
 
 def rectify(work_rgb, st, tgt_w=TGT_W, tgt_h=TGT_H):
-    """单应矫正：MRZ 带四边形 -> 标准 44格x2行 矩形。返回 RGB 图或 None。"""
+    """单应矫正：MRZ 带四边形 -> 标准 44格x2行 矩形。返回 RGB 图或 None。
+
+    同 rectify_pair()：这是展示/调研用的几何变换，不是识别路径。
+    """
     mrz = st.get("mrz")
     if not mrz:
         return None
