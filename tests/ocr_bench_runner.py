@@ -16,6 +16,10 @@ TESS = ROOT / "6_2_Tesseract" / "tesseract_tool.py"
 # ONNX Runtime when available, else falls back to paddle_local
 # (tesseract ocrb baseline). Same stdout contract on both paths.
 PADDLE = ROOT / "6_1_PaddleOCR" / "paddle_v6.py"
+# Indra OCR (datalab-to/indra-ocr) — tiny ONNX det+rec pair that runs its
+# own detection over the whole page. Same stdout contract via mrz_indra.py.
+INDRA = ROOT / "11_indra" / "mrz_indra.py"
+CRNN = ROOT / "12_crnn" / "mrz_crnn_tool.py"
 
 # Prefer the interpreter that has the ONNX Runtime dependency. The current
 # Python is checked first so `python gui.py` and its Paddle subprocess use
@@ -60,6 +64,8 @@ METHODS = {
     "cnn":         ("轻量CNN",   CNN),
     "tesseract":   ("Tesseract", TESS),
     "paddle":      ("PaddleOCR", PADDLE),
+    "indra":       ("IndraOCR",  INDRA),
+    "crnn":        ("CRNN",      CRNN),
 }
 
 def run_one(tool: Path, image: Path) -> dict:
@@ -145,6 +151,63 @@ def run_batch_paddle(images: list[tuple[str, Path]]) -> dict:
     return results
 
 
+def run_batch_indra(images: list[tuple[str, Path]]) -> dict:
+    """Batch-drive mrz_indra.py: one process reads every image.
+
+    Indra keeps its ONNX sessions alive across images, so one process is
+    far cheaper than a per-image spawn (each spawn reloads the models).
+    Returns {case_id: result_dict}.
+    """
+    listfile = (ROOT / "tests" / ".paddle_local_tmp" /
+                f"_indra_batch_{os.getpid()}.txt")
+    listfile.parent.mkdir(parents=True, exist_ok=True)
+    listfile.write_text("".join(f"{ip}\n" for _cid, ip in images))
+    proc = subprocess.Popen(
+        [sys.executable, str(INDRA), "--batch", str(listfile)],
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+    )
+    blocks: list[dict] = []
+    cur: dict | None = None
+    for line in proc.stdout:
+        line = line.rstrip("\n")
+        if not line:
+            if cur is not None:
+                blocks.append(cur)
+                cur = None
+            continue
+        if line.startswith("#"):
+            continue
+        k, _, v = line.partition(":")
+        key = k.strip()
+        if key == "ms":
+            if cur is not None:
+                cur["ms"] = float(v.strip())
+        elif key == "result.backend":
+            cur = {"ok": False, "err": "", "line1": "", "line2": "",
+                   "conf1": 0, "conf2": 0, "band": "", "ms": 0.0,
+                   "backend": v.strip()}
+        elif key == "result.ok":
+            if cur is None:
+                cur = {"ok": False, "err": "", "line1": "", "line2": "",
+                       "conf1": 0, "conf2": 0, "band": "", "ms": 0.0}
+            cur["ok"] = v.strip() == "OK"
+        elif key.startswith("result."):
+            if cur is not None:
+                cur[key[len("result."):]] = v.strip()
+                if key in ("result.conf1", "result.conf2"):
+                    cur[key[len("result."):]] = int(v.strip() or "0")
+        elif key == "band.x band.y band.w band.h":
+            if cur is not None:
+                cur["band"] = v.strip()
+    if cur is not None:
+        blocks.append(cur)
+    proc.wait()
+    results: dict = {}
+    for (cid, _ip), blk in zip(images, blocks):
+        results[cid] = blk
+    return results
+
+
 def compare(gt: str, got: str) -> tuple[int, int, str]:
     """Return (correct_chars, total_chars, per_char_status_string).
 
@@ -200,12 +263,27 @@ def run(case_ids: list[str] | None, methods: list[str],
                     paddle_fired.add(cid)
                     on_record(done_n, len(records), cid)
 
+    batch_indra: dict = {}
+    indra_fired: set = set()
+    if "indra" in methods:
+        batch_indra = run_batch_indra(
+            [(rec["id"], DATA / rec["image"]) for rec in records])
+        if on_record:
+            done_n = 0
+            for cid, _ in [(rec["id"], rec["image"]) for rec in records]:
+                if cid in batch_indra:
+                    done_n += 1
+                    indra_fired.add(cid)
+                    on_record(done_n, len(records), cid)
+
     for rec in records:
         image_path = DATA / rec["image"]
         per_method = {}
         for m in methods:
             if m == "paddle" and rec["id"] in batch_paddle:
                 r = batch_paddle[rec["id"]]
+            elif m == "indra" and rec["id"] in batch_indra:
+                r = batch_indra[rec["id"]]
             else:
                 r = run_one(METHODS[m][1], image_path)
             c1, t1, s1 = compare(rec["line1"], r["line1"])
@@ -229,8 +307,10 @@ def run(case_ids: list[str] | None, methods: list[str],
                         "scale": rec["scale"], "noise": rec["noise"],
                         "skew": rec["skew"],
                         "per_method": per_method})
-        if on_record and not (methods == ["paddle"]
-                               and rec["id"] in paddle_fired):
+        if on_record and not ((methods == ["paddle"]
+                               and rec["id"] in paddle_fired)
+                              or (methods == ["indra"]
+                                  and rec["id"] in indra_fired)):
             on_record(len(results), len(records), rec["id"])
     return {"records": results, "agg": agg, "methods": methods,
             "total_cases": len(records)}

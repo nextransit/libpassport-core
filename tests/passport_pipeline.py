@@ -274,26 +274,42 @@ def process_image(image: Path, tool: Path = CNN, upscale: int = 0,
             rec["reason"] = "未定位到 MRZ 区"
             rec["ms"] = (__import__("time").perf_counter() - t0) * 1000.0
             return rec
-        # Passport page confirmed by region location (MRZ band + photo/data).
-        rec["grade"] = "PASS"
-        rec["reason"] = "MRZ 区定位成功" + (
-            "，照片/数据区齐全" if loc.get("photo") and loc.get("data")
-            else "，照片/数据区缺失")
+        # Verdict reflects what the READER actually produced, not just
+        # whether the MRZ band was located. "PASS" previously meant
+        # "located" and the GUI then showed a green PASS next to an
+        # unverified MRZ, which misled users into thinking the read was
+        # valid. Now:
+        #   PASS    = 定位 + OCR 44x2 + checksum 校验全部通过
+        #   SUSPECT = 定位成功，但 OCR 未出合法两行或校验失败
+        #   REJECT  = 未定位到 MRZ 区
         ocr = ocr_crop(image, loc, tool=tool, upscale=upscale, dilate=dilate)
         rec["ocr"] = ocr
         rec["ms"] = (__import__("time").perf_counter() - t0) * 1000.0
         l1, l2 = (ocr.get("line1") or ""), (ocr.get("line2") or "")
+        located = bool(loc.get("mrz"))
+        if not located:
+            rec["grade"] = "REJECT"
+            rec["reason"] = "未定位到 MRZ 区"
+            return rec
+        located_note = ("，照片/数据区齐全" if loc.get("photo") and loc.get("data")
+                        else "，照片/数据区缺失")
         if not ocr.get("ok") or len(l1) != 44 or len(l2) != 44:
-            rec["reason"] += "；OCR 未出完整两行（工具对低分辨率照片的局限）"
+            rec["grade"] = "SUSPECT"
+            rec["reason"] = ("MRZ 区定位成功" + located_note +
+                             "；OCR 未出完整两行")
             return rec
         rec["mrz"] = l1 + "\n" + l2
         dec = decode(rec["mrz"])
         rec["decode"] = dec
         if dec["ok"]:
             rec["verified"] = True
-            rec["reason"] += "；OCR+校验通过"
+            rec["grade"] = "PASS"
+            rec["reason"] = ("MRZ 区定位成功" + located_note +
+                             "；OCR+校验通过")
         else:
-            rec["reason"] += "；OCR 出两行但校验失败"
+            rec["grade"] = "SUSPECT"
+            rec["reason"] = ("MRZ 区定位成功" + located_note +
+                             "；OCR 出两行但校验失败")
         return rec
     except Exception as e:  # noqa: BLE001
         rec["reason"] = f"异常: {e}"

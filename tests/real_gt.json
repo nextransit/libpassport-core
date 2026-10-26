@@ -3,7 +3,7 @@
   "gt": {
     "08806d29a6268e1f_0003.jpg": {
       "line1": "PMCHEDE<MAIENFELD<<PIERRE<<<<<<<<<<<<<<<<<<<<",
-      "line2": "S2100023<6CHE7108019M2002293<<<<<<<<<<<<<<06",
+      "line2": "S2100023<6CHE7108019M2002293<<<<<<<<<<<<<<6",
       "note": "Switzerland TD3, doc code PM; guilloche rainbow background; line height ~12px"
     },
     "1cce0f3fc387c893_0001.jpg": {
@@ -12,17 +12,17 @@
       "note": "Poland specimen TD3, doc code PS (col1 != '<' breaks strict mask); 432x295 -> line height ~8px, hardest resolution case"
     },
     "28a42952ba25584a_0078.png": {
-      "line1": "Q<CHNNGKELMPONBPJLBLO<<<<<<<<<<<<<<<<<<<<<<<",
+      "line1": "Q<CHNNGKELMPONBPJLBLO<<<<<<<<<<<<<<<<<<<<<<<SAC",
       "line2": "Q100547988CHN8410124F190717319204415<<<<<<<46",
       "note": "China exit-entry permit specimen, doc code Q (excluded by strict mask col0 whitelist {P,I,A,V,C,<})"
     },
     "31611582cbf14d7f_0018.jpg": {
-      "line1": null,
+      "line1": "P<POLKOWALSKI<<JAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
       "line2": "ZF40004998POL8101028M3203031<<<<<<<<<<<<<<00",
       "note": "Poland specimen #2; only line2 legible by eye"
     },
     "41ab45d4bde758dc_0306.jpg": {
-      "line1": null,
+      "line1": "PCAZEHUSEYNLI<<ORKHAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
       "line2": "X110003442AZE7503153M230801030LJV5Z<<<<<<<86",
       "note": "Azerbaijan; only line2 legible by eye"
     }

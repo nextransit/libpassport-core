@@ -60,11 +60,44 @@ NFC_TOOL  = tool_path("nfc_tool")
 METHOD_LABELS = {
     "traditional": "传统模板",
     "cnn":         "轻量CNN",
+    "crnn":        "CRNN序列",
+    "fuse":        "融合CNN+CRNN",
     "tesseract":   "Tesseract",
     "paddle":      "PaddleOCR",
     "indra":       "IndraOCR",
 }
-METHOD_ORDER = ["traditional", "cnn", "tesseract", "paddle", "indra"]
+METHOD_ORDER = ["traditional", "cnn", "crnn", "fuse", "tesseract", "paddle", "indra"]
+# CRNN / fusion 都是同一个 host CNN tool，靠环境变量切换后端。
+CRNN_BACKENDS = {"crnn", "fuse"}
+
+# 图片直接识别 / 照片批测可选的护照照片目录。这些是真实机拍/扫描件，
+# 与 tests/assets/pic 的合成语料分开维护。
+PASSPORT_PHOTO_DIRS = [
+    (ROOT / "assets" / "pic", "assets/pic"),
+    (ROOT / "tmp" / "PassPortPhoto", "tmp/PassPortPhoto"),
+    (ROOT / "Photo", "Photo"),
+]
+
+def iter_passport_photos():
+    """Yield (label, path) for every real-photo passport image under
+    PASSPORT_PHOTO_DIRS. Photo/ 是我们的专用目录，其它目录只取顶层文件。
+    """
+    seen = set()
+    for base, label in PASSPORT_PHOTO_DIRS:
+        if not base.is_dir():
+            continue
+        if label == "Photo":
+            entries = sorted(base.glob("*/*"))
+        else:
+            entries = sorted(base.glob("*"))
+        for f in entries:
+            if f.suffix.lower() not in (".jpg", ".jpeg", ".png", ".ppm"):
+                continue
+            key = str(f.resolve())
+            if key in seen:
+                continue
+            seen.add(key)
+            yield f"{label}/{f.relative_to(base)}", f
 
 FACE_DATA_DIR = ROOT / "3_face_recognition" / "data"
 FACE_SAMPLES = {
@@ -2135,7 +2168,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         row1 = ttk.Frame(ctrl); row1.pack(fill="x", padx=8, pady=(6, 2))
         ttk.Label(row1, text="模式:").pack(side="left")
         self.ocr_photo_mode = tk.BooleanVar(value=False)
-        ttk.Checkbutton(row1, text="图片直接识别（assets/pic 护照照片）",
+        ttk.Checkbutton(row1, text="图片直接识别（护照照片）",
                         variable=self.ocr_photo_mode,
                         command=self._ocr_mode_switch).pack(side="left", padx=2)
         ttk.Separator(row1, orient="vertical").pack(side="left",
@@ -2165,21 +2198,21 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         # 垂直分隔线,把"配置区"与"动作区"在视觉上分开,降低按钮被误触。
         # 同时把两个按钮封装进独立 Action Box,与"全选/反选"按钮组(行 2)
         # 共享同一个 btn_frame 的视觉风格。
-        ttk.Separator(row1, orient="vertical").pack(
-            side="left", fill="y", padx=8)
-        # 动作按钮组(独立容器)— 避免按钮贴着窗口右边缘截断
-        btn_frame = ttk.Frame(row1)
-        btn_frame.pack(side="right", padx=(8, 12))
+        # 动作按钮独立成行，不塞进左→右堆叠的 row1：窗口收窄时 row1 的
+        # 方案按钮会把动作按钮挤出可视区（"⏳ 识别中…" 看不到）。
+        row_action = ttk.Frame(ctrl); row_action.pack(fill="x", padx=8, pady=(0, 6))
+        btn_frame = ttk.Frame(row_action)
+        btn_frame.pack(anchor="e")
         # 直接识别图片 — ghost 风格(中性)
         self.ocr_pick_btn = self._cta(
             btn_frame, "🖼 直接识别图片",
             self._ocr_pick_and_recognize, kind="ghost", padx=10, pady=4)
-        self.ocr_pick_btn.pack(side="right", padx=(4, 0), pady=2)
+        self.ocr_pick_btn.pack(side="left", padx=(0, 4))
         # 主操作 — primary(高亮)
         self.ocr_run_btn = self._cta(
             btn_frame, "⚡ 开始测试", self._ocr_run,
             padx=14, pady=4)
-        self.ocr_run_btn.pack(side="right", padx=(4, 0), pady=2)
+        self.ocr_run_btn.pack(side="left", padx=(0, 4))
 
         row2 = ttk.Frame(ctrl); row2.pack(fill="x", padx=8, pady=(0, 6))
         self._cta(row2, "全选",
@@ -2402,21 +2435,38 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 self._ocr_case_order.append(iid)
             self._ocr_corpus = data
 
+    def _gt_map(self):
+        """Load tests/real_gt.json into {filename: (line1, line2)} lazily."""
+        if getattr(self, "_gt_map_cache", None) is not None:
+            return self._gt_map_cache
+        m = {}
+        try:
+            p = Path(__file__).parent / "real_gt.json"
+            if p.exists():
+                d = json.loads(p.read_text(encoding="utf-8"))
+                for name, g in (d.get("gt") or {}).items():
+                    if g.get("line1") and g.get("line2"):
+                        m[name] = (g["line1"], g["line2"])
+        except Exception:
+            pass
+        self._gt_map_cache = m
+        return m
+
     def _ocr_mode_switch(self):
         """Toggle between corpus batch-test and passport-photo recognition."""
         if self.ocr_photo_mode.get():
             self.ocr_run_btn.configure(text="⏳ 识别中…")
-            from passport_pipeline import PIC_DIR as _PIC_DIR
             for iid in self.ocr_case_list.get_children():
                 self.ocr_case_list.delete(iid)
             self._ocr_case_order = []
-            pics = [p.name for p in sorted(_PIC_DIR.glob("*"))
-                    if p.suffix.lower() in (".jpg", ".jpeg", ".png", ".ppm")]
-            for name in pics:
-                self.ocr_case_list.insert("", "end", iid=name,
-                                          values=(name, "", "", ""),
+            # 真实护照照片来源：assets/pic + tmp/PassPortPhoto + Photo。
+            # Photo/ 是子目录结构(机位照)，其余两个目录是顶层平铺。
+            self._ocr_photo_entries = list(iter_passport_photos())
+            for label, _f in self._ocr_photo_entries:
+                self.ocr_case_list.insert("", "end", iid=label,
+                                          values=(label, "", "", ""),
                                           tags=("clean",))
-                self._ocr_case_order.append(name)
+                self._ocr_case_order.append(label)
         else:
             self.ocr_run_btn.configure(text="⚡ 开始测试")
             self._ocr_load_corpus()
@@ -2936,7 +2986,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         return out
 
     def _rst_run_ocr_methods(self, rgb, pair, scale, band_path, methods,
-                             native_band=None, source_path=None):
+                             native_band=None, source_path=None,
+                             allow_tesseract_fallback=True):
         """Run selected OCR backends against the same cleaned MRZ image."""
         import time as _time
         from concurrent.futures import ThreadPoolExecutor
@@ -2945,9 +2996,14 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         tool_paths = {
             "traditional": ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_tool",
             "cnn": ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_cnn_tool",
+            # CRNN sequence head / fused CNN+CRNN: 同一个 host tool，
+            # 由环境变量 MRZ_OCR_CRNN=1 / MRZ_OCR_FUSE=1 切换后端。
+            "crnn": ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_cnn_tool",
+            "fuse": ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_cnn_tool",
             "paddle": ROOT / "6_1_PaddleOCR" / "paddle_v6.py",
             "indra": ROOT / "11_indra" / "mrz_indra.py",
         }
+        # CRNN/融合 与 cnn 共享同一 PPM band；needs_file 判断等价。
 
         def failed(method, started, error):
             return {
@@ -3038,6 +3094,35 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 if method == "cnn":
                     low_res_reason = _rst_cnn_low_res_reason(pair, scale)
                     if low_res_reason:
+                        if not allow_tesseract_fallback:
+                            return {
+                                "method": method,
+                                "label": METHOD_LABELS[method],
+                                "line1": "",
+                                "line2": "",
+                                "engine_ok": False,
+                                "engine_status": "SKIP",
+                                "decode_ok": False,
+                                "conf1": 0,
+                                "conf2": 0,
+                                "repair": [],
+                                "candidates": "",
+                                "raw": (
+                                    "method            : cnn\n"
+                                    "result.ok         : skipped low-resolution MRZ\n"
+                                    f"result.note       : {low_res_reason}\n"
+                                ),
+                                "decode": "",
+                                "raw_decode_rc": None,
+                                "raw_decode_error": "",
+                                "backend": "cnn (low-res skip)",
+                                # fallback 被显式禁用：识别错误就如实报错，
+                                # 不再用 Tesseract OCR-B 顶替。
+                                "note": f"轻量CNN已跳过：{low_res_reason}；"
+                                        "（Tesseract OCR-B 自动修复已禁用）",
+                                "error": f"轻量CNN已跳过：{low_res_reason}",
+                                "ms": (_time.perf_counter() - started) * 1000.0,
+                            }
                         rescue, rescue_ms = tesseract_rescue()
                         result = {
                             "method": method,
@@ -3130,8 +3215,19 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                                 pass
                 else:
                     argv = [str(tool), str(band_path)]
+                    # crnn / fuse 与 cnn 共用 host tool，靠环境变量切换
+                    # 序列头 / 融合头（见 6_mrz_ocr/src/mrz_ocr_cnn.c）。
+                    env = dict(os.environ)
+                    env.setdefault("MRZ_OCR_LINE_MODELS", "1")
+                    env["MRZ_OCR_CRNN"] = "0"
+                    env.pop("MRZ_OCR_FUSE", None)
+                    if method == "crnn":
+                        env["MRZ_OCR_CRNN"] = "1"
+                    elif method == "fuse":
+                        env["MRZ_OCR_FUSE"] = "1"
                     proc = subprocess.run(
-                        argv, text=True, capture_output=True, timeout=10)
+                        argv, text=True, capture_output=True, timeout=10,
+                        env=env)
                     stdout = proc.stdout
                     returncode = proc.returncode
                     stderr = proc.stderr
@@ -3174,7 +3270,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                     or result["conf1"] < 80
                     or result["conf2"] < 80
                 )
-                if method in ("traditional", "cnn", "paddle") and needs_rescue:
+                if (method in ("traditional", "cnn", "crnn", "fuse", "paddle")
+                        and needs_rescue
+                        and allow_tesseract_fallback):
                     rescue, rescue_ms = tesseract_rescue()
                     result["ms"] = (
                         _time.perf_counter() - started) * 1000.0
@@ -3365,7 +3463,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 native_band = None
                 try:
                     needs_file_band = any(
-                        method in ("traditional", "cnn") for method in methods)
+                        method in ("traditional", "cnn", "crnn", "fuse")
+                        for method in methods)
                     if ("paddle" in methods or needs_file_band
                             or "indra" in methods):
                         native_band = self._rst_native_mrz_band(
@@ -3384,7 +3483,10 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                             str(band_path), format="PPM")
                     ocr_results, ocr_wall_ms = self._rst_run_ocr_methods(
                         rgb, pair, scale, band_path, methods,
-                        native_band=native_band, source_path=path)
+                        native_band=native_band, source_path=path,
+                        # 照片->MRZ tab：识别错误就如实报错，不做 Tesseract
+                        # OCR-B 自动修复。等各算法稳定/调优后再考虑集成。
+                        allow_tesseract_fallback=False)
                 finally:
                     if tmp is not None:
                         try:
@@ -4060,7 +4162,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         tmp = None
         try:
             native_band = self._rst_native_mrz_band(rgb, pair, scale)
-            needs_file = any(m in ("traditional", "cnn") for m in methods)
+            needs_file = any(m in ("traditional", "cnn", "crnn", "fuse")
+                             for m in methods)
             if needs_file:
                 tmp_dir = _P(__file__).resolve().parents[1] / "10_ocr_research"
                 tmp_dir.mkdir(parents=True, exist_ok=True)
@@ -4806,8 +4909,12 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self.ocr_run_btn.configure(state="disabled")
         # Render the image immediately so the right pane shows
         # something while we wait for the worker.
-        from passport_pipeline import PIC_DIR
-        path = PIC_DIR / name
+        entries = {label: pth for label, pth in getattr(
+            self, "_ocr_photo_entries", iter_passport_photos())}
+        path = entries.get(name)
+        if path is None:
+            messagebox.showerror("加载失败", f"{name}: 源文件不存在")
+            return
         try:
             from PIL import Image
             pil = Image.open(path).convert("RGB")
@@ -4832,6 +4939,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             try:
                 from passport_pipeline import process_image, CNN
                 rec = process_image(path, tool=CNN)
+                # label（含来源目录）作为唯一 id；process_image 只填 basename。
+                rec["file"] = name
+                rec["path"] = str(path)
             except Exception as e:
                 self.after(0, lambda e=e:
                            self._ocr_render_single_photo_failed(name, e))
@@ -5092,8 +5202,12 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             return
         kind, name = self._ocr_detail_map[sel[0]]
         if kind == "photo":
-            from passport_pipeline import PIC_DIR
-            path = PIC_DIR / name
+            entries = {label: pth for label, pth in getattr(
+                self, "_ocr_photo_entries", iter_passport_photos())}
+            path = entries.get(name)
+            if path is None:
+                from passport_pipeline import PIC_DIR
+                path = PIC_DIR / name
             self.ocr_preview_meta.set(f"{name}")
             self._ocr_meta_fullpath = str(path)
             self._ocr_meta_tip.set_text(self._ocr_meta_fullpath)
@@ -5345,10 +5459,22 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
 
         def worker():
             try:
-                from passport_pipeline import process_image, CNN, PIC_DIR
+                from passport_pipeline import process_image, CNN
+                # selected 是「来源目录/文件名」，映射回绝对路径。单点
+                # 识别(_ocr_run_single_photo)也用同一来源表解析。
+                entries = {label: path
+                           for label, path in getattr(
+                               self, "_ocr_photo_entries",
+                               iter_passport_photos())}
                 results = []
                 for i, name in enumerate(selected, 1):
-                    rec = process_image(PIC_DIR / name, tool=CNN)
+                    path = entries.get(name)
+                    if path is None or not path.exists():
+                        self.after(0, lambda nm=name: self._set_status_bar(
+                            f"跳过 {nm}：源文件不存在", None))
+                        continue
+                    rec = process_image(path, tool=CNN)
+                    rec["file"] = name
                     results.append(rec)
                     self.after(0, lambda i=i, n=len(selected), nm=name,
                                rec=rec: (
@@ -5393,20 +5519,44 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             bg, fg = spec["bg"], spec["fg"]
             self.ocr_detail.tag_configure(tag, background=bg, foreground=fg)
         stats = {"PASS": 0, "SUSPECT": 0, "REJECT": 0, "verified": 0}
-        ms_sum = 0.0
+        ms_list = [r["ms"] if r.get("ms", 0) >= 0 else 0 for r in results]
+        ms_sum = float(sum(ms_list))
         self._ocr_last = {"photo": results}
+        # GT 识别率：只对有 ground-truth 的样本统计（real_gt.json）。
+        # GT 文件名可能与目录 label 不同（tmp/PassPortPhoto 与 assets/pic
+        # 的 29/30 系列是同一批进件），按 basename 匹配。
+        gts = (self._gt_map() if hasattr(self, "_gt_map") else None) or {}
+        l1c = l2c = l1t = l2t = 0
+        gt_ok = gt_n = 0
         for rec in results:
-            g = rec["grade"]
+            g = rec.get("grade", "REJECT")
             stats[g] = stats.get(g, 0) + 1
             if rec.get("verified"):
                 stats["verified"] += 1
-            ms_sum += rec["ms"]
+            l1 = (rec.get("ocr") or {}).get("line1") or ""
+            l2 = (rec.get("ocr") or {}).get("line2") or ""
+            base = Path(str(rec.get("path") or rec.get("file") or "")).name
+            gt = None
+            if base in gts:
+                gt = gts[base]
+            elif rec.get("file") in gts:
+                gt = gts[rec["file"]]
+            if gt:
+                gt_n += 1
+                if rec.get("verified"):
+                    gt_ok += 1
+                n1 = min(len(gt[0]), len(l1))
+                n2 = min(len(gt[1]), len(l2))
+                l1t += len(gt[0]); l2t += len(gt[1])
+                l1c += sum(1 for i in range(n1) if gt[0][i] == l1[i])
+                l2c += sum(1 for i in range(n2) if gt[1][i] == l2[i])
             iid = rec["file"]
             self.ocr_detail.insert("", "end", iid=iid, tags=(g,),
                 values=(rec["file"], g,
                         "✓" if rec.get("verified") else "—",
                         f"{rec['ms']:.0f}", rec.get("reason") or ""))
             self._ocr_detail_map[iid] = ("photo", rec["file"])
+        self._ocr_gt_stat = (gt_n, gt_ok, l1c, l1t, l2c, l2t)
         # Auto-select first photo row so the right pane refreshes with
         # thumbnail + region overlay + MRZ result.
         if results:
@@ -5430,15 +5580,27 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 values=(g, stats[g],
                         stats["verified"] if g == "PASS" else ""))
         m = self.ocr_metrics
-        m["cases"].set(len(results))
-        m["mean"].set(f"{ms_sum / max(1, len(results)):.1f}")
-        m["pass"].set(f"{100.0 * stats['PASS'] / max(1, len(results)):.1f}")
-        for k in ("p95", "l1", "l2", "full"):
-            m[k].set("--")
+        n = len(results)
+        m["cases"].set(n)
+        m["mean"].set(f"{ms_sum / max(1, n):.1f}")
+        m["pass"].set(f"{100.0 * stats['PASS'] / max(1, n):.1f}")
+        # 耗时 P95（与 corpus 模式一致）。
+        if ms_list:
+            m["p95"].set(f"{sorted(ms_list)[min(len(ms_list) - 1,
+                                                int(len(ms_list) * 0.95))]:.1f}")
+        gt_n, gt_ok, l1c, l1t, l2c, l2t = self._ocr_gt_stat
+        # L1/L2 逐字符准确率 + 校验通过率：只对 GT 样本有意义，否则显示 "--"。
+        if l1t:
+            m["l1"].set(f"{100.0 * l1c / l1t:.2f}")
+        if l2t:
+            m["l2"].set(f"{100.0 * l2c / l2t:.2f}")
+        if gt_n:
+            m["full"].set(f"{gt_ok}")
         self.ocr_run_btn.configure(state="normal")
         self._set_status_bar(
             f"识别完成：PASS={stats['PASS']} SUSPECT={stats['SUSPECT']}"
-            f" REJECT={stats['REJECT']}，OCR校验通过 {stats['verified']} 张",
+            f" REJECT={stats['REJECT']}，OCR校验通过 {stats['verified']} "
+            f"张（GT样本 {gt_n}，GT 校验通过 {gt_ok}）",
             100)
 
     def _ocr_populate_results(self, payload):
