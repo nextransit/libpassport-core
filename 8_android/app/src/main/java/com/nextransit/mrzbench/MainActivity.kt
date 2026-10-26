@@ -16,6 +16,7 @@ import com.nextransit.mrzbench.bench.Benchmark
 import com.nextransit.mrzbench.bench.HeadlessRunner
 import com.nextransit.mrzbench.jni.MrzNative
 import com.nextransit.mrzbench.photo.PaddleOcrAndroid
+import com.nextransit.mrzbench.photo.PhotoMrzPipeline
 import com.nextransit.mrzbench.ui.RunFragment
 import com.nextransit.mrzbench.ui.StreamFragment
 import com.nextransit.mrzbench.ui.CompareFragment
@@ -70,6 +71,7 @@ class MainActivity : AppCompatActivity() {
         // Pre-warm the PaddleOcr ORT session on a worker thread so the
         // first photo does not pay 2-3s of model copy + session build.
         PaddleOcrAndroid.preload(applicationContext)
+        PhotoMrzPipeline.warm(applicationContext)
 
         // Test-driver hook: a host broadcast (e.g. `adb shell am
         // broadcast -a com.nextransit.mrzbench.action.RUN_BENCH -p

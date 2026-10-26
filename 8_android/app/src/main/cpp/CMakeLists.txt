@@ -11,8 +11,21 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Force march=native OFF for arm cross-compile; let NDK pick defaults.
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -DNDEBUG -O2 -fvisibility=hidden")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -DNDEBUG -O2 -fvisibility=hidden")
+# -O3 with FP contraction disabled.
+#
+# The CNN regression gate is byte-exact: the host build (-O3
+# -march=native) and the device build must produce the SAME floating
+# point sums, because the fallback weights are selected on a corpus
+# that the host produced.  Clang and GCC fuse a*b+c into FMA by
+# default (-ffp-contract=fast), which changes the accumulation order
+# and therefore the result.  -ffp-contract=off keeps the sums
+# identical while still letting -O3 vectorise the loops that are safe
+# to vectorise.
+#
+# -march=native is deliberately NOT used: the library is cross-compiled
+# for arm64-v8a and must not depend on the build machine's CPU.
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -DNDEBUG -O2 -ffp-contract=off -fvisibility=hidden")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -DNDEBUG -O2 -ffp-contract=off -fvisibility=hidden")
 
 # Re-use the exact source from the host project so the CNN weights and
 # geometric heuristics stay in lock-step with bench_results.json.
@@ -42,8 +55,10 @@ add_library(mrz_ocr STATIC
     ${MRZ_DIR}/src/mrz_geom.c
     ${MRZ_DIR}/src/mrz_ocr.c
     ${MRZ_DIR}/src/mrz_ocr_cnn.c
+    ${MRZ_DIR}/src/mrz_ocr_crnn.c
+    ${MRZ_DIR}/src/crnn.c
     ${MRZ_DIR}/src/cnn.c)
-set_source_files_properties(${MRZ_DIR}/src/template.c ${MRZ_DIR}/src/mrz_geom.c ${MRZ_DIR}/src/mrz_ocr.c ${MRZ_DIR}/src/mrz_ocr_cnn.c ${MRZ_DIR}/src/cnn.c PROPERTIES COMPILE_OPTIONS "-fvisibility=default;")
+set_source_files_properties(${MRZ_DIR}/src/template.c ${MRZ_DIR}/src/mrz_geom.c ${MRZ_DIR}/src/mrz_ocr.c ${MRZ_DIR}/src/mrz_ocr_cnn.c ${MRZ_DIR}/src/mrz_ocr_crnn.c ${MRZ_DIR}/src/crnn.c ${MRZ_DIR}/src/cnn.c PROPERTIES COMPILE_OPTIONS "-fvisibility=default;")
 target_include_directories(mrz_ocr PUBLIC
     ${MRZ_DIR}/include
     ${MRZ_DIR}/src

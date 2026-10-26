@@ -10,13 +10,26 @@ class NativeTess private constructor(private val api: TessBaseAPI) {
         api.clear()
         return text
     }
-    fun close() { api.end() }
+    fun close() { api.recycle() }
 
     companion object {
-        fun create(lang: String = "ocrb"): NativeTess? = try {
+        private const val WHITELIST = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<"
+
+        fun create(dataParent: String, lang: String = "ocrb"): NativeTess? = try {
             val api = TessBaseAPI()
-            val ok = api.init("tessdata", lang)
-            if (!ok) { api.end(); null } else NativeTess(api)
-        } catch (_: Throwable) { null }
+            val ok = api.init(dataParent, lang)
+            android.util.Log.i("MrzOcr", "tess init '$dataParent' ok=$ok")
+            if (!ok) {
+                api.recycle()
+                null
+            } else {
+                val wl = api.setVariable("tessedit_char_whitelist", WHITELIST)
+                android.util.Log.i("MrzOcr", "tess whitelist set=$wl")
+                NativeTess(api)
+            }
+        } catch (t: Throwable) {
+            android.util.Log.e("MrzOcr", "tess create failed: ${t.message}", t)
+            null
+        }
     }
 }

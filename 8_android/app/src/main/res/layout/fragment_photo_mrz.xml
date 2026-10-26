@@ -24,6 +24,38 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_photo_method"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="算法: 自动" />
+
+            <CheckBox
+                android:id="@+id/cb_photo_all"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="全部方案"
+                android:textColor="@color/text" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="默认自动(链式短路)；全部方案模式保留每个算法的独立结果"
+            android:textColor="@color/text_dim"
+            android:textSize="11sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
             android:orientation="horizontal">
 
             <com.google.android.material.button.MaterialButton
@@ -74,7 +106,7 @@
             android:id="@+id/photo_stage_labels"
             style="@style/ValMono"
             android:layout_marginTop="6dp"
-            android:text="① original   ② reflection removed   ③ rectified   ④ MRZ crop" />
+            android:text="① original   ② reflection removed   ③ MRZ crop" />
 
         <GridLayout
             android:layout_width="match_parent"
@@ -102,20 +134,13 @@
                 android:contentDescription="reflection removed photo"
                 android:scaleType="fitCenter" />
 
-            <ImageView
-                android:id="@+id/photo_rectified"
-                android:layout_width="0dp"
-                android:layout_height="150dp"
-                android:layout_columnWeight="1"
-                android:layout_margin="3dp"
-                android:background="@color/field"
-                android:contentDescription="rectified MRZ"
-                android:scaleType="fitCenter" />
-
+            <!-- MRZ crop 横跨两列：它是宽而矮的一条，两行各占半屏会把它
+                 压成看不清的一小格。 -->
             <ImageView
                 android:id="@+id/photo_mrz"
                 android:layout_width="0dp"
                 android:layout_height="150dp"
+                android:layout_columnSpan="2"
                 android:layout_columnWeight="1"
                 android:layout_margin="3dp"
                 android:background="@color/field"
