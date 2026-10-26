@@ -210,6 +210,41 @@
 | 2026-10-23 12:10 | 41 real photos (grouped CV) | crnn | 0/41 | 67.35% | 18/41 | 18/41 | 6.2 |
 | 2026-10-23 12:10 | 41 real photos (grouped CV) | **fuse** | **22/41** | **96.90%** | 40/41 | **18/41** | 6.1 |
 
+> 2026-10-25 correction: the 41-photo exact column above was scored against
+> the board's raw OCR labels. Against the human-corrected truth in
+> `data/gt_frozen_passport_corrected.json`, the same bands/weights give CNN
+> 37/41 and fuse 31/41. Fusion overwrites the CNN checksum-beam repairs on
+> six photos (E/G/K/Q/T/AJ), so the production order is now CNN first with
+> fuse only as a fallback.
+>
+> 2026-10-25 follow-up (v2, board-confirmed): all 41 truths in
+> `data/gt_frozen_passport_corrected.json` pass the ICAO five-segment
+> checksum after an in-person read of the photos confirmed the MRZ
+> characters (`AC/AC_R` pos28 is `O` and pos40 is `7`;
+> `AG` pos28 is `T` and pos39 is `O`). Against that final truth CNN is
+> exact on **37/41**, fuse on **31/41**. The 4 residual rows are
+> `M` (pos33/37/41, personal-number coin-flip `...V22S2Z591` vs
+> `...022S7Z593`, both checksum-legal, model p=1.0) and the two-number
+> misses `AC/AC_R` (pos28 `0` vs `O`, pos40 `1` vs `7`) and `AG`
+> (pos28 `1` vs `T`, pos39 `0` vs `O`) — all in the un-checksummable
+> personal-number zone, which no ambiguity/rejection gate can catch.
+> `eval_prod_path.py` reports exact for chosen/fuse/cnn, and now every
+> corrected truth is checksum-valid so the valid-only sub-split prints
+> identically.
+
+> 2026-10-26 final (shipped path, CNN first / fuse fallback): the frozen
+> corpus verdicts are PASS 40/41, SUSPECT 1/41 (F, issuer-code suspect,
+> line2 exact), FAIL 0/41; chosen exact 37/41 with fuse never selected.
+> The 4 residual non-exact rows are all in the un-checksummable
+> personal-number zone (pos28-41): M (`...V22S2Z591` vs `...022S7Z593`,
+> both checksum-legal, model p=1.0 — a coin flip no rejection gate can
+> catch) and AC/AC_R (pos28 `0`/`O`, pos40 `1`/`7`) and AG (pos28 `1`/`T`,
+> pos39 `0`/`O`).  No margin/ambiguity rejection is implemented: any
+> threshold that flags these would also false-positive five correct
+> photos (A/W/I/AB/AI have equally low-margin beam repairs), so the four
+> are shipped as a documented limitation rather than traded for 5 extra
+> SUSPECTs.
+
 冻结 GT（GT 不再由被测模型自己投票产生，见 tools/build_frozen_gt.py）：
 
 | date | corpus | method | exact | line2 acc | cksum | cksum&wrong | ms p50 |
@@ -393,3 +428,21 @@ beam 校验通过但读错（O/E + USH/USA + optional 区两处 <→6，4 字符
 + 35 张排除（打码/低于产品分辨率/有色底，与前两轮人工复核一致，
 无新增可标注页）。结论：该工具把"图→正确 MRZ"的自动上限推到了
 line2 全自动 + line1 争议列人工；物理不可读页无解。
+| 2026-10-25 20:00 | data/corpus_eval | traditional | 63.20% | 42.46% | 0.00% | 2.17% | 5.1 |
+| 2026-10-25 20:00 | data/corpus_eval | cnn | 97.58% | 97.77% | 64.42% | 98.26% | 7.1 |
+| 2026-10-25 20:02 | data/corpus_eval | traditional | 63.57% | 42.46% | 0.00% | 2.17% | 5.3 |
+| 2026-10-25 20:02 | data/corpus_eval | cnn | 97.71% | 97.77% | 67.03% | 98.26% | 7.4 |
+| 2026-10-25 20:02 | data/corpus_eval | traditional | 63.57% | 42.46% | 0.00% | 2.17% | 5.1 |
+| 2026-10-25 20:02 | data/corpus_eval | cnn | 97.71% | 97.77% | 67.03% | 98.26% | 7.3 |
+| 2026-10-25 20:03 | data/corpus_eval | traditional | 63.20% | 42.46% | 0.00% | 2.17% | 5.0 |
+| 2026-10-25 20:03 | data/corpus_eval | cnn | 97.58% | 97.77% | 64.42% | 98.26% | 7.1 |
+| 2026-10-25 20:04 | data/corpus_eval | traditional | 63.20% | 42.46% | 0.00% | 2.17% | 5.4 |
+| 2026-10-25 20:04 | data/corpus_eval | cnn | 97.58% | 97.77% | 64.42% | 98.26% | 7.7 |
+| 2026-10-25 20:06 | data/corpus_eval | traditional | 63.57% | 42.46% | 0.00% | 2.17% | 5.2 |
+| 2026-10-25 20:06 | data/corpus_eval | cnn | 97.71% | 97.77% | 67.03% | 98.26% | 7.5 |
+| 2026-10-25 20:06 | data/corpus_eval | traditional | 63.57% | 42.46% | 0.00% | 2.17% | 4.9 |
+| 2026-10-25 20:06 | data/corpus_eval | cnn | 97.71% | 97.77% | 67.03% | 98.26% | 7.3 |
+| 2026-10-25 20:06 | data/corpus_eval | traditional | 63.57% | 42.46% | 0.00% | 2.17% | 5.0 |
+| 2026-10-25 20:06 | data/corpus_eval | cnn | 97.71% | 97.77% | 67.03% | 98.26% | 7.5 |
+| 2026-10-25 20:17 | data/corpus_eval | traditional | 63.57% | 42.46% | 0.00% | 2.17% | 5.4 |
+| 2026-10-25 20:17 | data/corpus_eval | cnn | 97.71% | 97.77% | 67.03% | 98.26% | 7.6 |

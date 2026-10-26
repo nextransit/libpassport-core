@@ -243,7 +243,7 @@ def position_candidates(label: str, variants):
 def parse_board(txt: Path):
     s = txt.read_text(errors="replace")
     tl = re.findall(r'textLine\[\d\]\(([^\n]*)\)', s)
-    mfix = re.findall(r'fixmrz[^\n]*\n([PE]<[0-9A-Z<]{43})\n([0-9A-Z<]{44})', s)
+    mfix = re.findall(r'fixmrz[^\n]*\n([PE]<[0-9A-Z<]{42})\n([0-9A-Z<]{44})', s)
     if mfix:
         return mfix[0][0], mfix[0][1]
     if len(tl) >= 2:

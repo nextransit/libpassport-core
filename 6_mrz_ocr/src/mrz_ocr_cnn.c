@@ -420,6 +420,202 @@ static int line2_checksum_ok(const char *l2) {
     return 1;
 }
 
+/* ---- P0-3 diagnostic dump (MRZ_OCR_DIAG=<path>) ----
+ *
+ * Pure observer: every field copies a value the pipeline already computed.
+ * One JSON object is written per recogniser call. */
+#define MRZ_DIAG_CHARS 44
+
+typedef struct {
+    int valid;
+    int y, h;
+    int grid_ok;
+    int nchars;
+    int seg_score;
+    int nrun, medw, cell, win_w, Lmin, Lmax, L0;
+    double Lfit, pitch, phase;
+    int cost;
+    double int_pitch, frac_pitch;
+    int int_cost, frac_cost;
+    double guard;
+    int conf_avg;
+    int ambiguous, alt_margin;
+    char alt[64];
+    unsigned char gate[MRZ_DIAG_CHARS];
+    unsigned char ch[MRZ_DIAG_CHARS];
+    int cand[MRZ_DIAG_CHARS][3];
+    float p[MRZ_DIAG_CHARS][3];
+    float ink[MRZ_DIAG_CHARS];
+} mrz_diag_line_t;
+
+typedef struct {
+    int enabled;
+    char path[512];
+    int img_w, img_h;
+    int band_x, band_y, band_w, band_h;
+    int proc_w, proc_h;
+    double upscale;
+    double skew_deg;
+    int status;
+    double ms_gray, ms_band, ms_resample, ms_decode;
+    mrz_diag_line_t line[2];
+} mrz_diag_t;
+
+static mrz_diag_t g_diag;
+
+static int mrz_diag_on(void) {
+    static int inited = 0;
+    if (!inited) {
+        const char *e = getenv("MRZ_OCR_DIAG");
+        if (e && e[0]) {
+            snprintf(g_diag.path, sizeof(g_diag.path), "%s", e);
+            g_diag.enabled = 1;
+        }
+        inited = 1;
+    }
+    return g_diag.enabled;
+}
+
+static mrz_diag_line_t *mrz_diag_line(int li) {
+    if (!mrz_diag_on() || li < 0 || li > 1) return NULL;
+    return &g_diag.line[li];
+}
+
+static const char *mrz_diag_status_name(int s) {
+    switch (s) {
+    case MRZ_OCR_OK:                 return "OK";
+    case MRZ_OCR_ERR_LOAD:           return "ERR_LOAD";
+    case MRZ_OCR_ERR_NO_BAND:        return "ERR_NO_BAND";
+    case MRZ_OCR_ERR_BAD_GEOMETRY:   return "ERR_BAD_GEOMETRY";
+    case MRZ_OCR_ERR_BAD_LINES:      return "ERR_BAD_LINES";
+    case MRZ_OCR_ERR_LOW_CONFIDENCE: return "ERR_LOW_CONFIDENCE";
+    case MRZ_OCR_ERR_TEMPLATE:       return "ERR_TEMPLATE";
+    case MRZ_OCR_ERR_TIMEOUT:        return "ERR_TIMEOUT";
+    }
+    return "ERR_UNKNOWN";
+}
+
+static void mrz_diag_json_str(FILE *f, const char *s) {
+    fputc('"', f);
+    for (; s && *s; ++s) {
+        unsigned char c = (unsigned char)*s;
+        if (c == '"' || c == '\\') { fputc('\\', f); fputc(c, f); }
+        else if (c < 0x20)         fprintf(f, "\\u%04x", c);
+        else                       fputc(c, f);
+    }
+    fputc('"', f);
+}
+
+static void mrz_diag_checksums(const char *l2, int len,
+                               int exp[5], int act[5], int ok[5]) {
+    static const int pos[5] = {9, 19, 27, 42, 43};
+    static const int start[4] = {0, 13, 21, 28};
+    static const int nseg[4] = {9, 6, 6, 14};
+    for (int i = 0; i < 5; ++i) { exp[i] = -1; act[i] = -1; ok[i] = 0; }
+    if (!l2 || len < 44) return;
+    for (int i = 0; i < 4; ++i) {
+        exp[i] = check_digit_of(l2 + start[i], nseg[i]);
+        act[i] = (l2[pos[i]] >= '0' && l2[pos[i]] <= '9') ? l2[pos[i]] - '0' : -1;
+        ok[i] = (act[i] == exp[i]);
+    }
+    char comp[40];
+    memcpy(comp, l2, 10);
+    memcpy(comp + 10, l2 + 13, 7);
+    memcpy(comp + 17, l2 + 21, 22);
+    exp[4] = check_digit_of(comp, 39);
+    act[4] = (l2[43] >= '0' && l2[43] <= '9') ? l2[43] - '0' : -1;
+    ok[4] = (act[4] == exp[4]);
+}
+
+static void mrz_diag_write(const mrz_ocr_result_t *out) {
+    if (!mrz_diag_on()) return;
+    FILE *f = fopen(g_diag.path, "w");
+    if (!f) return;
+
+    fprintf(f, "{\n \"version\":1,\n");
+    fprintf(f, " \"status\":%d,\n \"status_name\":\"%s\",\n",
+            g_diag.status, mrz_diag_status_name(g_diag.status));
+    fprintf(f, " \"image\":{\"w\":%d,\"h\":%d},\n", g_diag.img_w, g_diag.img_h);
+    fprintf(f, " \"band\":{\"x\":%d,\"y\":%d,\"w\":%d,\"h\":%d,"
+               "\"proc_w\":%d,\"proc_h\":%d,\"upscale\":%.3f},\n",
+            g_diag.band_x, g_diag.band_y, g_diag.band_w, g_diag.band_h,
+            g_diag.proc_w, g_diag.proc_h, g_diag.upscale);
+    fprintf(f, " \"skew_deg\":%.4f,\n", g_diag.skew_deg);
+    fprintf(f, " \"line1\":");
+    mrz_diag_json_str(f, out->line1);
+    fprintf(f, ",\n \"line2\":");
+    mrz_diag_json_str(f, out->line2);
+    fprintf(f, ",\n");
+
+    fprintf(f, " \"lines\":[\n");
+    for (int li = 0; li < 2; ++li) {
+        const mrz_diag_line_t *d = &g_diag.line[li];
+        int n = d->nchars;
+        if (n < 0) n = 0;
+        if (n > MRZ_DIAG_CHARS) n = MRZ_DIAG_CHARS;
+        fprintf(f, "  {\"index\":%d,\"y\":%d,\"h\":%d,\"grid_ok\":%d,"
+                   "\"seg_score\":%d,\"nchars\":%d,\"nrun\":%d,\"medw\":%d,"
+                   "\"cell\":%d,\"win_w\":%d,\"Lmin\":%d,\"Lmax\":%d,\"L0\":%d,",
+                li, d->y, d->h, d->grid_ok, d->seg_score, n, d->nrun, d->medw,
+                d->cell, d->win_w, d->Lmin, d->Lmax, d->L0);
+        fprintf(f, "\"Lfit\":%.3f,\"pitch\":%.3f,\"phase\":%.3f,\"cost\":%d,"
+                   "\"int_pitch\":%.2f,\"int_cost\":%d,\"frac_pitch\":%.2f,"
+                   "\"frac_cost\":%d,\"guard\":%.2f,\"conf_avg\":%d,"
+                   "\"ambiguous\":%d,\"alt_margin\":%d,\"alt\":",
+                d->Lfit, d->pitch, d->phase, d->cost,
+                d->int_pitch, d->int_cost, d->frac_pitch, d->frac_cost,
+                d->guard, d->conf_avg, d->ambiguous, d->alt_margin);
+        mrz_diag_json_str(f, d->alt);
+        fprintf(f, ",\"chars\":[");
+        for (int c = 0; c < n; ++c) {
+            if (c) fputc(',', f);
+            fprintf(f, "{\"i\":%d,\"top\":[", c);
+            for (int k = 0; k < 3; ++k) {
+                if (k) fputc(',', f);
+                int g = d->cand[c][k];
+                if (g >= 0 && g < 37) {
+                    fprintf(f, "[\"%c\",%.4f]",
+                            MRZ_OCR_GLYPHS[g].ch, d->p[c][k]);
+                } else {
+                    fprintf(f, "[null,%.4f]", d->p[c][k]);
+                }
+            }
+            fprintf(f, "],\"ink\":%.1f,\"gate\":%u,\"final\":\"%c\"}",
+                    d->ink[c], (unsigned)d->gate[c],
+                    d->ch[c] ? d->ch[c] : '<');
+        }
+        fprintf(f, "]}%s\n", li == 0 ? "," : "");
+    }
+    fprintf(f, " ],\n");
+
+    {
+        int exp[5], act[5], ok[5];
+        static const char *names[5] =
+            {"passport", "birth", "expiry", "personal", "composite"};
+        int l2len = (int)strlen(out->line2);
+        if (l2len > 44) l2len = 44;
+        mrz_diag_checksums(out->line2, l2len, exp, act, ok);
+        fprintf(f, " \"checksums\":{");
+        for (int i = 0; i < 5; ++i) {
+            fprintf(f, "%s\"%s\":{\"expected\":%d,\"actual\":%d,\"ok\":%s}",
+                    i ? "," : "", names[i], exp[i], act[i],
+                    ok[i] ? "true" : "false");
+        }
+        fprintf(f, "},\n");
+    }
+
+    fprintf(f, " \"flags\":{\"struct_ok\":%d,\"nat_suspect\":%d,"
+               "\"country_mismatch\":%d,\"issuer_suspect\":%d},\n",
+            out->line2_struct_ok, out->line2_nat_suspect,
+            out->line1_country_mismatch, out->line1_issuer_suspect);
+    fprintf(f, " \"timing_ms\":{\"gray\":%.2f,\"band\":%.2f,"
+               "\"resample\":%.2f,\"decode\":%.2f}\n",
+            g_diag.ms_gray, g_diag.ms_band,
+            g_diag.ms_resample, g_diag.ms_decode);
+    fprintf(f, "}\n");
+    fclose(f);
+}
+
 /* ---- grayscale area-resample of a char box to 16x12 float ---- */
 /* ---- band upscaling (scale normalisation) ----
  *
@@ -823,7 +1019,15 @@ int mrz_ocr_last_seg_score(void) { return g_last_seg_score; }
  * medw+8 (the distribution the CNN was trained on). When no good grid
  * exists the caller falls back to the run-based segmenter. */
 static int segment_line_grid(const uint8_t *bin, int W, int H,
-                             mrz_ocr_rect_t *chars, int max_chars) {
+                             mrz_ocr_rect_t *chars, int max_chars,
+                             int line_idx) {
+    mrz_diag_line_t *dg = mrz_diag_line(line_idx);
+    if (dg) {
+        dg->valid = 1;
+        dg->grid_ok = 0;
+        dg->nchars = 0;
+        dg->seg_score = -1;
+    }
     runs_t runs;
     if (find_runs(bin, W, H, &runs) < 0) return -1;
     int nrun = runs.n;
@@ -832,6 +1036,7 @@ static int segment_line_grid(const uint8_t *bin, int W, int H,
     int cell = medw + 8;
     if (cell < medw + 4) cell = medw + 4;
     if (max_chars < 44) return -1;        /* grid mode needs all 44 slots */
+    if (dg) { dg->nrun = nrun; dg->medw = medw; dg->cell = cell; }
 
     /* column projection, computed once and shared by pitch search and
      * phase scoring */
@@ -843,6 +1048,7 @@ static int segment_line_grid(const uint8_t *bin, int W, int H,
     /* --- pitch estimate --- */
     int Lmin = W / 52; if (Lmin < 10) Lmin = 10;
     int Lmax = W / 32; if (Lmax < Lmin + 2) Lmax = Lmin + 2;
+    if (dg) { dg->Lmin = Lmin; dg->Lmax = Lmax; }
     int diffs[95]; int nd = 0;
     for (int i = 1; i < nrun; ++i) {
         int d = runs.center[i] - runs.center[i-1];
@@ -895,6 +1101,7 @@ static int segment_line_grid(const uint8_t *bin, int W, int H,
     double Lfit = (last_center - first_center) / 43.0;
     if (Lfit < (double)Lmin || Lfit > (double)Lmax)
         Lfit = (double)L0;
+    if (dg) { dg->L0 = L0; dg->Lfit = Lfit; }
 
 
     double Lcand[12]; int nL = 0;
@@ -997,6 +1204,16 @@ static int segment_line_grid(const uint8_t *bin, int W, int H,
         (double)fr_cost > (double)int_cost * guard) {
         best_c0 = int_c0; best_L = int_L; best_cost = int_cost;
     }
+    if (dg) {
+        dg->pitch = best_L;
+        dg->phase = best_c0;
+        dg->cost = best_cost;
+        dg->int_pitch = int_L;
+        dg->int_cost = int_c0 >= 0 ? int_cost : -1;
+        dg->frac_pitch = fr_L;
+        dg->frac_cost = fr_c0 >= 0 ? fr_cost : -1;
+        dg->guard = guard;
+    }
     free(col);
     if (best_c0 < 0) return -1;
     {   /* MRZ_OCR_GRID=1: report the fitted grid for offline diagnosis. */
@@ -1023,6 +1240,7 @@ static int segment_line_grid(const uint8_t *bin, int W, int H,
         else if (mrz_cell_mode() >= 1 && best_L >= 6.0) cell_use = (int)(best_L + 0.5);
     }
     if (cell_use < 6) cell_use = 6;
+    if (dg) dg->win_w = cell_use;
     for (int k = 0; k < 44; ++k) {
         double cx = best_c0 + (double)k * best_L;
         int x0 = (int)(cx - (double)(cell_use / 2) + 0.5);
@@ -1066,7 +1284,9 @@ static int segment_line_grid(const uint8_t *bin, int W, int H,
             fprintf(stderr, "SEG W=%d H=%d runs=%d scored=%d mean_off=%.3f pitch=%.3f score=%d\n",
                     W, H, nrun, cnt, cnt ? sum / cnt : 0.0, best_L, score);
         if (cnt >= 30) g_last_seg_score = score; else g_last_seg_score = 0;
+        if (dg) dg->seg_score = g_last_seg_score;
     }
+    if (dg) { dg->grid_ok = 1; dg->nchars = n; }
     return n;
 }
 
@@ -1415,6 +1635,16 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
                        const float *probs, mrz_decode_amb_t *amb) {
     int total = n < 44 ? n : 44;
     if (amb) { amb->ambiguous = 0; amb->margin = 0; amb->alt[0] = 0; }
+    mrz_diag_line_t *dg = mrz_diag_line(line_idx);
+    if (dg) {
+        dg->nchars = total;
+        dg->conf_avg = 0;
+        dg->ambiguous = 0;
+        dg->alt_margin = 0;
+        dg->alt[0] = 0;
+        memset(dg->gate, 0, sizeof(dg->gate));
+        memset(dg->ch, 0, sizeof(dg->ch));
+    }
     top3_t t3[44];
     int allow[37];
     static int dbg = -1;
@@ -1422,6 +1652,12 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
     for (int c = 0; c < n && c < 44; ++c) {
         fill_allow(allow, line_idx, c);
         top3_of(probs + c * CNN_OUT, allow, &t3[c]);
+        if (dg && c < MRZ_DIAG_CHARS) {
+            for (int k = 0; k < 3; ++k) {
+                dg->cand[c][k] = t3[c].cand[k];
+                dg->p[c][k] = t3[c].p[k];
+            }
+        }
         if (dbg) {
             fprintf(stderr, "TOPK L%d c%02d: %c(%.3f) %c(%.3f) %c(%.3f)\n", line_idx,
                     c, MRZ_OCR_GLYPHS[t3[c].cand[0]].ch, t3[c].p[0],
@@ -1439,6 +1675,7 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
                 ink += glyphs[c][y][x];
         patch_ink[c] = ink;
         dest[c] = MRZ_OCR_GLYPHS[t3[c].cand[0]].ch;
+        if (dg && c < MRZ_DIAG_CHARS) dg->ink[c] = ink;
     }
     if (n < 44) dest[n] = '\0'; else dest[44] = '\0';
 
@@ -1470,7 +1707,10 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
             char ch0 = dest[c];
             if (ch0 == 'X' || ch0 == 'R') {
                 float thr = (gate > 0.0f) ? gate : 60.0f;
-                if (patch_ink[c] < thr) dest[c] = '<';
+                if (patch_ink[c] < thr) {
+                    dest[c] = '<';
+                    if (dg) dg->gate[c] |= 1;
+                }
             }
         }
     }
@@ -1479,8 +1719,10 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
      * '<' on both sides is syntactically impossible in ICAO 9303. */
     for (int c = 1; c + 1 < total; ++c) {
         if (dest[c-1] == '<' && dest[c+1] == '<' &&
-            (dest[c] == 'X' || dest[c] == 'R' || dest[c] == 'T'))
+            (dest[c] == 'X' || dest[c] == 'R' || dest[c] == 'T')) {
             dest[c] = '<';
+            if (dg) dg->gate[c] |= 2;
+        }
     }
 
     /* (c) Trailing "<" filler lock on Line 1: once >=5 consecutive '<'
@@ -1494,8 +1736,10 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
             else run = 0;
         }
         if (locked >= 0)
-            for (int c = locked; c < total; ++c)
+            for (int c = locked; c < total; ++c) {
                 dest[c] = '<';
+                if (dg) dg->gate[c] |= 4;
+            }
     }
 
     /* (d) Line-2 checksum beam search.
@@ -1591,6 +1835,8 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
              * photos (Photo/lv went from the correct LV90008223LVA...
              * to LV90008223LWA...), so the relaxation is confined to
              * the runner-up pass below. */
+            char pre_beam[45];
+            memcpy(pre_beam, dest, 45);
             mrz_beam_search(dest, t3, idxs, picks, best, &best_score,
                             NULL, NULL, 0.0);
 
@@ -1621,6 +1867,9 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
              * result is left exactly as it was. */
             if (best_score > -1e299) {
                 memcpy(dest, best, 44);
+                if (dg)
+                    for (int c = 0; c < 44; ++c)
+                        if (dest[c] != pre_beam[c]) dg->gate[c] |= 8;
                 if (n < 44) dest[n] = '\0'; else dest[44] = '\0';
                 /* A runner-up within the margin means the reading is a
                  * near coin flip between two checksum-valid candidates.
@@ -1647,6 +1896,17 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
     for (int c = 0; c < total; ++c)
         sum += (int)((t3[c].p[0] > 0 ? t3[c].p[0] : 0.0f) * 100);
     *conf_avg = total > 0 ? sum / total : 0;
+    if (dg) {
+        dg->conf_avg = *conf_avg;
+        if (amb) {
+            dg->ambiguous = amb->ambiguous;
+            dg->alt_margin = amb->margin;
+            memcpy(dg->alt, amb->alt, 45);
+            dg->alt[44] = 0;
+        }
+        for (int c = 0; c < total && c < MRZ_DIAG_CHARS; ++c)
+            dg->ch[c] = (unsigned char)dest[c];
+    }
 }
 
 /* Band tilt estimation + deskew live in the shared geometry layer
@@ -2013,9 +2273,22 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
     if (W <= 0 || H <= 0) return MRZ_OCR_ERR_LOAD;
 
     const char *tm = getenv("MRZ_OCR_TIMING");
+    const int diag_on = mrz_diag_on();
+    if (diag_on) {
+        memset(g_diag.line, 0, sizeof(g_diag.line));
+        g_diag.img_w = W; g_diag.img_h = H;
+        g_diag.band_x = g_diag.band_y = g_diag.band_w = g_diag.band_h = 0;
+        g_diag.proc_w = g_diag.proc_h = 0;
+        g_diag.upscale = 1.0;
+        g_diag.skew_deg = 0.0;
+        g_diag.status = MRZ_OCR_OK;
+        g_diag.ms_gray = g_diag.ms_band = 0.0;
+        g_diag.ms_resample = g_diag.ms_decode = 0.0;
+    }
+    const int timing_on = diag_on || (tm && tm[0] && strcmp(tm, "0"));
     struct timespec _t0, _t1;
     double _ms_gray = 0, _ms_band = 0, _ms_resample = 0, _ms_decode = 0;
-    if (tm && tm[0] && strcmp(tm, "0")) clock_gettime(CLOCK_MONOTONIC, &_t0);
+    if (timing_on) clock_gettime(CLOCK_MONOTONIC, &_t0);
 
     /* Heap workspaces (the CNN weights alone are ~41 KB — keeping the
      * whole pipeline off the stack matters for embedded thread stacks). */
@@ -2052,7 +2325,7 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
     bin = mrz_scratch_bin(n);
     if (!bin) { status = MRZ_OCR_ERR_LOAD; goto cleanup; }
     for (size_t i = 0; i < n; ++i) bin[i] = (gray[i] < t) ? 1 : 0;
-    if (tm && tm[0] && strcmp(tm, "0")) { clock_gettime(CLOCK_MONOTONIC, &_t1); _ms_gray = (_t1.tv_sec-_t0.tv_sec)*1e3+(_t1.tv_nsec-_t0.tv_nsec)/1e6; _t0=_t1; }
+    if (timing_on) { clock_gettime(CLOCK_MONOTONIC, &_t1); _ms_gray = (_t1.tv_sec-_t0.tv_sec)*1e3+(_t1.tv_nsec-_t0.tv_nsec)/1e6; _t0=_t1; }
 
     /* 2. Locate the MRZ band.
      *
@@ -2075,6 +2348,10 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
     }
     int bx = band.x, by = band.y, bw = band.w, bh = band.h;
     out->band_x = bx; out->band_y = by; out->band_w = bw; out->band_h = bh;
+    if (diag_on) {
+        g_diag.band_x = bx; g_diag.band_y = by;
+        g_diag.band_w = bw; g_diag.band_h = bh;
+    }
     if (bw < MRZ_OCR_GLYPH_W * 5 || bh < MRZ_OCR_GLYPH_H) {
         status = MRZ_OCR_ERR_BAD_GEOMETRY; goto cleanup;
     }
@@ -2089,6 +2366,7 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
      * why the device corpus is unchanged by this step.
      * out->band_* above keeps reporting the ORIGINAL rectangle -- the
      * caller maps it back onto the frame, so bw/bh must not leak out. */
+    double diag_up = 1.0;
     {
         const char *ppc_env = getenv("MRZ_OCR_PPC");
         double target = MRZ_OCR_TARGET_PPC;
@@ -2100,6 +2378,7 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
         double up  = (ppc > 0.0) ? target / ppc : 1.0;
         if (up < 1.0) up = 1.0;
         if (up > 4.0) up = 4.0;          /* bound the scratch footprint */
+        diag_up = up;
         int nw = (int)((double)bw * up + 0.5);
         int nh = (int)((double)bh * up + 0.5);
         if (nw < bw) nw = bw;
@@ -2122,10 +2401,14 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
             bw = nw; bh = nh;
         }
     }
+    if (diag_on) {
+        g_diag.proc_w = bw; g_diag.proc_h = bh; g_diag.upscale = diag_up;
+    }
     {
         int tb = mrz_ocr_otsu(band_gray, bw * bh);
         for (int i = 0; i < bw * bh; ++i) band_bin[i] = (band_gray[i] < tb) ? 1 : 0;
         double deg = mrz_estimate_band_skew(band_bin, bw, bh);
+        if (diag_on) g_diag.skew_deg = deg;
         {   /* MRZ_OCR_GRID=1: report the deskew angle.  A non-zero
              * angle rotates the whole band, which shifts every glyph
              * window horizontally by up to (bh/2)*sin(deg). */
@@ -2148,7 +2431,7 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
             for (int i = 0; i < bw * bh; ++i) band_bin[i] = (band_gray[i] < tb) ? 1 : 0;
         }
     }
-    if (tm && tm[0] && strcmp(tm, "0")) { clock_gettime(CLOCK_MONOTONIC, &_t1); _ms_band=(_t1.tv_sec-_t0.tv_sec)*1e3+(_t1.tv_nsec-_t0.tv_nsec)/1e6; _t0=_t1; }
+    if (timing_on) { clock_gettime(CLOCK_MONOTONIC, &_t1); _ms_band=(_t1.tv_sec-_t0.tv_sec)*1e3+(_t1.tv_nsec-_t0.tv_nsec)/1e6; _t0=_t1; }
 
     /* 4b. Local-contrast normalisation against illumination gradients.
      * OPT-IN (MRZ_OCR_LOCAL_NORM=1): off by default.  A/B on the 1380
@@ -2173,6 +2456,10 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
     mrz_ocr_rect_t lines[2];
     if (mrz_ocr_split_lines(band_bin, bw, bh, lines) != 0) {
         status = MRZ_OCR_ERR_BAD_LINES; goto cleanup;
+    }
+    if (diag_on) {
+        g_diag.line[0].y = lines[0].y; g_diag.line[0].h = lines[0].h;
+        g_diag.line[1].y = lines[1].y; g_diag.line[1].h = lines[1].h;
     }
     {   /* MRZ_OCR_LINES=1: report the band and the two line boxes, plus
          * their height ratio -- the quantity that decides whether the
@@ -2340,11 +2627,13 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                     memcpy(line_pixels_l[li] + y * bw,
                            band_bin + (base_l[li] + y) * bw, bw);
 
+                mrz_diag_line_t *dg_line = mrz_diag_line(li);
                 int nchars = segment_line_grid(line_pixels_l[li], bw,
-                                              line_h_l[li], chars_l[li], 44);
+                                              line_h_l[li], chars_l[li], 44, li);
                 if (nchars <= 0)
                     nchars = segment_line_cnn(line_pixels_l[li], bw,
                                               line_h_l[li], chars_l[li], 44);
+                if (dg_line && nchars >= 0) dg_line->nchars = nchars;
                 if (nchars < 30) {
                     status = MRZ_OCR_ERR_BAD_LINES; goto cleanup;
                 }
@@ -2361,7 +2650,7 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                                        chars_l[li][c].w, chars_l[li][c].h,
                                        NULL, 0, glyphs_l[c]);
             }
-            if (tm && tm[0] && strcmp(tm, "0")) {
+            if (timing_on) {
                 clock_gettime(CLOCK_MONOTONIC, &_t1);
                 _ms_resample += (_t1.tv_sec-_t0.tv_sec)*1e3 + (_t1.tv_nsec-_t0.tv_nsec)/1e6;
                 _t0 = _t1;
@@ -2482,7 +2771,7 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                 out->line1_len = nchars_l[0];
                 mrz_ocr_dump_glyphs("img", 0, glyphs0_keep, nchars_l[0], chars_l[0]);
             }
-            if (tm && tm[0] && strcmp(tm, "0")) {
+            if (timing_on) {
                 clock_gettime(CLOCK_MONOTONIC, &_t1);
                 _ms_decode += (_t1.tv_sec-_t0.tv_sec)*1e3 + (_t1.tv_nsec-_t0.tv_nsec)/1e6;
                 _t0 = _t1;
@@ -2508,7 +2797,7 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                 memcpy(out->line2_alt, worker_amb.alt, 45);
                 out->line2_alt[44] = 0;
             }
-            if (tm && tm[0] && strcmp(tm, "0")) {
+            if (timing_on) {
                 clock_gettime(CLOCK_MONOTONIC, &_t1);
                 _ms_decode += (_t1.tv_sec-_t0.tv_sec)*1e3 + (_t1.tv_nsec-_t0.tv_nsec)/1e6;
                 _t0 = _t1;
@@ -2530,9 +2819,13 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                     memcpy(line_pixels + y * bw, band_bin + (base + y) * bw, bw);
 
                 mrz_ocr_rect_t chars[44];
-                int nchars = segment_line_grid(line_pixels, bw, line_h, chars, 44);
+                int nchars = segment_line_grid(line_pixels, bw, line_h, chars, 44, li);
                 if (nchars <= 0)
                     nchars = segment_line_cnn(line_pixels, bw, line_h, chars, 44);
+                if (diag_on) {
+                    mrz_diag_line_t *dg_line = mrz_diag_line(li);
+                    if (dg_line && nchars >= 0) dg_line->nchars = nchars;
+                }
                 if (nchars < 30) {
                     line_pixels = NULL;
                     status = MRZ_OCR_ERR_BAD_LINES; goto cleanup;
@@ -2543,7 +2836,7 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                                        chars[c].x, base + chars[c].y,
                                        chars[c].w, chars[c].h,
                                        NULL, 0, glyphs[c]);
-                if (tm && tm[0] && strcmp(tm, "0")) {
+                if (timing_on) {
                     clock_gettime(CLOCK_MONOTONIC, &_t1);
                     _ms_resample += (_t1.tv_sec-_t0.tv_sec)*1e3 + (_t1.tv_nsec-_t0.tv_nsec)/1e6;
                     _t0 = _t1;
@@ -2619,7 +2912,7 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                 }
                 mrz_ocr_dump_glyphs("img", li, glyphs, nchars, chars);
                 line_pixels = NULL;
-                if (tm && tm[0] && strcmp(tm, "0")) {
+                if (timing_on) {
                     clock_gettime(CLOCK_MONOTONIC, &_t1);
                     _ms_decode += (_t1.tv_sec-_t0.tv_sec)*1e3 + (_t1.tv_nsec-_t0.tv_nsec)/1e6;
                     _t0 = _t1;
@@ -2637,6 +2930,14 @@ cleanup:
     out->line1_country_mismatch = mrz_line1_country_mismatch(
         out->line1, out->line1_len, out->line2, out->line2_len);
     out->line1_issuer_suspect = mrz_issuer_suspect(out->line1, out->line1_len);
+    if (diag_on) {
+        g_diag.status = (int)status;
+        g_diag.ms_gray = _ms_gray;
+        g_diag.ms_band = _ms_band;
+        g_diag.ms_resample = _ms_resample;
+        g_diag.ms_decode = _ms_decode;
+        mrz_diag_write(out);
+    }
     /* scratchpad: no per-call frees.  The whole buffer is reset
      * on the next recogniser entry (mrz_scratch_reset()). */
     (void)probs_tta; (void)probs; (void)feats;

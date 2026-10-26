@@ -8,29 +8,52 @@ Three recognition backends share the band / line / segmentation stage.
 | backend | how it classifies | when to use |
 |---|---|---|
 | **CNN** (`mrz_ocr_recognise_cnn`) | per-character CNN head only | **the shipping path** |
-| fused (`mrz_ocr_recognise_fuse`) | the per-character CNN head AND the CRNN sequence head, combined in log space with a confidence gate | opt-in A/B (Android backend 3), see the caveat below |
+| fused (`mrz_ocr_recognise_fuse`) | the per-character CNN head AND the CRNN sequence head, combined in log space with a confidence gate | fallback only (not default), see the caveat below |
 | template (`mrz_ocr_recognise`) | template-bank matching | legacy A/B only |
 
-The fused engine exists because the two heads fail on DIFFERENT cells.
-Measured on a 3-fold **grouped** cross-validation over the 41 real
-photos (each photo is held out of the fold that trained it):
+The fused engine exists because the two heads fail on DIFFERENT cells,
+but on the current corpus fusion is a net loss.  Scored against the
+human-corrected truth in `data/gt_frozen_passport_corrected.json` (41
+photos, same band, same weights):
 
 ```
-per-character CNN : 21/41 exact, 96.78% char, 19 checksum-valid-but-wrong
-CRNN alone        :  0/41 exact, 67.35% char, 18 checksum-valid-but-wrong
-fused             : 22/41 exact, 96.90% char, 18 checksum-valid-but-wrong
+per-character CNN : 37/41 line2 exact
+fused             : 31/41 line2 exact
 ```
 
-The CRNN sequence head does NOT generalise on its own with this corpus
-(41 photos, labels verifiable only at the 5 check-digit positions), and
-the fusion is NOT the default any more: on the frozen assets set the
-fused engine scores 8/32 exact against the plain CNN's 21/32, because
-the gate lets the CRNN outvote the CNN on cells where the CNN is right.
-Fusion only pays for itself where the CRNN head is trustworthy, which
-today is the 41-photo passport set (+1/41 over the CNN) -- ship the
-plain CNN and turn fusion on per deployment after a frozen-GT A/B. See
-`../outputs/crnn_optimization_2026-10-23.md` for the full analysis and
-`tools/cv_crnn.py` to reproduce the cross-validation.
+When both heads decode, fusion can overwrite a checksum-beam repair made
+by the CNN with the raw top-1 character.  On six photos (E/G/K/Q/T/AJ)
+that changed a correct CNN line into a wrong one.  The earlier
+22/41-vs-21/41 cross-validation number came from the board's noisy raw
+labels; the corrected truth reverses the ranking.
+
+Fusion is therefore not the default: ship the plain CNN and only enable
+`MRZ_OCR_FUSE=1` for a deployment after a frozen-GT A/B.  On the frozen
+assets set the gap is larger: 8/32 exact for fused against 21/32 for the
+plain CNN.  See `../outputs/crnn_optimization_2026-10-23.md` for the
+background and `tools/cv_crnn.py` for the cross-validation harness.
+
+### End-to-end on the frozen corpus (shipped path: CNN first, fuse fallback)
+
+`tools/eval_prod_path.py` drives the full photo-to-verdict pipeline over
+the 41 frozen photos:
+
+```
+PASS     40/41
+SUSPECT   1/41   (F — issuer-code suspect; its line2 is exact)
+FAIL      0/41
+chosen exact  37/41   (CNN first; fuse is chosen 0 times here)
+```
+
+The four residual non-exact lines are `M` (personal-number coin-flip at
+pos33/37/41 — `...V22S2Z591` vs `...022S7Z593`, both readings
+checksum-legal, CNN confidence p=1.0) and the two-character misses
+`AC`/`AC_R` (pos28 `0`-vs-`O`, pos40 `1`-vs-`7`) and `AG` (pos28
+`1`-vs-`T`, pos39 `0`-vs-`O`).  All four sit in the un-checksummable
+personal-number zone (pos28-41).  There is no margin/ambiguity gate that
+separates them from the correct low-margin beam repairs without also
+rejecting five correct photos (A/W/I/AB/AI), so they ship as a documented
+limitation.
 
 Fusion knobs (environment, for field A/B): `MRZ_OCR_FUSE=1`,
 `MRZ_OCR_FUSE_GATE` (absolute CRNN-confidence threshold, default 0),

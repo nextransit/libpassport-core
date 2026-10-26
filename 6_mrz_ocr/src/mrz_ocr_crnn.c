@@ -29,23 +29,34 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* Save an environment variable so it can be restored byte-for-byte.
+ * Returns NULL when the variable is unset (or the copy cannot be made);
+ * callers must not distinguish those two cases: restoring an unset
+ * variable is the safe fallback either way. */
+static char *mrz_env_save(const char *name) {
+    const char *prev = getenv(name);
+    if (!prev) return NULL;
+    size_t n = strlen(prev) + 1;
+    char *copy = malloc(n);
+    if (copy) memcpy(copy, prev, n);
+    return copy;
+}
+
+static void mrz_env_restore(const char *name, const char *saved) {
+    if (saved) setenv(name, saved, 1);
+    else unsetenv(name);
+}
+
 /* Run the recogniser with one environment override in place, then
  * restore the caller's environment exactly (including "not set"). */
 static mrz_ocr_status_t mrz_ocr_with_env(const face_image_t *img,
                                           mrz_ocr_result_t *out,
                                           const char *name, const char *value) {
-    const char *prev = getenv(name);
-    int had_prev = prev != NULL;
-    char prev_buf[8] = {0};
-    if (had_prev) {
-        size_t n = strlen(prev);
-        if (n >= sizeof(prev_buf)) n = sizeof(prev_buf) - 1;
-        memcpy(prev_buf, prev, n);
-    }
+    char *saved = mrz_env_save(name);
     setenv(name, value, 1);
     mrz_ocr_status_t st = mrz_ocr_recognise_cnn(img, out);
-    if (had_prev) setenv(name, prev_buf, 1);
-    else unsetenv(name);
+    mrz_env_restore(name, saved);
+    free(saved);
     return st;
 }
 
@@ -65,17 +76,10 @@ mrz_ocr_status_t mrz_ocr_recognise_fuse(const face_image_t *img,
     /* The fusion needs the per-character head AND the sequence head, so
      * MRZ_OCR_CRNN must stay off (it would replace the CNN head) and
      * MRZ_OCR_FUSE must be on. */
-    const char *prev_c = getenv("MRZ_OCR_CRNN");
-    char prev_c_buf[8] = {0};
-    int had_c = prev_c != NULL;
-    if (had_c) {
-        size_t n = strlen(prev_c);
-        if (n >= sizeof(prev_c_buf)) n = sizeof(prev_c_buf) - 1;
-        memcpy(prev_c_buf, prev_c, n);
-    }
+    char *saved_c = mrz_env_save("MRZ_OCR_CRNN");
     setenv("MRZ_OCR_CRNN", "0", 1);
     mrz_ocr_status_t st = mrz_ocr_with_env(img, out, "MRZ_OCR_FUSE", "1");
-    if (had_c) setenv("MRZ_OCR_CRNN", prev_c_buf, 1);
-    else unsetenv("MRZ_OCR_CRNN");
+    mrz_env_restore("MRZ_OCR_CRNN", saved_c);
+    free(saved_c);
     return st;
 }
