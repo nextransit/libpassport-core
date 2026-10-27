@@ -82,8 +82,8 @@
   },
   "28ccd101a752acef_0016.jpg": {
    "label": "assets/pic/28ccd101a752acef_0016.jpg",
-   "l1": "P<PHLDELA<CRUZ<<MARIA<<<<<<<<<<<<<<<<<<<<<<<",
-   "l2": "P0000000A0PHL8003166F2106269<<<<<<<<<<<<<<02",
+   "l1": "",
+   "l2": "",
    "tier": "C",
    "l2_tier": null,
    "l1_tier": null,
@@ -1195,9 +1195,9 @@
    ],
    "l1_dispute_n": 13
   },
-  "1c6acd092dee7031_0222.png": {
-   "label": "assets/pic/1c6acd092dee7031_0222.png",
-   "l1": "",
+"1c6acd092dee7031_0222.png": {
+    "label": "assets/pic/1c6acd092dee7031_0222.png",
+    "l1": "CDL000000007<2508197<8208031<6",
    "l2": "",
    "tier": "C",
    "l2_tier": null,
@@ -1394,23 +1394,23 @@
    "tier": "pending_human",
    "l1_dispute_n": null
   },
-  "2026-9-30-I.jpg": {
-   "label": "tmp/PassPortPhoto/2026-9-30-I.jpg",
-   "l1": "",
+"2026-9-30-I.jpg": {
+    "label": "tmp/PassPortPhoto/2026-9-30-I.jpg",
+    "l1": "CSC733210936<2711209<8612261<8",
    "l2": "",
    "tier": "pending_human",
    "l1_dispute_n": null
   },
-  "2026-9-30-J.jpg": {
-   "label": "tmp/PassPortPhoto/2026-9-30-J.jpg",
-   "l1": "",
+"2026-9-30-J.jpg": {
+    "label": "tmp/PassPortPhoto/2026-9-30-J.jpg",
+    "l1": "CSC482624408<2610106<7410024<0",
    "l2": "",
    "tier": "pending_human",
    "l1_dispute_n": null
   },
-  "2026-9-30-K.jpg": {
-   "label": "tmp/PassPortPhoto/2026-9-30-K.jpg",
-   "l1": "",
+"2026-9-30-K.jpg": {
+    "label": "tmp/PassPortPhoto/2026-9-30-K.jpg",
+    "l1": "CSC495643597<2610265<8706216<0",
    "l2": "",
    "tier": "pending_human",
    "l1_dispute_n": null
