@@ -17,14 +17,64 @@
       "note": "China exit-entry permit specimen, doc code Q (excluded by strict mask col0 whitelist {P,I,A,V,C,<})"
     },
     "31611582cbf14d7f_0018.jpg": {
-      "line1": "P<POLKOWALSKI<<JAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
-      "line2": "ZF40004998POL8101028M3203031<<<<<<<<<<<<<<00",
-      "note": "Poland specimen #2; only line2 legible by eye"
+      "line1": "P<POLKOWALSKI<<JAN<<<<<<<<<<<<<<<<<<<<<<<<<<",
+      "line2": "ZF40004998P0L8101028M3203031<<<<<<<<<<<<<<00",
+      "note": "Poland specimen #2 (user-provided GT 2026-10-27); line2 country code is digit 0 (P0L) exactly as printed; all five ICAO check digits verify."
     },
     "41ab45d4bde758dc_0306.jpg": {
       "line1": "PCAZEHUSEYNLI<<ORKHAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
       "line2": "X110003442AZE7503153M230801030LJV5Z<<<<<<<86",
       "note": "Azerbaijan; only line2 legible by eye"
+    },
+    "239e042aba0c3ab2_0102.jpg": {
+      "line1": "PSCHNYANG<<ZHAO<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+      "line2": "SE00000008CHN8509037F150501819200001<<<<<<92",
+      "note": "China exit-entry permit; hand-read from the 3x-upscaled crop on 2026-10-26; all five ICAO check digits (incl. the composite one) verify."
+    },
+    "f385b0113d785dfd_0040.jpg": {
+      "line1": "P<POLKOWALSKI<<JAN<<<<<<<<<<<<<<<<<<<<<<<<<<",
+      "line2": "ZF40004998P0L8101028M3203031<<<<<<<<<<<<<<00",
+      "note": "Poland specimen; line2 country code is digit 0 (P0L) exactly as printed; all five ICAO check digits verify."
+    },
+    "f6eeb483a66e8d94_0084.jpg": {
+      "line1": "P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<",
+      "line2": "E000093499USA6502056M3007099340006673<085950",
+      "note": "US specimen; VIZ date 05 02 65 (1965-02-05) is printed under the ghost portrait, not a third MRZ line."
+    },
+    "2026-9-30-A.jpg": {
+      "line1": "POCHNRAO<<MEINA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+      "line2": "E821973372CHN8612261F2607078MIMEMDMEMEMIA944",
+      "note": "tmp/PassPortPhoto A (real_0022.ppm, fixmrz weak label); POCHNRAO backed by paddle+indra; cnn/fuse misread as P<CHNHAO"
+    },
+    "28ccd101a752acef_0016.jpg": {
+      "line1": "P<PHLDELA<CRUZ<<MARIA<<<<<<<<<<<<<<<<<<<<<<<",
+      "line2": "P0000000A0PHL8003166F2106269<<<<<<<<<<<<<<02",
+      "note": "Philippines specimen (user-provided GT, line1 matches all engines); line2 as printed on source photo, ICAO check digits do NOT verify (passport cd0, expiry cd9, composite 2)"
+    },
+    "2c793efe12276f9b_0258.jpg": {
+      "line1": "P<LVAOZOLKALNA<<LIENE<MARA<<<<<<<<<<<<<<<<<<<<",
+      "line2": "LV90008223LVA8612010F2501121111111<11410<<70",
+      "note": "Latvian TD3; hand-read from the 3x-upscaled crop on 2026-10-27; all five ICAO check digits (incl. the composite one) verify."
+    },
+    "927cd546b5a8111d_0108.jpg": {
+      "line1": "P<CHNLOI<<HANG<MIO<<<<<<<<<<<<<<<<<<<<<<<<<<",
+      "line2": "MB00000007CHN8807191F291203910004067<<<<<<28",
+      "note": "China passport specimen (user-provided GT 2026-10-27); all five ICAO check digits verify."
+    },
+    "2026-9-30-I.jpg": {
+      "line1": "CSC733210936<2711209<8612261<8",
+      "line2": "",
+      "note": "tmp/PassPortPhoto I — 港澳通行证 (HK-Macau travel permit): SINGLE-LINE MRZ, not dual-line 44+44; whole pipeline cannot locate it (no pair) and mrz_tool reports bad MRZ length. Recorded as user-provided GT for reference."
+    },
+    "2026-9-30-J.jpg": {
+      "line1": "CSC482624408<2610106<7410024<0",
+      "line2": "",
+      "note": "tmp/PassPortPhoto J — 港澳通行证 single-line MRZ (same limitation as I)."
+    },
+    "2026-9-30-K.jpg": {
+      "line1": "CSC495643597<2610265<8706216<0",
+      "line2": "",
+      "note": "tmp/PassPortPhoto K — 港澳通行证 single-line MRZ (same limitation as I)."
     }
   },
   "baseline_cnn_2026-09-26": {

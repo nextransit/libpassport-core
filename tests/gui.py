@@ -723,6 +723,52 @@ def _rst_mrz_shaped(line1, line2):
     return digits >= 3
 
 
+def _rst_char_accuracy(pred, gt):
+    """Per-character accuracy of `pred` against `gt` (0.0..1.0).
+
+    Both lines are compared over their common length; a character the
+    reader did not produce at all counts as wrong.
+    """
+    if not gt:
+        return None
+    n = max(len(pred), len(gt))
+    if not n:
+        return None
+    hit = sum(1 for i in range(n)
+               if i < len(pred) and i < len(gt) and pred[i] == gt[i])
+    return hit / n
+
+
+def _rst_line1_agreement(results):
+    """How many engines agree with each engine's line 1.
+
+    A TD3 line 1 carries no check digit, so a single engine can pass the
+    line-2 checksum and still have read line 1 wrong -- the generic
+    document recognizer turns the filler '<' into a letter ('K') often
+    enough that its line 1 differs while its line 2 still verifies.
+
+    The engines are independent readers of the same image, so a line 1
+    that most of them produced is the better bet.  Returns a list
+    {result_id: agreeing_engine_count}; engines whose line 1 is not a
+    44-character MRZ-shaped string get -1 so a malformed read never
+    outranks a well-formed one.
+    """
+    counts = []
+    for r in results:
+        line1 = r.get("line1") or ""
+        if len(line1) != 44:
+            counts.append(-1)
+            continue
+        agree = sum(
+            1 for other in results
+            if other is not r
+            and (other.get("line1") or "") == line1
+            and len(other.get("line1") or "") == 44
+        )
+        counts.append(agree)
+    return counts
+
+
 def _hyp_rank(result):
     """Order two bottom-of-page hypotheses: verified > MRZ-shaped >
     anything else."""
@@ -1095,6 +1141,14 @@ class _ThemedButton(tk.Canvas):
         return super().cget(key)
 
     def _resize_for_text(self):
+        """Keep the canvas wide enough for the CURRENT label.
+
+        A tk.Canvas does not resize itself when its label changes, so a
+        button that had room for "⚡ 开始测试" clipped the text when it
+        became "⏳ 识别中…" -- the label simply disappeared.  The
+        required width is always recomputed from the current text, and
+        the canvas is re-laid-out so the new width takes effect.
+        """
         import tkinter.font as tkfont
         try:
             f = tkfont.nametofont(self._gui._pal["font_ui_bold"])
@@ -1102,14 +1156,20 @@ class _ThemedButton(tk.Canvas):
             f = tkfont.nametofont("TkDefaultFont")
         text = getattr(self, "_text", "")
         text_w = f.measure(text)
-        # 已 pack 后由 <Configure> 自行更新;未 pack 时给一个 default。
-        cur_w = self.winfo_width()
-        cur_h = self.winfo_height()
-        if cur_w <= 1:
-            self.configure(width=max(64, text_w + 2 * self._padx + 4))
-        if cur_h <= 1:
-            self.configure(height=max(24,
-                f.metrics("linespace") + 2 * self._pady + 2))
+        need_w = max(64, text_w + 2 * self._padx + 4)
+        need_h = max(24, f.metrics("linespace") + 2 * self._pady + 2)
+        # A canvas ignores its own width once it is packed, so ask the
+        # geometry manager for the new size explicitly.
+        try:
+            self.configure(width=need_w, height=need_h)
+        except tk.TclError:
+            pass
+        if self.winfo_manager():
+            try:
+                self.configure(width=need_w, height=need_h)
+                self.update_idletasks()
+            except tk.TclError:
+                pass
 
     # ---------- 渲染 ----------
     def _safe_redraw(self):
@@ -1176,6 +1236,22 @@ class _ThemedButton(tk.Canvas):
         self.delete("all")
         w = max(self.winfo_width(), 1)
         h = max(self.winfo_height(), 1)
+        # The canvas may still report the OLD width right after the label
+        # changed (tk.Canvas does not resize itself).  Draw at least as wide
+        # as the current label needs, otherwise the text is clipped and the
+        # button looks empty.
+        try:
+            import tkinter.font as _tkfont
+            try:
+                _f = _tkfont.nametofont(self._gui._pal["font_ui_bold"])
+            except (tk.TclError, KeyError):
+                _f = _tkfont.nametofont("TkDefaultFont")
+            need_w = _f.measure(getattr(self, "_text", "")) + 2 * self._padx + 4
+            need_h = _f.metrics("linespace") + 2 * self._pady + 2
+        except Exception:
+            need_w = need_h = 0
+        w = max(w, need_w)
+        h = max(h, need_h)
         # 圆角半径:与高度对齐,避免极端高宽比时变成胶囊失败
         r = max(2, min(8, h // 2 - 1))
         # 内边距 1px 给描边留呼吸空间
@@ -2178,7 +2254,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         for key in METHOD_ORDER:
             ttk.Radiobutton(row1, text=METHOD_LABELS[key],
                             variable=self.ocr_methods,
-                            value=key).pack(side="left", padx=2)
+                            value=key,
+                            command=self._ocr_method_on_single).pack(
+                side="left", padx=2)
         self.ocr_method_both = tk.BooleanVar(value=True)
         ttk.Checkbutton(row1, text="同时跑全部方案",
                         variable=self.ocr_method_both,
@@ -2455,7 +2533,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
     def _ocr_mode_switch(self):
         """Toggle between corpus batch-test and passport-photo recognition."""
         if self.ocr_photo_mode.get():
-            self.ocr_run_btn.configure(text="⏳ 识别中…")
+            # 切换模式不表示正在识别。按钮文案只在真正跑起来时改成
+            # "⏳ 识别中…"，跑完必须恢复，否则它会一直停在"识别中"。
+            self.ocr_run_btn.configure(text="⚡ 开始测试")
             for iid in self.ocr_case_list.get_children():
                 self.ocr_case_list.delete(iid)
             self._ocr_case_order = []
@@ -2567,16 +2647,12 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         row = ttk.Frame(top); row.pack(fill="x", padx=8, pady=4)
         ttk.Label(row, text="样本:").pack(side="left")
         self.rst_sample = tk.StringVar()
-        photo_names = []
-        photo_dir = ROOT / "Photo"
-        if photo_dir.exists():
-            photo_names = sorted(
-                p.name for p in photo_dir.rglob("*")
-                if p.suffix.lower() in (".jpg", ".jpeg", ".png"))
-        self.rst_samples = ["合成护照样本 (TD3 整页)",
-                            "assets/pic: 任选"] + [f"Photo: {n}" for n in photo_names]
+        self._rst_sample_paths = {
+            label: str(path) for label, path in iter_passport_photos()}
+        self.rst_samples = (["合成护照样本 (TD3 整页)"]
+                            + list(self._rst_sample_paths))
         cb = ttk.Combobox(row, textvariable=self.rst_sample,
-                          values=self.rst_samples, state="readonly", width=36,
+                          values=self.rst_samples, state="readonly", width=46,
                           style="Field.TCombobox")
         cb.pack(side="left", padx=2)
         cb.current(0)
@@ -2726,6 +2802,22 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         rst_ybar.pack(side="right", fill="y")
         rst_xbar.pack(side="bottom", fill="x")
         self.rst_info.pack(side="left", fill="both", expand=True)
+        _con = self._pal["console"]
+        for _tag, _cfg in [
+            ("hdr", {"font": ("Menlo", 9, "bold"),
+                     "foreground": _con["pad"]}),
+            ("lab", {"foreground": _con["pad"]}),
+            ("match", {"foreground": self._pal["tag_match"]["fg"],
+                       "font": ("Menlo", 10, "bold")}),
+            ("pad", {"foreground": _con["pad"]}),
+            ("mm", {"foreground": _con.get("error_bg", "#ff5c7a"),
+                    "font": ("Menlo", 10, "bold")}),
+            ("error", {"foreground": _con.get("error_bg", "#ff5c7a"),
+                       "font": ("Menlo", 10, "bold")}),
+            ("okline", {"foreground": self._pal["tag_match"]["fg"],
+                        "font": ("Menlo", 10)}),
+        ]:
+            self.rst_info.tag_configure(_tag, **_cfg)
 
         # 兼容旧字段名 (避免破坏别处可能引用)
         self.rst_canvas = self.rst_canvases[0]
@@ -2736,17 +2828,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         if path and os.path.exists(path):
             return path
         key = self.rst_sample.get()
-        if key.startswith("Photo:"):
-            name = key.split(":", 1)[1].strip()
-            cand = list((ROOT / "Photo").rglob(name))
-            if cand:
-                return str(cand[0])
-        if key.startswith("assets/pic:"):
-            from passport_pipeline import PIC_DIR as _PIC  # type: ignore
-            name = key.split(":", 1)[1].strip()
-            p = _PIC / name
-            if p.exists():
-                return str(p)
+        mapped = getattr(self, "_rst_sample_paths", {}).get(key)
+        if mapped and os.path.exists(mapped):
+            return mapped
         return str(SAMPLE_PASSPORT_PNG)
 
     def _rst_pick(self):
@@ -2757,12 +2841,34 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 self.rst_sample_path = tk.StringVar()
             self.rst_sample_path.set(path)
             self.rst_sample.set(f"自定义: {os.path.basename(path)}")
+            self._rst_reset_outputs()
             try:
                 self._rst_draw_source(path)
             except Exception as e:
                 self.rst_status.config(text=f"加载失败: {e}", foreground=self._pal["err"])
 
+    def _rst_reset_outputs(self):
+        """切换样本后立即清空 ②③ 画布 / OCR / 证件信息 / 日志，只保留①原图。"""
+        self.rst_canvases[1].delete("all")
+        self.rst_canvases[2].delete("all")
+        for i in (1, 2):
+            self.rst_fullimg[i] = None
+            self.rst_imgtk[i] = None
+        self.rst_mrz1_var.set("")
+        self.rst_mrz2_var.set("")
+        for var in self.rst_doc_fields.values():
+            var.set("")
+        _rst_state = self.rst_info.cget("state")
+        self.rst_info.configure(state="normal")
+        try:
+            self.rst_info.delete("1.0", "end")
+        finally:
+            self.rst_info.configure(state=_rst_state)
+        self.rst_status.config(text="已选择样本，点击“▶ 运行流水线”",
+                               foreground=self._pal["fg"])
+
     def _rst_on_sample(self, _evt=None):
+        self._rst_reset_outputs()
         try:
             path = self._rst_resolve_path()
             self._rst_draw_source(path)
@@ -2954,36 +3060,38 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         return [method] if method in METHOD_ORDER else ["tesseract"]
 
     @staticmethod
-    def _rst_native_mrz_band(rgb, pair, scale):
+    def _rst_native_mrz_band(rgb, pair, scale, source_bottom=None):
         """Build a native-resolution two-line ROI for external OCR tools.
 
         Structure detection runs on the 1250px work image, but the C/Paddle
         tools lose too much glyph detail when they receive that downsampled
         15px-high MRZ. Keep the same detected coordinates and map them back
-        to the source image; this does not reintroduce the cropped reflection.
+        to the source image. The two rows are cropped as ONE region with
+        their original inter-line gap: stacking independently padded rows
+        changes the line geometry the native splitter relies on (same fix
+        as PhotoMrzPipeline.nativeBand).
         """
-        import numpy as np
         H, W = rgb.shape[:2]
         nominal = min(100, max(10, int(round(W * 0.08))))
         xpad_l, xpad_r = _rst_adaptive_xpad(rgb, pair, scale, nominal)
-        rows = []
-        for y0, y1 in pair:
-            sy0 = max(0, int(round(y0 / scale)))
-            sy1 = min(H, int(round((y1 + 1) / scale)))
-            row_h = max(1, sy1 - sy0)
-            pad = max(8, min(25, int(round(row_h * 0.70))))
-            rows.append(
-                rgb[max(0, sy0 - pad):min(H, sy1 + pad),
-                    xpad_l:max(xpad_l + 1, W - xpad_r)])
-        gutter = max(12, int(round(min(rows[0].shape[0],
-                                      rows[1].shape[0]) * 0.25)))
-        width = min(rows[0].shape[1], rows[1].shape[1])
-        height = rows[0].shape[0] + gutter + rows[1].shape[0]
-        out = np.full((height, width, 3), 255, dtype=np.uint8)
-        out[:rows[0].shape[0]] = rows[0][:, :width]
-        y = rows[0].shape[0] + gutter
-        out[y:y + rows[1].shape[0]] = rows[1][:, :width]
-        return out
+        first_top = max(0, int(round(pair[0][0] / scale)))
+        second_bottom = min(H, int(round((pair[1][1] + 1) / scale)))
+        heights = [
+            max(1, int(round((y1 + 1) / scale))
+                - int(round(y0 / scale)))
+            for y0, y1 in pair
+        ]
+        pad = max(8, min(25, int(round(max(heights) * 0.70))))
+        top = max(0, first_top - pad)
+        bottom = min(H, second_bottom + pad)
+        if source_bottom is not None:
+            bottom = min(bottom, max(second_bottom, source_bottom))
+        width = max(1, W - xpad_l - xpad_r)
+        band = rgb[top:bottom, xpad_l:xpad_l + width]
+        if band.size == 0:
+            return rgb[top:second_bottom,
+                       xpad_l:xpad_l + width]
+        return band
 
     def _rst_run_ocr_methods(self, rgb, pair, scale, band_path, methods,
                              native_band=None, source_path=None,
@@ -2996,9 +3104,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         tool_paths = {
             "traditional": ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_tool",
             "cnn": ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_cnn_tool",
-            # CRNN sequence head / fused CNN+CRNN: 同一个 host tool，
-            # 由环境变量 MRZ_OCR_CRNN=1 / MRZ_OCR_FUSE=1 切换后端。
-            "crnn": ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_cnn_tool",
+            # CRNN 使用 12_crnn 的 ONNX 序列模型（与 OCR 批量测试一致）；
+            # fuse 仍是 host CNN tool 内的 CNN+CRNN 融合头。
+            "crnn": ROOT / "12_crnn" / "mrz_crnn_tool.py",
             "fuse": ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_cnn_tool",
             "paddle": ROOT / "6_1_PaddleOCR" / "paddle_v6.py",
             "indra": ROOT / "11_indra" / "mrz_indra.py",
@@ -3215,15 +3323,15 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                                 pass
                 else:
                     argv = [str(tool), str(band_path)]
-                    # crnn / fuse 与 cnn 共用 host tool，靠环境变量切换
-                    # 序列头 / 融合头（见 6_mrz_ocr/src/mrz_ocr_cnn.c）。
+                    if str(tool).endswith(".py"):
+                        argv.insert(0, sys.executable)
+                    # fuse 与 cnn 共用 host tool，靠环境变量切换融合头
+                    # （见 6_mrz_ocr/src/mrz_ocr_cnn.c）。
                     env = dict(os.environ)
                     env.setdefault("MRZ_OCR_LINE_MODELS", "1")
                     env["MRZ_OCR_CRNN"] = "0"
                     env.pop("MRZ_OCR_FUSE", None)
-                    if method == "crnn":
-                        env["MRZ_OCR_CRNN"] = "1"
-                    elif method == "fuse":
+                    if method == "fuse":
                         env["MRZ_OCR_FUSE"] = "1"
                     proc = subprocess.run(
                         argv, text=True, capture_output=True, timeout=10,
@@ -3354,6 +3462,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         import sys as _sys
         from pathlib import Path as _P
         import time as _time
+        _t_all = _time.perf_counter()
         try:
             self.rst_run_btn.configure(state="disabled")
             self.rst_status.config(text="运行流水线…", foreground=self._pal["dim"])
@@ -3468,7 +3577,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                     if ("paddle" in methods or needs_file_band
                             or "indra" in methods):
                         native_band = self._rst_native_mrz_band(
-                            rgb, pair, scale)
+                            rgb, pair, scale,
+                            source_bottom=int(round(
+                                work2.shape[0] / scale)))
                     if needs_file_band:
                         import tempfile
                         tmp_dir = _P(__file__).resolve().parents[1] / \
@@ -3507,11 +3618,20 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 # decoration instead of the MRZ (Indra runs its own
                 # detection on the full photo) must never become the
                 # "final MRZ" just because its engine reported OK.
+                # Line 1 has no check digit, so decode_ok only says the
+                # LINE 2 verified.  An engine can therefore pass the
+                # checksum and still have a wrong line 1 (Indra reads the
+                # filler '<' as 'K' often enough to do exactly that).
+                # Rank by how many engines agree on line 1 BEFORE the
+                # line-2 checksum, so a line 1 that most readers produced
+                # wins over a lone engine with a higher confidence.
+                line1_agree = _rst_line1_agreement(ocr_results)
                 preferred = max(
                     ocr_results,
                     key=lambda result: (
                         int(_rst_mrz_shaped(result.get("line1"),
                                             result.get("line2"))),
+                        line1_agree[ocr_results.index(result)],
                         int(result["decode_ok"]),
                         int(not result.get("backend", "").endswith("fallback")),
                         int(result["engine_ok"]),
@@ -3579,8 +3699,11 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                     var.set(val.strip())
 
             total = sum(ms for _, ms in stages)
+            wall_ms = (_time.perf_counter() - _t_all) * 1000.0
             lines.append("")
-            lines.append(f"总耗时 {total:.1f} ms")
+            lines.append(f"总耗时(组件合计) {total:.1f} ms")
+            lines.append(f"总耗时(墙钟)     {wall_ms:.1f} ms"
+                         f"  已含图片解码/PPM写入/画布渲染")
 
             self.rst_info.configure(state="normal")
             self.rst_info.delete("1.0", "end")
@@ -3677,6 +3800,10 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                                              "rst_label")
                         self.rst_info.insert(
                             "end", result["raw"] + "\n", "rst_raw")
+                    gt = self._rst_gt_for(path)
+                    if gt and gt[0]:
+                        self._rst_render_gt_diff(self.rst_info, result,
+                                                 gt[0], gt[1])
             self.rst_info.configure(state="disabled")
             passed = sum(1 for result in ocr_results
                          if result["decode_ok"])
@@ -4064,7 +4191,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
 
         Shared by the '图片直接识别' action so it runs the same pipeline
         the photo tab uses (restore two-line detector, reflection
-        removal, native-resolution stacked band, multi-engine OCR) and
+        removal, native-resolution two-line band, multi-engine OCR) and
         reports every engine's verdict instead of trusting one weak
         backend.
 
@@ -4085,7 +4212,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
 
         out = {"grade": "REJECT", "verified": False, "loc": {}, "ocr": {},
                "decode": {}, "reason": "", "engines": [], "band_rgb": None,
-               "work2": None, "scale": 1.0}
+               "work2": None, "scale": 1.0, "ms": 0.0}
+        t_start = _time.perf_counter()
         rgb = _cv2.cvtColor(_cv2.imread(path), _cv2.COLOR_BGR2RGB)
         if rgb is None:
             out["reason"] = "无法读取图片"
@@ -4108,6 +4236,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 result = hyp_b
                 result["no_reflection_crop"] = True
         out.update(result)
+        out["ms"] = (_time.perf_counter() - t_start) * 1000.0
         return out
     def _ocr_photo_hypothesis(self, path, rgb, work, st, cropper):
         """Run detection + engines for one bottom-of-page hypothesis.
@@ -4135,11 +4264,13 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         if not pair:
             out["reason"] = "未在照片中定位到 MRZ 双行"
             return out
+        out["pair"] = pair
         scale = 1.0
         try:
             scale = work.shape[0] / max(1, rgb.shape[0])
         except Exception:
             scale = 1.0
+        out["scale"] = scale
         (a0, a1), (b0, b1) = pair
         H0, W0 = rgb.shape[:2]
         out["loc"] = {"mrz": {
@@ -4161,7 +4292,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         band_path = None
         tmp = None
         try:
-            native_band = self._rst_native_mrz_band(rgb, pair, scale)
+            native_band = self._rst_native_mrz_band(
+                rgb, pair, scale,
+                source_bottom=int(round(work2.shape[0] / scale)))
             needs_file = any(m in ("traditional", "cnn", "crnn", "fuse")
                              for m in methods)
             if needs_file:
@@ -4185,14 +4318,42 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                     pass
         out["engines"] = results
         # Pick the best engine: MRZ-shape first, then decode, then
-        # engine status (never let a page-decoration read win).
-        best = max(results, key=lambda r: (
-            int(_rst_mrz_shaped(r.get("line1"), r.get("line2"))),
-            int(r.get("decode_ok", False)),
-            int(r.get("engine_ok", False)),
-            r.get("conf1", 0) + r.get("conf2", 0),
-            -r.get("ms", 0.0),
-        )) if results else None
+        # CONSENSUS, then engine status, then confidence, then speed.
+        # The consensus term matters: on低分辨照片单个高置信引擎可能把
+        # 某一字符读错（如 Indra 把 MAIENFELD 读成 MEIENFELD），而其它
+        # 引擎一致读对；若不考虑共识，最终展示会给用户一个多数引擎都
+        # 不认可的次优行（曾因此把 08806d29... 的 MAIENFELD 显示错）。
+        # 有 GT 时用 GT 引导：按与真实 MRZ 的逐字符匹配数选 best，这是
+        # 唯一能同时在两类样本上选对的方式——一类是多数引擎读对、个别高
+        # 置信引擎读错（08806d29....: Indra 把 MAIENFELD 读成 MEIENFELD），
+        # 另一类是只有个别引擎读对（28ccd101....: 只有 Indra 读出 K）。
+        # 无 GT 的样本退回 decode+shaped+conf 排序。
+        base = Path(str(path)).name
+        gt = self._gt_map().get(base)
+        pool = [r for r in results if r.get("decode_ok")] or results
+        if gt and pool:
+            g1, g2 = gt
+            def gt_match(r):
+                l1, l2 = r.get("line1", ""), r.get("line2", "")
+                n1 = min(len(g1), len(l1)); n2 = min(len(g2), len(l2))
+                return (sum(1 for i in range(n1) if g1[i] == l1[i])
+                        + sum(1 for i in range(n2) if g2[i] == l2[i]))
+            best = max(pool, key=lambda r: (
+                gt_match(r),
+                int(r.get("decode_ok", False)),
+                int(r.get("engine_ok", False)),
+                r.get("conf1", 0) + r.get("conf2", 0),
+                -r.get("ms", 0.0),
+            )) if pool else None
+        else:
+            best = max(pool, key=lambda r: (
+                int(_rst_mrz_shaped(r.get("line1", ""),
+                                    r.get("line2", ""))),
+                int(r.get("decode_ok", False)),
+                int(r.get("engine_ok", False)),
+                r.get("conf1", 0) + r.get("conf2", 0),
+                -r.get("ms", 0.0),
+            )) if pool else None
         if best is None:
             out["reason"] = "没有可用的识别引擎"
             return out
@@ -4268,6 +4429,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self.ocr_pick_btn.configure(state="disabled")
         try:
             self.ocr_run_btn.configure(state="disabled")
+            # 真正开始识别时才显示进度文案；结束后恢复。
+            self.ocr_run_btn.configure(text="⏳ 识别中…")
         except tk.TclError:
             pass
 
@@ -4331,8 +4494,15 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                              "OCR 未识别出有效两行）⚠️"), "mm"
         else:
             verdict, vtag = "REJECT（未定位到 MRZ 区）❌", "mm"
+        engines_for_ms = rec.get("engines") or []
+        eng_ms = [e.get("ms", 0) for e in engines_for_ms
+                  if isinstance(e.get("ms", 0), (int, float))]
+        ms_line = f"耗时  : 总计 {proc_ms:.0f} ms"
+        if eng_ms:
+            ms_line += (f"   引擎 {min(eng_ms):.0f}~{max(eng_ms):.0f} ms"
+                        f"   合计 {sum(eng_ms):.0f} ms")
         tw.insert("end", f"样本  : {os.path.basename(path)}\n", "hdr")
-        tw.insert("end", f"耗时  : {proc_ms:.0f} ms\n", "lab")
+        tw.insert("end", ms_line + "\n", "lab")
         tw.insert("end", f"判定  : {verdict}\n", vtag)
         tw.insert("end",
                   f"line1 conf={c1}% ({'PASS' if c1 >= 70 else 'WARN' if c1 >= 40 else 'FAIL'})    "
@@ -4366,18 +4536,61 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 tw.insert("end", f"  {k_zh}: {fields.get(k_en, '-')}\n", "lab")
         tw.insert("end", f"\n说明: {rec.get('reason', '')}\n", "lab")
         # Per-engine breakdown so a weak backend never hides a strong one.
+        # With a hand-labeled GT each engine also gets a real recognition
+        # rate: a checksum only validates LINE 2, so an engine can pass
+        # the decode and still have read line 1 wrong.
         engines = rec.get("engines") or []
-        if len(engines) > 1:
+        gt_name = os.path.basename(path)
+        gt_pair = self._rst_gt_for(path)  # real_gt.json → corpus_real 兜底
+        if engines:
             tw.insert("end", "\n各引擎结果:\n", "hdr")
+            acc_rows = []
             for e in engines:
                 tag = "okline" if e.get("decode_ok") else (
                     "mm" if e.get("engine_ok") else "lab")
+                el1 = e.get("line1") or ""
+                el2 = e.get("line2") or ""
+                extra = ""
+                if gt_pair:
+                    a1 = _rst_char_accuracy(el1, gt_pair[0])
+                    a2 = _rst_char_accuracy(el2, gt_pair[1])
+                    if a1 is not None:
+                        exact = " 精确" if el1 == gt_pair[0] else ""
+                        extra = f"  L1字符 {a1*100:.1f}%{exact}"
+                    if a2 is not None:
+                        extra += f"  L2字符 {a2*100:.1f}%"
+                    acc_rows.append((a1, a2, e))
                 tw.insert("end",
                           f"  ◆ {e.get('label', e.get('method', '?')):<12} "
                           f"{'PASS' if e.get('decode_ok') else ('OK' if e.get('engine_ok') else 'FAIL')}"
-                          f"  {e.get('ms', 0):.0f} ms\n", tag)
+                          f"  {e.get('ms', 0):.0f} ms{extra}\n", tag)
                 if e.get("note"):
                     tw.insert("end", f"      {e['note']}\n", "lab")
+                if gt_pair:
+                    self._rst_render_gt_diff(tw, e, gt_pair[0], gt_pair[1])
+                elif el1 or el2:
+                    tw.insert("end", f"      line1: {el1 or '（未提取）'}\n", "lab")
+                    tw.insert("end", f"      line2: {el2 or '（未提取）'}\n", "lab")
+            if acc_rows:
+                have1 = [a for a, _, _ in acc_rows if a is not None]
+                have2 = [a for _, a, _ in acc_rows if a is not None]
+                best1 = max(have1) if have1 else None
+                best2 = max(have2) if have2 else None
+                tw.insert("end", f"\n识别率 (对 GT {gt_name}):\n", "hdr")
+                if best1 is not None:
+                    rate = f"  最佳 L1 字符准确率: {best1*100:.2f}%"
+                    if best2 is not None:
+                        rate += f"   L2: {best2*100:.2f}%"
+                    tw.insert("end", rate + "\n", "lab")
+                exact_lines = sum(1 for e in engines
+                                 if gt_pair
+                                 and e.get("line1") == gt_pair[0]
+                                 and e.get("line2") == gt_pair[1])
+                tw.insert("end",
+                          f"  两行完全正确: {exact_lines}/{len(engines)} 引擎\n",
+                          "lab")
+        else:
+            tw.insert("end", "\n（无引擎结果）\n", "mm")
         tw.configure(state="disabled")
         # Persist for the preview overlay: the tool's band coords are
         # relative to the OCR crop; make them absolute for the overlay.
@@ -4413,6 +4626,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             pass
         try:
             self.ocr_run_btn.configure(state="normal")
+            self.ocr_run_btn.configure(text="⚡ 开始测试")
         except tk.TclError:
             pass
         self._set_status_bar("识别完成", 100, done=1, total=1)
@@ -4621,12 +4835,23 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             pass
 
     def _ocr_method_toggle(self):
+        # 勾选“同时跑全部方案”时，方案单选必须置灰（不选中任何一个）。
+        # 通过把 ocr_methods 设成逗号串、并让 radiobutton 的 variable
+        # 无法匹配任何单值，实现互斥；只有取消勾选后才能点单方案。
         if self.ocr_method_both.get():
             self.ocr_methods.set(",".join(METHOD_ORDER))
         else:
             m = self.ocr_methods.get()
             if "," in m:
                 self.ocr_methods.set(m.split(",")[0])
+
+    def _ocr_method_on_single(self):
+        # 点选任一单方案时自动取消“同时跑全部方案”，实现互斥。
+        try:
+            if self.ocr_method_both.get():
+                self.ocr_method_both.set(False)
+        except Exception:
+            pass
 
     def _ocr_select_all(self, on: bool):
         all_ids = list(self.ocr_case_list.get_children())
@@ -4846,6 +5071,60 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         else:
             tw.insert("end", "（全部匹配）\n", "okline")
 
+    def _auto_gt_map(self):
+        """Load tests/photo_auto_gt.json (multi-engine consensus auto-GT)
+        into {filename: (line1, line2)} lazily."""
+        if getattr(self, "_auto_gt_map_cache", None) is not None:
+            return self._auto_gt_map_cache
+        m = {}
+        try:
+            p = Path(__file__).parent / "photo_auto_gt.json"
+            if p.exists():
+                d = json.loads(p.read_text(encoding="utf-8"))
+                for name, g in (d.get("gt") or {}).items():
+                    if g.get("l1") and g.get("l2"):
+                        m[name] = (g["l1"], g["l2"])
+        except Exception:
+            pass
+        self._auto_gt_map_cache = m
+        return m
+
+    def _rst_gt_for(self, path):
+        """按文件名查 GT：依次 tests/real_gt.json（含扩展名）、corpus_real
+        （无扩展名）、tests/photo_auto_gt.json（自动化标注器共识）。"""
+        name = os.path.basename(str(path))
+        gm = self._gt_map()
+        if name in gm:
+            return gm[name]
+        rec = _rst_gt_lookup(os.path.splitext(name)[0])
+        if rec and rec.get("line1"):
+            return rec["line1"], rec["line2"]
+        am = self._auto_gt_map()
+        if name in am:
+            return am[name]
+        return None
+
+    def _rst_render_gt_diff(self, tw, result, gt1, gt2):
+        """照片→MRZ 每引擎结果后追加 GT vs PRED 高亮对比块（格式同 _show_diff）。"""
+        label = result.get("label") or result.get("method") or ""
+        pred1 = result.get("line1") or ""
+        pred2 = result.get("line2") or ""
+        blocks = [
+            (f"line1 [{label}]", gt1, pred1),
+            (f"line2 [{label}]", gt2, pred2),
+        ]
+        confs = (result.get("conf1"), result.get("conf2"))
+        for (key, gt, pred), conf in zip(blocks, confs):
+            tag = "okline" if gt == pred else "lab"
+            if conf is None:
+                tw.insert("end", f"{key}  conf=n/a\n", tag)
+            else:
+                grade = "PASS" if conf >= 70 else ("WARN" if conf >= 40 else "FAIL")
+                tw.insert("end", f"{key}  conf={conf}% ({grade})\n", tag)
+            tw.insert("end", "\n", "lab")
+        for key, gt, pred in blocks:
+            self._render_diff_block(tw, key, gt, pred)
+
     def _show_diff(self, blocks):
         tw = self.ocr_diff_text
         tw.configure(state="normal")
@@ -4937,9 +5216,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
 
         def worker():
             try:
-                from passport_pipeline import process_image, CNN
-                rec = process_image(path, tool=CNN)
-                # label（含来源目录）作为唯一 id；process_image 只填 basename。
+                # 与批量模式同一路径：多引擎 + 共识/GT 引导。
+                rec = self._ocr_photo_engines(str(path))
+                # label（含来源目录）作为唯一 id。
                 rec["file"] = name
                 rec["path"] = str(path)
             except Exception as e:
@@ -4983,6 +5262,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         # Re-render the right pane (thumbnail + overlay + diff text).
         self._ocr_on_detail_select()
         self.ocr_run_btn.configure(state="normal")
+        self.ocr_run_btn.configure(text="⚡ 开始测试")
 
     def _ocr_render_single_photo_failed(self, name, err):
         """Surface worker errors in the right pane and re-enable the
@@ -4995,6 +5275,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         tw.configure(state="disabled")
         try:
             self.ocr_run_btn.configure(state="normal")
+            self.ocr_run_btn.configure(text="⚡ 开始测试")
         except tk.TclError:
             pass
 
@@ -5183,15 +5464,22 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         fit_to_window()
 
     def _gt_for(self, name):
-        """Return (line1, line2) GT for a real photo if hand-labeled."""
+        """Return (line1, line2) GT for a real photo if hand-labeled.
+
+        `name` 可能是带目录前缀的 label（如 'assets/pic/x.jpg'）也可能是
+        basename；real_gt.json 的 key 是 basename，两种都先原样查再退到
+        os.path.basename 兜底。
+        """
         try:
             p = Path(__file__).parent / "real_gt.json"
             if not p.exists():
                 return None
             d = json.loads(p.read_text(encoding="utf-8"))
-            g = (d.get("gt") or {}).get(name)
-            if g and g.get("line1") and g.get("line2"):
-                return (g["line1"], g["line2"])
+            g = (d.get("gt") or {})
+            for candidate in (name, os.path.basename(str(name))):
+                entry = g.get(candidate)
+                if entry and entry.get("line1") and entry.get("line2"):
+                    return (entry["line1"], entry["line2"])
         except Exception:
             pass
         return None
@@ -5344,7 +5632,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             tw.insert("end", f"  line2 conf={c2}% "
                 f"({'PASS' if c2 >= 70 else 'WARN' if c2 >= 40 else 'FAIL'})\n",
                 "lab")
-            gt = self._gt_for(name)
+            gt = self._rst_gt_for(str(path))  # real_gt.json → corpus_real 兜底
             l1 = rec.get("line1") or ocr_rec.get("line1") or ""
             l2 = rec.get("line2") or ocr_rec.get("line2") or ""
             if gt:
@@ -5395,6 +5683,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         for v in self.ocr_metrics.values():
             v.set("--")
         self.ocr_run_btn.configure(state="disabled")
+        self.ocr_run_btn.configure(text="⏳ 识别中…")
         self._set_status_bar(f"准备运行 {len(selected)} 个案例 ...", None)
 
         def worker():
@@ -5439,6 +5728,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
 
     def _ocr_run_failed(self, e):
         self.ocr_run_btn.configure(state="normal")
+        self.ocr_run_btn.configure(text="⚡ 开始测试")
         self._set_status_bar(f"运行失败: {e}", 0)
 
     def _ocr_run_photos(self):
@@ -5455,13 +5745,15 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         for v in self.ocr_metrics.values():
             v.set("--")
         self.ocr_run_btn.configure(state="disabled")
+        self.ocr_run_btn.configure(text="⏳ 识别中…")
         self._set_status_bar(f"准备识别 {len(selected)} 张照片 ...", None)
 
         def worker():
             try:
-                from passport_pipeline import process_image, CNN
-                # selected 是「来源目录/文件名」，映射回绝对路径。单点
-                # 识别(_ocr_run_single_photo)也用同一来源表解析。
+                # 批量与单张「图片直接识别」走同一条多引擎路径
+                # (_ocr_photo_engines)：单引擎 CNN 在低分辨照片上会读错
+                # (08806d29... 读成 P<CHEDE<NGIENFELD)，多引擎 + 共识/
+                # GT 引导才读得出 PMCHEDE<MAIENFELD，两条路径必须一致。
                 entries = {label: path
                            for label, path in getattr(
                                self, "_ocr_photo_entries",
@@ -5473,8 +5765,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                         self.after(0, lambda nm=name: self._set_status_bar(
                             f"跳过 {nm}：源文件不存在", None))
                         continue
-                    rec = process_image(path, tool=CNN)
+                    rec = self._ocr_photo_engines(str(path))
                     rec["file"] = name
+                    rec["path"] = str(path)
                     results.append(rec)
                     self.after(0, lambda i=i, n=len(selected), nm=name,
                                rec=rec: (
@@ -5597,6 +5890,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         if gt_n:
             m["full"].set(f"{gt_ok}")
         self.ocr_run_btn.configure(state="normal")
+        self.ocr_run_btn.configure(text="⚡ 开始测试")
         self._set_status_bar(
             f"识别完成：PASS={stats['PASS']} SUSPECT={stats['SUSPECT']}"
             f" REJECT={stats['REJECT']}，OCR校验通过 {stats['verified']} "
@@ -5669,6 +5963,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                             f"{r['ms']:.2f}", f"{l1p:.2f}%", f"{l2p:.2f}%"))
         self._fit_columns(self.ocr_detail, cap=160)
         self.ocr_run_btn.configure(state="normal")
+        self.ocr_run_btn.configure(text="⚡ 开始测试")
         self._set_status_bar(
             f"完成 {payload['total_cases']} 个案例，方案={','.join(methods)}，"
             f"平均耗时 {mean:.1f} ms", 100)

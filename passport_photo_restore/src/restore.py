@@ -105,6 +105,7 @@ def detect_structure(g, gap_thr=15):
         "mrz": mrz,
         "mrz_pair": pair,
         "reflection": reflection,
+        "row_ink": row_ink,
     }
 
 
@@ -226,11 +227,13 @@ def find_mrz_pair(g):
     gx = np.abs(np.diff(g.astype(np.int16), axis=1))
     gx = np.pad(gx, ((0, 0), (1, 0)))
     E = gx.sum(axis=1)
-    res = _mrz_pair_pass(g, 180, row_ink, E)
-    if res:
-        return res
+    # 无条件收集 180/170/160/150 四个阈值的全部候选，取 line1 y0 最大
+    # （页面最底部）的 pair。早期"单一 180 阈值优先、命中即短路"会把
+    # 页面中上部的伪 pair（如 0f9780b8 的页面正文 h16/h7 两行、gap 7px）
+    # 直接短路返回，真实 MRZ 被桥接进超长 text-run 永远成不了候选；
+    # 全量 115 张实测：多阈值取底部 PASS 105 vs 180 短路 102。
     cands = []
-    for thr in (170, 160, 150):
+    for thr in (180, 170, 160, 150):
         res = _mrz_pair_pass(g, thr, row_ink, E)
         if res:
             cands.append(res)
@@ -288,9 +291,55 @@ def _mrzh_quad(g, y0, y1, min_ink_rows=2):
     return np.array([[xl, y0], [xr, y0], [xr, y1], [xl, y1]], np.float32)
 
 
+def _line2_bottom_tail(row_ink, l2y1, W, thr_ratio=0.16, cap=6, min_ink=3):
+    """MRZ line2 底缘字符淡墨的延伸行数（仅当下方墨迹严格递减到 0 时吸收）。
+
+    背景: text 掩码 (row_ink > 0.16W) 会把 line2 底部 3-4px 的真实字符
+    淡墨行裁掉（如 tmp/PassPortPhoto/2026-9-30-G 实测 644:236, 645:154,
+    646:83, 647:34, 648:13, 649:0），使去影图 / MRZ 截图缺底缘、字不全。
+
+    判据（只吸收真实字符尾段，杜绝误扩）:
+      从 l2y1+1 向下扫。首行可不受 0.16W 限制（可能是检测框漏掉的
+      line2 主体底缘行），但必须严格小于 line2 底墨量 row_ink[l2y1]；
+      其后每行墨量 v 必须 0 < v < 0.16W 且严格递减 (v < 上一行)。
+      连续递减行计数为 tail; 遇到 v<=0 (墨尾) 返回累计 tail, 扫满 cap
+      仍未归零、或某行 v 非递减 / 后续行 v>=0.16W, 整段不吸收返回 0。
+    其余图（assets 0f9780b8/6b911174/f6eeb483 等）line2 紧邻行墨量
+    ≥0.16W 且向下回落前出现波动（第四五行回升），tail 恒为 0，
+    行为与基准完全一致。
+
+    cap: 扩展行数上限，防止把下一段文字/反射吸入。
+    返回扩展行数（0 表示无需扩展）。
+    """
+    if row_ink is None or l2y1 < 0 or l2y1 >= len(row_ink):
+        return 0
+    thr = max(3, int(W * thr_ratio))
+    base = int(row_ink[l2y1])
+    if base <= 0:
+        return 0
+    prev = base
+    tail = 0
+    for y in range(l2y1 + 1, min(len(row_ink), l2y1 + 1 + cap)):
+        v = int(row_ink[y])
+        if v <= 0:
+            break
+        if v >= prev:
+            return 0
+        if tail > 0 and v >= thr:
+            return 0
+        prev = v
+        tail += 1
+    if tail == 0:
+        return 0
+    return tail
+
+
 def drop_reflection(work_rgb, st):
     """去镜片倒影: 保留 [0, line2.y1+1] 连续区域 (黑色空白 + 完整梯形护照 + MRZ),
     只裁掉 line2 下方整段倒影; line1 上方是护照页真实内容, 不裁.
+
+    line2 底缘 3-4px 真实字符淡墨 (text 掩码 0.16W 会裁掉的行) 会在裁剪时
+    一并保留 (见 _line2_bottom_tail), 避免 MRZ 字被切掉一截.
 
     info 如实报告: reflection_detected/reflection_px 来自相对墨量检出,
     未检出倒影时仅裁取景黑带, 不虚报为倒影.
@@ -310,12 +359,31 @@ def drop_reflection(work_rgb, st):
     # [l1y0, l2y1] = MRZ 两行, (l2y1, H) = 镜片倒影 + 取景黑带.
     # line1 上方并非反射 (那只是护照页底部黑带区), 不裁.
     # 只保留到真实 MRZ 的最后一行, 确保模糊倒影不再进入后续算法.
+    # 但 text 掩码会裁掉 line2 底缘 3-4px 真实字符淡墨 (严格递减到 0 的
+    # 墨尾), 检测框对此类尾段一律不吸收; 真字符尾段用 _line2_bottom_tail
+    # 补回, 避免 MRZ 字被切掉一截 (2026-9-30-G 实测缺 645-648).
     l2y1 = pair[1][1]
-    crop_bottom = min(H, l2y1 + 1)
+    row_ink = st.get("row_ink")
+    tail = _line2_bottom_tail(row_ink, l2y1, work_rgb.shape[1])
+    new_l2y1 = min(H - 1, l2y1 + tail)
+    crop_bottom = min(H, l2y1 + 1 + tail)
     keep = work_rgb[:crop_bottom]
     st2 = dict(st)
     st2["reflection"] = []
-    st2["reflection_cropped"] = reflection
+    if tail:
+        # 只在这条 drop 路径里把检测框底缘补到真实墨尾, 不改 find_mrz_pair 输出.
+        st2["mrz_pair"] = (pair[0], (pair[1][0], new_l2y1))
+        st2["mrz"] = (pair[0][0], new_l2y1)
+        # 原反射段若落在扩展后的 line2 内 (墨尾被误判为反射) 需要移除,
+        # 避免 info 虚报反射、clean 把真字符尾段当反射过渡涂白.
+        cut = l2y1 + 1 + tail
+        reflection = [
+            (max(a, cut), b) if a < cut and b >= cut else (a, b)
+            for a, b in reflection if b >= cut
+        ]
+        st2["reflection_cropped"] = reflection
+    else:
+        st2["reflection_cropped"] = reflection
     return keep, st2, {
         "mode": "crop", "actual_drop": H - keep.shape[0],
         "crop_top": 0, "crop_bottom": crop_bottom,
