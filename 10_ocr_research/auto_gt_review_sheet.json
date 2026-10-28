@@ -1,0 +1,695 @@
+{
+ "comment": "auto-GT review sheet: source = real_gt(human) | corpus(weak-label) | auto(consensus-candidate tier B/C) | NONE",
+ "rows": [
+  {
+   "label": "assets/pic/08806d29a6268e1f_0003.jpg",
+   "source": "real_gt",
+   "line1": "PMCHEDE<MAIENFELD<<PIERRE<<<<<<<<<<<<<<<<<<<<",
+   "line2": "S2100023<6CHE7108019M2002293<<<<<<<<<<<<<<6"
+  },
+  {
+   "label": "assets/pic/0f9780b8e1e3cc21_0008.jpg",
+   "source": "auto",
+   "line1": "P<SGASYGHWRCSK<GGAQ<<SS<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "3400072370USA6707046F1608078910000193<113538"
+  },
+  {
+   "label": "assets/pic/16c07a99a0fb81e4_0013.jpg",
+   "source": "auto",
+   "line1": "P<CZEWPECIMEN<<NGOH<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "R900R054<4CZL6906229F16072996956220612<KKK74"
+  },
+  {
+   "label": "assets/pic/1792f7a2d79c7a8a_0017.jpg",
+   "source": null,
+   "line1": null,
+   "line2": null
+  },
+  {
+   "label": "assets/pic/1c6acd092dee7031_0222.png",
+   "source": null,
+   "line1": null,
+   "line2": null
+  },
+  {
+   "label": "assets/pic/1cce0f3fc387c893_0001.jpg",
+   "source": "real_gt",
+   "line1": "PSPOLKOWALSKI<<JAN<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "ZC39917886POL8101028M2909185<<<<<<<<<<<<<<04"
+  },
+  {
+   "label": "assets/pic/239e042aba0c3ab2_0102.jpg",
+   "source": "real_gt",
+   "line1": "PSCHNYANG<<ZHAO<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "SE00000008CHN8509037F150501819200001<<<<<<92"
+  },
+  {
+   "label": "assets/pic/23f16a7d9b6ab9da_0062.jpg",
+   "source": "auto",
+   "line1": "P<URRGRYYSDNCO<<INAN<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "4400000147UKH8307255M19080333052125257S5S500"
+  },
+  {
+   "label": "assets/pic/28a42952ba25584a_0078.png",
+   "source": "real_gt",
+   "line1": "Q<CHNNGKELMPONBPJLBLO<<<<<<<<<<<<<<<<<<<<<<<SAC",
+   "line2": "Q100547988CHN8410124F190717319204415<<<<<<<46"
+  },
+  {
+   "label": "assets/pic/28ccd101a752acef_0016.jpg",
+   "source": "real_gt",
+   "line1": "P<PHLDELA<CRUZ<<MARIA<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "P0000000A0PHL8003166F2106269<<<<<<<<<<<<<<02"
+  },
+  {
+   "label": "assets/pic/2c793efe12276f9b_0258.jpg",
+   "source": "real_gt",
+   "line1": "P<LVAOZOLKALNA<<LIENE<MARA<<<<<<<<<<<<<<<<<<<<",
+   "line2": "LV90008223LVA8612010F2501121111111<11410<<70"
+  },
+  {
+   "label": "assets/pic/31611582cbf14d7f_0018.jpg",
+   "source": "real_gt",
+   "line1": "P<POLKOWALSKI<<JAN<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "ZF40004998P0L8101028M3203031<<<<<<<<<<<<<<00"
+  },
+  {
+   "label": "assets/pic/3f5bb54276c6b754_0110.png",
+   "source": null,
+   "line1": null,
+   "line2": null
+  },
+  {
+   "label": "assets/pic/4023a0d69dbd6cf7_0120.jpg",
+   "source": null,
+   "line1": null,
+   "line2": null
+  },
+  {
+   "label": "assets/pic/4086f51e94e9c5c7_0007.jpg",
+   "source": "auto",
+   "line1": "P<GUSSHIRNONA<<NALENYINA<<<<<<<<<<<<<<<<<<<<",
+   "line2": "1100000000HUS8008046F0902274555<55555<5K5K08"
+  },
+  {
+   "label": "assets/pic/41ab45d4bde758dc_0306.jpg",
+   "source": "real_gt",
+   "line1": "PCAZEHUSEYNLI<<ORKHAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "X110003442AZE7503153M230801030LJV5Z<<<<<<<86"
+  },
+  {
+   "label": "assets/pic/43ecb49033fb30c1_0073.jpg",
+   "source": "auto",
+   "line1": "P<UIKYAUNZO<<ONDINA<MA<HSLLE<<<<<<<<<<<<<<<<",
+   "line2": "0418276532USA3309209F9707014<<<<<<<<<<<<<<06"
+  },
+  {
+   "label": "assets/pic/4c5f5e1654002cd0_0050.png",
+   "source": null,
+   "line1": null,
+   "line2": null
+  },
+  {
+   "label": "assets/pic/4dbd1b9e24b069f4_0023.png",
+   "source": "auto",
+   "line1": "P<DSYNUSYERNANN<<ENIKA<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "C01X00T478D<<6408125F2702283<<<<<<<<<<<<<<04"
+  },
+  {
+   "label": "assets/pic/526d2e38b6b977bc_0014.jpg",
+   "source": "auto",
+   "line1": "P<ROWPOPESSUS<MIH<ELASSTEFASGA<<<<<<<<<<<<<<",
+   "line2": "0400210397R0U8001014F34090284800101017005<70"
+  },
+  {
+   "label": "assets/pic/52f421c92ccf6ba4_0136.jpg",
+   "source": "auto",
+   "line1": "P<AUBCITIZEN<<JANK<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "KCG01505B6U<O9105045F2509013N999990001<<5<82"
+  },
+  {
+   "label": "assets/pic/556644d1d8bf4672_0215.jpg",
+   "source": null,
+   "line1": null,
+   "line2": null
+  },
+  {
+   "label": "assets/pic/61d671ec161f22e3_0042.png",
+   "source": null,
+   "line1": null,
+   "line2": null
+  },
+  {
+   "label": "assets/pic/6b0e5919dd6f3ac8_0006.jpg",
+   "source": "auto",
+   "line1": "P<SSPRSPANOLA<ESPANDLK<<EKNNEN<<<<<<<<<<<<<<",
+   "line2": "ZAB0002549ESP8001014F2501017A9999999900<<<44"
+  },
+  {
+   "label": "assets/pic/6b91117492dc24f3_0022.jpg",
+   "source": "auto",
+   "line1": "P<UHNAL<SIYARI<<ISSA<ARBULLAH<SAEEH<<<<<<<<<",
+   "line2": "JG20705515OMN7803048M2411185300036145<<<5<50"
+  },
+  {
+   "label": "assets/pic/6dafa3b35c792d06_0039.png",
+   "source": null,
+   "line1": null,
+   "line2": null
+  },
+  {
+   "label": "assets/pic/7294ad26ea8d95e0_0010.jpg",
+   "source": "auto",
+   "line1": "P<GGAFARIAS<DOS<SANYOS<<KODRIGO<<<<<<<<<<<<<",
+   "line2": "AA000261<7BRA0403162M2507053<<<<<<<<<<<<<<00"
+  },
+  {
+   "label": "assets/pic/72ef4ce48bf27731_0002.jpg",
+   "source": null,
+   "line1": null,
+   "line2": null
+  },
+  {
+   "label": "assets/pic/7626df394c39f314_0020.png",
+   "source": "auto",
+   "line1": "P<BHREBRAHIM<<MOHAMMED<ABDULLA<YOUSIF<<<<<<<",
+   "line2": "B0000000<7BHM9001284M3212161000000000<<K<K04"
+  },
+  {
+   "label": "assets/pic/78f45152a658f728_0012.jpg",
+   "source": null,
+   "line1": null,
+   "line2": null
+  },
+  {
+   "label": "assets/pic/7c5899e1f86a07a0_0008.jpg",
+   "source": "auto",
+   "line1": "P<LTURASANAVICIENE<<BIRUTE<<<<<<<<<<<<<<<<<<",
+   "line2": "00000000<0LTU9003118F290102049003111045<<<86"
+  },
+  {
+   "label": "assets/pic/7c6f47bad47d70e9_0230.jpg",
+   "source": "auto",
+   "line1": "P<AUSCIYIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "RA01234564AUS9105045F3208014<99999000T<<<<86"
+  },
+  {
+   "label": "assets/pic/86c6d990773daff2_0002.jpg",
+   "source": "auto",
+   "line1": "P<MLTMIGALLBF<<GIOWANND<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "0981489<<5MLT6811118M2006268<<<<<<<<<<<<<<06"
+  },
+  {
+   "label": "assets/pic/8a5e3bc18a6ff7d2_0043.jpg",
+   "source": "auto",
+   "line1": "P<NLDDE<BRUIJN<<WILLEKE<LISELOYYE<<<<<<<<<<<",
+   "line2": "18ECI20142NLS6503101F2403096999999990<<<<<84"
+  },
+  {
+   "label": "assets/pic/8de1f04907363a2d_0000.jpg",
+   "source": "auto",
+   "line1": "P<INJAE<ASSDGYYIG<<YYUGIGUG<GESP<<<<<<<<<<<<",
+   "line2": "82040011<0ISL1212123F1106297121212<1239<<<66"
+  },
+  {
+   "label": "assets/pic/90b464ea218a9909_0001.jpg",
+   "source": "auto",
+   "line1": "P<SYCSANPLE<<ORDINARY<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "NS000004<7SYC8601137F3203101<<<<<<<<<<<<<<00"
+  },
+  {
+   "label": "assets/pic/927cd546b5a8111d_0108.jpg",
+   "source": "real_gt",
+   "line1": "P<CHNLOI<<HANG<MIO<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "MB00000007CHN8807191F291203910004067<<<<<<28"
+  },
+  {
+   "label": "assets/pic/a495fb368b46ab35_0280.png",
+   "source": "auto",
+   "line1": "P<CHNCESHI<<YANGBEN<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "G622925996CHN8310291F19042204C0CMXNENBPJB984"
+  },
+  {
+   "label": "assets/pic/a60aae34a06f1867_0016.jpg",
+   "source": "auto",
+   "line1": "P<UKXTKACH<NKO<<MA<<ANA<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "X30OO0OO<0UKW9108242F23092571234567890<<<<70"
+  },
+  {
+   "label": "assets/pic/a955e21ae58d8c1d_0013.jpg",
+   "source": "auto",
+   "line1": "P<SYRNANSOUR<<DANI<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "N000000001SYH8801018M27082410104006915555<12"
+  },
+  {
+   "label": "assets/pic/acd3e9fd1ce9bd0a_0016.jpg",
+   "source": "auto",
+   "line1": "P<GRRUK<SPECIMEN<<ANGELA<ZOE<<<<<<<<<<<<<<<<",
+   "line2": "5334755143GBH8812049F25092865<<<<<<<SD<SDS78"
+  },
+  {
+   "label": "assets/pic/acf14e0c631ec935_0030.png",
+   "source": null,
+   "line1": null,
+   "line2": null
+  },
+  {
+   "label": "assets/pic/ae5fdb36f7498291_0019.png",
+   "source": null,
+   "line1": null,
+   "line2": null
+  },
+  {
+   "label": "assets/pic/b1442018a8167bf5_0046.jpg",
+   "source": "auto",
+   "line1": "P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E000077347USA6502056F3010149500100120<095838"
+  },
+  {
+   "label": "assets/pic/b284565582147454_0098.jpg",
+   "source": "auto",
+   "line1": "P<NPALFF<<SUAS<N<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "5E75870985KCN8507022F2404152213471C117621884"
+  },
+  {
+   "label": "assets/pic/b284565582147454_0115.jpg",
+   "source": "auto",
+   "line1": "P<NPALFF<<SUAS<N<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "5E75870985KCN8507022F2404152213471C117621884"
+  },
+  {
+   "label": "assets/pic/b2b5008f3839530d_0001.jpg",
+   "source": "auto",
+   "line1": "P<SNNNIORDC<<ANA<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "M0N0062122SVN7811182F261212218IIA785M565EK14"
+  },
+  {
+   "label": "assets/pic/b30dc79ee9550e9e_0024.jpg",
+   "source": "auto",
+   "line1": "P<DWLBPECDNDN<<YHAROD<BPBGINBN<<<<<<<<<<<<<<",
+   "line2": "K15M12M1V5ISK1212123F290204912M2M24424VNN462"
+  },
+  {
+   "label": "assets/pic/b7a97ca0edede07b_0164.jpg",
+   "source": null,
+   "line1": null,
+   "line2": null
+  },
+  {
+   "label": "assets/pic/bc1ddfd8c13b5ca9_0007.jpg",
+   "source": "auto",
+   "line1": "P<YRASPBCSNDN<ABB<<NAYACHA<<<<<<<<<<<<<<<<<<",
+   "line2": "9MM1024318MMA7307122F29030355N5NNN554N44K902"
+  },
+  {
+   "label": "assets/pic/c0cbf7c176328f3d_0006.jpg",
+   "source": "auto",
+   "line1": "P<NNNNDDANND<<QNNNQWNW<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "AA12345678GRC7505157M3312108<<<<<<<<<<<<<<06"
+  },
+  {
+   "label": "assets/pic/c2aee55b9017575f_0028.jpg",
+   "source": "auto",
+   "line1": "P<NUSOBRAZEYS<<YKSYKR<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "D2DM1601M8KBS5608087M2002156<<<<<<<<<<<<<<08"
+  },
+  {
+   "label": "assets/pic/cb64e780ab32f735_0004.jpg",
+   "source": "auto",
+   "line1": "P<SNKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "7B12318830SVK1111112F34091871111111111<<<<06"
+  },
+  {
+   "label": "assets/pic/cd83b43756aff32d_0013.jpg",
+   "source": "auto",
+   "line1": "P<HAQSPGCINNN<<SPNCINGN<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "0M10070071HAV8212258F140701955535SSKKKKKKK56"
+  },
+  {
+   "label": "assets/pic/cdcc06ad360b7849_0019.png",
+   "source": null,
+   "line1": null,
+   "line2": null
+  },
+  {
+   "label": "assets/pic/dd6a2ea3ce305a5d_0192.jpg",
+   "source": "auto",
+   "line1": "P<PREJANG<<NYONGSUN<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "6451331382PRK6609302F1003145<<<<<<<<<<<<<<04"
+  },
+  {
+   "label": "assets/pic/e350cea71e824345_0007.jpg",
+   "source": "auto",
+   "line1": "P<BGRDWANOWAV<NARIYBA<NADNDWA<<<<<<<<<<<<<<<",
+   "line2": "3000000001BGH8508018F150320945040M0M33NNNN54"
+  },
+  {
+   "label": "assets/pic/e564d4372e28b9ed_0018.jpg",
+   "source": "auto",
+   "line1": "P<BRBYRBY<<NDLDGA<<<<<<<<<<<<<<<<Q<<<<<<<<<<",
+   "line2": "0000000000GHB6802295M22101042N02HB8000000N40"
+  },
+  {
+   "label": "assets/pic/e726442c11085334_0090.png",
+   "source": "auto",
+   "line1": "P<BWBBHBCINBN<<BNBA<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "XA00000012SWE8208215F2701013198208212384<<22"
+  },
+  {
+   "label": "assets/pic/f22471c46575ec04_0008.jpg",
+   "source": "auto",
+   "line1": "P<AUYJPECIMEN<<MARIA<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "AP12345673AUT0012315F3311307<<<<<<<<<<<<<<08"
+  },
+  {
+   "label": "assets/pic/f385b0113d785dfd_0040.jpg",
+   "source": "real_gt",
+   "line1": "P<POLKOWALSKI<<JAN<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "ZF40004998P0L8101028M3203031<<<<<<<<<<<<<<00"
+  },
+  {
+   "label": "assets/pic/f6132d0c5422d26a_0026.jpg",
+   "source": "auto",
+   "line1": "P<NORORSTRNBYRN<<AASAMUND<SPECINEN<<<<<<<<<<",
+   "line2": "CCC0022514HOH5604230M30041575<<<5<<<<<<<<<04"
+  },
+  {
+   "label": "assets/pic/f6eeb483a66e8d94_0084.jpg",
+   "source": "real_gt",
+   "line1": "P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E000093499USA6502056M3007099340006673<085950"
+  },
+  {
+   "label": "assets/pic/f80334b200240666_0034.png",
+   "source": "auto",
+   "line1": "P<ANGGONZALES<RODRIGUEZ<MARIANA<SLORRNCIA<<<",
+   "line2": "8880000008ABG5702147M3303023000000000<<<<<08"
+  },
+  {
+   "label": "assets/pic/ffa1dc640314fa58_0089.png",
+   "source": "auto",
+   "line1": "P<FDNDDRYANBN<<NARJA<OLDNIA<<<<<<<<<<<<<<<<<",
+   "line2": "FX12345672FIN7112214F2201018211271<426U<<<00"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-A.jpg",
+   "source": "corpus",
+   "line1": "P<CHNYUN<<YAOYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E0132B7855CHN0110141M3105179GB682050I08GO888"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-B.jpg",
+   "source": "corpus",
+   "line1": "P<CHNZHAO<<YONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E216923764CHN6703222M3510203H01JE6IP966FG406"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-C.jpg",
+   "source": "corpus",
+   "line1": "P<CHNZHOU<<YUANSU<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E639021O58CHN7005059F3110153050268SZ0B110074"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-D.jpg",
+   "source": "corpus",
+   "line1": "P<CHNBAO<<HUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E797044113CHN9004300F3405226GE0660IR06BAI310"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-E.jpg",
+   "source": "corpus",
+   "line1": "P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E454243381CHN0703013F4211172S63108B626637626"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-F.jpg",
+   "source": "corpus",
+   "line1": "P<CHNDENG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E410968B47CHN9311103F311203262G49S6626292Z52"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-G.jpg",
+   "source": "corpus",
+   "line1": "P<CHNDING<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E505029416CHN6806178M2604114L2Y8F2201K4IF010"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-H.jpg",
+   "source": "corpus",
+   "line1": "P<CHNDING<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E505029416CHN6806178M2604114L2Y8F2201K41F034"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-I.jpg",
+   "source": "corpus",
+   "line1": "P<CHNGE<<MOHUA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E592235158CHN6905163M30012716G0B612258S28846"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-J.jpg",
+   "source": "corpus",
+   "line1": "P<CHNGE<<SUDONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "EO6248O684CHN8201113F251225501S8IBBG51B52Z66"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-K.jpg",
+   "source": "corpus",
+   "line1": "P<CHNGUO<<LURU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E916769I46CHN6008248M240122126OZG266OOS16132"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-L.jpg",
+   "source": "corpus",
+   "line1": "P<CHNGU<<YINGYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E665282843CHN8807054M28102160012032119B08660"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-M.jpg",
+   "source": "corpus",
+   "line1": "P<CHNGU<<YUYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "EO9673O195CHN8410021M30082148BS61022S7259328"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-N.jpg",
+   "source": "corpus",
+   "line1": "P<CHNSU<<SHUYUE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E653505611CHN8409285F3001167B0BS1G1886G2O864"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-O.jpg",
+   "source": "corpus",
+   "line1": "P<CHNWEN<<YUEYUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E421853076CHN7906282F3506190JJ6MVT1JVTBGC610"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-P.jpg",
+   "source": "corpus",
+   "line1": "P<CHNWU<<FANGYAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E766622355CHN0011293F2604181Y861DEUSDLKZG542"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-Q.jpg",
+   "source": "corpus",
+   "line1": "P<CHNWU<<RUZHU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E436102633CHN8211158F32082106GI8I5B16Z6BB264"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-R.jpg",
+   "source": "corpus",
+   "line1": "P<CHNXI<<YU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E123241791CHN6208185M36010409K94WG6UGCK6FR64"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-S.jpg",
+   "source": "corpus",
+   "line1": "P<CHNYUAN<<YOUSUI<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E62588I562CHN9505209F3503269O1Z15252O121S504"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-T.jpg",
+   "source": "corpus",
+   "line1": "P<CHNYUAN<<YUESUI<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E0755268S1CHN9004012M27090195GI5BBISB85B1O26"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-U.jpg",
+   "source": "corpus",
+   "line1": "O<CHNYUE<<YUESHU<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E158193223CHN7807091M2505233356G5111BO7S6134"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-W.jpg",
+   "source": "corpus",
+   "line1": "P<CHNYUN<<PUYING<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E048156G62CHN6209285F35122520850Z1GZG2581G50"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-A.jpg",
+   "source": "real_gt",
+   "line1": "POCHNRAO<<MEINA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E821973372CHN8612261F2607078MIMEMDMEMEMIA944"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-AA.jpg",
+   "source": "corpus",
+   "line1": "P<CHNLIN<<YUNLAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E940780938CHN8410179F3401077KJYROL12DY2WM670"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-AB.jpg",
+   "source": "corpus",
+   "line1": "P<CHNBAO<<YUEYA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E602701156CHN6901084F2808222Q75OWNC9HSVEJZ42"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-AC.jpg",
+   "source": "corpus",
+   "line1": "P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E141543482CHN6011103M3206261OMU9FH60NPJJ7G24"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-AC_R.jpg",
+   "source": "corpus",
+   "line1": "P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E141543482CHN6011103M3206261OMU9FH60NPJJ7G24"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-AD.jpg",
+   "source": "corpus",
+   "line1": "P<CHNCAI<<FANGMENG<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E277194572CHN9601189F30052246MN1TZC2X4MC4X60"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-AE.jpg",
+   "source": "corpus",
+   "line1": "P<CHNCHANG<<NI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E309178198CHN9612202F2702261G3JPA90J2I<K6Z66"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-AF.jpg",
+   "source": "corpus",
+   "line1": "P<CHNCHEN<<DAJUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E646452438CHN0211196M3203075FIJJWA3L90ZU0054"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-AG.jpg",
+   "source": "corpus",
+   "line1": "P<CHNCONG<<YINGXIAO<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E066908744CHN9303298F3411263TWW9ZQLBES7OS062"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-AH.jpg",
+   "source": "corpus",
+   "line1": "P<CHNCUI<<LIYI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E581043494CHN7012299F3110201S1UBJ2E<3D3PLJ56"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-AI.jpg",
+   "source": "corpus",
+   "line1": "P<CHNDAI<<XIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E996968603CHN0205089M3208184OK1U4WCP4K4E7L42"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-AJ.jpg",
+   "source": "corpus",
+   "line1": "P<CHNDING<<HANGYAN<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E818572393CHN6603171M2702157FHS9IS8GQWHI6I88"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-B.jpg",
+   "source": "corpus",
+   "line1": "POCHNHU<<HAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E187424516CHN8706216M2406086LKPKOFLA<<<<A936"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-C.jpg",
+   "source": "corpus",
+   "line1": "P<AUSRICHARDS<<KEIRA<JAYNE<<<<<<<<<<<<<<<<<<",
+   "line2": "N7368155<2AUS8703226F2306186<12078730W<<<<68"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-D.jpg",
+   "source": "corpus",
+   "line1": "AKCHNZHOU<<QIANG<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "KE00345952CHN9207156M2912095A911<611158<<<14"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-E.jpg",
+   "source": "corpus",
+   "line1": "POCHNZHANG<<WANWEN<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "E662323994CHN9009121F2601113NFMFMNPBMOMEA976"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-F.jpg",
+   "source": "corpus",
+   "line1": "PMCHNYAN<<ZHE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "A000000000CHN9801060M2406190ODMGNFNM<<<<A998"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-G.jpg",
+   "source": "corpus",
+   "line1": "P<CHNSUN<<HAI<HUA<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "H224724969CHN0907246M2808185<S3054553<<<<<90"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-H.jpg",
+   "source": "corpus",
+   "line1": "AKCHNYANG<<ZHEN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "KE90003518CHN9707014F2912268A911<121101<<<72"
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-I.jpg",
+   "source": null,
+   "line1": null,
+   "line2": null
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-J.jpg",
+   "source": null,
+   "line1": null,
+   "line2": null
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-K.jpg",
+   "source": null,
+   "line1": null,
+   "line2": null
+  },
+  {
+   "label": "Photo/3/IMG_1792133000_003.jpg",
+   "source": "auto",
+   "line1": "P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<",
+   "line2": "EE20426536CHN7410024M2808303LMNGMBKENG9BA970"
+  },
+  {
+   "label": "Photo/4/IMG_1792133002_004.jpg",
+   "source": "auto",
+   "line1": "P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<",
+   "line2": "EE20426536CHN7410024M2808303LMNGMBKENG9BA970"
+  },
+  {
+   "label": "Photo/5/IMG_1792133232_005.jpg",
+   "source": "auto",
+   "line1": "P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<",
+   "line2": "EE20426536CHN7410024M2808303LMNGMBKENG9BA970"
+  },
+  {
+   "label": "Photo/6/IMG_1792133581_006.jpg",
+   "source": "auto",
+   "line1": "P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<",
+   "line2": "EE20426536CHN7410024M2808303LMNGMBKENG9BA970"
+  },
+  {
+   "label": "Photo/7/IMG_1792133649_007.jpg",
+   "source": "auto",
+   "line1": "P<CHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "EE20426536CHN7410024M28083034MNGMNKFH6BB8994"
+  },
+  {
+   "label": "Photo/8/IMG_1792133682_008.jpg",
+   "source": "auto",
+   "line1": "P<QSN<<<<<SIYJN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970"
+  }
+ ]
+}

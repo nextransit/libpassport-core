@@ -348,6 +348,68 @@ Java_com_nextransit_mrzbench_jni_MrzNative_glareFraction(
     return static_cast<jint>((blown * 1000) / sampled);
 }
 
+/* Row standard-deviation profile (luma variance per row, single pass).
+ *
+ * The dark-pixel row profile treats a dark page panel as a solid full-width
+ * band: an on-panel MRZ (dark ground, lighter strokes) never separates into
+ * its two lines, so the locator returns nothing.  Character rows have the
+ * ground/ink luma alternation, so their per-row luma variance is far above a
+ * uniform panel.  Returns int[rows] of per-row population variance
+ * (sum((x-mean)^2)/n), scaled to make thresholds stable across widths.
+ */
+extern "C" JNIEXPORT jintArray JNICALL
+Java_com_nextransit_mrzbench_jni_MrzNative_rowStdProfile(
+    JNIEnv *env, jobject, jintArray jpixels, jint width,
+    jint y0, jint y1, jint x0, jint x1, jint stride) {
+    if (!jpixels || width <= 0 || y1 <= y0) return nullptr;
+    if (x1 > width) x1 = width;
+    if (x0 < 0) x0 = 0;
+    if (stride < 1) stride = 1;
+    const jsize need = static_cast<jsize>(
+        static_cast<size_t>(width) * static_cast<size_t>(y1 - y0));
+    if (env->GetArrayLength(jpixels) < need) return nullptr;
+
+    const int rows = y1 - y0;
+    jintArray out = env->NewIntArray(rows);
+    if (!out) return nullptr;
+    std::vector<double> sums(static_cast<size_t>(rows), 0.0);
+    std::vector<double> sumsq(static_cast<size_t>(rows), 0.0);
+    std::vector<int> cnts(static_cast<size_t>(rows), 0);
+
+    jint *argb = static_cast<jint *>(env->GetPrimitiveArrayCritical(jpixels, nullptr));
+    if (!argb) return nullptr;
+    for (int r = 0; r < rows; ++r) {
+        const jint *row = argb + static_cast<size_t>(r) * width;
+        double s = 0.0, sq = 0.0;
+        int c = 0;
+        for (int x = x0; x < x1; x += stride) {
+            const uint32_t p = static_cast<uint32_t>(row[x]);
+            const int r8 = (p >> 16) & 0xFF, g8 = (p >> 8) & 0xFF, b8 = p & 0xFF;
+            const int luma = (r8 * 299 + g8 * 587 + b8 * 114 + 500) / 1000;
+            s += static_cast<double>(luma);
+            sq += static_cast<double>(luma) * static_cast<double>(luma);
+            c++;
+        }
+        sums[static_cast<size_t>(r)] = s;
+        sumsq[static_cast<size_t>(r)] = sq;
+        cnts[static_cast<size_t>(r)] = c;
+    }
+    env->ReleasePrimitiveArrayCritical(jpixels, argb, JNI_ABORT);
+
+    std::vector<jint> varv(static_cast<size_t>(rows), 0);
+    for (int r = 0; r < rows; ++r) {
+        const int c = cnts[static_cast<size_t>(r)];
+        if (c < 2) { varv[static_cast<size_t>(r)] = 0; continue; }
+        const double mean = sums[static_cast<size_t>(r)] / c;
+        const double var = sumsq[static_cast<size_t>(r)] / c - mean * mean;
+        /* x100: var is in luma^2, so a character row (std ~25-30) reads
+         * ~60000-90000 while a uniform panel (std ~2-4) reads ~400-1600. */
+        varv[static_cast<size_t>(r)] = static_cast<jint>(var * 100.0 + 0.5);
+    }
+    env->SetIntArrayRegion(out, 0, rows, varv.data());
+    return out;
+}
+
 JNIEXPORT void JNICALL
 Java_com_nextransit_mrzbench_jni_MrzNative_setProfiling(JNIEnv *, jobject, jboolean on) {
     setenv("MRZ_PROFILE", on ? "1" : "0", 1);

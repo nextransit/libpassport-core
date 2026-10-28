@@ -82,6 +82,23 @@ object MrzNative {
         stride: Int,
     ): Int
 
+    /**
+     * Per-row luma variance (x100), single pass.  A character row on a dark
+     * panel has far higher variance than the uniform panel itself, so this
+     * separates an on-panel MRZ into its two lines where [rowProfile] sees
+     * one solid band.
+     */
+    @JvmStatic
+    external fun rowStdProfile(
+        pixels: IntArray,
+        width: Int,
+        y0: Int,
+        y1: Int,
+        x0: Int,
+        x1: Int,
+        stride: Int,
+    ): IntArray?
+
 
     /** Load PPM header only (cheap, used to filter non-image files). */
     @JvmStatic external fun loadPpmInfo(path: String): String

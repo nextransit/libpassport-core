@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.util.Log
 import com.nextransit.mrzbench.bench.IcaoChecksum
 import com.nextransit.mrzbench.jni.MrzNative
 import com.nextransit.mrzbench.photo.ocr.NativeEngine
@@ -600,6 +601,17 @@ object PhotoMrzPipeline {
             0
         }
 
+        // 行亮度方差剖面：纯暗带里 rowProfile 是一整条满宽实心带，MRZ 两行
+        // 无法分开；字符行的地面/笔画亮度交替让方差远高于均匀的带底，用
+        // 它做 solid 带内的兜底定位。
+        val rowStd = try {
+            MrzNative.rowStdProfile(pixels, width, y0, y1, sampleX0, sampleX1, stride)
+        } catch (_: Throwable) {
+            null
+        } catch (_: UnsatisfiedLinkError) {
+            null
+        }?.takeIf { it.size == y1 - y0 }
+
         val minInk = max(3, (sampleWidth * 0.18).toInt())
         val maxInk = (sampleWidth * 0.88).toInt()
         val runs = ArrayList<IntRange>()
@@ -665,9 +677,9 @@ object PhotoMrzPipeline {
             return candidate
         }
 
-        var best: Pair<IntRange, IntRange>? = null
-        // 真实 MRZ 位于观察黑带上方；反射 MRZ 通常出现在黑带之后，
+        // 主路径：真实 MRZ 位于观察黑带上方；反射 MRZ 通常出现在黑带之后，
         // 因此在候选对中优先选择黑带上方最近的一对。
+        var best: Pair<IntRange, IntRange>? = null
         for (solid in solidRuns) {
             val candidate = pickPair(solid.first)
             if (candidate != null &&
@@ -677,9 +689,84 @@ object PhotoMrzPipeline {
             }
         }
         if (best == null) best = pickPair()
+        Log.i("MrzOcr", "locator dark path: $best")
+        // 兜底：只有 dark 剖面完全找不到双行对时才启用行亮度方差峰对。
+        // 这样 I/J/K 这类 MRZ 印在暗色面板内的照片（rowProfile 是一条满宽
+        // 实心带、dark 两行分不开）能被救回，又不影响 dark 主路径已正常
+        // 判定的普通照片。
+        if (best == null && rowStd != null) {
+            val peaks = variancePeaks(rowStd, sampleWidth)
+            val candidate = pairFromVariancePeaks(peaks)
+            Log.i(
+                "MrzOcr",
+                "locator var-fallback img-h=$height rowStd=${rowStd.size} " +
+                    "sw=$sampleWidth thr=${maxOf(40000.0, sampleWidth * 120.0).toInt()} " +
+                    "peaks=${peaks.joinToString { "[${it.first},${it.last}]" }} " +
+                    "cand=$candidate",
+            )
+            if (candidate != null) best = candidate
+        }
         return best?.let { (a, b) ->
+            Log.i("MrzOcr", "locator chosen dark(y=${a.first}-${b.last}) y0=$y0")
             PairRows(y0 + a.first..y0 + a.last, y0 + b.first..y0 + b.last, emptyList(), glare)
         }
+    }
+
+    /** 行亮度方差(×100)剖面里高于阈值的连续峰段，gap<=2 的峰合并。 */
+    private fun variancePeaks(
+        rowStd: IntArray,
+        sw: Int,
+    ): List<IntRange> {
+        val n = rowStd.size
+        if (n < 16) return emptyList()
+        // 绝对阈值（native 已按 x100 缩放）：字符行 ~7 万-60 万，均匀面板
+        // ~几千。用采样宽度缩放避免极窄扫描区把大面积字符行误判。
+        val thr = maxOf(40000.0, sw * 120.0)
+
+        val lines = ArrayList<IntRange>()
+        val from = (n * 15) / 100  // 跳过页首干扰区，MRZ 在照片下部
+        var start = -1
+        for (i in from until n) {
+            if (rowStd[i].toDouble() > thr) {
+                if (start < 0) start = i
+            } else if (start >= 0) {
+                if (i - start >= 2) lines += start..(i - 1)
+                start = -1
+            }
+        }
+        if (start >= 0 && n - start >= 2) lines += start..(n - 1)
+
+        // 合并相距 <=2 的峰（单个低方差谷值把一行切成两段时）
+        val merged = ArrayList<IntRange>()
+        for (rl in lines) {
+            if (merged.isNotEmpty() && rl.first - merged.last().last <= 2) {
+                val prev = merged.removeAt(merged.size - 1)
+                merged += prev.first..maxOf(prev.last, rl.last)
+            } else {
+                merged += rl
+            }
+        }
+        return merged
+    }
+
+    /** 从峰段里取「最靠下」的相邻合法对（MRZ 两行）。 */
+    private fun pairFromVariancePeaks(
+        peaks: List<IntRange>,
+    ): Pair<IntRange, IntRange>? {
+        var best: Pair<IntRange, IntRange>? = null
+        for (i in 0 until peaks.size - 1) {
+            val a = peaks[i]
+            val b = peaks[i + 1]
+            val h1 = a.last - a.first + 1
+            val h2 = b.last - b.first + 1
+            if (h1 < 3 || h2 < 3) continue
+            // 行高比放宽到 0.15..3（暗面板里 line2 常被截短，行高比可远小于 1）
+            if (h2.toDouble() / h1 !in 0.15..3.0) continue
+            val gap = b.first - a.last - 1
+            if (gap > max(14, (1.5 * maxOf(h1, h2)).toInt() + 6)) continue
+            if (best == null || b.last > best!!.second.last) best = a to b
+        }
+        return best
     }
 
     private fun processDetailed(

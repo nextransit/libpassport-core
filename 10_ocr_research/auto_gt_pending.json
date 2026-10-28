@@ -1,0 +1,138 @@
+{
+ "1792f7a2d79c7a8a_0017.jpg": {
+  "label": "assets/pic/1792f7a2d79c7a8a_0017.jpg",
+  "pending": true,
+  "l1": "P<CHNZHENGJIAN<<YANGBEN<<<<<<<<<<<<<<<<<<<<<",
+  "l2": "E900000821CHN8108038F2110189NGKELMPONBPJB978",
+  "grade": "PASS",
+  "ms": 1230.1
+ },
+ "1c6acd092dee7031_0222.png": {
+  "label": "assets/pic/1c6acd092dee7031_0222.png",
+  "pending": true,
+  "l1": null,
+  "l2": null,
+  "grade": "REJECT",
+  "ms": 10.0
+ },
+ "3f5bb54276c6b754_0110.png": {
+  "label": "assets/pic/3f5bb54276c6b754_0110.png",
+  "pending": true,
+  "l1": "PPLIESPECIMEN<<SOPHIA<<<<<<<<<<<<<<<<<<<<<<<",
+  "l2": "PP00000000LIE9001011F3602025<<<<<<<<<<<<<<08",
+  "grade": "PASS",
+  "ms": 368.5
+ },
+ "4023a0d69dbd6cf7_0120.jpg": {
+  "label": "assets/pic/4023a0d69dbd6cf7_0120.jpg",
+  "pending": true,
+  "l1": "PDCHNYANG<<ZHAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+  "l2": "DE00000003CHN8509037F2611158NBOONFNB<<<<A912",
+  "grade": "PASS",
+  "ms": 265.4
+ },
+ "4c5f5e1654002cd0_0050.png": {
+  "label": "assets/pic/4c5f5e1654002cd0_0050.png",
+  "pending": true,
+  "l1": "P<USAOBAMA<<MICHELLE<<<<<<<<<<<<<<<<<<<<<<<<",
+  "l2": "9102392482USA6401171F1812051900781200<129676",
+  "grade": "PASS",
+  "ms": 221.9
+ },
+ "556644d1d8bf4672_0215.jpg": {
+  "label": "assets/pic/556644d1d8bf4672_0215.jpg",
+  "pending": true,
+  "l1": "T<TWN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+  "l2": "98SO701805KNH7307052F1204089K201781104<<<<08",
+  "grade": "PASS",
+  "ms": 290.4
+ },
+ "61d671ec161f22e3_0042.png": {
+  "label": "assets/pic/61d671ec161f22e3_0042.png",
+  "pending": true,
+  "l1": null,
+  "l2": null,
+  "grade": "REJECT",
+  "ms": 14.3
+ },
+ "6dafa3b35c792d06_0039.png": {
+  "label": "assets/pic/6dafa3b35c792d06_0039.png",
+  "pending": true,
+  "l1": "P<MMRABDELLAHI<MAHFOUDH<<MOHAMMED<<<<<<<<<<<",
+  "l2": "ABI2345678MMRT7511217M15111331234567B9<<<<14",
+  "grade": "PASS",
+  "ms": 383.9
+ },
+ "72ef4ce48bf27731_0002.jpg": {
+  "label": "assets/pic/72ef4ce48bf27731_0002.jpg",
+  "pending": true,
+  "l1": "P<LVAOZOLKALNA<<LIENE<MARA<<<<<<<<<<<<<<<<<<",
+  "l2": "LV99031769LVA6411183F3311237327707<98976<<58",
+  "grade": "PASS",
+  "ms": 218.9
+ },
+ "78f45152a658f728_0012.jpg": {
+  "label": "assets/pic/78f45152a658f728_0012.jpg",
+  "pending": true,
+  "l1": "P<IDNLENGKAP<<NAMA<<<<<<<<<<<<<<<<<<<<<<<<<<",
+  "l2": "X00000O<<9IDN4508179S1601264<<<<<<<<<<<<<<00",
+  "grade": "PASS",
+  "ms": 342.2
+ },
+ "acf14e0c631ec935_0030.png": {
+  "label": "assets/pic/acf14e0c631ec935_0030.png",
+  "pending": true,
+  "l1": null,
+  "l2": null,
+  "grade": "REJECT",
+  "ms": 16.2
+ },
+ "ae5fdb36f7498291_0019.png": {
+  "label": "assets/pic/ae5fdb36f7498291_0019.png",
+  "pending": true,
+  "l1": "P<ARGVAZQUEZ<<MARIA<<<<<<<<<<<<<<<<<<<<<<<<<",
+  "l2": "ZZZ0001105ARG1ZI1018F26O6T8399999999<<<<<<86",
+  "grade": "PASS",
+  "ms": 300.5
+ },
+ "b7a97ca0edede07b_0164.jpg": {
+  "label": "assets/pic/b7a97ca0edede07b_0164.jpg",
+  "pending": true,
+  "l1": "P<POLSAMPLE<<WILLIAM<<<<<<<<<<<<<<<<<<<<<<<<",
+  "l2": "ZS80000384POL8306122M1607303<<<<<<<<<<<<<<02",
+  "grade": "PASS",
+  "ms": 196.4
+ },
+ "cdcc06ad360b7849_0019.png": {
+  "label": "assets/pic/cdcc06ad360b7849_0019.png",
+  "pending": true,
+  "l1": null,
+  "l2": null,
+  "grade": "REJECT",
+  "ms": 24.6
+ },
+ "2026-9-30-I.jpg": {
+  "label": "tmp/PassPortPhoto/2026-9-30-I.jpg",
+  "pending": true,
+  "l1": null,
+  "l2": null,
+  "grade": "REJECT",
+  "ms": 11.1
+ },
+ "2026-9-30-J.jpg": {
+  "label": "tmp/PassPortPhoto/2026-9-30-J.jpg",
+  "pending": true,
+  "l1": null,
+  "l2": null,
+  "grade": "REJECT",
+  "ms": 9.8
+ },
+ "2026-9-30-K.jpg": {
+  "label": "tmp/PassPortPhoto/2026-9-30-K.jpg",
+  "pending": true,
+  "l1": null,
+  "l2": null,
+  "grade": "REJECT",
+  "ms": 9.1
+ }
+}
