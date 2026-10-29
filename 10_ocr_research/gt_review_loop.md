@@ -1,4 +1,4 @@
-# MRZ GT vs PRED 对比（来源: photo_direct_bench_tess_conditional_v3.json）
+# MRZ GT vs PRED 对比（来源: photo_direct_bench_kernel_issuer.json）
 
 照片总数 115  真值来源 photo_auto_gt_all.json
 
@@ -8,17 +8,17 @@
 |---|---|---|---|
 | 官方 PASS 张数 | 105 | >= 105 | PASS |
 | raw fuse decode 张数 | 84 | >= 84 | PASS |
-| 官方路径速率（张/秒） | 4.432 | >= 2.0 | PASS |
+| 官方路径速率（张/秒） | 4.934 | >= 2.0 | PASS |
 | 总体结论 | PASS | | PASS |
 
-- 速率【产品路径（全引擎并发）】：4.432 张/秒，平均 225.61 ms，中位 194.21 ms，P95 441.6 ms
-- 速率【单引擎最快】：87.342 张/秒；批测墙钟吞吐 1.235 张/秒（参考）
+- 速率【产品路径（全引擎并发）】：4.934 张/秒，平均 202.68 ms，中位 170.8 ms，P95 389.59 ms
+- 速率【单引擎最快】：95.424 张/秒；批测墙钟吞吐 1.383 张/秒（参考）
 - 通过率：官方 PASS 105/115 = 91.3%，REJECT 9，raw fuse decode 84
-- 基线对比（photo_direct_bench_train3.json）：PASS +0，raw fuse +0，速率 +1.528 张/秒，退化 0 张
+- 基线对比（photo_direct_bench_final.json）：PASS +0，raw fuse +0，速率 +1.616 张/秒，退化 0 张
 
 
 ## 08806d29a6268e1f_0003.jpg
-- 官方判定: PASS  verified=True  chosen=tesseract  ms=452
+- 官方判定: PASS  verified=True  chosen=tesseract  ms=421
 - 官方 line1: PMCHEDE<MAIENFELD<<PIERRE<<<<<<<<<<<<<<<<<<<
 - 官方 line2: S2100023<6CHE7108019M2002293<<<<<<<<<<<<<<06
 - 理由: PaddleOCR 识别并通过校验
@@ -45,7 +45,7 @@ PRED: 5210002356CHE7108019M2002293<5<55<<<<<<<<<<6
       ^       ^                    ^ ^^         ^    [6 mismatch]
 
 ### crnn  [decoded] conf1=98% conf2=95%
-- backend: crnn  (14 ms)
+- backend: crnn  (12 ms)
 - error: decode failed: check digit mismatch
 GT  : P<CHEDE<MAIENFELD<<PIERRE<<<<<<<<<<<<<<<<<<<
 PRED: PMCHEDE<MAIENFELD<<PIERRE<<<<<<<<<<<<<<<<<<<
@@ -64,7 +64,7 @@ PRED: 5210002356CHE7108019M2002293<<<<<<<<<<<<<<<6
       ^       ^                                 ^    [3 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (70 ms)
+- backend: tesseract  (65 ms)
 GT  : P<CHEDE<MAIENFELD<<PIERRE<<<<<<<<<<<<<<<<<<<
 PRED: PMCHEDE<MAIENFELD<<PIERRE<<<<<<<<<<<<<<<<<<<
        ^                                             [1 mismatch]
@@ -82,7 +82,7 @@ PRED: S2100023<6CHE7108019M2002293<<<<<<<<<<<<<<06
                                                      [0 mismatch]
 
 ### indra  [DECODE-OK] conf1=96% conf2=98%
-- backend: indra  (49 ms)
+- backend: indra  (47 ms)
 GT  : P<CHEDE<MAIENFELD<<PIERRE<<<<<<<<<<<<<<<<<<<
 PRED: PMCHEDE<MAIENFELD<<PIERRE<<<<<<<<<<<<<<<<<<<
        ^                                             [1 mismatch]
@@ -91,7 +91,7 @@ PRED: 82100023<6CHE7108019M2002293<<<<<<<<<<<<<<06
       ^                                              [1 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=94% conf2=100%
-- backend: indra  (202 ms)
+- backend: indra  (184 ms)
 GT  : P<CHEDE<MAIENFELD<<PIERRE<<<<<<<<<<<<<<<<<<<
 PRED: CISSADINANTANAZLUNALITADKATIONALITY<<<<<<<<<
       ^^^^^ ^^^^^^ ^^ ^^^^ ^^^^^^^^^^^^^^            [31 mismatch]
@@ -100,7 +100,7 @@ PRED: SCHWEIZSU2SSASVIZZE1ASVIZRA3WITZERLA<<<<<<80
        ^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^      ^^   [36 mismatch]
 
 ## 0f9780b8e1e3cc21_0008.jpg
-- 官方判定: PASS  verified=True  chosen=tesseract  ms=166
+- 官方判定: PASS  verified=True  chosen=tesseract  ms=158
 - 官方 line1: P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: 3400072370USA6707046F1608078910000193<113538
 - 理由: PaddleOCR 识别并通过校验
@@ -112,15 +112,15 @@ PRED: SCHWEIZSU2SSASVIZZE1ASVIZRA3WITZERLA<<<<<<80
 - error: decode failed: check digit mismatch
 GT  : P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: KT77<<<F726TFA<6<LTLL6<<LTJFFT<<<<<<T<T<<<<<
-      ^^^^^^^^^^^^^^ ^^^^^^^^ ^^^^^^      ^ ^        [30 mismatch]
+      ^^^^^^^^^^^^^^ ^^^^^^^  ^^^^^^      ^ ^        [29 mismatch]
 GT  : 3400072370USA6707046F1608078910000193<113538
 PRED: K3ACCC7237CC9AK7C7C46P46C8C7894CCCC4V3<44353
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   [44 mismatch]
 
 ### cnn  [DECODE-OK] conf1=78% conf2=98%
 GT  : P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
-PRED: P<GGASYNHWRCKKGGGAQGGGSNH<<<ELFGGG<<<S<UJ<<<
-        ^    ^    ^ ^    ^^^ ^^   ^^^^^^   ^ ^^      [18 mismatch]
+PRED: P<GHASYNHWRCKKGGGAQGGGSNH<<<ELFGGG<<<S<UJ<<<
+        ^^ ^^^^^^^^^^^^^^^^^^^^   ^^^^^^   ^ ^^      [31 mismatch]
 GT  : 3400072370USA6707046F1608078910000193<113538
 PRED: 3400072370USA6707046F1608078910000193<113538
                                                      [0 mismatch]
@@ -130,57 +130,57 @@ PRED: 3400072370USA6707046F1608078910000193<113538
 - error: decode failed: check digit mismatch
 GT  : P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
-        ^^ ^^^^^^^^^ ^^^^^ ^^                        [18 mismatch]
+                                                     [0 mismatch]
 GT  : 3400072370USA6707046F1608078910000193<113538
 PRED: 5400072370USA6707046F1608078910000193<113538
       ^                                              [1 mismatch]
 
 ### fuse  [DECODE-OK] conf1=89% conf2=98%
 GT  : P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
-PRED: P<GGASYNHWRCKEGGGAQGGGS<H<<<ELFGGG<<<S<UJ<<<
-        ^    ^    ^^^    ^^^  ^   ^^^^^^   ^ ^^      [18 mismatch]
+PRED: P<GHASYNHWRCKEGGGAQGGGS<H<<<ELFGGG<<<S<UJ<<<
+        ^^ ^^^^^^^^^^^^^^^^^^ ^   ^^^^^^   ^ ^^      [30 mismatch]
 GT  : 3400072370USA6707046F1608078910000193<113538
 PRED: 3400072370USA6707046F1608078910000193<113538
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (76 ms)
+- backend: tesseract  (72 ms)
 GT  : P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
-        ^^ ^^^^^^^^^ ^^^^^ ^^                        [18 mismatch]
+                                                     [0 mismatch]
 GT  : 3400072370USA6707046F1608078910000193<113538
 PRED: 3400072370USA6707046F1608078910000193<113538
                                                      [0 mismatch]
 
 ### paddle  [DECODE-OK] conf1=96% conf2=99%
-- backend: paddle-onnxruntime  (82 ms)
+- backend: paddle-onnxruntime  (79 ms)
 GT  : P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
-        ^^ ^^^^^^^^^ ^^^^^ ^^                        [18 mismatch]
+                                                     [0 mismatch]
 GT  : 3400072370USA6707046F1608078910000193<113538
 PRED: 3400072370USA6707046F1608078910000193<113538
                                                      [0 mismatch]
 
 ### indra  [DECODE-OK] conf1=75% conf2=97%
-- backend: indra  (53 ms)
+- backend: indra  (48 ms)
 GT  : P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PRUSATRAVELERKHAPPYKKKKKKKKKKKKKKKKKKKKK<<<<
-       ^^^ ^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^       [37 mismatch]
+       ^           ^^^^ ^^^^^^^^^^^^^^^^^^^^^^       [27 mismatch]
 GT  : 3400072370USA6707046F1608078910000193<113538
 PRED: 3400072370USA6707046F1608078910000193<113538
                                                      [0 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=94% conf2=96%
-- backend: indra  (217 ms)
+- backend: indra  (202 ms)
 GT  : P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: ONONFSTERITYDOORDAINANDESTABLISHTHIS<<<<<<<<
-      ^^^^^ ^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^           [34 mismatch]
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^           [36 mismatch]
 GT  : 3400072370USA6707046F1608078910000193<113538
 PRED: CONSTITUT2ONFORTBEU7ITEDSTA1ESOFAMERI<<<<<04
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^^^^   [43 mismatch]
 
 ## 16c07a99a0fb81e4_0013.jpg
-- 官方判定: PASS  verified=True  chosen=tesseract  ms=146
+- 官方判定: PASS  verified=True  chosen=tesseract  ms=137
 - 官方 line1: P<CZESPECIMEN<<VZOR<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: 99009054<4CZE6906229F16072996956220612<<<<74
 - 理由: PaddleOCR 识别并通过校验
@@ -200,7 +200,7 @@ PRED: VGCEG35A<AC2LK9E422GP3EE729G4V542234M2<<<<7A
 ### cnn  [skip]
 
 ### crnn  [decoded] conf1=95% conf2=85%
-- backend: crnn  (11 ms)
+- backend: crnn  (12 ms)
 - error: decode failed: bad MRZ length
 GT  : P<CZEWPECIMEN<<NGOH<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CZESPECIMEN<<VZOR<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -219,7 +219,7 @@ PRED: 9900R054<4CZL6906229F16072996956220612<K<K64
       ^                                       ^ ^    [3 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (75 ms)
+- backend: tesseract  (71 ms)
 GT  : P<CZEWPECIMEN<<NGOH<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CZESPECIMEN<<VZOR<<<<<<<<<<<<<<<<<<<<<<<<<
            ^         ^^ ^                            [4 mismatch]
@@ -228,7 +228,7 @@ PRED: 99009054<4CZE6906229F16072996956220612<<<<74
       ^   ^       ^                          ^^^     [6 mismatch]
 
 ### paddle  [DECODE-OK] conf1=96% conf2=99%
-- backend: paddle-onnxruntime  (85 ms)
+- backend: paddle-onnxruntime  (81 ms)
 GT  : P<CZEWPECIMEN<<NGOH<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CZESPECIMEN<<VZOR<<<<<<<<<<<<<<<<<<<<<<<<<
            ^         ^^ ^                            [4 mismatch]
@@ -237,7 +237,7 @@ PRED: 99009054<4CZE6906229F16072996956220612<<<<74
       ^   ^       ^                          ^^^     [6 mismatch]
 
 ### indra  [DECODE-OK] conf1=94% conf2=98%
-- backend: indra  (60 ms)
+- backend: indra  (48 ms)
 GT  : P<CZEWPECIMEN<<NGOH<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CZESPECIMEN<<VZOR<<<<<<<<<<<<<<<<<<<<<<<<<
            ^         ^^ ^                            [4 mismatch]
@@ -246,7 +246,7 @@ PRED: 99009054<4CZE6906229F16072996956220612<<<<74
       ^   ^       ^                          ^^^     [6 mismatch]
 
 ### indra_fullpage  [decoded] conf1=85% conf2=92%
-- backend: indra  (223 ms)
+- backend: indra  (204 ms)
 - error: lines=34 edits=4 composite_edits=1 country=SSO
 GT  : P<CZEWPECIMEN<<NGOH<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: CESSOVNIPASPASSPORTPASEPORTESKREPUBLIKACZECH
@@ -256,7 +256,7 @@ PRED: ISIOPASUP2SSOORTNOP6SSEFORT1<<<<<<<<<<<<<<06
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^^^   [43 mismatch]
 
 ## 1792f7a2d79c7a8a_0017.jpg
-- 官方判定: PASS  verified=True  chosen=tesseract  ms=151
+- 官方判定: PASS  verified=True  chosen=tesseract  ms=147
 - 官方 line1: P<CHNZHENGJIAN<<YANGBEN<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E900000821CHN8108038F2110189NGKELMPONBPJB978
 - 理由: Tesseract 识别并通过校验
@@ -268,26 +268,26 @@ PRED: ISIOPASUP2SSOORTNOP6SSEFORT1<<<<<<<<<<<<<<06
 - error: decode failed: check digit mismatch
 
 ### crnn  [decoded] conf1=96% conf2=92%
-- backend: crnn  (15 ms)
+- backend: crnn  (12 ms)
 - error: decode failed: check digit mismatch
 
 ### fuse  [decoded] conf1=78% conf2=80%
 - error: decode failed: check digit mismatch
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (67 ms)
+- backend: tesseract  (63 ms)
 
 ### paddle  [DECODE-OK] conf1=99% conf2=99%
-- backend: paddle-onnxruntime  (78 ms)
+- backend: paddle-onnxruntime  (77 ms)
 
 ### indra  [DECODE-OK] conf1=95% conf2=98%
-- backend: indra  (51 ms)
+- backend: indra  (49 ms)
 
 ### indra_fullpage  [DECODE-OK] conf1=94% conf2=98%
-- backend: indra  (291 ms)
+- backend: indra  (273 ms)
 
 ## 1c6acd092dee7031_0222.png
-- 官方判定: REJECT  verified=False  chosen=None  ms=13
+- 官方判定: REJECT  verified=False  chosen=None  ms=9
 - 理由: 未在照片中定位到 MRZ 双行
 
 ### traditional  [no_pair]
@@ -305,11 +305,11 @@ PRED: ISIOPASUP2SSOORTNOP6SSEFORT1<<<<<<<<<<<<<<06
 ### indra  [no_pair]
 
 ### indra_fullpage  [FAIL]
-- backend: indra  (125 ms)
+- backend: indra  (112 ms)
 - error: indra 未找到 MRZ 候选行 (0 行)
 
 ## 1cce0f3fc387c893_0001.jpg
-- 官方判定: PASS  verified=True  chosen=crnn  ms=143
+- 官方判定: PASS  verified=True  chosen=crnn  ms=132
 - 官方 line1: PSPOLKOWALSKI<<JAN<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: ZC39917886POL8101028M2909185<<<<<<<<<<<<<<04
 - 理由: IndraOCR 识别并通过校验
@@ -329,7 +329,7 @@ PRED: 2L34447884PCL84CJC28H24C4485<<<<<<<<<<<<<<C<
 ### cnn  [skip]
 
 ### crnn  [DECODE-OK] conf1=93% conf2=98%
-- backend: crnn  (13 ms)
+- backend: crnn  (14 ms)
 GT  : P<POLKOWALSKI<<JAN<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PSPOLKOWALSKI<<JAN<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^                                             [1 mismatch]
@@ -346,7 +346,7 @@ PRED: 2009917886HOL8101028M2909185<<<<<<<<<<<<<<04
       ^^^       ^                                    [4 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (67 ms)
+- backend: tesseract  (58 ms)
 GT  : P<POLKOWALSKI<<JAN<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PSPOLKOWALSKI<<JAN<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^                                             [1 mismatch]
@@ -355,7 +355,7 @@ PRED: ZC39917886POL8101028M2909185<<<<<<<<<<<<<<04
       ^                                              [1 mismatch]
 
 ### paddle  [DECODE-OK] conf1=95% conf2=92%
-- backend: paddle-onnxruntime  (82 ms)
+- backend: paddle-onnxruntime  (74 ms)
 GT  : P<POLKOWALSKI<<JAN<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PSPOLKOWALSKI<<JAN<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^                                             [1 mismatch]
@@ -364,7 +364,7 @@ PRED: ZC39917886POL8101028M2909185<<<<<<<<<04<<<28
       ^                                    ^^   ^^   [5 mismatch]
 
 ### indra  [DECODE-OK] conf1=96% conf2=98%
-- backend: indra  (53 ms)
+- backend: indra  (47 ms)
 GT  : P<POLKOWALSKI<<JAN<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PSPOLKOWALSKI<<JAN<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^                                             [1 mismatch]
@@ -373,7 +373,7 @@ PRED: ZC39917886POL8101028M2909185<<<<<<<<<<<<<<04
       ^                                              [1 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=94% conf2=98%
-- backend: indra  (212 ms)
+- backend: indra  (186 ms)
 GT  : P<POLKOWALSKI<<JAN<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PSPOLKOWALSKI<<JAN<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^                                             [1 mismatch]
@@ -382,7 +382,7 @@ PRED: ZC39917886POL8101028M2909185<<<<<<<<<<<<<<04
       ^                                              [1 mismatch]
 
 ## 239e042aba0c3ab2_0102.jpg
-- 官方判定: PASS  verified=True  chosen=paddle  ms=166
+- 官方判定: PASS  verified=True  chosen=paddle  ms=157
 - 官方 line1: PSCHNYANG<<ZHAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: SE00000008CHN8509037F150501819200001<<<<<<92
 - 理由: PaddleOCR 识别并通过校验
@@ -408,7 +408,7 @@ PRED: 5B00000008CHN8509037F1505018192000015555KK92
                                                      [0 mismatch]
 
 ### crnn  [DECODE-OK] conf1=97% conf2=94%
-- backend: crnn  (15 ms)
+- backend: crnn  (17 ms)
 GT  : P<CHNYANG<<CHAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PSCHNYANG<<ZHAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^         ^                                   [2 mismatch]
@@ -425,7 +425,7 @@ PRED: 5B00000008CHN8509037F1505018192000015555KK92
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (90 ms)
+- backend: tesseract  (76 ms)
 GT  : P<CHNYANG<<CHAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PSCHNYANG<<ZHAO0<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^         ^   ^                               [3 mismatch]
@@ -434,7 +434,7 @@ PRED: SE00000008CHN8509037F150501819200001<<<<<<92
       ^^                                  ^^^^^^     [8 mismatch]
 
 ### paddle  [DECODE-OK] conf1=99% conf2=98%
-- backend: paddle-onnxruntime  (89 ms)
+- backend: paddle-onnxruntime  (83 ms)
 GT  : P<CHNYANG<<CHAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PSCHNYANG<<ZHAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^         ^                                   [2 mismatch]
@@ -443,7 +443,7 @@ PRED: SE00000008CHN8509037F150501819200001<<<<<<92
       ^^                                  ^^^^^^     [8 mismatch]
 
 ### indra  [DECODE-OK] conf1=96% conf2=99%
-- backend: indra  (57 ms)
+- backend: indra  (50 ms)
 GT  : P<CHNYANG<<CHAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PSCHNYANG<<ZHA0<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^         ^  ^                                [3 mismatch]
@@ -452,7 +452,7 @@ PRED: SE00000008CHN8509037F150501819200001<<<<<<92
       ^^                                  ^^^^^^     [8 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=95% conf2=99%
-- backend: indra  (244 ms)
+- backend: indra  (213 ms)
 GT  : P<CHNYANG<<CHAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PSCHNYANG<<ZHAD<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^         ^  ^                                [3 mismatch]
@@ -461,22 +461,22 @@ PRED: SE00000008CHN8509037F150501819200001<<<<<<92
       ^^                                  ^^^^^^     [8 mismatch]
 
 ## 23f16a7d9b6ab9da_0062.jpg
-- 官方判定: PASS  verified=True  chosen=fuse  ms=178
-- 官方 line1: P<URRGRYYSDNCO<<INAN<<<<<<<<<<<<<<<<<<<<<<<<
+- 官方判定: PASS  verified=True  chosen=fuse  ms=154
+- 官方 line1: P<UKRGRYYSDNCO<<INAN<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: 4400000147UKH8307255M19080333052125257S5S500
 - 理由: 融合CNN+CRNN 识别并通过校验
 
 - GT line1: `P<UKRGRYTSENKO<<IVAN<<<<<<<<<<<<<<<<<<<<<<<<`
-- GT line2: `4400000147UKH8307255M19080333052125257S5S500`
+- GT line2: `EK000001<7UKR8307255M19080333052125257<<<<00`
 
 ### traditional  [decoded] conf1=73% conf2=70%
 - error: decode failed: check digit mismatch
 GT  : P<UKRGRYTSENKO<<IVAN<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: D<1IWWGRYT5EN<C<<3UAW<<<<<<<<<<<<<<<<<<<<<<<
       ^ ^^^^^^^^^^^^^ ^^^^^                          [19 mismatch]
-GT  : 4400000147UKH8307255M19080333052125257S5S500
+GT  : EK000001<7UKR8307255M19080333052125257<<<<00
 PRED: E<CCCCC3<7O<803C7255PM9CBCS3SC52425257<<<<CC
-      ^^^^^^^^^ ^^^^ ^    ^^ ^^^^ ^^  ^     ^^^^^^   [29 mismatch]
+       ^^^^^^^  ^^^^ ^    ^^ ^^^^ ^^  ^         ^^   [23 mismatch]
 
 ### cnn  [skip]
 
@@ -486,56 +486,56 @@ PRED: E<CCCCC3<7O<803C7255PM9CBCS3SC52425257<<<<CC
 GT  : P<UKRGRYTSENKO<<IVAN<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<UKRGRYTSENKO<<IVAN<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
-GT  : 4400000147UKH8307255M19080333052125257S5S500
+GT  : EK000001<7UKR8307255M19080333052125257<<<<00
 PRED: E<000001<70<B8307258M19080333052125257<<<<00
-      ^^      ^ ^^^      ^                  ^^^^     [11 mismatch]
+       ^        ^^^      ^                           [5 mismatch]
 
 ### fuse  [DECODE-OK] conf1=99% conf2=98%
 GT  : P<UKRGRYTSENKO<<IVAN<<<<<<<<<<<<<<<<<<<<<<<<
-PRED: P<URRGRYYSDNCO<<INAN<<<<<<<<<<<<<<<<<<<<<<<<
-         ^    ^ ^ ^    ^                             [5 mismatch]
-GT  : 4400000147UKH8307255M19080333052125257S5S500
+PRED: P<UKRGRYYSDNCO<<INAN<<<<<<<<<<<<<<<<<<<<<<<<
+              ^ ^ ^    ^                             [4 mismatch]
+GT  : EK000001<7UKR8307255M19080333052125257<<<<00
 PRED: 4400000147UKH8307255M19080333052125257S5S500
-                                                     [0 mismatch]
+      ^^      ^   ^                         ^^^^     [8 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (132 ms)
+- backend: tesseract  (126 ms)
 GT  : P<UKRGRYTSENKO<<IVAN<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<UKRGRYTSENKO<<IVAN<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
-GT  : 4400000147UKH8307255M19080333052125257S5S500
+GT  : EK000001<7UKR8307255M19080333052125257<<<<00
 PRED: EKO0O001<7UKR8307255M19080333052125257<<<<00
-      ^^^ ^   ^   ^                         ^^^^     [10 mismatch]
+        ^ ^                                          [2 mismatch]
 
 ### paddle  [DECODE-OK] conf1=98% conf2=98%
-- backend: paddle-onnxruntime  (79 ms)
+- backend: paddle-onnxruntime  (82 ms)
 GT  : P<UKRGRYTSENKO<<IVAN<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<UKRGRYTSENKO<<IVAN<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
-GT  : 4400000147UKH8307255M19080333052125257S5S500
+GT  : EK000001<7UKR8307255M19080333052125257<<<<00
 PRED: EKO0O001<7UKR8307255M19080333052125257<<<<00
-      ^^^ ^   ^   ^                         ^^^^     [10 mismatch]
+        ^ ^                                          [2 mismatch]
 
 ### indra  [DECODE-OK] conf1=94% conf2=97%
-- backend: indra  (51 ms)
+- backend: indra  (48 ms)
 GT  : P<UKRGRYTSENKO<<IVAN<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<UKRGRYTSENKO<<IVAN<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
-GT  : 4400000147UKH8307255M19080333052125257S5S500
+GT  : EK000001<7UKR8307255M19080333052125257<<<<00
 PRED: EK000Q01<7UKR8307255M19080333052125257<<<<00
-      ^^   ^  ^   ^                         ^^^^     [9 mismatch]
+           ^                                         [1 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=90% conf2=99%
-- backend: indra  (187 ms)
+- backend: indra  (165 ms)
 GT  : P<UKRGRYTSENKO<<IVAN<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<UKRGRYTSENKO<<IVAN<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
-GT  : 4400000147UKH8307255M19080333052125257S5S500
+GT  : EK000001<7UKR8307255M19080333052125257<<<<00
 PRED: EK000Q01<7UKR8307255M19080333052125257<<<<00
-      ^^   ^  ^   ^                         ^^^^     [9 mismatch]
+           ^                                         [1 mismatch]
 
 ## 28a42952ba25584a_0078.png
-- 官方判定: PASS  verified=True  chosen=paddle  ms=153
+- 官方判定: PASS  verified=True  chosen=paddle  ms=138
 - 官方 line1: Q<CHNNGKELMPONBPJLBLO<<<<<<<<<<<<<<<<<<<<SAC
 - 官方 line2: Q100547988CHN8410124F190717319204415<<<<<<46
 - 理由: IndraOCR 识别并通过校验
@@ -555,7 +555,7 @@ PRED: Q3CCS47V28CHK244C424F3VC74734V2C<<45<<<<<<<K
 ### cnn  [skip]
 
 ### crnn  [decoded] conf1=97% conf2=93%
-- backend: crnn  (13 ms)
+- backend: crnn  (12 ms)
 - error: decode failed: check digit mismatch
 GT  : P<CHNNGKELNPONBPJLBLO<<<<<<<<<<<<<<<<<<<<<<<
 PRED: Q<CHNNGKELMPONBPJLBLO<<<<<<<<<<<<<<<<<<<<SAC
@@ -573,7 +573,7 @@ PRED: Q100547988CHN8410124F1907173192044155<<5<<46
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (66 ms)
+- backend: tesseract  (62 ms)
 GT  : P<CHNNGKELNPONBPJLBLO<<<<<<<<<<<<<<<<<<<<<<<
 PRED: Q<CHNNGKELMPONBPJLBL0O<<<<<<<<<<<<<<<<<<<<SA
       ^         ^         ^^                    ^^   [6 mismatch]
@@ -591,7 +591,7 @@ PRED: Q100547988CHN8410124F190717319204415<<<<<<46
                                           ^  ^       [2 mismatch]
 
 ### indra  [DECODE-OK] conf1=97% conf2=99%
-- backend: indra  (52 ms)
+- backend: indra  (48 ms)
 GT  : P<CHNNGKELNPONBPJLBLO<<<<<<<<<<<<<<<<<<<<<<<
 PRED: Q<CHNNGKELMPONBPJLBLO<<<<<<<<<<<<<<<<<<<<SAC
       ^         ^                              ^^^   [5 mismatch]
@@ -600,7 +600,7 @@ PRED: Q100547988CHN8410124F190717319204415<<<<<<46
                                           ^  ^       [2 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=96% conf2=98%
-- backend: indra  (173 ms)
+- backend: indra  (153 ms)
 GT  : P<CHNNGKELNPONBPJLBLO<<<<<<<<<<<<<<<<<<<<<<<
 PRED: Q<CHNNGKELMPONBPJLBLO<<<<<<<<<<<<<<<<<<<<SAC
       ^         ^                              ^^^   [5 mismatch]
@@ -609,7 +609,7 @@ PRED: Q100547988CHN8410124F190717319204415<<<<<<46
                                           ^  ^       [2 mismatch]
 
 ## 28ccd101a752acef_0016.jpg
-- 官方判定: PASS  verified=True  chosen=paddle  ms=189
+- 官方判定: PASS  verified=True  chosen=paddle  ms=174
 - 官方 line1: P<PHLDELA<CRUZ<<MARIA<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: PO00V000A0PHL8003166F2706269<<<<<<<<<<<<<<02
 - 理由: PaddleOCR 识别并通过校验
@@ -636,7 +636,7 @@ PRED: C000000010C<L8003166F21062692<222<1<<22CC102
       ^       ^ ^^                ^ ^^^ ^  ^^^^^     [14 mismatch]
 
 ### crnn  [decoded] conf1=95% conf2=95%
-- backend: crnn  (15 ms)
+- backend: crnn  (14 ms)
 - error: decode failed: check digit mismatch
 GT  : P<PHLDELA<CRUZ<<MARIA<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<PHLDELA<CRUZ<<MARIA<<<<<<<<<<<<<<<<<<<<<<<
@@ -655,7 +655,7 @@ PRED: C000000010CEL8003166F2106269<<<<<<<<<22CC102
       ^       ^ ^^                         ^^^^^     [9 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (148 ms)
+- backend: tesseract  (133 ms)
 GT  : P<PHLDELA<CRUZ<<MARIA<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<PHLDELA<CRUZ<<MARIA<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -664,7 +664,7 @@ PRED: O00000D0A9PHL8003166F2706269<<<<<<<<<<<<<<04
       ^     ^  ^            ^                    ^   [5 mismatch]
 
 ### paddle  [decoded] conf1=98% conf2=92%
-- backend: paddle-onnxruntime  (190 ms)
+- backend: paddle-onnxruntime  (176 ms)
 - error: decode failed: check digit mismatch
 GT  : P<PHLDELA<CRUZ<<MARIA<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<PHLDELA<CRUZ<<MARIA<<<<<<<<<<<<<<<<<<<<<<<
@@ -674,7 +674,7 @@ PRED: P0000000A0PHL8003166F2106269<<<<<<<<<<<<02<<
                                               ^^^^   [4 mismatch]
 
 ### indra  [DECODE-OK] conf1=94% conf2=99%
-- backend: indra  (53 ms)
+- backend: indra  (48 ms)
 GT  : P<PHLDELA<CRUZ<<MARIA<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<PHLDELA<CRUZ<<MARIA<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -683,7 +683,7 @@ PRED: P0000D0OA0PHL8003166F2706269<<<<<<<<<<<<<<02
            ^ ^              ^                        [3 mismatch]
 
 ### indra_fullpage  [decoded] conf1=99% conf2=89%
-- backend: indra  (204 ms)
+- backend: indra  (179 ms)
 - error: lines=39 edits=4 composite_edits=1 country=IEB
 GT  : P<PHLDELA<CRUZ<<MARIA<<<<<<<<<<<<<<<<<<<<<<<
 PRED: REIEBLIKANGPILIPINASREPUBLICOFTHEPHILIPPINES
@@ -693,10 +693,10 @@ PRED: PASAPORTE2IEBPASSPO8T<<<<<<0<<<<<<<<<<<<<<08
        ^^^^^^^^^^^^^^^^^^^^^^^^^^^               ^   [28 mismatch]
 
 ## 2c793efe12276f9b_0258.jpg
-- 官方判定: PASS  verified=True  chosen=crnn  ms=169
+- 官方判定: PASS  verified=True  chosen=crnn  ms=149
 - 官方 line1: P<LVAOZOLKALNA<<LIENE<MARA<<<<<<<<<<<<<<<<<<
 - 官方 line2: LV90008223LVA8612010F2501121111111<11410<<70
-- 理由: PaddleOCR 识别并通过校验
+- 理由: 融合CNN+CRNN 识别并通过校验
 
 - GT line1: `P<LVAOZOLKALNA<<LIENE<MARA<<<<<<<<<<<<<<<<<<`
 - GT line2: `LV90008223LVA8612010F2501121111111<11410<<70`
@@ -712,14 +712,14 @@ PRED: LV9CCC8223LVA8K42C4CP25C4424444444<4<4LL4<4L
 
 ### cnn  [DECODE-OK] conf1=99% conf2=98%
 GT  : P<LVAOZOLKALNA<<LIENE<MARA<<<<<<<<<<<<<<<<<<
-PRED: P<LNAOZOLKALNA<<LIENE<MARA<<<<<<<<<<<<<<<<<<
-         ^                                           [1 mismatch]
+PRED: P<LVAOZOLKALNA<<LIENE<MARA<<<<<<<<<<<<<<<<<<
+                                                     [0 mismatch]
 GT  : LV90008223LVA8612010F2501121111111<11410<<70
 PRED: LV90008223LVA8612010F2501121111111<114105570
                                               ^^     [2 mismatch]
 
 ### crnn  [decoded] conf1=98% conf2=95%
-- backend: crnn  (12 ms)
+- backend: crnn  (13 ms)
 - error: decode failed: bad MRZ length
 GT  : P<LVAOZOLKALNA<<LIENE<MARA<<<<<<<<<<<<<<<<<<
 PRED: P<LVAOZOLKALNA<<LIENE<MARA<<<<<<<<<<<<<<<<<<
@@ -730,14 +730,14 @@ PRED: V90008223LVA8612010F2501121111111<11410<<7G
 
 ### fuse  [DECODE-OK] conf1=99% conf2=99%
 GT  : P<LVAOZOLKALNA<<LIENE<MARA<<<<<<<<<<<<<<<<<<
-PRED: P<LNAOZOLKALNA<<LIENE<MARA<<<<<<<<<<<<<<<<<<
-         ^                                           [1 mismatch]
+PRED: P<LVAOZOLKALNA<<LIENE<MARA<<<<<<<<<<<<<<<<<<
+                                                     [0 mismatch]
 GT  : LV90008223LVA8612010F2501121111111<11410<<70
 PRED: LV90008223LVA8612010F2501121111111<114105570
                                               ^^     [2 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (64 ms)
+- backend: tesseract  (60 ms)
 GT  : P<LVAOZOLKALNA<<LIENE<MARA<<<<<<<<<<<<<<<<<<
 PRED: P<LVAOZOLKALNA<<LIENE<MARA<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -746,7 +746,7 @@ PRED: LV90008223LVA8612010F2501121111111<11410<<70
                                                      [0 mismatch]
 
 ### paddle  [DECODE-OK] conf1=97% conf2=99%
-- backend: paddle-onnxruntime  (84 ms)
+- backend: paddle-onnxruntime  (79 ms)
 GT  : P<LVAOZOLKALNA<<LIENE<MARA<<<<<<<<<<<<<<<<<<
 PRED: P<LVAOZOLKALNA<<LIENE<MARA<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -755,7 +755,7 @@ PRED: LV90008223LVA8612010F2501121111111<11410<<70
                                                      [0 mismatch]
 
 ### indra  [DECODE-OK] conf1=90% conf2=98%
-- backend: indra  (51 ms)
+- backend: indra  (46 ms)
 GT  : P<LVAOZOLKALNA<<LIENE<MARA<<<<<<<<<<<<<<<<<<
 PRED: P<LVAOZOLKALNAK<LIENE<MARA<<<<<<<<<<<<<<<<<<
                     ^                                [1 mismatch]
@@ -764,7 +764,7 @@ PRED: LV90008223LVA8612010F2501121111111<11410<<70
                                                      [0 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=96% conf2=99%
-- backend: indra  (231 ms)
+- backend: indra  (194 ms)
 GT  : P<LVAOZOLKALNA<<LIENE<MARA<<<<<<<<<<<<<<<<<<
 PRED: LACODJALATVIALETTONIE<<<<<<<<<<<<<<<<<<<<<<<
       ^^^^^^^^^^^^^^^^^^^^  ^^^^                     [24 mismatch]
@@ -773,7 +773,7 @@ PRED: VALSTSKOD4CODEOFISS3INGSTAT9CODEDUPA<<<<<<16
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  ^^   [42 mismatch]
 
 ## 31611582cbf14d7f_0018.jpg
-- 官方判定: REJECT  verified=False  chosen=None  ms=13
+- 官方判定: REJECT  verified=False  chosen=None  ms=9
 - 理由: 未在照片中定位到 MRZ 双行
 
 - GT line1: `P<POLKOWALSKI<<JAN<<<<<<<<<<<<<<<<<<<<<<<<<<`
@@ -794,7 +794,7 @@ PRED: VALSTSKOD4CODEOFISS3INGSTAT9CODEDUPA<<<<<<16
 ### indra  [no_pair]
 
 ### indra_fullpage  [DECODE-OK] conf1=98% conf2=95%
-- backend: indra  (187 ms)
+- backend: indra  (170 ms)
 GT  : P<POLKOWALSKI<<JAN<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: RZECTPOSPOLITAPOLSKAREPUBLICOFPOLAND<<<<<<<<
       ^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^           [35 mismatch]
@@ -803,7 +803,7 @@ PRED: NUMERPASZ6ECTUPASSP0RT<<<<<3<<<<<<<<<<<<<<02
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^               ^   [29 mismatch]
 
 ## 3f5bb54276c6b754_0110.png
-- 官方判定: PASS  verified=True  chosen=paddle  ms=248
+- 官方判定: PASS  verified=True  chosen=paddle  ms=223
 - 官方 line1: PPLIESPECIMEN<<SOPHIA<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: PP00000000LIE9001011F3602025<<<<<<<<<<<<<<08
 - 理由: IndraOCR 识别并通过校验
@@ -815,28 +815,28 @@ PRED: NUMERPASZ6ECTUPASSP0RT<<<<<3<<<<<<<<<<<<<<02
 - error: decode failed: check digit mismatch
 
 ### crnn  [decoded] conf1=95% conf2=98%
-- backend: crnn  (13 ms)
+- backend: crnn  (14 ms)
 - error: decode failed: bad MRZ length
 
 ### fuse  [decoded] conf1=96% conf2=86%
 - error: decode failed: check digit mismatch
 
 ### tesseract  [FAIL]
-- backend: tesseract  (176 ms)
+- backend: tesseract  (161 ms)
 - error: no MRZ candidate decoded
 
 ### paddle  [decoded] conf1=98% conf2=89%
-- backend: paddle-onnxruntime  (168 ms)
+- backend: paddle-onnxruntime  (154 ms)
 - error: decode failed: check digit mismatch
 
 ### indra  [DECODE-OK] conf1=99% conf2=98%
-- backend: indra  (56 ms)
+- backend: indra  (50 ms)
 
 ### indra_fullpage  [DECODE-OK] conf1=98% conf2=98%
-- backend: indra  (262 ms)
+- backend: indra  (239 ms)
 
 ## 4023a0d69dbd6cf7_0120.jpg
-- 官方判定: PASS  verified=True  chosen=fuse  ms=194
+- 官方判定: PASS  verified=True  chosen=fuse  ms=161
 - 官方 line1: P<CHNYANG<<IHAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: 1C00000003CHN8509037F2611158NB00HFNB<<<<A912
 - 理由: 融合CNN+CRNN 识别并通过校验
@@ -847,104 +847,104 @@ PRED: NUMERPASZ6ECTUPASSP0RT<<<<<3<<<<<<<<<<<<<<02
 ### cnn  [DECODE-OK] conf1=95% conf2=96%
 
 ### crnn  [decoded] conf1=95% conf2=83%
-- backend: crnn  (16 ms)
+- backend: crnn  (13 ms)
 - error: decode failed: check digit mismatch
 
 ### fuse  [DECODE-OK] conf1=96% conf2=97%
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (86 ms)
+- backend: tesseract  (77 ms)
 
 ### paddle  [DECODE-OK] conf1=99% conf2=97%
-- backend: paddle-onnxruntime  (91 ms)
+- backend: paddle-onnxruntime  (83 ms)
 
 ### indra  [DECODE-OK] conf1=94% conf2=92%
-- backend: indra  (53 ms)
+- backend: indra  (51 ms)
 
 ### indra_fullpage  [DECODE-OK] conf1=95% conf2=92%
-- backend: indra  (270 ms)
+- backend: indra  (229 ms)
 
 ## 4086f51e94e9c5c7_0007.jpg
-- 官方判定: PASS  verified=True  chosen=cnn  ms=181
-- 官方 line1: P<GUSSHIRNONA<<NALENYINA<<<<<<<<<<<<<<<<<<<<
+- 官方判定: PASS  verified=True  chosen=cnn  ms=156
+- 官方 line1: P<RUSSHIRNONA<<NALENYINA<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: 1100000000HUS8008046F0902274555<55555<5K5K08
 - 理由: 融合CNN+CRNN 识别并通过校验
 
-- GT line1: `P<GUSSHIRNONA<<NALENYINA<<<<<<<<<<<<<<<<<<<<`
-- GT line2: `1100000000HUS8008046F0902274555<55555<5K5K08`
+- GT line1: `PDRUSSMIRNOVA<<VALENTINA<<<<<<<<<<<<<<<<<<<<`
+- GT line2: `1100000000RUS8008046F0902274<<<<<<<<<<<<<<08`
 
 ### traditional  [decoded] conf1=73% conf2=70%
 - error: decode failed: check digit mismatch
-GT  : P<GUSSHIRNONA<<NALENYINA<<<<<<<<<<<<<<<<<<<<
+GT  : PDRUSSMIRNOVA<<VALENTINA<<<<<<<<<<<<<<<<<<<<
 PRED: MMMWL99NIWHOVA<<VALENT1HA<<<<<<<<<<<<<<<<<<<
       ^^^^^^^^^^^^^^ ^^^^^^^^^^                      [24 mismatch]
-GT  : 1100000000HUS8008046F0902274555<55555<5K5K08
+GT  : 1100000000RUS8008046F0902274<<<<<<<<<<<<<<08
 PRED: M44CCCCCCCCAC98CC8CA4ACVC2274<<<<<<<<<<<<<<C
-      ^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^^^ ^^^^^ ^^^^^^   [41 mismatch]
+      ^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^             ^^   [30 mismatch]
 
 ### cnn  [DECODE-OK] conf1=95% conf2=94%
-GT  : P<GUSSHIRNONA<<NALENYINA<<<<<<<<<<<<<<<<<<<<
-PRED: P<GUSSHIRNONA<<NALENYINA<<<<<<<<<<<<<<<<<<<<
-                                                     [0 mismatch]
-GT  : 1100000000HUS8008046F0902274555<55555<5K5K08
+GT  : PDRUSSMIRNOVA<<VALENTINA<<<<<<<<<<<<<<<<<<<<
+PRED: P<RUSSHIRNONA<<NALENYINA<<<<<<<<<<<<<<<<<<<<
+       ^    ^    ^   ^    ^                          [5 mismatch]
+GT  : 1100000000RUS8008046F0902274<<<<<<<<<<<<<<08
 PRED: 1100000000HUS8008046F0902274555<55555<5K5K08
-                                                     [0 mismatch]
+                ^                 ^^^ ^^^^^ ^^^^     [13 mismatch]
 
 ### crnn  [DECODE-OK] conf1=98% conf2=92%
-- backend: crnn  (14 ms)
-GT  : P<GUSSHIRNONA<<NALENYINA<<<<<<<<<<<<<<<<<<<<
+- backend: crnn  (13 ms)
+GT  : PDRUSSMIRNOVA<<VALENTINA<<<<<<<<<<<<<<<<<<<<
 PRED: PDRVSSMIRNOVA<<VALENTINA<<<<<<<<<<<<<<<<<<<<
-       ^^^  ^    ^   ^    ^                          [7 mismatch]
-GT  : 1100000000HUS8008046F0902274555<55555<5K5K08
+         ^                                           [1 mismatch]
+GT  : 1100000000RUS8008046F0902274<<<<<<<<<<<<<<08
 PRED: 1100000000R088008046F0902274<<<<<<<<<<<<<<08
-                ^^^               ^^^ ^^^^^ ^^^^     [15 mismatch]
+                 ^^                                  [2 mismatch]
 
 ### fuse  [DECODE-OK] conf1=96% conf2=98%
-GT  : P<GUSSHIRNONA<<NALENYINA<<<<<<<<<<<<<<<<<<<<
-PRED: P<GUSSHIRNONA<<NALENYINA<<<<<<<<<<<<<<<<<<<<
-                                                     [0 mismatch]
-GT  : 1100000000HUS8008046F0902274555<55555<5K5K08
+GT  : PDRUSSMIRNOVA<<VALENTINA<<<<<<<<<<<<<<<<<<<<
+PRED: P<RUSSHIRNONA<<NALENYINA<<<<<<<<<<<<<<<<<<<<
+       ^    ^    ^   ^    ^                          [5 mismatch]
+GT  : 1100000000RUS8008046F0902274<<<<<<<<<<<<<<08
 PRED: 1100000000HUS8008046F0902274555<55555<5K5K08
-                                                     [0 mismatch]
+                ^                 ^^^ ^^^^^ ^^^^     [13 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (84 ms)
-GT  : P<GUSSHIRNONA<<NALENYINA<<<<<<<<<<<<<<<<<<<<
+- backend: tesseract  (79 ms)
+GT  : PDRUSSMIRNOVA<<VALENTINA<<<<<<<<<<<<<<<<<<<<
 PRED: PDRUSSMIRNOVA<<VALENTINA<<<<<<<<<<<<<<<<<<<<
-       ^^   ^    ^   ^    ^                          [6 mismatch]
-GT  : 1100000000HUS8008046F0902274555<55555<5K5K08
+                                                     [0 mismatch]
+GT  : 1100000000RUS8008046F0902274<<<<<<<<<<<<<<08
 PRED: 1100000000RUS8008046F0902274<<<<<<<<<<<<<<08
-                ^                 ^^^ ^^^^^ ^^^^     [13 mismatch]
+                                                     [0 mismatch]
 
 ### paddle  [DECODE-OK] conf1=99% conf2=89%
-- backend: paddle-onnxruntime  (94 ms)
-GT  : P<GUSSHIRNONA<<NALENYINA<<<<<<<<<<<<<<<<<<<<
+- backend: paddle-onnxruntime  (85 ms)
+GT  : PDRUSSMIRNOVA<<VALENTINA<<<<<<<<<<<<<<<<<<<<
 PRED: PDRUSSMIRNOVA<<VALENTINA<<<<<<<<<<<<<<<<<<<<
-       ^^   ^    ^   ^    ^                          [6 mismatch]
-GT  : 1100000000HUS8008046F0902274555<55555<5K5K08
+                                                     [0 mismatch]
+GT  : 1100000000RUS8008046F0902274<<<<<<<<<<<<<<08
 PRED: 1100000000RUS8008046F0902274<<<<<<<<<<<<0846
-                ^                 ^^^ ^^^^^ ^^^^^^   [15 mismatch]
+                                              ^^^^   [4 mismatch]
 
 ### indra  [DECODE-OK] conf1=95% conf2=98%
-- backend: indra  (56 ms)
-GT  : P<GUSSHIRNONA<<NALENYINA<<<<<<<<<<<<<<<<<<<<
+- backend: indra  (53 ms)
+GT  : PDRUSSMIRNOVA<<VALENTINA<<<<<<<<<<<<<<<<<<<<
 PRED: PDRUSSMIRNOVA<<VALENTINA<<<<<<<<<<<<<<<<<<<<
-       ^^   ^    ^   ^    ^                          [6 mismatch]
-GT  : 1100000000HUS8008046F0902274555<55555<5K5K08
+                                                     [0 mismatch]
+GT  : 1100000000RUS8008046F0902274<<<<<<<<<<<<<<08
 PRED: 1100000000RUS8008046F0902274<<<<<<<<<<<<<<08
-                ^                 ^^^ ^^^^^ ^^^^     [13 mismatch]
+                                                     [0 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=92% conf2=98%
-- backend: indra  (185 ms)
-GT  : P<GUSSHIRNONA<<NALENYINA<<<<<<<<<<<<<<<<<<<<
+- backend: indra  (164 ms)
+GT  : PDRUSSMIRNOVA<<VALENTINA<<<<<<<<<<<<<<<<<<<<
 PRED: PDRUSSMIRNOVAK<VALENTINAK<<<<<<<<<<<<<<<<<<<
-       ^^   ^    ^ ^ ^    ^   ^                      [8 mismatch]
-GT  : 1100000000HUS8008046F0902274555<55555<5K5K08
+                   ^          ^                      [2 mismatch]
+GT  : 1100000000RUS8008046F0902274<<<<<<<<<<<<<<08
 PRED: 1100000000RUS8008046F0902274<<<<<<<<<<<<<<08
-                ^                 ^^^ ^^^^^ ^^^^     [13 mismatch]
+                                                     [0 mismatch]
 
 ## 41ab45d4bde758dc_0306.jpg
-- 官方判定: PASS  verified=True  chosen=tesseract  ms=169
+- 官方判定: PASS  verified=True  chosen=tesseract  ms=151
 - 官方 line1: PCAZEHUSEYNLI<<ORKHAN<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: X110003442AZE7503153M230801030LJV5Z<<<<<<<86
 - 理由: PaddleOCR 识别并通过校验
@@ -970,7 +970,7 @@ PRED: 3110003442AZE7503153M230801030KJU52555<<<<86
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=95% conf2=88%
-- backend: crnn  (15 ms)
+- backend: crnn  (12 ms)
 - error: decode failed: check digit mismatch
 GT  : P<AGRHUSEYNLI<<ORKHAN<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PCAZEHUSEYNLI<<ORKHAN<<<<<<<<<<<<<<<<<<<<<<<
@@ -988,7 +988,7 @@ PRED: 3110003442AZE7503153M230801030KJU52555<<<<86
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (85 ms)
+- backend: tesseract  (72 ms)
 GT  : P<AGRHUSEYNLI<<ORKHAN<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PCAZEHUSEYNLI<<ORKHAN<<<<<<<<<<<<<<<<<<<<<<<
        ^ ^^                                          [3 mismatch]
@@ -997,7 +997,7 @@ PRED: X110003442AZE7503153M230801030LJV5Z<<<<<<<86
       ^                             ^ ^ ^^^^         [7 mismatch]
 
 ### paddle  [DECODE-OK] conf1=98% conf2=98%
-- backend: paddle-onnxruntime  (89 ms)
+- backend: paddle-onnxruntime  (81 ms)
 GT  : P<AGRHUSEYNLI<<ORKHAN<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PCAZEHUSEYNLI<<ORKHAN<<<<<<<<<<<<<<<<<<<<<<<
        ^ ^^                                          [3 mismatch]
@@ -1006,7 +1006,7 @@ PRED: X110003442AZE7503153M2308010230LJV5Z<<<<<<86
       ^                           ^^^^^^^^^^         [11 mismatch]
 
 ### indra  [DECODE-OK] conf1=92% conf2=98%
-- backend: indra  (53 ms)
+- backend: indra  (48 ms)
 GT  : P<AGRHUSEYNLI<<ORKHAN<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PCAZEHUSEYNLI<<ORKHAN<<<<<<<<<<<<<<<<<<<<<<<
        ^ ^^                                          [3 mismatch]
@@ -1015,7 +1015,7 @@ PRED: X110003442AZE7503153M230801030LJV5Z<<<<<<<86
       ^                             ^ ^ ^^^^         [7 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=97% conf2=97%
-- backend: indra  (211 ms)
+- backend: indra  (195 ms)
 GT  : P<AGRHUSEYNLI<<ORKHAN<<<<<<<<<<<<<<<<<<<<<<<
 PRED: AZMBAYCANRESPUBLKASIREPUBLICOFAZERBAUJAN<<<<
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^       [40 mismatch]
@@ -1024,7 +1024,7 @@ PRED: PASPORTUN3MBASIPASS7ORT<<<<6<<<<<<<<<<<<<<02
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^    ^^   [40 mismatch]
 
 ## 43ecb49033fb30c1_0073.jpg
-- 官方判定: PASS  verified=True  chosen=tesseract  ms=180
+- 官方判定: PASS  verified=True  chosen=tesseract  ms=161
 - 官方 line1: P<USATRUNZO<<ONDINA<MICHELLE<<<<<<<<<<<<<<<<
 - 官方 line2: 0418276532USA3309209F9707014<<<<<<<<<<<<<<06
 - 理由: IndraOCR 识别并通过校验
@@ -1044,14 +1044,14 @@ PRED: CA4827A932L9A33C92CDG47M7M4A<<<<<<<<<<<<<<<A
 ### cnn  [decoded] conf1=90% conf2=95%
 - error: decode failed: check digit mismatch
 GT  : P<UIKYAUNZO<<ONDINA<MA<HSLLE<<<<<<<<<<<<<<<<
-PRED: P<UIKYAUNZO<<OND<NA<MA<YSCLE<<<<<<<<<<<<<<<<
-                      ^      ^ ^                     [3 mismatch]
+PRED: P<USAYAUNZO<<OND<NA<MA<YSCLE<<<<<<<<<<<<<<<<
+         ^^           ^      ^ ^                     [5 mismatch]
 GT  : 0418276532USA3309209F9707014<<<<<<<<<<<<<<06
 PRED: 7478276532USA3309209F9707014<<<<<<<<<<<<<<<1
       ^ ^                                       ^^   [4 mismatch]
 
 ### crnn  [decoded] conf1=96% conf2=96%
-- backend: crnn  (14 ms)
+- backend: crnn  (15 ms)
 - error: decode failed: check digit mismatch
 GT  : P<UIKYAUNZO<<ONDINA<MA<HSLLE<<<<<<<<<<<<<<<<
 PRED: P<USATRUNZO<<ONDINA<MICHELLE<<<<<<<<<<<<<<<<
@@ -1063,14 +1063,14 @@ PRED: 0418276532USA3309209F9707014<<<<<<<<<<<<<<<6
 ### fuse  [decoded] conf1=96% conf2=98%
 - error: decode failed: check digit mismatch
 GT  : P<UIKYAUNZO<<ONDINA<MA<HSLLE<<<<<<<<<<<<<<<<
-PRED: P<UIKYAUNZO<<OND<NA<MA<HSLLE<<<<<<<<<<<<<<<<
-                      ^                              [1 mismatch]
+PRED: P<USAYAUNZO<<OND<NA<MA<HSLLE<<<<<<<<<<<<<<<<
+         ^^           ^                              [3 mismatch]
 GT  : 0418276532USA3309209F9707014<<<<<<<<<<<<<<06
 PRED: 7418276532USA3309209F9707014<<<<<<<<<<<<<<<1
       ^                                         ^^   [3 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (76 ms)
+- backend: tesseract  (70 ms)
 GT  : P<UIKYAUNZO<<ONDINA<MA<HSLLE<<<<<<<<<<<<<<<<
 PRED: P<USATRUNZO<<ONDINA<MICHELLE<<<<<<<<<<<<<<<<
          ^^^^              ^^ ^                      [7 mismatch]
@@ -1079,7 +1079,7 @@ PRED: 0418276532USA3309209F9707014<<<<<<<<<<<<<<06
                                                      [0 mismatch]
 
 ### paddle  [DECODE-OK] conf1=97% conf2=97%
-- backend: paddle-onnxruntime  (82 ms)
+- backend: paddle-onnxruntime  (87 ms)
 GT  : P<UIKYAUNZO<<ONDINA<MA<HSLLE<<<<<<<<<<<<<<<<
 PRED: P<USATRUNZO<<ONDINA<MICHELLE<<<<<<<<<<<<<<<<
          ^^^^              ^^ ^                      [7 mismatch]
@@ -1088,7 +1088,7 @@ PRED: 0418276532USA3309209F9707014<<<<<<<<<<<<<682
                                                ^^^   [3 mismatch]
 
 ### indra  [DECODE-OK] conf1=99% conf2=100%
-- backend: indra  (54 ms)
+- backend: indra  (51 ms)
 GT  : P<UIKYAUNZO<<ONDINA<MA<HSLLE<<<<<<<<<<<<<<<<
 PRED: P<USATRUNZO<<ONDINA<MICHELLE<<<<<<<<<<<<<<<<
          ^^^^              ^^ ^                      [7 mismatch]
@@ -1097,7 +1097,7 @@ PRED: 0418276532USA3309209F9707014<<<<<<<<<<<<<<06
                                                      [0 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=87% conf2=95%
-- backend: indra  (294 ms)
+- backend: indra  (252 ms)
 GT  : P<UIKYAUNZO<<ONDINA<MA<HSLLE<<<<<<<<<<<<<<<<
 PRED: MICHALLEKKKKKKKKKKKKKKKK<<<<<<<<<<<<<<<<<<<<
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^                   [28 mismatch]
@@ -1106,7 +1106,7 @@ PRED: 0418276532CHA3309209F9707014<<<<<<<<<<<<<<06
                 ^^                                   [2 mismatch]
 
 ## 4c5f5e1654002cd0_0050.png
-- 官方判定: PASS  verified=True  chosen=tesseract  ms=157
+- 官方判定: PASS  verified=True  chosen=tesseract  ms=144
 - 官方 line1: P<USAOBAMA<<MICHELLE<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: 9102392482USA6401171F1812051900781200<129676
 - 理由: PaddleOCR 识别并通过校验
@@ -1117,25 +1117,25 @@ PRED: 0418276532CHA3309209F9707014<<<<<<<<<<<<<<06
 ### cnn  [skip]
 
 ### crnn  [decoded] conf1=93% conf2=90%
-- backend: crnn  (14 ms)
+- backend: crnn  (13 ms)
 - error: decode failed: check digit mismatch
 
 ### fuse  [DECODE-OK] conf1=96% conf2=93%
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (72 ms)
+- backend: tesseract  (64 ms)
 
 ### paddle  [DECODE-OK] conf1=99% conf2=99%
-- backend: paddle-onnxruntime  (84 ms)
+- backend: paddle-onnxruntime  (80 ms)
 
 ### indra  [DECODE-OK] conf1=86% conf2=98%
-- backend: indra  (54 ms)
+- backend: indra  (52 ms)
 
 ### indra_fullpage  [DECODE-OK] conf1=91% conf2=96%
-- backend: indra  (253 ms)
+- backend: indra  (232 ms)
 
 ## 4dbd1b9e24b069f4_0023.png
-- 官方判定: PASS  verified=True  chosen=indra  ms=203
+- 官方判定: PASS  verified=True  chosen=indra  ms=180
 - 官方 line1: P<DAAMUSTERMANN<<ERIKA<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: C01X00T478DAA6408125F2702283<<<<<<<<<<<<<<04
 - 理由: IndraOCR 识别并通过校验
@@ -1154,14 +1154,14 @@ PRED: LA<ATAATX7AG<<XXHAT4TJAFL7TAEIAA<<<<<<<<T<<<
 
 ### cnn  [DECODE-OK] conf1=91% conf2=86%
 GT  : P<DSYNUSYERNANN<<ENIKA<<<<<<<<<<<<<<<<<<<<<<
-PRED: P<DSSNUSYERNANN<<ERIKA<<<<<<<<<<<<<<<<<<<<<<
-          ^             ^                            [2 mismatch]
+PRED: P<WSANUSYERNANN<<ERIKA<<<<<<<<<<<<<<<<<<<<<<
+        ^ ^             ^                            [3 mismatch]
 GT  : C01X00T478D<<6408125F2702283<<<<<<<<<<<<<<04
 PRED: C01AM0Y478BA<6408125F27022833554545434544454
          ^^ ^   ^^                ^^^^^^^^^^^^^^^    [20 mismatch]
 
 ### crnn  [decoded] conf1=94% conf2=94%
-- backend: crnn  (15 ms)
+- backend: crnn  (13 ms)
 - error: decode failed: check digit mismatch
 GT  : P<DSYNUSYERNANN<<ENIKA<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<D<<MUSTERMANN<<ERIKA<<<<<<<<<<<<<<<<<<<<<<
@@ -1172,20 +1172,20 @@ PRED: 001X00T4780<<6408125F2702283<<<<<<<<<<<<<<<4
 
 ### fuse  [DECODE-OK] conf1=93% conf2=90%
 GT  : P<DSYNUSYERNANN<<ENIKA<<<<<<<<<<<<<<<<<<<<<<
-PRED: P<DSSNUSYERNANN<<ERIKA<<<<<<<<<<<<<<<<<<<<<<
-          ^             ^                            [2 mismatch]
+PRED: P<WSANUSYERNANN<<ERIKA<<<<<<<<<<<<<<<<<<<<<<
+        ^ ^             ^                            [3 mismatch]
 GT  : C01X00T478D<<6408125F2702283<<<<<<<<<<<<<<04
 PRED: K01A00Y478BA<6408125F27022833554545454555454
       ^  ^  ^   ^^                ^^^^^^^^^^^^^^^    [20 mismatch]
 
 ### tesseract  [FAIL]
-- backend: tesseract  (127 ms)
+- backend: tesseract  (114 ms)
 - error: no MRZ candidate decoded
 - PRED line1: <空>
 - PRED line2: <空>
 
 ### paddle  [DECODE-OK] conf1=97% conf2=98%
-- backend: paddle-onnxruntime  (104 ms)
+- backend: paddle-onnxruntime  (98 ms)
 GT  : P<DSYNUSYERNANN<<ENIKA<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<D<<MUSTERMANN<<ERIKA<<<<<<<<<<<<<<<<<<<<<<
          ^^^  ^  ^      ^                            [6 mismatch]
@@ -1194,7 +1194,7 @@ PRED: C01X00T478D<<6408125F2702283<<<<<<<<<<<<<<04
                                                      [0 mismatch]
 
 ### indra  [DECODE-OK] conf1=96% conf2=97%
-- backend: indra  (54 ms)
+- backend: indra  (49 ms)
 GT  : P<DSYNUSYERNANN<<ENIKA<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<DAAMUSTERMANN<<ERIKA<<<<<<<<<<<<<<<<<<<<<<
          ^^^  ^  ^      ^                            [6 mismatch]
@@ -1203,7 +1203,7 @@ PRED: C01X00T478DAA6408125F2702283<<<<<<<<<<<<<<04
                  ^^                                  [2 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=97% conf2=94%
-- backend: indra  (285 ms)
+- backend: indra  (255 ms)
 GT  : P<DSYNUSYERNANN<<ENIKA<<<<<<<<<<<<<<<<<<<<<<
 PRED: 10SNIERSCHVIFTDERINHABERIN<<<<<<<<<<<<<<<<<<
       ^^^^^^^ ^^^^^^^^^^ ^^^^^^^                     [24 mismatch]
@@ -1212,7 +1212,7 @@ PRED: DESINHABE0SNIGNATUR1OFBEAR<3<<<<<<<<<<<<<<06
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^                ^   [28 mismatch]
 
 ## 526d2e38b6b977bc_0014.jpg
-- 官方判定: PASS  verified=True  chosen=tesseract  ms=150
+- 官方判定: PASS  verified=True  chosen=tesseract  ms=153
 - 官方 line1: PEROUPOPESCU<<MIHAELA<STEFANIA<<<<<<<<<<<<<<
 - 官方 line2: 0400210397ROU8001014F34090284800101017005<70
 - 理由: PaddleOCR 识别并通过校验
@@ -1232,14 +1232,14 @@ PRED: <<7<<<3<<<<J6<<<<5<<<<<F<<<<5<<<6<L<<<<<<L<L
 ### cnn  [decoded] conf1=87% conf2=57%
 - error: decode failed: check digit mismatch
 GT  : PEROUPOPESCU<<MIHAELA<STEFANIA<<<<<<<<<<<<<<
-PRED: P<UPDPEWCU<<VDHACLA<GTDFANDA<<<<<<<<<<<<<<<<
+PRED: P<UNOPEWCU<<VDHACLA<GTDFANDA<<<<<<<<<<<<<<<<
        ^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^                 [28 mismatch]
 GT  : 0400210397ROU8001014F34090284800101017005<70
 PRED: 0D004XX9H0NVH9698040M8597043H80XUPH0040X0070
        ^  ^^^^^^^^^^^^^ ^^^^^^^ ^^^  ^^^^ ^^ ^^^     [33 mismatch]
 
 ### crnn  [DECODE-OK] conf1=95% conf2=98%
-- backend: crnn  (15 ms)
+- backend: crnn  (14 ms)
 GT  : PEROUPOPESCU<<MIHAELA<STEFANIA<<<<<<<<<<<<<<
 PRED: PER0UP0PESCU<<MIHAELA<STEFANIA<<<<<<<<<<<<<<
          ^  ^                                        [2 mismatch]
@@ -1250,14 +1250,14 @@ PRED: 0400210397ROU8001014F34090284800101017005<70
 ### fuse  [decoded] conf1=89% conf2=61%
 - error: decode failed: check digit mismatch
 GT  : PEROUPOPESCU<<MIHAELA<STEFANIA<<<<<<<<<<<<<<
-PRED: P<UPDPEWCU<<MDNADLA<GTDFANDA<<<<<<<<<<<<<<<<
+PRED: P<UNOPEWCU<<MDNADLA<GTDFANDA<<<<<<<<<<<<<<<<
        ^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^                 [28 mismatch]
 GT  : 0400210397ROU8001014F34090284800101017005<70
 PRED: 00004XX9H0NVH9690040M0597843H80XUPH0040X0070
        ^  ^^^^^^^^^^^^^ ^^^^^^^^^^^  ^^^^ ^^ ^^^     [34 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (62 ms)
+- backend: tesseract  (56 ms)
 GT  : PEROUPOPESCU<<MIHAELA<STEFANIA<<<<<<<<<<<<<<
 PRED: PEROUPOPESCU<<MIHAELA<STEFANIA<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -1266,7 +1266,7 @@ PRED: 0400210397ROU8001014F34090284800101017005<70
                                                      [0 mismatch]
 
 ### paddle  [DECODE-OK] conf1=99% conf2=99%
-- backend: paddle-onnxruntime  (83 ms)
+- backend: paddle-onnxruntime  (78 ms)
 GT  : PEROUPOPESCU<<MIHAELA<STEFANIA<<<<<<<<<<<<<<
 PRED: PEROUPOPESCU<<MIHAELA<STEFANIA<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -1275,13 +1275,13 @@ PRED: 0400210397ROU8001014F34090284800101017005<70
                                                      [0 mismatch]
 
 ### indra  [FAIL]
-- backend: indra  (33 ms)
+- backend: indra  (30 ms)
 - error: indra 未找到 MRZ 候选行 (1 行)
 - PRED line1: <空>
 - PRED line2: <空>
 
 ### indra_fullpage  [DECODE-OK] conf1=96% conf2=93%
-- backend: indra  (270 ms)
+- backend: indra  (251 ms)
 GT  : PEROUPOPESCU<<MIHAELA<STEFANIA<<<<<<<<<<<<<<
 PRED: ROCNDAROMANIAROUMANIE<<<<<<<<<<<<<<<<<<<<<<<
       ^^^^^^^^^^^^^^^^^ ^^^ ^^^^^^^^                 [28 mismatch]
@@ -1290,7 +1290,7 @@ PRED: TPTYPATYP0CNDULFRIC3UNTRYCO3ECODEDUPAYSNUM08
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   [44 mismatch]
 
 ## 52f421c92ccf6ba4_0136.jpg
-- 官方判定: PASS  verified=True  chosen=tesseract  ms=169
+- 官方判定: PASS  verified=True  chosen=tesseract  ms=158
 - 官方 line1: P<AUSCITIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: RC00150586UTO9105045F2509013<99999000T<<<<82
 - 理由: PaddleOCR 识别并通过校验
@@ -1316,7 +1316,7 @@ PRED: KCG01505B6U<O9105045F2509013N999990001<<5<82
                                                      [0 mismatch]
 
 ### crnn  [DECODE-OK] conf1=96% conf2=97%
-- backend: crnn  (15 ms)
+- backend: crnn  (13 ms)
 GT  : P<AUBCITIZEN<<JANK<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<AUSCITI2EN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<
           ^    ^       ^                             [3 mismatch]
@@ -1326,14 +1326,14 @@ PRED: RC00150586UTO9105045F2509013<99999000T<<<<82
 
 ### fuse  [DECODE-OK] conf1=99% conf2=92%
 GT  : P<AUBCITIZEN<<JANK<<<<<<<<<<<<<<<<<<<<<<<<<<
-PRED: P<AUBCITIZEN<<JANK<<<<<<<<<<<<<<<<<<<<<<<<<<
-                                                     [0 mismatch]
+PRED: P<AUSCITIZEN<<JANK<<<<<<<<<<<<<<<<<<<<<<<<<<
+          ^                                          [1 mismatch]
 GT  : KCG01505B6U<O9105045F2509013N999990001<<5<82
 PRED: KCG01505B6UXO9105045F2509013N999990001<<5<82
                  ^                                   [1 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (90 ms)
+- backend: tesseract  (75 ms)
 GT  : P<AUBCITIZEN<<JANK<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<AUSCITIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<
           ^            ^                             [2 mismatch]
@@ -1342,7 +1342,7 @@ PRED: RC00150586UTO9105045F2509013<99999000T<<<<82
       ^ ^     ^  ^                ^        ^  ^      [7 mismatch]
 
 ### paddle  [DECODE-OK] conf1=99% conf2=99%
-- backend: paddle-onnxruntime  (77 ms)
+- backend: paddle-onnxruntime  (81 ms)
 GT  : P<AUBCITIZEN<<JANK<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<AUSCITIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<
           ^            ^                             [2 mismatch]
@@ -1351,7 +1351,7 @@ PRED: RC00150586UTO9105045F2509013<99999000T<<<<82
       ^ ^     ^  ^                ^        ^  ^      [7 mismatch]
 
 ### indra  [DECODE-OK] conf1=97% conf2=99%
-- backend: indra  (53 ms)
+- backend: indra  (52 ms)
 GT  : P<AUBCITIZEN<<JANK<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<ATSCITIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<
          ^^            ^                             [3 mismatch]
@@ -1360,7 +1360,7 @@ PRED: RC00150586ATS9105045F2509013<99999000T<<<<82
       ^ ^     ^ ^^^               ^        ^  ^      [9 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=93% conf2=99%
-- backend: indra  (159 ms)
+- backend: indra  (152 ms)
 GT  : P<AUBCITIZEN<<JANK<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<ATSCITIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<
          ^^            ^                             [3 mismatch]
@@ -1369,8 +1369,8 @@ PRED: RC00150586ATS9105045F2509013<99999000T<<<<82
       ^ ^     ^ ^^^               ^        ^  ^      [9 mismatch]
 
 ## 556644d1d8bf4672_0215.jpg
-- 官方判定: PASS  verified=True  chosen=fuse  ms=216
-- 官方 line1: P<IWN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+- 官方判定: PASS  verified=True  chosen=fuse  ms=189
+- 官方 line1: P<TWN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: 98S0701807KNH7307052F1204089K201781154<<<<54
 - 理由: 融合CNN+CRNN 识别并通过校验
 
@@ -1386,20 +1386,20 @@ PRED: RC00150586ATS9105045F2509013<99999000T<<<<82
 ### fuse  [DECODE-OK] conf1=95% conf2=96%
 
 ### tesseract  [decoded]
-- backend: tesseract  (158 ms)
+- backend: tesseract  (146 ms)
 - error: no MRZ candidate decoded
 
 ### paddle  [DECODE-OK] conf1=98% conf2=99%
-- backend: paddle-onnxruntime  (81 ms)
+- backend: paddle-onnxruntime  (79 ms)
 
 ### indra  [DECODE-OK] conf1=72% conf2=99%
-- backend: indra  (47 ms)
+- backend: indra  (44 ms)
 
 ### indra_fullpage  [DECODE-OK] conf1=92% conf2=84%
-- backend: indra  (333 ms)
+- backend: indra  (303 ms)
 
 ## 61d671ec161f22e3_0042.png
-- 官方判定: REJECT  verified=False  chosen=None  ms=14
+- 官方判定: REJECT  verified=False  chosen=None  ms=13
 - 理由: 未在照片中定位到 MRZ 双行
 
 ### traditional  [no_pair]
@@ -1417,10 +1417,10 @@ PRED: RC00150586ATS9105045F2509013<99999000T<<<<82
 ### indra  [no_pair]
 
 ### indra_fullpage  [DECODE-OK] conf1=99% conf2=98%
-- backend: indra  (255 ms)
+- backend: indra  (227 ms)
 
 ## 6b0e5919dd6f3ac8_0006.jpg
-- 官方判定: PASS  verified=True  chosen=tesseract  ms=157
+- 官方判定: PASS  verified=True  chosen=tesseract  ms=161
 - 官方 line1: P<ESPESPANOLA<ESPANOLA<<CARMEN<<<<<<<<<<<<<<
 - 官方 line2: ZAB0002549ESP8001014F2501017A9999999900<<<44
 - 理由: PaddleOCR 识别并通过校验
@@ -1440,14 +1440,14 @@ PRED: 2AMCCC2944C9A8CC4C44A29M4M47AVV9VV9VVCC4<<A4
 ### cnn  [decoded] conf1=91% conf2=83%
 - error: decode failed: check digit mismatch
 GT  : P<SSPRSPANOLA<ESPANDLK<<EKNNEN<<<<<<<<<<<<<<
-PRED: P<SSPRSPANOLA<ESPANDEK<<EKNNEN<<<<<<<<<<<<<<
-                          ^                          [1 mismatch]
+PRED: P<SGPRSPANOLA<ESPANDEK<<EKNNEN<<<<<<<<<<<<<<
+         ^                ^                          [2 mismatch]
 GT  : ZAB0002549ESP8001014F2501017A9999999900<<<44
 PRED: YMH0002549KSP8001016F25510178999999990038844
       ^^^       ^        ^   ^    ^          ^^^     [10 mismatch]
 
 ### crnn  [decoded] conf1=97% conf2=94%
-- backend: crnn  (15 ms)
+- backend: crnn  (14 ms)
 - error: decode failed: check digit mismatch
 GT  : P<SSPRSPANOLA<ESPANDLK<<EKNNEN<<<<<<<<<<<<<<
 PRED: P<ESPESPANOLA<ESPANOLA<<CARMEN<<<<<<<<<<<<<<
@@ -1459,14 +1459,14 @@ PRED: ZAB0002549ESP8001014F2501017A9999999900<<<<4
 ### fuse  [decoded] conf1=96% conf2=91%
 - error: decode failed: check digit mismatch
 GT  : P<SSPRSPANOLA<ESPANDLK<<EKNNEN<<<<<<<<<<<<<<
-PRED: P<SSPRSPANOLA<ESPANDLK<<EKNNEN<<<<<<<<<<<<<<
-                                                     [0 mismatch]
+PRED: P<SGPRSPANOLA<ESPANDLK<<EKNNEN<<<<<<<<<<<<<<
+         ^                                           [1 mismatch]
 GT  : ZAB0002549ESP8001014F2501017A9999999900<<<44
 PRED: IMH0002549ESP8001014F2551017K999999990038844
       ^^^                    ^    ^          ^^^     [8 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (69 ms)
+- backend: tesseract  (65 ms)
 GT  : P<SSPRSPANOLA<ESPANDLK<<EKNNEN<<<<<<<<<<<<<<
 PRED: P<ESPESPANOLA<ESPANOLA<<CARMEN<<<<<<<<<<<<<<
         ^  ^             ^ ^  ^^^^                   [8 mismatch]
@@ -1475,7 +1475,7 @@ PRED: ZAB0002549ESP8001014F2501017A9999999900<<<44
                                                      [0 mismatch]
 
 ### paddle  [DECODE-OK] conf1=99% conf2=99%
-- backend: paddle-onnxruntime  (86 ms)
+- backend: paddle-onnxruntime  (82 ms)
 GT  : P<SSPRSPANOLA<ESPANDLK<<EKNNEN<<<<<<<<<<<<<<
 PRED: P<ESPESPANOLA<ESPANOLA<<CARMEN<<<<<<<<<<<<<<
         ^  ^             ^ ^  ^^^^                   [8 mismatch]
@@ -1484,7 +1484,7 @@ PRED: ZAB0002549ESP8001014F25010171A999999900<<<44
                                   ^^                 [2 mismatch]
 
 ### indra  [DECODE-OK] conf1=96% conf2=97%
-- backend: indra  (48 ms)
+- backend: indra  (42 ms)
 GT  : P<SSPRSPANOLA<ESPANDLK<<EKNNEN<<<<<<<<<<<<<<
 PRED: PKESPESPANOLAKESPANOLA<<CARMENK<<<<<<<<<<<<<
        ^^  ^       ^     ^ ^  ^^^^  ^                [11 mismatch]
@@ -1493,7 +1493,7 @@ PRED: ZAB0002549ESP8001014F2501017A9999999900<<<44
                                                      [0 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=95% conf2=98%
-- backend: indra  (211 ms)
+- backend: indra  (194 ms)
 GT  : P<SSPRSPANOLA<ESPANDLK<<EKNNEN<<<<<<<<<<<<<<
 PRED: P<ESPESPANOLA<ESPANOLAK<CARMEN<<<<<<<<<<<<<<
         ^  ^             ^ ^^ ^^^^                   [9 mismatch]
@@ -1528,7 +1528,7 @@ PRED: JG20705515OMN7803048M2411185300036145<<<5<50
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=98% conf2=96%
-- backend: crnn  (15 ms)
+- backend: crnn  (14 ms)
 - error: decode failed: check digit mismatch
 GT  : P<UHNAL<SIYARI<<ISSA<ARBULLAH<SAEEH<<<<<<<<<
 PRED: P<OMNAL<SIYABI<<ISSA<ABDULLAH<SALEH<<<<<<<<<
@@ -1546,7 +1546,7 @@ PRED: JG20705515OMN7803048M2411185300036145<<<5<50
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (79 ms)
+- backend: tesseract  (70 ms)
 GT  : P<UHNAL<SIYARI<<ISSA<ARBULLAH<SAEEH<<<<<<<<<
 PRED: P<OMNAL<SIYABI<<ISSA<ABDULLAH<SALEH<<<<<<<<<
         ^^        ^         ^^        ^              [6 mismatch]
@@ -1555,7 +1555,7 @@ PRED: JG20705515OMN7803048M241118530003614<<<<<<50
                                           ^   ^      [2 mismatch]
 
 ### paddle  [DECODE-OK] conf1=98% conf2=97%
-- backend: paddle-onnxruntime  (87 ms)
+- backend: paddle-onnxruntime  (80 ms)
 GT  : P<UHNAL<SIYARI<<ISSA<ARBULLAH<SAEEH<<<<<<<<<
 PRED: P<OMNAL<SIYABI<<ISSA<ABDULLAH<SALEH<<<<<<<<<
         ^^        ^         ^^        ^              [6 mismatch]
@@ -1564,7 +1564,7 @@ PRED: JG20705515OMN7803048M241118530003614<<<<<<50
                                           ^   ^      [2 mismatch]
 
 ### indra  [DECODE-OK] conf1=95% conf2=99%
-- backend: indra  (51 ms)
+- backend: indra  (48 ms)
 GT  : P<UHNAL<SIYARI<<ISSA<ARBULLAH<SAEEH<<<<<<<<<
 PRED: P<OMNAL<SIYABIK<ISSAKABDULLAH<SALEH<<<<<<<<<
         ^^        ^ ^     ^ ^^        ^              [8 mismatch]
@@ -1573,7 +1573,7 @@ PRED: JG20705515OMN7803048M241118530003614<<<<<<50
                                           ^   ^      [2 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=97% conf2=100%
-- backend: indra  (198 ms)
+- backend: indra  (183 ms)
 GT  : P<UHNAL<SIYARI<<ISSA<ARBULLAH<SAEEH<<<<<<<<<
 PRED: P<OMNAL<SIYABI<<ISSAKABDULLAH<SALEH<<<<<<<<<
         ^^        ^       ^ ^^        ^              [7 mismatch]
@@ -1582,7 +1582,7 @@ PRED: JG20705515OMN7803048M241118530003614<<<<<<50
                                           ^   ^      [2 mismatch]
 
 ## 6dafa3b35c792d06_0039.png
-- 官方判定: PASS  verified=True  chosen=indra  ms=312
+- 官方判定: PASS  verified=True  chosen=indra  ms=274
 - 官方 line1: P<MMRABDELLAHI<MAHFOUDH<<MOHAMMED<<<<<<<<<<<
 - 官方 line2: ABI2345678MMRT7511217M15111331234567B9<<<<14
 - 理由: IndraOCR 识别并通过校验
@@ -1601,21 +1601,21 @@ PRED: JG20705515OMN7803048M241118530003614<<<<<<50
 - error: decode failed: check digit mismatch
 
 ### tesseract  [decoded]
-- backend: tesseract  (146 ms)
+- backend: tesseract  (136 ms)
 - error: no MRZ candidate decoded
 
 ### paddle  [decoded] conf1=95% conf2=99%
-- backend: paddle-onnxruntime  (200 ms)
+- backend: paddle-onnxruntime  (186 ms)
 - error: decode failed: check digit mismatch
 
 ### indra  [DECODE-OK] conf1=98% conf2=100%
-- backend: indra  (52 ms)
+- backend: indra  (47 ms)
 
 ### indra_fullpage  [DECODE-OK] conf1=97% conf2=100%
-- backend: indra  (241 ms)
+- backend: indra  (215 ms)
 
 ## 7294ad26ea8d95e0_0010.jpg
-- 官方判定: PASS  verified=True  chosen=crnn  ms=181
+- 官方判定: PASS  verified=True  chosen=crnn  ms=171
 - 官方 line1: P<BRAFARIAS<DOS<SANTOS<<RODRIGO<<<<<<<<<<<<<
 - 官方 line2: AA000261<7BRA0403162M2507053<<<<<<<<<<<<<<00
 - 理由: IndraOCR 识别并通过校验
@@ -1642,7 +1642,7 @@ PRED: AA00026157BHA0403162M25070535555555<55555500
               ^  ^                ^^^^^^^ ^^^^^^     [15 mismatch]
 
 ### crnn  [DECODE-OK] conf1=98% conf2=99%
-- backend: crnn  (18 ms)
+- backend: crnn  (14 ms)
 GT  : P<GGAFARIAS<DOS<SANYOS<<KODRIGO<<<<<<<<<<<<<
 PRED: P<BRAFARIAS<DOS<SANTOS<<RODRIGO<<<<<<<<<<<<<
         ^^               ^    ^                      [4 mismatch]
@@ -1652,14 +1652,14 @@ PRED: AA000261<7BRA0403162M2507053<<<<<<<<<<<<<<00
 
 ### fuse  [DECODE-OK] conf1=99% conf2=94%
 GT  : P<GGAFARIAS<DOS<SANYOS<<KODRIGO<<<<<<<<<<<<<
-PRED: P<GGAFARIAS<DOS<SANYOS<<KODRIGO<<<<<<<<<<<<<
-                                                     [0 mismatch]
+PRED: P<BRAFARIAS<DOS<SANYOS<<KODRIGO<<<<<<<<<<<<<
+        ^^                                           [2 mismatch]
 GT  : AA000261<7BRA0403162M2507053<<<<<<<<<<<<<<00
 PRED: AA000261<7BHA0403162M2507053<5<<5<<<<<<<<<00
                  ^                 ^  ^              [3 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (75 ms)
+- backend: tesseract  (71 ms)
 GT  : P<GGAFARIAS<DOS<SANYOS<<KODRIGO<<<<<<<<<<<<<
 PRED: P<BRAFARIAS<DOS<SANTOS<<RODRIGO<<<<<<<<<<<<<
         ^^               ^    ^                      [4 mismatch]
@@ -1668,7 +1668,7 @@ PRED: AA000261<7BRAU403162M2507053<<<<<<<<<<<<<<00
                    ^                                 [1 mismatch]
 
 ### paddle  [DECODE-OK] conf1=98% conf2=99%
-- backend: paddle-onnxruntime  (96 ms)
+- backend: paddle-onnxruntime  (91 ms)
 GT  : P<GGAFARIAS<DOS<SANYOS<<KODRIGO<<<<<<<<<<<<<
 PRED: P<BRAFARIAS<DOS<SANTOS<<RODRIGO<<<<<<<<<<<<<
         ^^               ^    ^                      [4 mismatch]
@@ -1677,7 +1677,7 @@ PRED: AA000261<7BRA0403162M2507053<<<<<<<<<<<<<<00
                                                      [0 mismatch]
 
 ### indra  [DECODE-OK] conf1=98% conf2=100%
-- backend: indra  (50 ms)
+- backend: indra  (45 ms)
 GT  : P<GGAFARIAS<DOS<SANYOS<<KODRIGO<<<<<<<<<<<<<
 PRED: P<BRAFARIAS<DOS<SANTOS<<RODRIGO<<<<<<<<<<<<<
         ^^               ^    ^                      [4 mismatch]
@@ -1686,7 +1686,7 @@ PRED: AA000261<7BRA0403162M2507053<<<<<<<<<<<<<<00
                                                      [0 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=98% conf2=99%
-- backend: indra  (197 ms)
+- backend: indra  (172 ms)
 GT  : P<GGAFARIAS<DOS<SANYOS<<KODRIGO<<<<<<<<<<<<<
 PRED: P<BRAFARIAS<DOS<SANTOS<<RODRIGO<<<<<<<<<<<<<
         ^^               ^    ^                      [4 mismatch]
@@ -1695,7 +1695,7 @@ PRED: AA000261<7BRA0403162M2507053<<<<<<<<<<<<<<00
                                                      [0 mismatch]
 
 ## 72ef4ce48bf27731_0002.jpg
-- 官方判定: PASS  verified=True  chosen=tesseract  ms=139
+- 官方判定: PASS  verified=True  chosen=tesseract  ms=128
 - 官方 line1: P<LVAOZOLKALNA<<LIENE<MARA<<<<<<<<<<<<<<<<<<
 - 官方 line2: LV99031769LVA6411183F3311237327707<98976<<58
 - 理由: PaddleOCR 识别并通过校验
@@ -1714,20 +1714,20 @@ PRED: AA000261<7BRA0403162M2507053<<<<<<<<<<<<<<00
 - error: decode failed: check digit mismatch
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (93 ms)
+- backend: tesseract  (86 ms)
 
 ### paddle  [DECODE-OK] conf1=99% conf2=99%
-- backend: paddle-onnxruntime  (67 ms)
+- backend: paddle-onnxruntime  (62 ms)
 
 ### indra  [DECODE-OK] conf1=92% conf2=99%
-- backend: indra  (54 ms)
+- backend: indra  (50 ms)
 
 ### indra_fullpage  [decoded] conf1=87% conf2=98%
-- backend: indra  (271 ms)
+- backend: indra  (236 ms)
 - error: lines=55 edits=0 composite_edits=0 country=LVA
 
 ## 7626df394c39f314_0020.png
-- 官方判定: PASS  verified=True  chosen=fuse  ms=182
+- 官方判定: PASS  verified=True  chosen=fuse  ms=169
 - 官方 line1: P<BHREBRAHIM<<MOHAMMED<ABDULLA<YOUEIF<<<<<<<
 - 官方 line2: B0000000<7BHM9001284M3212161000000000<<K<K04
 - 理由: 融合CNN+CRNN 识别并通过校验
@@ -1753,7 +1753,7 @@ PRED: B0000000<7BHM9001284M3212161000000000<<K<K04
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=97% conf2=95%
-- backend: crnn  (17 ms)
+- backend: crnn  (15 ms)
 - error: decode failed: check digit mismatch
 GT  : P<BHREBRAHIM<<MOHAMMED<ABDULLA<YOUSIF<<<<<<<
 PRED: PBBHREBRAHIM<<MOHAMMED<ABDULLA<YOUSIF<<<<<<<
@@ -1771,7 +1771,7 @@ PRED: B0000000<7BHM9001284M3212161000000000<<K<K04
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (92 ms)
+- backend: tesseract  (78 ms)
 GT  : P<BHREBRAHIM<<MOHAMMED<ABDULLA<YOUSIF<<<<<<<
 PRED: PBBHREBRAHIM<<MOHAMMED<ABDULLA<YOUSIF<<<<<<<
        ^                                             [1 mismatch]
@@ -1780,7 +1780,7 @@ PRED: B0000000<7BHR9001284M3212161000000000<<<<<04
                   ^                          ^ ^     [3 mismatch]
 
 ### paddle  [DECODE-OK] conf1=98% conf2=91%
-- backend: paddle-onnxruntime  (95 ms)
+- backend: paddle-onnxruntime  (89 ms)
 GT  : P<BHREBRAHIM<<MOHAMMED<ABDULLA<YOUSIF<<<<<<<
 PRED: PBBHREBRAHIM<<MOHAMMED<ABDULLA<YOUSIF<<<<<<<
        ^                                             [1 mismatch]
@@ -1789,7 +1789,7 @@ PRED: B0000000<7BHR9001284M321216100000000<<<<0428
                   ^                       ^  ^^^^^   [7 mismatch]
 
 ### indra  [DECODE-OK] conf1=97% conf2=99%
-- backend: indra  (56 ms)
+- backend: indra  (51 ms)
 GT  : P<BHREBRAHIM<<MOHAMMED<ABDULLA<YOUSIF<<<<<<<
 PRED: PBBHREBRAHIM<<MOHAMMED<ABDULLA<YOUSIF<<<<<<<
        ^                                             [1 mismatch]
@@ -1798,7 +1798,7 @@ PRED: B0000000<7BHR9001284M3212161000000000<<<<<04
                   ^                          ^ ^     [3 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=98% conf2=100%
-- backend: indra  (209 ms)
+- backend: indra  (190 ms)
 GT  : P<BHREBRAHIM<<MOHAMMED<ABDULLA<YOUSIF<<<<<<<
 PRED: PBBHREBRAHIM<<MOHAMMED<ABDULLAKYOUSIF<<<<<<<
        ^                            ^                [2 mismatch]
@@ -1807,7 +1807,7 @@ PRED: B0000000<7BHR9001284M3212161000000000<<<<<04
                   ^                          ^ ^     [3 mismatch]
 
 ## 78f45152a658f728_0012.jpg
-- 官方判定: PASS  verified=True  chosen=indra  ms=291
+- 官方判定: PASS  verified=True  chosen=indra  ms=263
 - 官方 line1: P<IDNLENGKAP<<NAMA<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: X00000O<<9IDN4508179S1601264<<<<<<<<<<<<<<00
 - 理由: IndraOCR 识别并通过校验
@@ -1819,28 +1819,28 @@ PRED: B0000000<7BHR9001284M3212161000000000<<<<<04
 - error: decode failed: check digit mismatch
 
 ### crnn  [decoded] conf1=98% conf2=83%
-- backend: crnn  (15 ms)
+- backend: crnn  (13 ms)
 - error: decode failed: check digit mismatch
 
 ### fuse  [decoded] conf1=99% conf2=91%
 - error: decode failed: check digit mismatch
 
 ### tesseract  [decoded]
-- backend: tesseract  (122 ms)
+- backend: tesseract  (111 ms)
 - error: no MRZ candidate decoded
 
 ### paddle  [decoded] conf1=99% conf2=90%
-- backend: paddle-onnxruntime  (187 ms)
+- backend: paddle-onnxruntime  (174 ms)
 - error: decode failed: check digit mismatch
 
 ### indra  [DECODE-OK] conf1=97% conf2=97%
-- backend: indra  (56 ms)
+- backend: indra  (49 ms)
 
 ### indra_fullpage  [DECODE-OK] conf1=86% conf2=74%
-- backend: indra  (278 ms)
+- backend: indra  (241 ms)
 
 ## 7c5899e1f86a07a0_0008.jpg
-- 官方判定: PASS  verified=True  chosen=tesseract  ms=185
+- 官方判定: PASS  verified=True  chosen=tesseract  ms=163
 - 官方 line1: P<LTUBASANAVICIENE<<BIRUTE<<<<<<<<<<<<<<<<<<
 - 官方 line2: 00000000<0LTU9003118F290102049003111045<<<86
 - 理由: IndraOCR 识别并通过校验
@@ -1867,7 +1867,7 @@ PRED: 0000000040ATU9003118F290102049003111045<5<86
               ^ ^                             ^      [3 mismatch]
 
 ### crnn  [decoded] conf1=97% conf2=91%
-- backend: crnn  (15 ms)
+- backend: crnn  (14 ms)
 - error: decode failed: check digit mismatch
 GT  : P<LTURASANAVICIENE<<BIRUTE<<<<<<<<<<<<<<<<<<
 PRED: P<LTUBASANAVICIENE<<BIRUTE<<<<<<<<<<<<<<<<<<
@@ -1886,7 +1886,7 @@ PRED: 0000000040ATU9003118F290102049003111045<<<86
               ^ ^                                    [2 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (80 ms)
+- backend: tesseract  (72 ms)
 GT  : P<LTURASANAVICIENE<<BIRUTE<<<<<<<<<<<<<<<<<<
 PRED: P<LTUBASANAVICIENE<<BIRUTE<<<<<<<<<<<<<<<<<<
            ^                                         [1 mismatch]
@@ -1895,7 +1895,7 @@ PRED: 00000000<0LTU9003118F290102049003111045<<<86
                                                      [0 mismatch]
 
 ### paddle  [DECODE-OK] conf1=99% conf2=98%
-- backend: paddle-onnxruntime  (86 ms)
+- backend: paddle-onnxruntime  (87 ms)
 GT  : P<LTURASANAVICIENE<<BIRUTE<<<<<<<<<<<<<<<<<<
 PRED: P<LTUBASANAVICIENE<<BIRUTE<<<<<<<<<<<<<<<<<<
            ^                                         [1 mismatch]
@@ -1904,7 +1904,7 @@ PRED: 00000000<0LTU9003118F290102049003111045<<<86
                                                      [0 mismatch]
 
 ### indra  [DECODE-OK] conf1=98% conf2=98%
-- backend: indra  (56 ms)
+- backend: indra  (49 ms)
 GT  : P<LTURASANAVICIENE<<BIRUTE<<<<<<<<<<<<<<<<<<
 PRED: P<LTUBASANAVICIENE<<BIRUTE<<<<<<<<<<<<<<<<<<
            ^                                         [1 mismatch]
@@ -1913,7 +1913,7 @@ PRED: 00000000<0LTU9003118F290102049003111045<<<86
                                                      [0 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=99% conf2=98%
-- backend: indra  (209 ms)
+- backend: indra  (171 ms)
 GT  : P<LTURASANAVICIENE<<BIRUTE<<<<<<<<<<<<<<<<<<
 PRED: P<LTUBASANAVICIENE<<BIRUTE<<<<<<<<<<<<<<<<<<
            ^                                         [1 mismatch]
@@ -1922,7 +1922,7 @@ PRED: 00000000<0LTU9003118F290102049003111045<<<86
                                                      [0 mismatch]
 
 ## 7c6f47bad47d70e9_0230.jpg
-- 官方判定: PASS  verified=True  chosen=tesseract  ms=188
+- 官方判定: PASS  verified=True  chosen=tesseract  ms=164
 - 官方 line1: P<AUSCITIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: RA01234564AUS9105045F3208014<99999000T<<<<86
 - 理由: PaddleOCR 识别并通过校验
@@ -1948,7 +1948,7 @@ PRED: M801234M64TBA9105045F32080144HNHNH0001444A86
       ^^     ^  ^^^               ^^^^^^   ^^^^^     [17 mismatch]
 
 ### crnn  [decoded] conf1=94% conf2=85%
-- backend: crnn  (16 ms)
+- backend: crnn  (13 ms)
 - error: decode failed: check digit mismatch
 GT  : P<AUSCIYIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<AUSCITIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -1966,7 +1966,7 @@ PRED: M801234M64TBS9105045F32080144999N90001444486
       ^^     ^  ^^                ^   ^    ^^^^^     [12 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (77 ms)
+- backend: tesseract  (68 ms)
 GT  : P<AUSCIYIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<AUSCITIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<
              ^                                       [1 mismatch]
@@ -1975,7 +1975,7 @@ PRED: RA01234564AUS9105045F3208014<99999000T<<<<86
                                                      [0 mismatch]
 
 ### paddle  [DECODE-OK] conf1=99% conf2=98%
-- backend: paddle-onnxruntime  (95 ms)
+- backend: paddle-onnxruntime  (86 ms)
 GT  : P<AUSCIYIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<AUSCITIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<
              ^                                       [1 mismatch]
@@ -1984,7 +1984,7 @@ PRED: RA01234564AUS9105045F3208014<99999000T<<<<86
                                                      [0 mismatch]
 
 ### indra  [DECODE-OK] conf1=98% conf2=98%
-- backend: indra  (57 ms)
+- backend: indra  (50 ms)
 GT  : P<AUSCIYIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<AUSCITIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<
              ^                                       [1 mismatch]
@@ -1993,7 +1993,7 @@ PRED: RA01234564AUS9105045F3208014<99999000T<<<<86
                                                      [0 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=96% conf2=98%
-- backend: indra  (176 ms)
+- backend: indra  (151 ms)
 GT  : P<AUSCIYIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<AUSCITIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<
              ^                                       [1 mismatch]
@@ -2002,7 +2002,7 @@ PRED: RA01234564AUS9105045F3208014<99999000T<<<<86
                                                      [0 mismatch]
 
 ## 86c6d990773daff2_0002.jpg
-- 官方判定: PASS  verified=True  chosen=tesseract  ms=159
+- 官方判定: PASS  verified=True  chosen=tesseract  ms=146
 - 官方 line1: P<MLTMICALLEF<<GIOVANNI<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: 0981489<<5MLT6811118M2006268<<<<<<<<<<<<<<06
 - 理由: PaddleOCR 识别并通过校验
@@ -2029,7 +2029,7 @@ PRED: 09UM489NN5MKM6811118M200626800K<4NNNNNNNNN06
         ^^   ^^  ^^               ^^^ ^^^^^^^^^^     [19 mismatch]
 
 ### crnn  [DECODE-OK] conf1=95% conf2=95%
-- backend: crnn  (15 ms)
+- backend: crnn  (13 ms)
 GT  : P<MLTMIGALLBF<<GIOWANND<<<<<<<<<<<<<<<<<<<<<
 PRED: P<MLTMICALLEF<<GIOVANNI<<<<<<<<<<<<<<<<<<<<<
              ^   ^      ^   ^                        [4 mismatch]
@@ -2046,7 +2046,7 @@ PRED: 09UM48QNN5MKM6811118M2006268KK<<<NGNNNNNNN06
         ^^  ^^^  ^^               ^^   ^^^^^^^^^     [18 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (78 ms)
+- backend: tesseract  (67 ms)
 GT  : P<MLTMIGALLBF<<GIOWANND<<<<<<<<<<<<<<<<<<<<<
 PRED: P<MLTMICALLEF<<GIOVANNI<<<<<<<<<<<<<<<<<<<<<
              ^   ^      ^   ^                        [4 mismatch]
@@ -2055,7 +2055,7 @@ PRED: 0981489<<5MLT6811118M2006268<<<<<<<<<<<<<<06
                                                      [0 mismatch]
 
 ### paddle  [DECODE-OK] conf1=99% conf2=96%
-- backend: paddle-onnxruntime  (90 ms)
+- backend: paddle-onnxruntime  (80 ms)
 GT  : P<MLTMIGALLBF<<GIOWANND<<<<<<<<<<<<<<<<<<<<<
 PRED: P<MLTMICALLEF<<GIOVANNI<<<<<<<<<<<<<<<<<<<<<
              ^   ^      ^   ^                        [4 mismatch]
@@ -2064,7 +2064,7 @@ PRED: 0981489<<5MLT6811118M20062680<<<<<<<<<<<<<06
                                   ^                  [1 mismatch]
 
 ### indra  [DECODE-OK] conf1=93% conf2=98%
-- backend: indra  (49 ms)
+- backend: indra  (45 ms)
 GT  : P<MLTMIGALLBF<<GIOWANND<<<<<<<<<<<<<<<<<<<<<
 PRED: P<MLTMICALLEF<<GIOVANNI<<<<<<<<<<<<<<<<<<<<<
              ^   ^      ^   ^                        [4 mismatch]
@@ -2073,7 +2073,7 @@ PRED: 0981489<<5MLT6811118M2006268<<<<<<<<<<<<<<06
                                                      [0 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=98% conf2=97%
-- backend: indra  (241 ms)
+- backend: indra  (214 ms)
 GT  : P<MLTMIGALLBF<<GIOWANND<<<<<<<<<<<<<<<<<<<<<
 PRED: REASBBLIKATAMALTAREPUBLICOFMALTA<<<<<<<<<<<<
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^               [32 mismatch]
@@ -2082,7 +2082,7 @@ PRED: PASSAPORT2ASBPORTPA2SEPO<<<7<<<<<<<<<<<<<<00
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^               ^   [29 mismatch]
 
 ## 8a5e3bc18a6ff7d2_0043.jpg
-- 官方判定: PASS  verified=True  chosen=crnn  ms=187
+- 官方判定: PASS  verified=True  chosen=crnn  ms=166
 - 官方 line1: P<NLDDE<BRUIJN<<WILLEKE<LISELOTTE<<<<<<<<<<<
 - 官方 line2: SPECI20142NLD6503101F2403096999999990<<<<<84
 - 理由: PaddleOCR 识别并通过校验
@@ -2101,14 +2101,14 @@ PRED: GPCC12C4A2HLDA5C34C4P24C3C9K99999999C<<<<<H<
 
 ### cnn  [DECODE-OK] conf1=97% conf2=94%
 GT  : P<NLDDE<BRUIJN<<WILLEKE<LISELOYYE<<<<<<<<<<<
-PRED: P<HLDDE<BRUIJN<<WILLEKE<LISELOYYE<<<<<<<<<<<
-        ^                                            [1 mismatch]
+PRED: P<NLDDE<BRUIJN<<WILLEKE<LISELOYYE<<<<<<<<<<<
+                                                     [0 mismatch]
 GT  : 18ECI20142NLS6503101F2403096999999990<<<<<84
 PRED: 18ECI20142NLS6503101F2403096999999990<<<<<84
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=97% conf2=86%
-- backend: crnn  (15 ms)
+- backend: crnn  (13 ms)
 - error: decode failed: check digit mismatch
 GT  : P<NLDDE<BRUIJN<<WILLEKE<LISELOYYE<<<<<<<<<<<
 PRED: P<NLDDE<BRUIJN<<WILLEKE<LISELOTTE<<<<<<<<<<<
@@ -2119,14 +2119,14 @@ PRED: GPECI201<2NLB<50310112<03096999999990<<<<<8<
 
 ### fuse  [DECODE-OK] conf1=98% conf2=96%
 GT  : P<NLDDE<BRUIJN<<WILLEKE<LISELOYYE<<<<<<<<<<<
-PRED: P<HLDDE<BRUIJN<<WILLEKE<LISELOYYE<<<<<<<<<<<
-        ^                                            [1 mismatch]
+PRED: P<NLDDE<BRUIJN<<WILLEKE<LISELOYYE<<<<<<<<<<<
+                                                     [0 mismatch]
 GT  : 18ECI20142NLS6503101F2403096999999990<<<<<84
 PRED: 18ECI20142NLS6503101F2403096999999990<<<<<84
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (84 ms)
+- backend: tesseract  (77 ms)
 GT  : P<NLDDE<BRUIJN<<WILLEKE<LISELOYYE<<<<<<<<<<<
 PRED: P<NLDDE<BRUIJN<<WILLEKE<LISELOTTE<<<<<<<<<<<
                                     ^^               [2 mismatch]
@@ -2135,7 +2135,7 @@ PRED: SPECI20142NLD6503101F2403096999999990<<<<<84
       ^^          ^                                  [3 mismatch]
 
 ### paddle  [DECODE-OK] conf1=99% conf2=99%
-- backend: paddle-onnxruntime  (88 ms)
+- backend: paddle-onnxruntime  (89 ms)
 GT  : P<NLDDE<BRUIJN<<WILLEKE<LISELOYYE<<<<<<<<<<<
 PRED: P<NLDDE<BRUIJN<<WILLEKE<LISELOTTE<<<<<<<<<<<
                                     ^^               [2 mismatch]
@@ -2144,7 +2144,7 @@ PRED: SPECI20142NLD6503101F2403096999999990<<<<<84
       ^^          ^                                  [3 mismatch]
 
 ### indra  [DECODE-OK] conf1=98% conf2=99%
-- backend: indra  (53 ms)
+- backend: indra  (49 ms)
 GT  : P<NLDDE<BRUIJN<<WILLEKE<LISELOYYE<<<<<<<<<<<
 PRED: P<NLDDE<BRUIJN<<WILLEKE<LISELOTTE<<<<<<<<<<<
                                     ^^               [2 mismatch]
@@ -2153,7 +2153,7 @@ PRED: SPECI20142NLD6503101F2403096999999990<<<<<84
       ^^          ^                                  [3 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=56% conf2=96%
-- backend: indra  (455 ms)
+- backend: indra  (402 ms)
 GT  : P<NLDDE<BRUIJN<<WILLEKE<LISELOYYE<<<<<<<<<<<
 PRED: 42LCO17850112210144418482<<<<<<<<<<<<<<<<<<<
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^              [33 mismatch]
@@ -2162,7 +2162,7 @@ PRED: VALIDTORA1LCOUNTRIE5VALABLE7OURTOUSTESPA<<86
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   ^   [41 mismatch]
 
 ## 8de1f04907363a2d_0000.jpg
-- 官方判定: PASS  verified=True  chosen=fuse  ms=167
+- 官方判定: PASS  verified=True  chosen=fuse  ms=138
 - 官方 line1: P<INJAE<ASSDGYYIG<<YYUGIGUG<GESP<<<<<<<<<<<<
 - 官方 line2: 82040011<0ISL1212123F1106297121212<1239<<<66
 - 理由: 融合CNN+CRNN 识别并通过校验
@@ -2182,7 +2182,7 @@ PRED: A2C4C543<C15L3Z4242JF44CK2973Z4242<3P39<<<ZF
 ### cnn  [skip]
 
 ### crnn  [decoded] conf1=98% conf2=91%
-- backend: crnn  (18 ms)
+- backend: crnn  (13 ms)
 - error: decode failed: bad MRZ length
 GT  : P<INJAE<ASSDGYYIG<<YYUGIGUG<GESP<<<<<<<<<<<<
 PRED: PAISLAEVARSDOTTIR<<THURIDUR<OESP<<<<<<<<<<<<
@@ -2200,7 +2200,7 @@ PRED: 82040011<0ISL1212123F1106297121212<1239<<<66
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (79 ms)
+- backend: tesseract  (64 ms)
 GT  : P<INJAE<ASSDGYYIG<<YYUGIGUG<GESP<<<<<<<<<<<<
 PRED: PAISLAEVARSDOTTIR<<THURIDUR<OESP<<<<<<<<<<<<
        ^ ^^  ^ ^  ^^^ ^  ^^ ^ ^ ^ ^                  [15 mismatch]
@@ -2209,7 +2209,7 @@ PRED: A2040611<0ISL1212123F1106297121212<1239<<<66
       ^    ^                                         [2 mismatch]
 
 ### paddle  [DECODE-OK] conf1=98% conf2=99%
-- backend: paddle-onnxruntime  (87 ms)
+- backend: paddle-onnxruntime  (75 ms)
 GT  : P<INJAE<ASSDGYYIG<<YYUGIGUG<GESP<<<<<<<<<<<<
 PRED: PAISLAEVARSDOTTIR<<THURIDUR<OESP<<<<<<<<<<<<
        ^ ^^  ^ ^  ^^^ ^  ^^ ^ ^ ^ ^                  [15 mismatch]
@@ -2218,7 +2218,7 @@ PRED: A2040611<0ISL1212123F1106297121212<1239<<<66
       ^    ^                                         [2 mismatch]
 
 ### indra  [DECODE-OK] conf1=98% conf2=98%
-- backend: indra  (53 ms)
+- backend: indra  (49 ms)
 GT  : P<INJAE<ASSDGYYIG<<YYUGIGUG<GESP<<<<<<<<<<<<
 PRED: PAISLAEVARSDOTTIR<<THURIDUR<OESP<<<<<<<<<<<<
        ^ ^^  ^ ^  ^^^ ^  ^^ ^ ^ ^ ^                  [15 mismatch]
@@ -2227,7 +2227,7 @@ PRED: A2040611<0ISL1212123F1106297121212<1239<<<66
       ^    ^                                         [2 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=98% conf2=99%
-- backend: indra  (174 ms)
+- backend: indra  (161 ms)
 GT  : P<INJAE<ASSDGYYIG<<YYUGIGUG<GESP<<<<<<<<<<<<
 PRED: PAISLAEVARSDOTTIR<<THURIDUR<OESP<<<<<<<<<<<<
        ^ ^^  ^ ^  ^^^ ^  ^^ ^ ^ ^ ^                  [15 mismatch]
@@ -2236,7 +2236,7 @@ PRED: A2040611<0ISL1212123F1106297121212<1239<<<66
       ^    ^                                         [2 mismatch]
 
 ## 90b464ea218a9909_0001.jpg
-- 官方判定: PASS  verified=True  chosen=tesseract  ms=179
+- 官方判定: PASS  verified=True  chosen=tesseract  ms=155
 - 官方 line1: P<SYCSAMPLE<<ORDINARY<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: NS000004<7SYC8601137F3203101<<<<<<<<<<<<<<00
 - 理由: PaddleOCR 识别并通过校验
@@ -2280,7 +2280,7 @@ PRED: N8000004<7SYC8601137F320310155<55555<<<<<<50
        ^                          ^^ ^^^^^      ^    [9 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (79 ms)
+- backend: tesseract  (74 ms)
 GT  : P<SYCSANPLE<<ORDINARY<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<SYCSAMPLE<<ORDINARY<<<<<<<<<<<<<<<<<<<<<<<
              ^                                       [1 mismatch]
@@ -2289,7 +2289,7 @@ PRED: NS000004<7SYC8601137F3203101<<<<<<<<<<<<<<00
                                                      [0 mismatch]
 
 ### paddle  [DECODE-OK] conf1=99% conf2=95%
-- backend: paddle-onnxruntime  (82 ms)
+- backend: paddle-onnxruntime  (80 ms)
 GT  : P<SYCSANPLE<<ORDINARY<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<SYCSAMPLE<<ORDINARY<<<<<<<<<<<<<<<<<<<<<<<
              ^                                       [1 mismatch]
@@ -2298,7 +2298,7 @@ PRED: NS000004<7SYC8601137F3203101<<<<<<<<<<<<0<00
                                               ^      [1 mismatch]
 
 ### indra  [DECODE-OK] conf1=95% conf2=98%
-- backend: indra  (53 ms)
+- backend: indra  (48 ms)
 GT  : P<SYCSANPLE<<ORDINARY<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<SYCSAMPLEK<ORDINARY<<<<<<<<<<<<<<<<<<<<<<<
              ^   ^                                   [2 mismatch]
@@ -2307,7 +2307,7 @@ PRED: NS000004<7SYC8601137F3203101<<<<<<<<<<<<<<00
                                                      [0 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=94% conf2=98%
-- backend: indra  (184 ms)
+- backend: indra  (164 ms)
 GT  : P<SYCSANPLE<<ORDINARY<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<SYCSAMPLE<<ORDINARY<<<<<<<<<<<<<<<<<<<<<<<
              ^                                       [1 mismatch]
@@ -2316,7 +2316,7 @@ PRED: NS000004<7SYC8601137F3203101<<<<<<<<<<<<<<00
                                                      [0 mismatch]
 
 ## 927cd546b5a8111d_0108.jpg
-- 官方判定: SUSPECT  verified=False  chosen=None  ms=1479
+- 官方判定: SUSPECT  verified=False  chosen=None  ms=1376
 - 官方 line1: <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 理由: PaddleOCR 识别到 MRZ，校验未通过
@@ -2353,13 +2353,13 @@ PRED: EEL00E04H0GGG8040010<100444114L<00CC010G0E94
       ^^^  ^ ^^^^^^ ^^^^^^^^^^^^^^ ^^^^ ^^^^^^^^^^   [38 mismatch]
 
 ### tesseract  [FAIL]
-- backend: tesseract  (20 ms)
+- backend: tesseract  (18 ms)
 - error: no MRZ candidate decoded
 - PRED line1: <空>
 - PRED line2: <空>
 
 ### paddle  [decoded] conf1=62% conf2=0%
-- backend: paddle-onnxruntime  (683 ms)
+- backend: paddle-onnxruntime  (631 ms)
 - error: decode failed: check digit mismatch
 GT  : P<CHNLOI<<HANG<MIO<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -2369,13 +2369,13 @@ PRED: <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^      ^^   [38 mismatch]
 
 ### indra  [FAIL]
-- backend: indra  (19 ms)
+- backend: indra  (17 ms)
 - error: indra 未找到 MRZ 候选行 (0 行)
 - PRED line1: <空>
 - PRED line2: <空>
 
 ### indra_fullpage  [decoded] conf1=98% conf2=84%
-- backend: indra  (289 ms)
+- backend: indra  (257 ms)
 - error: lines=63 edits=4 composite_edits=1 country=CAA
 GT  : P<CHNLOI<<HANG<MIO<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: MACAASPECIALADMINISTRATIVEREGIONOFTHEPEOPLES
@@ -2385,7 +2385,7 @@ PRED: RCODIGODO1CAADOEMIS3ORICODE6FISSUNGSTATERE36
       ^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   [43 mismatch]
 
 ## a495fb368b46ab35_0280.png
-- 官方判定: PASS  verified=True  chosen=fuse  ms=149
+- 官方判定: PASS  verified=True  chosen=fuse  ms=151
 - 官方 line1: P<CHNCESHI<<YANGBEN<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: G622925996CHN8310291F19042204C0CMXNENBPJB984
 - 理由: 融合CNN+CRNN 识别并通过校验
@@ -2423,7 +2423,7 @@ PRED: G622925996CHN8310291F19042204C0CMXNENBPJB984
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (69 ms)
+- backend: tesseract  (64 ms)
 GT  : P<CHNCESHI<<YANGBEN<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PTCHNCESHI<<YANGBEN<<<<<<<<<<<<<<<<<<<<<<<<<
        ^                                             [1 mismatch]
@@ -2432,7 +2432,7 @@ PRED: G622925996CHN8310291F1904220LCOCMKNENBPJB984
                                   ^ ^  ^             [3 mismatch]
 
 ### paddle  [DECODE-OK] conf1=99% conf2=99%
-- backend: paddle-onnxruntime  (84 ms)
+- backend: paddle-onnxruntime  (80 ms)
 GT  : P<CHNCESHI<<YANGBEN<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PTCHNCESHI<<YANGBEN<<<<<<<<<<<<<<<<<<<<<<<<<
        ^                                             [1 mismatch]
@@ -2441,7 +2441,7 @@ PRED: G622925996CHN8310291F1904220LCOCMKNENBPJB984
                                   ^ ^  ^             [3 mismatch]
 
 ### indra  [DECODE-OK] conf1=97% conf2=98%
-- backend: indra  (63 ms)
+- backend: indra  (48 ms)
 GT  : P<CHNCESHI<<YANGBEN<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PTCHNCESHI<<YANGBEN<<<<<<<<<<<<<<<<<<<<<<<<<
        ^                                             [1 mismatch]
@@ -2450,7 +2450,7 @@ PRED: G622925996CHN8310291F1904220LCOCMKNENBPJB984
                                   ^ ^  ^             [3 mismatch]
 
 ### indra_fullpage  [decoded] conf1=98% conf2=99%
-- backend: indra  (312 ms)
+- backend: indra  (286 ms)
 - error: lines=47 edits=4 composite_edits=1 country=ECI
 GT  : P<CHNCESHI<<YANGBEN<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: THECINISTRYOFFOREIGNAFFAIRSOFTHEPEOPLESREPUB
@@ -2460,7 +2460,7 @@ PRED: REQUESTSA4ECIVILAND4ILITARY5UTHORITIESOFFO20
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   [44 mismatch]
 
 ## a60aae34a06f1867_0016.jpg
-- 官方判定: PASS  verified=True  chosen=crnn  ms=168
+- 官方判定: PASS  verified=True  chosen=crnn  ms=161
 - 官方 line1: P<UKRTKACHENKO<<MARIANA<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: XX000000<0UKR9108242F23092571234567890<<<<70
 - 理由: PaddleOCR 识别并通过校验
@@ -2479,14 +2479,14 @@ PRED: XXCCCCCC<CL<AV4C82A2423C9257423A5K789C<<<<7L
 
 ### cnn  [DECODE-OK] conf1=93% conf2=86%
 GT  : P<UKXTKACH<NKO<<MA<<ANA<<<<<<<<<<<<<<<<<<<<<
-PRED: P<UKXYKACH<HKO<<MA<<ANA<<<<<<<<<<<<<<<<<<<<<
-           ^     ^                                   [2 mismatch]
+PRED: P<UKRYKACH<HKO<<MA<<ANA<<<<<<<<<<<<<<<<<<<<<
+          ^^     ^                                   [3 mismatch]
 GT  : X30OO0OO<0UKW9108242F23092571234567890<<<<70
 PRED: X30OO0OO<0UKW9108242F23092571234567890<<<<70
                                                      [0 mismatch]
 
 ### crnn  [DECODE-OK] conf1=97% conf2=98%
-- backend: crnn  (18 ms)
+- backend: crnn  (15 ms)
 GT  : P<UKXTKACH<NKO<<MA<<ANA<<<<<<<<<<<<<<<<<<<<<
 PRED: P<UKRTKACHENKO<<MARIANA<<<<<<<<<<<<<<<<<<<<<
           ^     ^       ^^                           [4 mismatch]
@@ -2496,14 +2496,14 @@ PRED: XX000000<0UKR9108242F23092571234567890<<<<70
 
 ### fuse  [DECODE-OK] conf1=98% conf2=96%
 GT  : P<UKXTKACH<NKO<<MA<<ANA<<<<<<<<<<<<<<<<<<<<<
-PRED: P<UKXYKACH<NKO<<MA<<ANA<<<<<<<<<<<<<<<<<<<<<
-           ^                                         [1 mismatch]
+PRED: P<UKRYKACH<NKO<<MA<<ANA<<<<<<<<<<<<<<<<<<<<<
+          ^^                                         [2 mismatch]
 GT  : X30OO0OO<0UKW9108242F23092571234567890<<<<70
 PRED: X30OO0OO<0UKW9108242F23092571234567890<<<<70
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (87 ms)
+- backend: tesseract  (76 ms)
 GT  : P<UKXTKACH<NKO<<MA<<ANA<<<<<<<<<<<<<<<<<<<<<
 PRED: P<UKRTKACHENKO<<MARIANA<<<<<<<<<<<<<<<<<<<<<
           ^     ^       ^^                           [4 mismatch]
@@ -2512,7 +2512,7 @@ PRED: XX000000<0UKR9108242F23092571234567890<<<<70
        ^ ^^ ^^    ^                                  [6 mismatch]
 
 ### paddle  [DECODE-OK] conf1=97% conf2=98%
-- backend: paddle-onnxruntime  (83 ms)
+- backend: paddle-onnxruntime  (80 ms)
 GT  : P<UKXTKACH<NKO<<MA<<ANA<<<<<<<<<<<<<<<<<<<<<
 PRED: P<UKRTKACHENKO<<MARIANA<<<<<<<<<<<<<<<<<<<<<
           ^     ^       ^^                           [4 mismatch]
@@ -2521,7 +2521,7 @@ PRED: XX000000<0UKR9108242F23092571234567890<<<<70
        ^ ^^ ^^    ^                                  [6 mismatch]
 
 ### indra  [DECODE-OK] conf1=97% conf2=100%
-- backend: indra  (55 ms)
+- backend: indra  (51 ms)
 GT  : P<UKXTKACH<NKO<<MA<<ANA<<<<<<<<<<<<<<<<<<<<<
 PRED: P<UKRTKACHENKO<<MARIANA<<<<<<<<<<<<<<<<<<<<<
           ^     ^       ^^                           [4 mismatch]
@@ -2530,7 +2530,7 @@ PRED: XX000000<0UKR9108242F23092571234567890<<<<70
        ^ ^^ ^^    ^                                  [6 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=96% conf2=100%
-- backend: indra  (180 ms)
+- backend: indra  (159 ms)
 GT  : P<UKXTKACH<NKO<<MA<<ANA<<<<<<<<<<<<<<<<<<<<<
 PRED: P<UKRTKACHENKO<<MARIANA<<<<<<<<<<<<<<<<<<<<<
           ^     ^       ^^                           [4 mismatch]
@@ -2539,7 +2539,7 @@ PRED: XX000000<0UKR9108242F23092571234567890<<<<70
        ^ ^^ ^^    ^                                  [6 mismatch]
 
 ## a955e21ae58d8c1d_0013.jpg
-- 官方判定: PASS  verified=True  chosen=fuse  ms=204
+- 官方判定: PASS  verified=True  chosen=fuse  ms=156
 - 官方 line1: P<SYRNANSOUR<<DANI<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: N000000001SYH8801018M27082410104006915555<12
 - 理由: 融合CNN+CRNN 识别并通过校验
@@ -2583,7 +2583,7 @@ PRED: N000000001SYH8801018M27082410104006915555<12
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (79 ms)
+- backend: tesseract  (73 ms)
 GT  : P<SYRNANSOUR<<DANI<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PNSYRMANSOUR<<DANI<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^   ^                                         [2 mismatch]
@@ -2592,7 +2592,7 @@ PRED: N000000001SYR8801018M270824101040069155<<<12
                   ^                          ^^      [3 mismatch]
 
 ### paddle  [DECODE-OK] conf1=97% conf2=99%
-- backend: paddle-onnxruntime  (91 ms)
+- backend: paddle-onnxruntime  (84 ms)
 GT  : P<SYRNANSOUR<<DANI<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PNSYRMANSOUR<<DANI<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^   ^                                         [2 mismatch]
@@ -2601,7 +2601,7 @@ PRED: N000000001SYR8801018M270824101040069155<<<12
                   ^                          ^^      [3 mismatch]
 
 ### indra  [DECODE-OK] conf1=95% conf2=99%
-- backend: indra  (58 ms)
+- backend: indra  (52 ms)
 GT  : P<SYRNANSOUR<<DANI<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PNSYRMANSOUR<<DANI<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^   ^                                         [2 mismatch]
@@ -2610,7 +2610,7 @@ PRED: N000000001SYR8801018M270824101040069155<<<12
                   ^                          ^^      [3 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=91% conf2=98%
-- backend: indra  (323 ms)
+- backend: indra  (265 ms)
 GT  : P<SYRNANSOUR<<DANI<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PNSYRMANSOUR<<DANI<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^   ^                                         [2 mismatch]
@@ -2619,7 +2619,7 @@ PRED: N000000001SYR8801018M270824101040069155<<<12
                   ^                          ^^      [3 mismatch]
 
 ## acd3e9fd1ce9bd0a_0016.jpg
-- 官方判定: PASS  verified=True  chosen=crnn  ms=158
+- 官方判定: PASS  verified=True  chosen=crnn  ms=148
 - 官方 line1: P<GBRUK<SPECIMEN<<ANGELA<ZOE<<<<<<<<<<<<<<<<
 - 官方 line2: 5334755143GBR8812049F2509286<<<<<<<<<<<<<<04
 - 理由: PaddleOCR 识别并通过校验
@@ -2638,8 +2638,8 @@ PRED: 93XG7554A3GERB942CGVA29ED28E<<<<<<<<<<<<<<LK
 
 ### cnn  [DECODE-OK] conf1=96% conf2=85%
 GT  : P<GRRUK<SPECIMEN<<ANGELA<ZOE<<<<<<<<<<<<<<<<
-PRED: P<GRRUK<SPECIMEN<<ANGELA<ZOE<<<<<<<<<<<<<<<<
-                                                     [0 mismatch]
+PRED: P<GBRUK<SPECIMEN<<ANGELA<ZOE<<<<<<<<<<<<<<<<
+         ^                                           [1 mismatch]
 GT  : 5334755143GBH8812049F25092865<<<<<<<SD<SDS78
 PRED: 5334755143GBH8812049F25092865<<<<<<<SD<SDS78
                                                      [0 mismatch]
@@ -2656,14 +2656,14 @@ PRED: 334755143GBR8812049F2509286<<<<<<<<<<<<<<04
 
 ### fuse  [DECODE-OK] conf1=99% conf2=97%
 GT  : P<GRRUK<SPECIMEN<<ANGELA<ZOE<<<<<<<<<<<<<<<<
-PRED: P<GRRUK<SPECIMEN<<ANGELA<ZOE<<<<<<<<<<<<<<<<
-                                                     [0 mismatch]
+PRED: P<GBRUK<SPECIMEN<<ANGELA<ZOE<<<<<<<<<<<<<<<<
+         ^                                           [1 mismatch]
 GT  : 5334755143GBH8812049F25092865<<<<<<<SD<SDS78
 PRED: 5334755143GBH8812049F25092865<<<<<<<SD<SDS78
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (74 ms)
+- backend: tesseract  (65 ms)
 GT  : P<GRRUK<SPECIMEN<<ANGELA<ZOE<<<<<<<<<<<<<<<<
 PRED: P<GBRUK<SPECIMEN<<ANGELA<ZOE<<<<<<<<<<<<<<<<
          ^                                           [1 mismatch]
@@ -2672,7 +2672,7 @@ PRED: 5334755143GBR8812049F2509286<<<<<<<<<<<<<<04
                   ^               ^       ^^ ^^^^^   [9 mismatch]
 
 ### paddle  [DECODE-OK] conf1=99% conf2=90%
-- backend: paddle-onnxruntime  (94 ms)
+- backend: paddle-onnxruntime  (79 ms)
 GT  : P<GRRUK<SPECIMEN<<ANGELA<ZOE<<<<<<<<<<<<<<<<
 PRED: P<GBRUK<SPECIMEN<<ANGELA<ZOE<<<<<<<<<<<<<<<<
          ^                                           [1 mismatch]
@@ -2681,7 +2681,7 @@ PRED: 5334755143GBR8812049F2509286<<<<<<<<<<<04<80
                   ^               ^       ^^ ^^^^^   [9 mismatch]
 
 ### indra  [DECODE-OK] conf1=99% conf2=99%
-- backend: indra  (49 ms)
+- backend: indra  (46 ms)
 GT  : P<GRRUK<SPECIMEN<<ANGELA<ZOE<<<<<<<<<<<<<<<<
 PRED: P<GBRUK<SPECIMEN<<ANGELA<ZOE<<<<<<<<<<<<<<<<
          ^                                           [1 mismatch]
@@ -2690,7 +2690,7 @@ PRED: 5334755143GBR8812049F2509286<<<<<<<<<<<<<<04
                   ^               ^       ^^ ^^^^^   [9 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=96% conf2=99%
-- backend: indra  (165 ms)
+- backend: indra  (153 ms)
 GT  : P<GRRUK<SPECIMEN<<ANGELA<ZOE<<<<<<<<<<<<<<<<
 PRED: P<GBRUK<SPECIMEN<<ANGELAKZOE<<<<<<<<<<<<<<<<
          ^                    ^                      [2 mismatch]
@@ -2699,7 +2699,7 @@ PRED: 5334755143GBR8812049F2509286<<<<<<<<<<<<<<04
                   ^               ^       ^^ ^^^^^   [9 mismatch]
 
 ## acf14e0c631ec935_0030.png
-- 官方判定: REJECT  verified=False  chosen=None  ms=15
+- 官方判定: REJECT  verified=False  chosen=None  ms=14
 - 理由: 未在照片中定位到 MRZ 双行
 
 ### traditional  [no_pair]
@@ -2717,10 +2717,10 @@ PRED: 5334755143GBR8812049F2509286<<<<<<<<<<<<<<04
 ### indra  [no_pair]
 
 ### indra_fullpage  [DECODE-OK] conf1=100% conf2=96%
-- backend: indra  (185 ms)
+- backend: indra  (163 ms)
 
 ## ae5fdb36f7498291_0019.png
-- 官方判定: PASS  verified=True  chosen=tesseract  ms=215
+- 官方判定: PASS  verified=True  chosen=tesseract  ms=183
 - 官方 line1: P<ARGVAZQUEZ<<MARIA<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: ZZZ0001105ARG1ZI1018F26O6T8399999999<<<<<<86
 - 理由: PaddleOCR 识别并通过校验
@@ -2732,26 +2732,26 @@ PRED: 5334755143GBR8812049F2509286<<<<<<<<<<<<<<04
 - error: decode failed: check digit mismatch
 
 ### crnn  [decoded] conf1=98% conf2=95%
-- backend: crnn  (14 ms)
+- backend: crnn  (13 ms)
 - error: decode failed: check digit mismatch
 
 ### fuse  [decoded] conf1=96% conf2=96%
 - error: decode failed: check digit mismatch
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (158 ms)
+- backend: tesseract  (137 ms)
 
 ### paddle  [DECODE-OK] conf1=99% conf2=96%
-- backend: paddle-onnxruntime  (99 ms)
+- backend: paddle-onnxruntime  (85 ms)
 
 ### indra  [DECODE-OK] conf1=92% conf2=96%
-- backend: indra  (51 ms)
+- backend: indra  (48 ms)
 
 ### indra_fullpage  [DECODE-OK] conf1=94% conf2=98%
-- backend: indra  (176 ms)
+- backend: indra  (148 ms)
 
 ## b1442018a8167bf5_0046.jpg
-- 官方判定: PASS  verified=True  chosen=tesseract  ms=168
+- 官方判定: PASS  verified=True  chosen=tesseract  ms=144
 - 官方 line1: P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E000077347USA6502056F3010149500100120<095838
 - 理由: PaddleOCR 识别并通过校验
@@ -2771,14 +2771,14 @@ PRED: MCCCC77347C9AM5CPC5KF3C4C4495CCMCC42C<C49A3N
 ### cnn  [decoded] conf1=95% conf2=93%
 - error: decode failed: check digit mismatch
 GT  : P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
-PRED: P<USBYRAUELRR<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
-          ^^  ^  ^                                   [4 mismatch]
+PRED: P<USAYRAUELRR<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
+           ^  ^  ^                                   [3 mismatch]
 GT  : E000077347USA6502056F3010149500100120<095838
 PRED: L000077347USA6502056F3010149500100120<095137
       ^                                        ^ ^   [3 mismatch]
 
 ### crnn  [decoded] conf1=95% conf2=81%
-- backend: crnn  (15 ms)
+- backend: crnn  (13 ms)
 - error: decode failed: bad MRZ length
 GT  : P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
@@ -2790,14 +2790,14 @@ PRED: 00007734706A6502056M3010149500100120<09508
 ### fuse  [decoded] conf1=96% conf2=95%
 - error: decode failed: check digit mismatch
 GT  : P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
-PRED: P<USBYRAUELRR<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
-          ^^  ^  ^                                   [4 mismatch]
+PRED: P<USAYRAUELRR<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
+           ^  ^  ^                                   [3 mismatch]
 GT  : E000077347USA6502056F3010149500100120<095838
 PRED: L000077347USA6502056F3010149500100120<095137
       ^                                        ^ ^   [3 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (86 ms)
+- backend: tesseract  (72 ms)
 GT  : P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -2806,7 +2806,7 @@ PRED: E000077347USA6502056F3010149500100120<095838
                                                      [0 mismatch]
 
 ### paddle  [DECODE-OK] conf1=99% conf2=98%
-- backend: paddle-onnxruntime  (74 ms)
+- backend: paddle-onnxruntime  (70 ms)
 GT  : P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -2815,7 +2815,7 @@ PRED: E000077347USA6502056F3010149500100120<095838
                                                      [0 mismatch]
 
 ### indra  [DECODE-OK] conf1=95% conf2=97%
-- backend: indra  (53 ms)
+- backend: indra  (47 ms)
 GT  : P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -2824,7 +2824,7 @@ PRED: E000077347USA6502056F30101495001001Z0<095<88
                                          ^     ^^    [3 mismatch]
 
 ### indra_fullpage  [decoded] conf1=73% conf2=66%
-- backend: indra  (340 ms)
+- backend: indra  (294 ms)
 - error: lines=45 edits=4 composite_edits=1 country=ISA
 GT  : P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: SEISADOAMOSOUAQUEPERUSPEAHEMPORENVEDOPJOREPI
@@ -2834,8 +2834,8 @@ PRED: SAUORAMON4ISARIODSS0ONUARY13TUMISSIOP<<<<<68
       ^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^ ^^^^^    [40 mismatch]
 
 ## b284565582147454_0098.jpg
-- 官方判定: PASS  verified=True  chosen=fuse  ms=152
-- 官方 line1: P<NPALFF<<SUAS<N<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+- 官方判定: PASS  verified=True  chosen=fuse  ms=150
+- 官方 line1: P<CHNLFF<<SUAS<N<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: 5E75870985KCN8507022F2404152213471C117621884
 - 理由: 融合CNN+CRNN 识别并通过校验
 
@@ -2865,14 +2865,14 @@ PRED: M706890985KOR8507022F24041522154710V17627884
 
 ### fuse  [DECODE-OK] conf1=96% conf2=90%
 GT  : P<NPALFF<<SUAS<N<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-PRED: P<NPALFF<<SUAS<N<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-                                                     [0 mismatch]
+PRED: P<CHNLFF<<SUAS<N<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        ^^^                                          [3 mismatch]
 GT  : 5E75870985KCN8507022F2404152213471C117621884
 PRED: 5E75870985KCN8507022F2404152213471C117621884
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (74 ms)
+- backend: tesseract  (68 ms)
 GT  : P<NPALFF<<SUAS<N<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PMKORLEE<<SUYEON<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^^^^ ^^    ^^^                                [9 mismatch]
@@ -2881,7 +2881,7 @@ PRED: M706890985KOR8507022F24041522154710V17627884
       ^^^^ ^     ^^                 ^   ^^    ^      [11 mismatch]
 
 ### paddle  [DECODE-OK] conf1=97% conf2=99%
-- backend: paddle-onnxruntime  (88 ms)
+- backend: paddle-onnxruntime  (84 ms)
 GT  : P<NPALFF<<SUAS<N<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PMKORLEE<<SUYEON<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^^^^ ^^    ^^^                                [9 mismatch]
@@ -2890,7 +2890,7 @@ PRED: M706890985KOR8507022F24041522154710V17627884
       ^^^^ ^     ^^                 ^   ^^    ^      [11 mismatch]
 
 ### indra  [DECODE-OK] conf1=97% conf2=97%
-- backend: indra  (59 ms)
+- backend: indra  (48 ms)
 GT  : P<NPALFF<<SUAS<N<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PMKORLEE<<SUYEON<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^^^^ ^^    ^^^                                [9 mismatch]
@@ -2899,7 +2899,7 @@ PRED: M706890985KOR8507022F24041522154710V17627884
       ^^^^ ^     ^^                 ^   ^^    ^      [11 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=97% conf2=97%
-- backend: indra  (218 ms)
+- backend: indra  (192 ms)
 GT  : P<NPALFF<<SUAS<N<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PMKORLEE<<SUYEON<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^^^^ ^^    ^^^                                [9 mismatch]
@@ -2908,8 +2908,8 @@ PRED: M706890985KOR8507022F24041522154710V17627884
       ^^^^ ^     ^^                 ^   ^^    ^      [11 mismatch]
 
 ## b284565582147454_0115.jpg
-- 官方判定: PASS  verified=True  chosen=fuse  ms=155
-- 官方 line1: P<NPALFF<<SUAS<N<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+- 官方判定: PASS  verified=True  chosen=fuse  ms=146
+- 官方 line1: P<CHNLFF<<SUAS<N<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: 5E75870985KCN8507022F2404152213471C117621884
 - 理由: 融合CNN+CRNN 识别并通过校验
 
@@ -2928,7 +2928,7 @@ PRED: P7CK89C985<CA85CZC22L24C<4S2245<243V4ZK2ZR84
 ### cnn  [skip]
 
 ### crnn  [decoded] conf1=96% conf2=98%
-- backend: crnn  (17 ms)
+- backend: crnn  (14 ms)
 - error: decode failed: check digit mismatch
 GT  : P<NPALFF<<SUAS<N<<<<<<<<<<<<<<<<<<<<<<<<<<<< 
 PRED: PPMKORLEE<<SUYEON<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -2939,14 +2939,14 @@ PRED: M706890985KOR8507022F24041522154710V17627884
 
 ### fuse  [DECODE-OK] conf1=96% conf2=90%
 GT  : P<NPALFF<<SUAS<N<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-PRED: P<NPALFF<<SUAS<N<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-                                                     [0 mismatch]
+PRED: P<CHNLFF<<SUAS<N<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        ^^^                                          [3 mismatch]
 GT  : 5E75870985KCN8507022F2404152213471C117621884
 PRED: 5E75870985KCN8507022F2404152213471C117621884
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (81 ms)
+- backend: tesseract  (68 ms)
 GT  : P<NPALFF<<SUAS<N<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PMKORLEE<<SUYEON<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^^^^ ^^    ^^^                                [9 mismatch]
@@ -2955,7 +2955,7 @@ PRED: M706890985KOR8507022F24041522154710V17627884
       ^^^^ ^     ^^                 ^   ^^    ^      [11 mismatch]
 
 ### paddle  [DECODE-OK] conf1=97% conf2=99%
-- backend: paddle-onnxruntime  (85 ms)
+- backend: paddle-onnxruntime  (84 ms)
 GT  : P<NPALFF<<SUAS<N<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PMKORLEE<<SUYEON<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^^^^ ^^    ^^^                                [9 mismatch]
@@ -2964,7 +2964,7 @@ PRED: M706890985KOR8507022F24041522154710V17627884
       ^^^^ ^     ^^                 ^   ^^    ^      [11 mismatch]
 
 ### indra  [DECODE-OK] conf1=97% conf2=97%
-- backend: indra  (52 ms)
+- backend: indra  (49 ms)
 GT  : P<NPALFF<<SUAS<N<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PMKORLEE<<SUYEON<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^^^^ ^^    ^^^                                [9 mismatch]
@@ -2973,7 +2973,7 @@ PRED: M706890985KOR8507022F24041522154710V17627884
       ^^^^ ^     ^^                 ^   ^^    ^      [11 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=97% conf2=97%
-- backend: indra  (193 ms)
+- backend: indra  (177 ms)
 GT  : P<NPALFF<<SUAS<N<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PMKORLEE<<SUYEON<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^^^^ ^^    ^^^                                [9 mismatch]
@@ -2982,7 +2982,7 @@ PRED: M706890985KOR8507022F24041522154710V17627884
       ^^^^ ^     ^^                 ^   ^^    ^      [11 mismatch]
 
 ## b2b5008f3839530d_0001.jpg
-- 官方判定: PASS  verified=True  chosen=crnn  ms=164
+- 官方判定: PASS  verified=True  chosen=crnn  ms=150
 - 官方 line1: P<SVNVZOREC<<ANA<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: PB90062122SVN7811182F26121221811978505602<14
 - 理由: PaddleOCR 识别并通过校验
@@ -3002,7 +3002,7 @@ PRED: P9VCCA24228VN784448Z126424224844978SD5KC2<44
 ### cnn  [skip]
 
 ### crnn  [DECODE-OK] conf1=98% conf2=94%
-- backend: crnn  (14 ms)
+- backend: crnn  (12 ms)
 GT  : P<SNNNIORDC<<ANA<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<SVNVZOREC<<ANA<<<<<<<<<<<<<<<<<<<<<<<<<<<<
          ^ ^^  ^                                     [4 mismatch]
@@ -3012,14 +3012,14 @@ PRED: PB900621226VN7811182F26121221811978505602<14
 
 ### fuse  [DECODE-OK] conf1=99% conf2=94%
 GT  : P<SNNNIORDC<<ANA<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-PRED: P<SNNNIORDC<<ANA<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-                                                     [0 mismatch]
+PRED: P<SVNNIORDC<<ANA<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+         ^                                           [1 mismatch]
 GT  : M0N0062122SVN7811182F261212218IIA785M565EK14
 PRED: M0N0062122SVN7811182F261212218IIA785M565EK14
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (76 ms)
+- backend: tesseract  (66 ms)
 GT  : P<SNNNIORDC<<ANA<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<SVNVZOREC<<ANA<<<<<<<<<<<<<<<<<<<<<<<<<<<<
          ^ ^^  ^                                     [4 mismatch]
@@ -3028,7 +3028,7 @@ PRED: PB90062122SVN7811182F26121221811978505602<14
       ^^^                           ^^^   ^  ^^^     [10 mismatch]
 
 ### paddle  [DECODE-OK] conf1=98% conf2=99%
-- backend: paddle-onnxruntime  (87 ms)
+- backend: paddle-onnxruntime  (83 ms)
 GT  : P<SNNNIORDC<<ANA<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<SVNVZOREC<<ANA<<<<<<<<<<<<<<<<<<<<<<<<<<<<
          ^ ^^  ^                                     [4 mismatch]
@@ -3037,7 +3037,7 @@ PRED: PB90062122SVN7811182F26121221811978505602<14
       ^^^                           ^^^   ^  ^^^     [10 mismatch]
 
 ### indra  [DECODE-OK] conf1=94% conf2=88%
-- backend: indra  (58 ms)
+- backend: indra  (53 ms)
 GT  : P<SNNNIORDC<<ANA<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<SVNVZOREC<<ANA<<<<<<<<<<<<<<<<<<<<<<<<<<<<
          ^ ^^  ^                                     [4 mismatch]
@@ -3046,7 +3046,7 @@ PRED: PB90062122SVN7811182F26121221811978505602<14
       ^^^                           ^^^   ^  ^^^     [10 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=94% conf2=90%
-- backend: indra  (266 ms)
+- backend: indra  (229 ms)
 GT  : P<SNNNIORDC<<ANA<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<SVNVZOREC<<ANA<<<<<<<<<<<<<<<<<<<<<<<<<<<<
          ^ ^^  ^                                     [4 mismatch]
@@ -3055,7 +3055,7 @@ PRED: PB90062122SVN7811182F26121221811978505602<14
       ^^^                           ^^^   ^  ^^^     [10 mismatch]
 
 ## b30dc79ee9550e9e_0024.jpg
-- 官方判定: PASS  verified=True  chosen=cnn  ms=171
+- 官方判定: PASS  verified=True  chosen=cnn  ms=149
 - 官方 line1: P<DWLBPEDDNDN<<YHARDD<BPBGINBN<<<<<<<<<<<<<<
 - 官方 line2: K15M12M1V5ISK1212123F290204912M2M24424VNN462
 - 理由: 融合CNN+CRNN 识别并通过校验
@@ -3081,7 +3081,7 @@ PRED: K15M12M1V5ISK1212123F290204912M2M24424VNN462
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=97% conf2=94%
-- backend: crnn  (12 ms)
+- backend: crnn  (13 ms)
 - error: decode failed: check digit mismatch
 GT  : P<DWLBPECDNDN<<YHAROD<BPBGINBN<<<<<<<<<<<<<<
 PRED: PAISLSPECIMEN<<THAEOE<SPECIMEN<<<<<<<<<<<<<<
@@ -3099,7 +3099,7 @@ PRED: K15M12M1V5ISK1212123F290204912M2M24424VNN462
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (73 ms)
+- backend: tesseract  (67 ms)
 GT  : P<DWLBPECDNDN<<YHAROD<BPBGINBN<<<<<<<<<<<<<<
 PRED: PAISLSPECIMEN<<THAEOE<SPECIMEN<<<<<<<<<<<<<<
        ^^^ ^   ^^^   ^  ^ ^ ^ ^^ ^^                  [15 mismatch]
@@ -3108,7 +3108,7 @@ PRED: A3501291<5ISL1212123F2902049121212<1239<<<62
       ^^ ^  ^ ^   ^                 ^ ^ ^^ ^^^^^     [15 mismatch]
 
 ### paddle  [DECODE-OK] conf1=99% conf2=99%
-- backend: paddle-onnxruntime  (86 ms)
+- backend: paddle-onnxruntime  (81 ms)
 GT  : P<DWLBPECDNDN<<YHAROD<BPBGINBN<<<<<<<<<<<<<<
 PRED: PAISLSPECIMEN<<THAEOE<SPECIMEN<<<<<<<<<<<<<<
        ^^^ ^   ^^^   ^  ^ ^ ^ ^^ ^^                  [15 mismatch]
@@ -3117,7 +3117,7 @@ PRED: A3501291<5ISL1212123F2902049121212<1239<<<62
       ^^ ^  ^ ^   ^                 ^ ^ ^^ ^^^^^     [15 mismatch]
 
 ### indra  [DECODE-OK] conf1=94% conf2=96%
-- backend: indra  (54 ms)
+- backend: indra  (46 ms)
 GT  : P<DWLBPECDNDN<<YHAROD<BPBGINBN<<<<<<<<<<<<<<
 PRED: PAISLSPECIMEN<<THAEDE<SPECIMENK<<<<<<<<<<<<<
        ^^^ ^   ^^^   ^  ^^^ ^ ^^ ^^ ^                [17 mismatch]
@@ -3126,7 +3126,7 @@ PRED: A3501291<5ISL1212123F2902049121212<1239<<<62
       ^^ ^  ^ ^   ^                 ^ ^ ^^ ^^^^^     [15 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=72% conf2=92%
-- backend: indra  (218 ms)
+- backend: indra  (191 ms)
 GT  : P<DWLBPECDNDN<<YHAROD<BPBGINBN<<<<<<<<<<<<<<
 PRED: ISAANDICELANDISLANDE<<<<<<<<<<<<<<<<<<<<<<<<
       ^^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^                 [29 mismatch]
@@ -3135,7 +3135,7 @@ PRED: VEGABRFNR6AANORTNON4DUPASSE9O<<<<<<<<<<<<<82
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^    [42 mismatch]
 
 ## b7a97ca0edede07b_0164.jpg
-- 官方判定: PASS  verified=True  chosen=tesseract  ms=146
+- 官方判定: PASS  verified=True  chosen=tesseract  ms=140
 - 官方 line1: P<POLSAMPLE<<WILLIAM<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: ZS80000384POL8306122M1607303<<<<<<<<<<<<<<02
 - 理由: PaddleOCR 识别并通过校验
@@ -3146,26 +3146,26 @@ PRED: VEGABRFNR6AANORTNON4DUPASSE9O<<<<<<<<<<<<<82
 ### cnn  [skip]
 
 ### crnn  [decoded] conf1=96% conf2=91%
-- backend: crnn  (14 ms)
+- backend: crnn  (12 ms)
 - error: decode failed: check digit mismatch
 
 ### fuse  [DECODE-OK] conf1=99% conf2=87%
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (66 ms)
+- backend: tesseract  (60 ms)
 
 ### paddle  [decoded] conf1=98% conf2=90%
-- backend: paddle-onnxruntime  (153 ms)
+- backend: paddle-onnxruntime  (145 ms)
 - error: decode failed: check digit mismatch
 
 ### indra  [DECODE-OK] conf1=81% conf2=96%
-- backend: indra  (52 ms)
+- backend: indra  (47 ms)
 
 ### indra_fullpage  [DECODE-OK] conf1=86% conf2=97%
-- backend: indra  (247 ms)
+- backend: indra  (221 ms)
 
 ## bc1ddfd8c13b5ca9_0007.jpg
-- 官方判定: PASS  verified=True  chosen=tesseract  ms=174
+- 官方判定: PASS  verified=True  chosen=tesseract  ms=154
 - 官方 line1: P<FRASPECIMEN<ABB<<NATACHA<<<<<<<<<<<<<<<<<<
 - 官方 line2: 90RF023318FRA7307122F2903035<<<<<<<<<<<<<<02
 - 理由: PaddleOCR 识别并通过校验
@@ -3191,7 +3191,7 @@ PRED: 9MM1024318MMA7307122F29030355N5NNN554N44K902
                                                      [0 mismatch]
 
 ### crnn  [DECODE-OK] conf1=96% conf2=90%
-- backend: crnn  (14 ms)
+- backend: crnn  (12 ms)
 GT  : P<YRASPBCSNDN<ABB<<NAYACHA<<<<<<<<<<<<<<<<<<
 PRED: P<FRASPECIMEN<ABB<<NAIACHA<<<<<<<<<<<<<<<<<<
         ^    ^ ^^^         ^                         [6 mismatch]
@@ -3208,7 +3208,7 @@ PRED: 9MM1024318MMA7307122F29030355N5NNN554N44K902
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (69 ms)
+- backend: tesseract  (61 ms)
 GT  : P<YRASPBCSNDN<ABB<<NAYACHA<<<<<<<<<<<<<<<<<<
 PRED: P<FRASPECIMEN<ABB<<NATACHA<<<<<<<<<<<<<<<<<<
         ^    ^ ^^^         ^                         [6 mismatch]
@@ -3217,7 +3217,7 @@ PRED: 90RF023318FRA7307122F2903035<<<<<<<<<<<<<<02
        ^^^  ^   ^^                ^^^^^^^^^^^^^^     [20 mismatch]
 
 ### paddle  [DECODE-OK] conf1=99% conf2=99%
-- backend: paddle-onnxruntime  (92 ms)
+- backend: paddle-onnxruntime  (81 ms)
 GT  : P<YRASPBCSNDN<ABB<<NAYACHA<<<<<<<<<<<<<<<<<<
 PRED: P<FRASPECIMEN<ABB<<NATACHA<<<<<<<<<<<<<<<<<<
         ^    ^ ^^^         ^                         [6 mismatch]
@@ -3226,7 +3226,7 @@ PRED: 90RF023318FRA7307122F29030350<<<<<<<<<<<<<02
        ^^^  ^   ^^                ^^^^^^^^^^^^^^     [20 mismatch]
 
 ### indra  [DECODE-OK] conf1=84% conf2=99%
-- backend: indra  (51 ms)
+- backend: indra  (46 ms)
 GT  : P<YRASPBCSNDN<ABB<<NAYACHA<<<<<<<<<<<<<<<<<<
 PRED: PFFAAPECIMENKABBC<NATACHAKKKKKKKKKKKKKKKKKK<
        ^^^ ^^^^^^^^^^ ^ ^^^^^^^^^^^^^^^^^^^^^^^^^    [39 mismatch]
@@ -3235,7 +3235,7 @@ PRED: 90RF023318FAA7307122F2903035<<<<<<<<<<<<<<02
        ^^^  ^   ^^                ^^^^^^^^^^^^^^     [20 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=86% conf2=99%
-- backend: indra  (187 ms)
+- backend: indra  (165 ms)
 GT  : P<YRASPBCSNDN<ABB<<NAYACHA<<<<<<<<<<<<<<<<<<
 PRED: PCFRASPECIMENKABBC<NATACHAKKKKKKKKKKKKKKKKKK
        ^^    ^ ^^^ ^   ^   ^    ^^^^^^^^^^^^^^^^^^   [27 mismatch]
@@ -3244,7 +3244,7 @@ PRED: 90RF023318FRA7307122F2903035<<<<<<<<<<<<<<02
        ^^^  ^   ^^                ^^^^^^^^^^^^^^     [20 mismatch]
 
 ## c0cbf7c176328f3d_0006.jpg
-- 官方判定: PASS  verified=True  chosen=tesseract  ms=176
+- 官方判定: PASS  verified=True  chosen=tesseract  ms=152
 - 官方 line1: P<GRCELLINAS<<GEORGIOS<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: AA12345678GRC7505157M3312108<<<<<<<<<<<<<<06
 - 理由: PaddleOCR 识别并通过校验
@@ -3264,7 +3264,7 @@ PRED: AA42345A78AAM79D9452N33424MA<<<<<<<<<<<<<<MA
 ### cnn  [decoded] conf1=83% conf2=60%
 - error: decode failed: check digit mismatch
 GT  : P<NNNNDDANND<<QNNNQWNW<<<<<<<<<<<<<<<<<<<<<<
-PRED: P<WRBKDDDNAD<<WDDBODDB<<<<<<<<<<<<<<<<<<<<<<
+PRED: P<BRBKDDDNAD<<WDDBODDB<<<<<<<<<<<<<<<<<<<<<<
         ^^^^  ^ ^   ^^^^^^^^                         [14 mismatch]
 GT  : AA12345678GRC7505157M3312108<<<<<<<<<<<<<<06
 PRED: KK12M4M6P4WMC7404141M4412104NNNNNNNNNNN44404
@@ -3282,14 +3282,14 @@ PRED: AA12345678GRC7505157M3312108<<<<<<<<<<<<<<06
 ### fuse  [decoded] conf1=86% conf2=62%
 - error: decode failed: check digit mismatch
 GT  : P<NNNNDDANND<<QNNNQWNW<<<<<<<<<<<<<<<<<<<<<<
-PRED: P<WRBBDDDNAD<<WDDBODDB<<<<<<<<<<<<<<<<<<<<<<
+PRED: P<BRBBDDDNAD<<WDDBODDB<<<<<<<<<<<<<<<<<<<<<<
         ^^^^  ^ ^   ^^^^^^^^                         [14 mismatch]
 GT  : AA12345678GRC7505157M3312108<<<<<<<<<<<<<<06
 PRED: KK12M4M6P4WMC7404140M4412104NNNNNNNNNNN44404
       ^^  ^ ^ ^^^^  ^ ^ ^^ ^^    ^^^^^^^^^^^^^^^ ^   [30 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (75 ms)
+- backend: tesseract  (65 ms)
 GT  : P<NNNNDDANND<<QNNNQWNW<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<GRCELLINAS<<GEORGIOS<<<<<<<<<<<<<<<<<<<<<<
         ^^^^^^^ ^^  ^^^^^^^^                         [17 mismatch]
@@ -3298,7 +3298,7 @@ PRED: AA12345678GRC7505157M3312108<<<<<<<<<<<<<<06
                                                      [0 mismatch]
 
 ### paddle  [DECODE-OK] conf1=99% conf2=96%
-- backend: paddle-onnxruntime  (86 ms)
+- backend: paddle-onnxruntime  (80 ms)
 GT  : P<NNNNDDANND<<QNNNQWNW<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<GRCELLINAS<<GEORGIOS<<<<<<<<<<<<<<<<<<<<<<
         ^^^^^^^ ^^  ^^^^^^^^                         [17 mismatch]
@@ -3307,7 +3307,7 @@ PRED: AA12345678GRC7505157M3312108<<<<<<<<<<<<<<06
                                                      [0 mismatch]
 
 ### indra  [DECODE-OK] conf1=89% conf2=98%
-- backend: indra  (54 ms)
+- backend: indra  (49 ms)
 GT  : P<NNNNDDANND<<QNNNQWNW<<<<<<<<<<<<<<<<<<<<<<
 PRED: PGRCCLLINASKKGEORGIOSKKKKKKKKKKKKKKKKKEE<<<<
        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^       [39 mismatch]
@@ -3316,7 +3316,7 @@ PRED: AA12345678RCC7505157M3312108<<<<<<<<<<<<<<06
                 ^^                                   [2 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=92% conf2=98%
-- backend: indra  (192 ms)
+- backend: indra  (170 ms)
 GT  : P<NNNNDDANND<<QNNNQWNW<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<GRCELLINAS<<GEORGIOS<<<<<<<<<<<<<<<<<<<<<<
         ^^^^^^^ ^^  ^^^^^^^^                         [17 mismatch]
@@ -3325,7 +3325,7 @@ PRED: AA12345678GRC7505157M3312108<<<<<<<<<<<<<<06
                                                      [0 mismatch]
 
 ## c2aee55b9017575f_0028.jpg
-- 官方判定: PASS  verified=True  chosen=tesseract  ms=177
+- 官方判定: PASS  verified=True  chosen=tesseract  ms=158
 - 官方 line1: P<RUSOBRAZETS<<TESTER<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: 5200360198RUS5608087M2002156<<<<<<<<<<<<<<08
 - 理由: IndraOCR 识别并通过校验
@@ -3344,8 +3344,8 @@ PRED: M52LL3KC498AL95KC8C87P2LL243L<<<<<<<<<<<<<<L
 
 ### cnn  [DECODE-OK] conf1=94% conf2=93%
 GT  : P<NUSOBRAZEYS<<YKSYKR<<<<<<<<<<<<<<<<<<<<<<<
-PRED: P<NUEOBRAZEYS<<YKSYKR<<<<<<<<<<<<<<<<<<<<<<<
-          ^                                          [1 mismatch]
+PRED: P<EUEOBRAZEYS<<YKSYKR<<<<<<<<<<<<<<<<<<<<<<<
+        ^ ^                                          [2 mismatch]
 GT  : D2DM1601M8KBS5608087M2002156<<<<<<<<<<<<<<08
 PRED: D2DM1601M8KBS5608087M2002156<<<<<<<<<<<<<<08
                                                      [0 mismatch]
@@ -3362,14 +3362,14 @@ PRED: 3200360198NU65608087M2002156<<<<<<<<<<<<<<00
 
 ### fuse  [DECODE-OK] conf1=97% conf2=97%
 GT  : P<NUSOBRAZEYS<<YKSYKR<<<<<<<<<<<<<<<<<<<<<<<
-PRED: P<NUEOBRAZEYS<<YESYER<<<<<<<<<<<<<<<<<<<<<<<
-          ^           ^  ^                           [3 mismatch]
+PRED: P<EUEOBRAZEYS<<YESYER<<<<<<<<<<<<<<<<<<<<<<<
+        ^ ^           ^  ^                           [4 mismatch]
 GT  : D2DM1601M8KBS5608087M2002156<<<<<<<<<<<<<<08
 PRED: 52D01601M8KBS5608087M2002156<<<<<<<<<<<<<<08
       ^  ^                                           [2 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (81 ms)
+- backend: tesseract  (71 ms)
 GT  : P<NUSOBRAZEYS<<YKSYKR<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<RUSOBRAZETS<<TESTER<<<<<<<<<<<<<<<<<<<<<<<
         ^        ^   ^^ ^^                           [6 mismatch]
@@ -3378,7 +3378,7 @@ PRED: 5200360198RUS5608087M2002156<<<<<<<<<<<<<<08
       ^ ^^^   ^ ^^                                   [7 mismatch]
 
 ### paddle  [DECODE-OK] conf1=98% conf2=97%
-- backend: paddle-onnxruntime  (106 ms)
+- backend: paddle-onnxruntime  (89 ms)
 GT  : P<NUSOBRAZEYS<<YKSYKR<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<RUSOBRAZETS<<TESTER<<<<<<<<<<<<<<<<<<<<<<<
         ^        ^   ^^ ^^                           [6 mismatch]
@@ -3387,7 +3387,7 @@ PRED: 5200360198RUS5608087M20021560<<<<<<<<<<<<<08
       ^ ^^^   ^ ^^                ^                  [8 mismatch]
 
 ### indra  [DECODE-OK] conf1=98% conf2=99%
-- backend: indra  (57 ms)
+- backend: indra  (49 ms)
 GT  : P<NUSOBRAZEYS<<YKSYKR<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<RUSOBRAZETS<<TESTER<<<<<<<<<<<<<<<<<<<<<<<
         ^        ^   ^^ ^^                           [6 mismatch]
@@ -3396,7 +3396,7 @@ PRED: 5200360198RUS5608087M2002156<<<<<<<<<<<<<<08
       ^ ^^^   ^ ^^                                   [7 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=97% conf2=100%
-- backend: indra  (216 ms)
+- backend: indra  (189 ms)
 GT  : P<NUSOBRAZEYS<<YKSYKR<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<RUSOBRAZETS<<TESTER<<<<<<<<<<<<<<<<<<<<<<<
         ^        ^   ^^ ^^                           [6 mismatch]
@@ -3405,8 +3405,8 @@ PRED: 5200360198RUS5608087M2002156<<<<<<<<<<<<<<08
       ^ ^^^   ^ ^^                                   [7 mismatch]
 
 ## cb64e780ab32f735_0004.jpg
-- 官方判定: PASS  verified=True  chosen=cnn  ms=187
-- 官方 line1: P<SNKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
+- 官方判定: PASS  verified=True  chosen=cnn  ms=166
+- 官方 line1: P<SVKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: 7B12318830SVK1111112F34091871111111111<<<<06
 - 理由: 融合CNN+CRNN 识别并通过校验
 
@@ -3424,8 +3424,8 @@ PRED: XH3234883C3V<3433442P34CV4874444444444<<<<CK
 
 ### cnn  [DECODE-OK] conf1=93% conf2=98%
 GT  : P<SNKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
-PRED: P<SNKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
-                                                     [0 mismatch]
+PRED: P<SVKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
+         ^                                           [1 mismatch]
 GT  : 7B12318830SVK1111112F34091871111111111<<<<06
 PRED: 7B12318830SVK1111112F34091871111111111<<<<06
                                                      [0 mismatch]
@@ -3442,14 +3442,14 @@ PRED: XA123188308VK1111112F34091871111111111<<<<06
 
 ### fuse  [DECODE-OK] conf1=97% conf2=98%
 GT  : P<SNKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
-PRED: P<SNKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
-                                                     [0 mismatch]
+PRED: P<SVKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
+         ^                                           [1 mismatch]
 GT  : 7B12318830SVK1111112F34091871111111111<<<<06
 PRED: 7B12318830SVK1111112F34091871111111111<<<<06
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (84 ms)
+- backend: tesseract  (78 ms)
 GT  : P<SNKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PPSVKSPECIMEN<<VZORKA<<<<<<<<<<<<<<<<<<<<<<<
        ^ ^      ^    ^^                              [5 mismatch]
@@ -3458,7 +3458,7 @@ PRED: XR12318830SVK1111112F34091871111111111<<<<06
       ^^                                             [2 mismatch]
 
 ### paddle  [decoded] conf1=98% conf2=93%
-- backend: paddle-onnxruntime  (190 ms)
+- backend: paddle-onnxruntime  (167 ms)
 - error: decode failed: check digit mismatch
 GT  : P<SNKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PPSVKSPECIMEN<<VZORKA<<<<<<<<<<<<<<<<<<<<<<<
@@ -3468,7 +3468,7 @@ PRED: XR12318830SVK111112F234091871111111<<06<<<<<
       ^^                ^^^              ^^^^   ^^   [11 mismatch]
 
 ### indra  [DECODE-OK] conf1=94% conf2=99%
-- backend: indra  (54 ms)
+- backend: indra  (48 ms)
 GT  : P<SNKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PPSVKSPECIMENK<VZORKAK<<<<<<<<<<<<<<<<<<<<<<
        ^ ^      ^  ^ ^^    ^                         [7 mismatch]
@@ -3477,7 +3477,7 @@ PRED: XR12318830SVK1111112F34091871111111111<<<<06
       ^^                                             [2 mismatch]
 
 ### indra_fullpage  [decoded] conf1=92% conf2=98%
-- backend: indra  (236 ms)
+- backend: indra  (210 ms)
 - error: lines=61 edits=4 composite_edits=1 country=PAU
 GT  : P<SNKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
 PRED: 13PAUNZZNAMYPAGERESERVEDFORSSUINGAURHEITIESP
@@ -3487,7 +3487,7 @@ PRED: COMPTENTE6PAURDLIVR5RLEPASS6PO<<<<<<<<<<<<72
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^    ^^   [40 mismatch]
 
 ## cd83b43756aff32d_0013.jpg
-- 官方判定: PASS  verified=True  chosen=crnn  ms=155
+- 官方判定: PASS  verified=True  chosen=crnn  ms=154
 - 官方 line1: P<HRVSPECIMEN<<SPECIMEN<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: 0070070071HRV8212258F1407019<<<<<<<<<<<<<<06
 - 理由: PaddleOCR 识别并通过校验
@@ -3507,7 +3507,7 @@ PRED: 4<<<0M<C7C374HHV624223BPM437C49<<<<<<<<<<<<<
 ### cnn  [skip]
 
 ### crnn  [decoded] conf1=96% conf2=94%
-- backend: crnn  (14 ms)
+- backend: crnn  (13 ms)
 - error: decode failed: check digit mismatch
 GT  : P<HAQSPGCINNN<<SPNCINGN<<<<<<<<<<<<<<<<<<<<<
 PRED: P<HRVSPECIMEN<<SPECIMEN<<<<<<<<<<<<<<<<<<<<<
@@ -3518,14 +3518,14 @@ PRED: 0070070071HRV8212258F1<07019<<<<<<<<<<<<<<06
 
 ### fuse  [DECODE-OK] conf1=95% conf2=92%
 GT  : P<HAQSPGCINNN<<SPNCINGN<<<<<<<<<<<<<<<<<<<<<
-PRED: P<HRYSYGCIYGN<<SPSGIMEN<<<<<<<<<<<<<<<<<<<<<
-         ^^ ^   ^^     ^^ ^^                         [9 mismatch]
+PRED: P<BRNSYGCIYGN<<SPSGIMEN<<<<<<<<<<<<<<<<<<<<<
+        ^^^ ^   ^^     ^^ ^^                         [10 mismatch]
 GT  : 0M10070071HAV8212258F140701955535SSKKKKKKK56
 PRED: 0070070071HAV8212258F140701955<5<<<<<KKKKK56
        ^^                           ^^^^^^^          [9 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (77 ms)
+- backend: tesseract  (70 ms)
 GT  : P<HAQSPGCINNN<<SPNCINGN<<<<<<<<<<<<<<<<<<<<<
 PRED: P<HRVSPECIMEN<<SPECIMEN<<<<<<<<<<<<<<<<<<<<<
          ^^  ^  ^^     ^  ^^                         [8 mismatch]
@@ -3534,7 +3534,7 @@ PRED: 0070070071HRV8212258F1407019<<<<<<<<<<<<<<06
        ^^        ^                ^^^^^^^^^^^^^^^    [18 mismatch]
 
 ### paddle  [DECODE-OK] conf1=99% conf2=97%
-- backend: paddle-onnxruntime  (91 ms)
+- backend: paddle-onnxruntime  (85 ms)
 GT  : P<HAQSPGCINNN<<SPNCINGN<<<<<<<<<<<<<<<<<<<<<
 PRED: P<HRVSPECIMEN<<SPECIMEN<<<<<<<<<<<<<<<<<<<<<
          ^^  ^  ^^     ^  ^^                         [8 mismatch]
@@ -3543,7 +3543,7 @@ PRED: 0070070071HRV8212258F1407019<<<<<<<<<<<<0682
        ^^        ^                ^^^^^^^^^^^^^^^^   [19 mismatch]
 
 ### indra  [DECODE-OK] conf1=92% conf2=97%
-- backend: indra  (48 ms)
+- backend: indra  (45 ms)
 GT  : P<HAQSPGCINNN<<SPNCINGN<<<<<<<<<<<<<<<<<<<<<
 PRED: P<HRVSPECIMENK<SPECIMEN<<<<<<<<<<<<<<<<<<<<<
          ^^  ^  ^^ ^   ^  ^^                         [9 mismatch]
@@ -3552,7 +3552,7 @@ PRED: 00Z0070O71HRV8212258F1407019<<<<<<<<<<<<<<06
        ^^    ^   ^                ^^^^^^^^^^^^^^^    [19 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=91% conf2=98%
-- backend: indra  (218 ms)
+- backend: indra  (200 ms)
 GT  : P<HAQSPGCINNN<<SPNCINGN<<<<<<<<<<<<<<<<<<<<<
 PRED: P<HRVSPECIMENK<SPECIMEN<<<<<<<<<<<<<<<<<<<<<
          ^^  ^  ^^ ^   ^  ^^                         [9 mismatch]
@@ -3561,7 +3561,7 @@ PRED: 0070070071HRV8212258F1407019<<<<<<<<<<<<<<06
        ^^        ^                ^^^^^^^^^^^^^^^    [18 mismatch]
 
 ## cdcc06ad360b7849_0019.png
-- 官方判定: REJECT  verified=False  chosen=None  ms=26
+- 官方判定: REJECT  verified=False  chosen=None  ms=22
 - 理由: 未在照片中定位到 MRZ 双行
 
 ### traditional  [no_pair]
@@ -3579,11 +3579,11 @@ PRED: 0070070071HRV8212258F1407019<<<<<<<<<<<<<<06
 ### indra  [no_pair]
 
 ### indra_fullpage  [DECODE-OK] conf1=98% conf2=100%
-- backend: indra  (258 ms)
+- backend: indra  (227 ms)
 
 ## dd6a2ea3ce305a5d_0192.jpg
-- 官方判定: PASS  verified=True  chosen=fuse  ms=156
-- 官方 line1: P<PREJANG<<NYONGSUN<<<<<<<<<<<<<<<<<<<<<<<<<
+- 官方判定: PASS  verified=True  chosen=fuse  ms=160
+- 官方 line1: P<PRKJANG<<NYONGSUN<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: 6451331382PHK6609302F1003145Z<<<<<<<<<<<<<54
 - 理由: 融合CNN+CRNN 识别并通过校验
 
@@ -3602,7 +3602,7 @@ PRED: A454334282PRWAAEV3C2GMCC34A9<<<<<<<<<<<<<<<A
 ### cnn  [skip]
 
 ### crnn  [decoded] conf1=96% conf2=96%
-- backend: crnn  (14 ms)
+- backend: crnn  (15 ms)
 - error: decode failed: check digit mismatch
 GT  : P<PREJANG<<NYONGSUN<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POPRKJANG<<MYONGSUN<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -3613,14 +3613,14 @@ PRED: 6451331382PRK6609302F1003145<<<<<<<<<<<<<<<4
 
 ### fuse  [DECODE-OK] conf1=97% conf2=99%
 GT  : P<PREJANG<<NYONGSUN<<<<<<<<<<<<<<<<<<<<<<<<<
-PRED: P<PREJANG<<NYONGSUN<<<<<<<<<<<<<<<<<<<<<<<<<
-                                                     [0 mismatch]
+PRED: P<PRKJANG<<NYONGSUN<<<<<<<<<<<<<<<<<<<<<<<<<
+          ^                                          [1 mismatch]
 GT  : 6451331382PRK6609302F1003145<<<<<<<<<<<<<<04
 PRED: 6451331382PHK6609302F1003145Z<<<<<<<<<<<<<54
                  ^                ^             ^    [3 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (76 ms)
+- backend: tesseract  (70 ms)
 GT  : P<PREJANG<<NYONGSUN<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<PRKJANG<<MYONGSUN<<<<<<<<<<<<<<<<<<<<<<<<<
           ^      ^                                   [2 mismatch]
@@ -3629,7 +3629,7 @@ PRED: 6451331382PRK6609302F1003145<<<<<<<<<<<<<<04
                                                      [0 mismatch]
 
 ### paddle  [DECODE-OK] conf1=99% conf2=96%
-- backend: paddle-onnxruntime  (86 ms)
+- backend: paddle-onnxruntime  (85 ms)
 GT  : P<PREJANG<<NYONGSUN<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POPRKJANG<<MYONGSUN<<<<<<<<<<<<<<<<<<<<<<<<<
        ^  ^      ^                                   [3 mismatch]
@@ -3638,7 +3638,7 @@ PRED: 6451331382PRK6609302F1003145<<<<<<<<<<<<<428
                                                ^^^   [3 mismatch]
 
 ### indra  [DECODE-OK] conf1=99% conf2=100%
-- backend: indra  (60 ms)
+- backend: indra  (49 ms)
 GT  : P<PREJANG<<NYONGSUN<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POPRKJANG<<MYONGSUN<<<<<<<<<<<<<<<<<<<<<<<<<
        ^  ^      ^                                   [3 mismatch]
@@ -3647,13 +3647,13 @@ PRED: 6451331382PRK6609302F1003145<<<<<<<<<<<<<<04
                                                      [0 mismatch]
 
 ### indra_fullpage  [FAIL]
-- backend: indra  (221 ms)
+- backend: indra  (194 ms)
 - error: indra 未找到 MRZ 候选行 (1 行)
 - PRED line1: <空>
 - PRED line2: <空>
 
 ## e350cea71e824345_0007.jpg
-- 官方判定: PASS  verified=True  chosen=paddle  ms=165
+- 官方判定: PASS  verified=True  chosen=paddle  ms=163
 - 官方 line1: P<BGRIVANOVA<<MARITSA<RADNEVA<<<<<<<<<<<<<<<
 - 官方 line2: 3000000001BGR8508018F15032098508010133<<<<54
 - 理由: PaddleOCR 识别并通过校验
@@ -3679,7 +3679,7 @@ PRED: 3000000001BGH8508018F150320945040M0M33NNNN54
                                                      [0 mismatch]
 
 ### crnn  [DECODE-OK] conf1=97% conf2=97%
-- backend: crnn  (17 ms)
+- backend: crnn  (13 ms)
 GT  : P<BGRDWANOWAV<NARIYBA<NADNDWA<<<<<<<<<<<<<<<
 PRED: P<BGRIVANOVA<<HARITSA<RADNEVA<<<<<<<<<<<<<<<
            ^^   ^ ^ ^   ^^  ^   ^^                   [10 mismatch]
@@ -3696,7 +3696,7 @@ PRED: 3000000001BGH8508018F150320985080M0M33NNR554
                                   ^  ^        ^^     [4 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (72 ms)
+- backend: tesseract  (61 ms)
 GT  : P<BGRDWANOWAV<NARIYBA<NADNDWA<<<<<<<<<<<<<<<
 PRED: P<BGRIVANOVAS<MARITSA<RADNEVA<<<<<<<<<<<<<<<
            ^^   ^ ^ ^   ^^  ^   ^^                   [10 mismatch]
@@ -3705,7 +3705,7 @@ PRED: 3000000001BGR8508018F15032098508010133<<<<54
                   ^               ^  ^ ^ ^  ^^^^     [9 mismatch]
 
 ### paddle  [DECODE-OK] conf1=98% conf2=99%
-- backend: paddle-onnxruntime  (104 ms)
+- backend: paddle-onnxruntime  (80 ms)
 GT  : P<BGRDWANOWAV<NARIYBA<NADNDWA<<<<<<<<<<<<<<<
 PRED: P<BGRIVANOVA<<MARITSA<RADNEVA<<<<<<<<<<<<<<<
            ^^   ^ ^ ^   ^^  ^   ^^                   [10 mismatch]
@@ -3714,7 +3714,7 @@ PRED: 3000000001BGR8508018F15032098508010133<<<<54
                   ^               ^  ^ ^ ^  ^^^^     [9 mismatch]
 
 ### indra  [DECODE-OK] conf1=95% conf2=99%
-- backend: indra  (54 ms)
+- backend: indra  (51 ms)
 GT  : P<BGRDWANOWAV<NARIYBA<NADNDWA<<<<<<<<<<<<<<<
 PRED: P<BGRIVANOVAKKMARITSAKRADNEVA<<<<<<<<<<<<<<<
            ^^   ^ ^^^   ^^ ^^   ^^                   [12 mismatch]
@@ -3723,7 +3723,7 @@ PRED: 3000000001BGR8508018F15032098508010133<<<<54
                   ^               ^  ^ ^ ^  ^^^^     [9 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=86% conf2=93%
-- backend: indra  (213 ms)
+- backend: indra  (199 ms)
 GT  : P<BGRDWANOWAV<NARIYBA<NADNDWA<<<<<<<<<<<<<<<
 PRED: YASAOREPUBLICOFBULGARIA<<<<<<<<<<<<<<<<<<<<<
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^                  [29 mismatch]
@@ -3732,7 +3732,7 @@ PRED: ACNOPRNPA5SAORTNOPA2SEPORT<3<<<<<<<<<<<<<<08
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   [44 mismatch]
 
 ## e564d4372e28b9ed_0018.jpg
-- 官方判定: PASS  verified=True  chosen=tesseract  ms=174
+- 官方判定: PASS  verified=True  chosen=tesseract  ms=158
 - 官方 line1: P<SRBTEST<<MILICA<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: 0000000000SRB6802295F22101042902968000000<40
 - 理由: PaddleOCR 识别并通过校验
@@ -3776,7 +3776,7 @@ PRED: 0000000000GHB6802295M22101042N02HB8000000N40
                 ^^        ^        ^  ^^       ^     [7 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (87 ms)
+- backend: tesseract  (76 ms)
 GT  : P<BRBYRBY<<NDLDGA<<<<<<<<<<<<<<<<Q<<<<<<<<<<
 PRED: P<SRBTEST<<MILICA<<<<<<<<<<<<<<<<<<<<<<<<<<<
         ^  ^^^^  ^^ ^^                 ^             [10 mismatch]
@@ -3785,7 +3785,7 @@ PRED: 0000000000SRB6802295F22101042902968000000<40
                                                      [0 mismatch]
 
 ### paddle  [DECODE-OK] conf1=99% conf2=96%
-- backend: paddle-onnxruntime  (82 ms)
+- backend: paddle-onnxruntime  (81 ms)
 GT  : P<BRBYRBY<<NDLDGA<<<<<<<<<<<<<<<<Q<<<<<<<<<<
 PRED: P<SRBTEST<<MILICA<<<<<<<<<<<<<<<<<<<<<<<<<<<
         ^  ^^^^  ^^ ^^                 ^             [10 mismatch]
@@ -3794,7 +3794,7 @@ PRED: 0000000000SRB6802295F22101042902968000000<40
                                                      [0 mismatch]
 
 ### indra  [DECODE-OK] conf1=88% conf2=97%
-- backend: indra  (56 ms)
+- backend: indra  (53 ms)
 GT  : P<BRBYRBY<<NDLDGA<<<<<<<<<<<<<<<<Q<<<<<<<<<<
 PRED: PKSRBTESTMILICACKKKKKKKKK<<<<<<<<<<<<<<<<<<<
        ^^  ^^^^^^^^^^^^^^^^^^^^        ^             [23 mismatch]
@@ -3803,7 +3803,7 @@ PRED: 0000000000SRB6802295F22101042902968000000<40
                                                      [0 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=97% conf2=91%
-- backend: indra  (228 ms)
+- backend: indra  (202 ms)
 GT  : P<BRBYRBY<<NDLDGA<<<<<<<<<<<<<<<<Q<<<<<<<<<<
 PRED: MUARSRBINEPUZAGRADBEOGRAD<<<<<<<<<<<<<<<<<<<
       ^^^ ^^^^^^^^^^^^ ^^^^^^^^        ^             [24 mismatch]
@@ -3812,7 +3812,7 @@ PRED: MORNUCSIG2ARSRESIGN6TU<<<<<0<<<<<<<<<<<<<<06
       ^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^   [42 mismatch]
 
 ## e726442c11085334_0090.png
-- 官方判定: PASS  verified=True  chosen=crnn  ms=168
+- 官方判定: PASS  verified=True  chosen=crnn  ms=163
 - 官方 line1: P<SWESPECIMEN<<SVEA<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: XA00000012SWE8208215F2701013198208212384<<22
 - 理由: PaddleOCR 识别并通过校验
@@ -3832,14 +3832,14 @@ PRED: XAOOCOCO429WM82C8249M27O4O434V82C8242384<<22
 ### cnn  [decoded] conf1=79% conf2=82%
 - error: decode failed: check digit mismatch
 GT  : P<BWBBHBCINBN<<BNBA<<<<<<<<<<<<<<<<<<<<<<<<<
-PRED: P<BWBBPBCINBN<<BNBA<<<<<<<<<<<<<<<<<<<<<<<<<
-            ^                                        [1 mismatch]
+PRED: P<BHRBPBCINBN<<BNBA<<<<<<<<<<<<<<<<<<<<<<<<<
+         ^^ ^                                        [3 mismatch]
 GT  : XA00000012SWE8208215F2701013198208212384<<22
 PRED: NM00000012GWB4204214M27010141042042MMM44KN22
       ^^        ^ ^^  ^  ^^      ^ ^^  ^ ^^^^ ^^     [18 mismatch]
 
 ### crnn  [decoded] conf1=98% conf2=92%
-- backend: crnn  (15 ms)
+- backend: crnn  (13 ms)
 - error: decode failed: check digit mismatch
 GT  : P<BWBBHBCINBN<<BNBA<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<SWESPECIMEN<<SVEA<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -3851,14 +3851,14 @@ PRED: XA000000125WE8208215F2701013190200212384<<22
 ### fuse  [decoded] conf1=92% conf2=89%
 - error: decode failed: check digit mismatch
 GT  : P<BWBBHBCINBN<<BNBA<<<<<<<<<<<<<<<<<<<<<<<<<
-PRED: P<BWBBPBCINBN<<BNBA<<<<<<<<<<<<<<<<<<<<<<<<<
-            ^                                        [1 mismatch]
+PRED: P<BHRBPBCINBN<<BNBA<<<<<<<<<<<<<<<<<<<<<<<<<
+         ^^ ^                                        [3 mismatch]
 GT  : XA00000012SWE8208215F2701013198208212384<<22
 PRED: NA00000012GWB4204214M270101419M20M2M2M44KN22
       ^         ^ ^^  ^  ^^      ^  ^  ^ ^ ^^ ^^     [15 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (71 ms)
+- backend: tesseract  (65 ms)
 GT  : P<BWBBHBCINBN<<BNBA<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<SWESPECIMEN<<SVEA<<<<<<<<<<<<<<<<<<<<<<<<<
         ^ ^^^^  ^^   ^^^                             [10 mismatch]
@@ -3867,7 +3867,7 @@ PRED: XA00000012SWE8208215F2701013198208212384<<22
                                                      [0 mismatch]
 
 ### paddle  [DECODE-OK] conf1=97% conf2=99%
-- backend: paddle-onnxruntime  (84 ms)
+- backend: paddle-onnxruntime  (82 ms)
 GT  : P<BWBBHBCINBN<<BNBA<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<SWESPECIMEN<<SVEA<<<<<<<<<<<<<<<<<<<<<<<<<
         ^ ^^^^  ^^   ^^^                             [10 mismatch]
@@ -3876,7 +3876,7 @@ PRED: XA00000012SWE8208215F2701013198208212384<<22
                                                      [0 mismatch]
 
 ### indra  [DECODE-OK] conf1=91% conf2=99%
-- backend: indra  (57 ms)
+- backend: indra  (49 ms)
 GT  : P<BWBBHBCINBN<<BNBA<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<SWESPECIMEN<<SVEA<<<<<<<<<<<<<<<<<<<<<<<<<
         ^ ^^^^  ^^   ^^^                             [10 mismatch]
@@ -3885,7 +3885,7 @@ PRED: XA00000012SWE8208215F2701013198208212384<<22
                                                      [0 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=86% conf2=99%
-- backend: indra  (190 ms)
+- backend: indra  (168 ms)
 GT  : P<BWBBHBCINBN<<BNBA<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: SVEAE<<<<<<<<<<<<<<<<<XXXXXXX<<<<<<<<<<<<<<<
       ^^^^^^^^^^^^^  ^^^^   ^^^^^^^                  [24 mismatch]
@@ -3894,7 +3894,7 @@ PRED: XA00000012EAE8208215F2701013198208212384<<22
                 ^^                                   [2 mismatch]
 
 ## f22471c46575ec04_0008.jpg
-- 官方判定: PASS  verified=True  chosen=tesseract  ms=174
+- 官方判定: PASS  verified=True  chosen=tesseract  ms=160
 - 官方 line1: PPAUTSPECIMEN<<MARIA<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: AP12345673AUT0012315F3311307<<<<<<<<<<<<<<08
 - 理由: PaddleOCR 识别并通过校验
@@ -3914,14 +3914,14 @@ PRED: MAP42345K73AC1CC32335F33333C7<<<<<<<<<<<<<<<
 ### cnn  [decoded] conf1=94% conf2=94%
 - error: decode failed: check digit mismatch
 GT  : P<AUYJPECIMEN<<MARIA<<<<<<<<<<<<<<<<<<<<<<<<
-PRED: P<AUYJPECIMEN<<MARIA<<<<<<<<<<<<<<<<<<<<<<<<
-                                                     [0 mismatch]
+PRED: P<GUYJPECIMEN<<MARIA<<<<<<<<<<<<<<<<<<<<<<<<
+        ^                                            [1 mismatch]
 GT  : AP12345673AUT0012315F3311307<<<<<<<<<<<<<<08
 PRED: 8P12345673AUI0012315F3311307555555<<55<<<<<8
       ^           ^               ^^^^^^  ^^    ^    [11 mismatch]
 
 ### crnn  [decoded] conf1=95% conf2=94%
-- backend: crnn  (17 ms)
+- backend: crnn  (13 ms)
 - error: decode failed: check digit mismatch
 GT  : P<AUYJPECIMEN<<MARIA<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PPAUTSPECIMEN<<MARIA<<<<<<<<<<<<<<<<<<<<<<<<
@@ -3933,14 +3933,14 @@ PRED: AP12345673AUT0012315F3311307<<<<<<<<<<<<<<<0
 ### fuse  [decoded] conf1=96% conf2=96%
 - error: decode failed: check digit mismatch
 GT  : P<AUYJPECIMEN<<MARIA<<<<<<<<<<<<<<<<<<<<<<<<
-PRED: P<AUYJPECIMEN<<MARIA<<<<<<<<<<<<<<<<<<<<<<<<
-                                                     [0 mismatch]
+PRED: P<AUTJPECIMEN<<MARIA<<<<<<<<<<<<<<<<<<<<<<<<
+          ^                                          [1 mismatch]
 GT  : AP12345673AUT0012315F3311307<<<<<<<<<<<<<<08
 PRED: AP12345673AUI0012315F3311307<<<<<<<<<<<<<<<8
                   ^                             ^    [2 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (73 ms)
+- backend: tesseract  (64 ms)
 GT  : P<AUYJPECIMEN<<MARIA<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PPAUTSPECIMEN<<MARIA<<<<<<<<<<<<<<<<<<<<<<<<
        ^  ^^                                         [3 mismatch]
@@ -3949,7 +3949,7 @@ PRED: AP12345673AUT0012315F3311307<<<<<<<<<<<<<<08
                                                      [0 mismatch]
 
 ### paddle  [DECODE-OK] conf1=99% conf2=98%
-- backend: paddle-onnxruntime  (98 ms)
+- backend: paddle-onnxruntime  (89 ms)
 GT  : P<AUYJPECIMEN<<MARIA<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PPAUTSPECIMEN<<MARIA<<<<<<<<<<<<<<<<<<<<<<<<
        ^  ^^                                         [3 mismatch]
@@ -3958,7 +3958,7 @@ PRED: AP12345673AUT0012315F3311307<<<<<<<<<<<<<<08
                                                      [0 mismatch]
 
 ### indra  [DECODE-OK] conf1=94% conf2=100%
-- backend: indra  (53 ms)
+- backend: indra  (46 ms)
 GT  : P<AUYJPECIMEN<<MARIA<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PPAUTSPECIMENK<MARIAK<<<<<X<<<<<<<<<<<<<<<<<
        ^  ^^       ^      ^     ^                    [6 mismatch]
@@ -3967,7 +3967,7 @@ PRED: AP12345673AUT0012315F3311307<<<<<<<<<<<<<<08
                                                      [0 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=92% conf2=100%
-- backend: indra  (273 ms)
+- backend: indra  (239 ms)
 GT  : P<AUYJPECIMEN<<MARIA<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PPAUTSPECIMENK<MARIA<<<<<<X<<<<<<<<<<<<<<<<<
        ^  ^^       ^            ^                    [5 mismatch]
@@ -3976,7 +3976,7 @@ PRED: AP12345673AUT0012315F3311307<<<<<<<<<<<<<<08
                                                      [0 mismatch]
 
 ## f385b0113d785dfd_0040.jpg
-- 官方判定: REJECT  verified=False  chosen=None  ms=9
+- 官方判定: REJECT  verified=False  chosen=None  ms=5
 - 理由: 未在照片中定位到 MRZ 双行
 
 - GT line1: `P<POLKOWALSKI<<JAN<<<<<<<<<<<<<<<<<<<<<<<<<<`
@@ -3997,7 +3997,7 @@ PRED: AP12345673AUT0012315F3311307<<<<<<<<<<<<<<08
 ### indra  [no_pair]
 
 ### indra_fullpage  [DECODE-OK] conf1=77% conf2=98%
-- backend: indra  (189 ms)
+- backend: indra  (167 ms)
 GT  : P<POLKOWALSKI<<JAN<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PKPOLKOWALSKIKIANKKKKKX<<<<<<<<<<<<<<<<<<<<<
        ^           ^^^^^^^^^^                        [11 mismatch]
@@ -4006,7 +4006,7 @@ PRED: ZF40004998POL8101028M3203031<<<<<<<<<<<<<<00
                  ^                                   [1 mismatch]
 
 ## f6132d0c5422d26a_0026.jpg
-- 官方判定: PASS  verified=True  chosen=crnn  ms=162
+- 官方判定: PASS  verified=True  chosen=crnn  ms=153
 - 官方 line1: P<NOROESTENBYEN<<AASAMUND<SPECIMEN<<<<<<<<<<
 - 官方 line2: CCC0022514NOR5604230M3004157<<<<<<<<<<<<<<04
 - 理由: PaddleOCR 识别并通过校验
@@ -4025,14 +4025,14 @@ PRED: CCCCC22534WCA5KC423CH3CC4M57<<<<<<<<<<<<<<CA
 
 ### cnn  [DECODE-OK] conf1=94% conf2=95%
 GT  : P<NORORSTRNBYRN<<AASAMUND<SPECINEN<<<<<<<<<<
-PRED: P<HORORSTRHBYRH<<AASAMUND<SPECINEN<<<<<<<<<<
-        ^       ^   ^                                [3 mismatch]
+PRED: P<NORORSTRHBYRH<<AASAMUND<SPECINEN<<<<<<<<<<
+                ^   ^                                [2 mismatch]
 GT  : CCC0022514HOH5604230M30041575<<<5<<<<<<<<<04
 PRED: CCC0022514HOH5604230M30041575<<<5<<<<<<<<<04
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=97% conf2=91%
-- backend: crnn  (15 ms)
+- backend: crnn  (14 ms)
 - error: decode failed: check digit mismatch
 GT  : P<NORORSTRNBYRN<<AASAMUND<SPECINEN<<<<<<<<<<
 PRED: P<NOROESTENBYEN<<AASAMUND<SPECIMEN<<<<<<<<<<
@@ -4050,7 +4050,7 @@ PRED: CCC0022514HOH5604230M30041575<<<5<<<<<<<<<04
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (70 ms)
+- backend: tesseract  (61 ms)
 GT  : P<NORORSTRNBYRN<<AASAMUND<SPECINEN<<<<<<<<<<
 PRED: P<NOROESTENBYEN<<AASAMUND<SPECIMEN<<<<<<<<<<
             ^  ^   ^                 ^               [4 mismatch]
@@ -4059,7 +4059,7 @@ PRED: CCC0022514NOR5604230M3004157<<<<<<<<<<<<<<04
                 ^ ^               ^   ^              [4 mismatch]
 
 ### paddle  [DECODE-OK] conf1=99% conf2=93%
-- backend: paddle-onnxruntime  (87 ms)
+- backend: paddle-onnxruntime  (82 ms)
 GT  : P<NORORSTRNBYRN<<AASAMUND<SPECINEN<<<<<<<<<<
 PRED: P<NOROESTENBYEN<<AASAMUND<SPECIMEN<<<<<<<<<<
             ^  ^   ^                 ^               [4 mismatch]
@@ -4068,7 +4068,7 @@ PRED: CCC0022514NOR5604230M3004157<<<<<<<<<<<<0428
                 ^ ^               ^   ^       ^^^^   [8 mismatch]
 
 ### indra  [DECODE-OK] conf1=97% conf2=97%
-- backend: indra  (57 ms)
+- backend: indra  (48 ms)
 GT  : P<NORORSTRNBYRN<<AASAMUND<SPECINEN<<<<<<<<<<
 PRED: P<NOROESTENBYEN<<AASAMUND<SPECIMEN<<<<<<<<<<
             ^  ^   ^                 ^               [4 mismatch]
@@ -4077,7 +4077,7 @@ PRED: CCC0022514NOR5604230M3004157<<<<<<<<<<<<<<04
                 ^ ^               ^   ^              [4 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=99% conf2=99%
-- backend: indra  (216 ms)
+- backend: indra  (199 ms)
 GT  : P<NORORSTRNBYRN<<AASAMUND<SPECINEN<<<<<<<<<<
 PRED: NOPGENOREGNORGANORWAY<<<<<<<<<<<<<<<<<<<<<<<
       ^^^^^^^^^^ ^^^^^^^^^^^^^^ ^^^^^^^^             [32 mismatch]
@@ -4086,7 +4086,7 @@ PRED: PASSNUMME2PGEANUMM<9<<<<<<<0<<<<<<<<<<<<<<04
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   ^              [30 mismatch]
 
 ## f6eeb483a66e8d94_0084.jpg
-- 官方判定: PASS  verified=True  chosen=tesseract  ms=154
+- 官方判定: PASS  verified=True  chosen=tesseract  ms=147
 - 官方 line1: P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E000093499USA6502056M3007099340006673<085950
 - 理由: PaddleOCR 识别并通过校验
@@ -4113,7 +4113,7 @@ PRED: Q0000N04N9UBA6902096M3007098M400066X1N08NH40
       ^    ^^ ^  ^  ^   ^        ^^      ^^^  ^^^    [15 mismatch]
 
 ### crnn  [decoded] conf1=95% conf2=83%
-- backend: crnn  (15 ms)
+- backend: crnn  (13 ms)
 - error: decode failed: check digit mismatch
 GT  : P<USATRANELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
@@ -4132,7 +4132,7 @@ PRED: 10000N04N9USA6902096M3007098M400066X1408NM40
       ^    ^^ ^     ^   ^        ^^      ^^^  ^^^    [14 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (70 ms)
+- backend: tesseract  (61 ms)
 GT  : P<USATRANELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
               ^                                      [1 mismatch]
@@ -4141,7 +4141,7 @@ PRED: E000093499USA6502056M3007099340006673<085950
                                                      [0 mismatch]
 
 ### paddle  [DECODE-OK] conf1=97% conf2=98%
-- backend: paddle-onnxruntime  (76 ms)
+- backend: paddle-onnxruntime  (75 ms)
 GT  : P<USATRANELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
               ^                                      [1 mismatch]
@@ -4150,7 +4150,7 @@ PRED: E000093499USA6502056M3007099340006673<085950
                                                      [0 mismatch]
 
 ### indra  [DECODE-OK] conf1=94% conf2=97%
-- backend: indra  (53 ms)
+- backend: indra  (48 ms)
 GT  : P<USATRANELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
               ^                                      [1 mismatch]
@@ -4159,7 +4159,7 @@ PRED: E000093499USA6502056M3007099340006673<085950
                                                      [0 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=100% conf2=91%
-- backend: indra  (181 ms)
+- backend: indra  (160 ms)
 GT  : P<USATRANELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: UNIEEDSTATESDEPARTMENTOFSTATE<<<<<<<<<<<<<<<
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^                  [29 mismatch]
@@ -4168,7 +4168,7 @@ PRED: P<USATRAV0IEE<<HAPP7<<<<<<<0<<<<<<<<<<<<<<00
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^^^    [42 mismatch]
 
 ## f80334b200240666_0034.png
-- 官方判定: PASS  verified=True  chosen=tesseract  ms=198
+- 官方判定: PASS  verified=True  chosen=tesseract  ms=172
 - 官方 line1: P<ARGGONZALES<RODRIGUEZ<MARIANA<FLORENCIA<<<
 - 官方 line2: AAMO000000ARG5702147M3303023000000000<<<<<04
 - 理由: PaddleOCR 识别并通过校验
@@ -4187,14 +4187,14 @@ PRED: AAHCCCCCCCAAG57C24A7P3XC3C23CLCCCLMML<<<<<LA
 
 ### cnn  [DECODE-OK] conf1=90% conf2=96%
 GT  : P<ANGGONZALES<RODRIGUEZ<MARIANA<SLORRNCIA<<<
-PRED: P<AGGGOHIALES<YODRIGUEZ<MARIANA<FLDNENCLN<<<
+PRED: P<ARGGOHIALES<YODRIGUEZ<MARIANA<FLDNENCLN<<<
          ^   ^^     ^                 ^ ^^^  ^^      [10 mismatch]
 GT  : 8880000008ABG5702147M3303023000000000<<<<<08
 PRED: 84M0000000AHG5702147M330302300000M0D0K<K<K16
        ^^      ^ ^                     ^ ^ ^ ^ ^^^   [11 mismatch]
 
 ### crnn  [decoded] conf1=99% conf2=91%
-- backend: crnn  (15 ms)
+- backend: crnn  (13 ms)
 - error: decode failed: check digit mismatch
 GT  : P<ANGGONZALES<RODRIGUEZ<MARIANA<SLORRNCIA<<<
 PRED: P<ARGGONZALES<RODRIGUEZ<MARIANA<FLORENCIA<<<
@@ -4213,7 +4213,7 @@ PRED: 8AM0000000AHG5702147M3303023000000000K<K<<06
        ^^      ^ ^                         ^ ^   ^   [7 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (131 ms)
+- backend: tesseract  (122 ms)
 GT  : P<ANGGONZALES<RODRIGUEZ<MARIANA<SLORRNCIA<<<
 PRED: P<ARGGONZALES<RODRIGUEZ<MARIANA<FLORENCIA<<<
          ^                            ^   ^          [3 mismatch]
@@ -4231,7 +4231,7 @@ PRED: AAMO000000ARG5702147M330302300000000<<<06<28
       ^^^^     ^ ^                        ^  ^^ ^    [10 mismatch]
 
 ### indra  [DECODE-OK] conf1=86% conf2=99%
-- backend: indra  (57 ms)
+- backend: indra  (54 ms)
 GT  : P<ANGGONZALES<RODRIGUEZ<MARIANA<SLORRNCIA<<<
 PRED: PKARGGONZALESKRODRIGUEZKMARIANA<FLORENCIA<<<
        ^ ^         ^         ^        ^   ^          [6 mismatch]
@@ -4240,7 +4240,7 @@ PRED: AAM000O000ARG5702147M3303023000000000<<<<<04
       ^^^   ^  ^ ^                               ^   [7 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=99% conf2=94%
-- backend: indra  (196 ms)
+- backend: indra  (159 ms)
 GT  : P<ANGGONZALES<RODRIGUEZ<MARIANA<SLORRNCIA<<<
 PRED: LUGANDENACIMIENTOPLACEOFBIRTH<<<<<<<<<<<<<<<
       ^^^^^^^ ^^^^^^^^^^^^^ ^^^^ ^^^^ ^^^^^^^^^      [37 mismatch]
@@ -4249,7 +4249,7 @@ PRED: FOCHADEEM3GANDATEOF5SS<<<<<6<<<<<<<<<<<<<<06
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^      ^   [38 mismatch]
 
 ## ffa1dc640314fa58_0089.png
-- 官方判定: PASS  verified=True  chosen=tesseract  ms=171
+- 官方判定: PASS  verified=True  chosen=tesseract  ms=160
 - 官方 line1: P<FINVIRTANEN<<MARIA<OLIVIA<<<<<<<<<<<<<<<<<
 - 官方 line2: FX12345672FIN7112214F2201018211271<426U<<<00
 - 理由: PaddleOCR 识别并通过校验
@@ -4269,14 +4269,14 @@ PRED: AW423A9A72PXN7MMPP44P2PD3D4N744274<A2AC<<<MA
 ### cnn  [decoded] conf1=88% conf2=76%
 - error: decode failed: check digit mismatch
 GT  : P<FINVIRTANEN<<MARIA<OLIVIA<<<<<<<<<<<<<<<<<
-PRED: P<FDNDDBYANBN<<NARJA<OLDNDA<<<<<<<<<<<<<<<<<
-         ^ ^^^^  ^   ^  ^    ^^^                     [11 mismatch]
+PRED: P<PLWDDBYANBN<<NARJA<OLDNDA<<<<<<<<<<<<<<<<<
+        ^^^^^^^  ^   ^  ^    ^^^                     [13 mismatch]
 GT  : FX12345672FIN7112214F2201018211271<426U<<<00
 PRED: 8BRPM4M6M2MMN7110214M22010182MM27MN428B<<800
       ^^^^^ ^ ^ ^^    ^   ^        ^^  ^^  ^^  ^     [18 mismatch]
 
 ### crnn  [DECODE-OK] conf1=96% conf2=94%
-- backend: crnn  (15 ms)
+- backend: crnn  (13 ms)
 GT  : P<FINVIRTANEN<<MARIA<OLIVIA<<<<<<<<<<<<<<<<<
 PRED: P<FINVIRIANEN<<MARIA<OLIVIA<<<<<<<<<<<<<<<<<
               ^                                      [1 mismatch]
@@ -4286,14 +4286,14 @@ PRED: PX12345672FIN7112214F2201018211271<4260<<<00
 
 ### fuse  [DECODE-OK] conf1=92% conf2=85%
 GT  : P<FINVIRTANEN<<MARIA<OLIVIA<<<<<<<<<<<<<<<<<
-PRED: P<FDNDDBYANBN<<NARJA<OLDNDA<<<<<<<<<<<<<<<<<
-         ^ ^^^^  ^   ^  ^    ^^^                     [11 mismatch]
+PRED: P<PLWDDBYANBN<<NARJA<OLDNDA<<<<<<<<<<<<<<<<<
+        ^^^^^^^  ^   ^  ^    ^^^                     [13 mismatch]
 GT  : FX12345672FIN7112214F2201018211271<426U<<<00
 PRED: OBRPM4M672MMN7112214M220101821127NN426B<<800
       ^^^^^ ^   ^^        ^            ^^   ^  ^     [13 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (89 ms)
+- backend: tesseract  (76 ms)
 GT  : P<FINVIRTANEN<<MARIA<OLIVIA<<<<<<<<<<<<<<<<<
 PRED: P<FINVIRTANEN<<MARIA<OLIVIA<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -4302,7 +4302,7 @@ PRED: FX12345672FIN7112214F2201018211271<426U<<<00
                                                      [0 mismatch]
 
 ### paddle  [DECODE-OK] conf1=97% conf2=99%
-- backend: paddle-onnxruntime  (84 ms)
+- backend: paddle-onnxruntime  (79 ms)
 GT  : P<FINVIRTANEN<<MARIA<OLIVIA<<<<<<<<<<<<<<<<<
 PRED: P<FINVIRTANEN<<MARIA<OLIVIA<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -4311,7 +4311,7 @@ PRED: FX12345672FIN7112214F2201018211271<426U<<<00
                                                      [0 mismatch]
 
 ### indra  [DECODE-OK] conf1=93% conf2=98%
-- backend: indra  (55 ms)
+- backend: indra  (48 ms)
 GT  : P<FINVIRTANEN<<MARIA<OLIVIA<<<<<<<<<<<<<<<<<
 PRED: P<FINVIRTANEN<<MARIAKOLIVIA<<<<<<<<<<<<<<<<<
                           ^                          [1 mismatch]
@@ -4320,7 +4320,7 @@ PRED: FX12345672FIN7112214F2201018211271<426U<<<00
                                                      [0 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=93% conf2=54%
-- backend: indra  (227 ms)
+- backend: indra  (205 ms)
 GT  : P<FINVIRTANEN<<MARIA<OLIVIA<<<<<<<<<<<<<<<<<
 PRED: SUOMIFINLANDFINLANDFINLANDE<<<<<<<<<<<<<<<<<
       ^^^^^^ ^^  ^^^^^ ^^^^^ ^^^^                    [22 mismatch]
@@ -4329,7 +4329,7 @@ PRED: PASSA1D045OMIALOPOR1HOPASSI1ORT<<<<<<<<<<<84
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^^   ^^   [40 mismatch]
 
 ## 2026-9-29-A.jpg
-- 官方判定: PASS  verified=True  chosen=cnn  ms=442
+- 官方判定: PASS  verified=True  chosen=cnn  ms=394
 - 官方 line1: P<CHNYUN<<YAOYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E0132B7855CHN0110141M3105179GB682050708G0B88
 - 理由: 融合CNN+CRNN 识别并通过校验
@@ -4355,7 +4355,7 @@ PRED: E0132B7855CHN0110141M3105179GB682050708G0B88
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=89% conf2=84%
-- backend: crnn  (17 ms)
+- backend: crnn  (15 ms)
 - error: decode failed: check digit mismatch
 GT  : P<CHNYUN<<YAOYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<< 
 PRED: PP<C<AYOA<<YAOYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -4373,7 +4373,7 @@ PRED: E0132B7855CHN0110141M3105179GB682050708G0B88
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (372 ms)
+- backend: tesseract  (340 ms)
 GT  : P<CHNYUN<<YAOYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHMNYUN<<YAOYU<<<<S<S<<<S<<<<<<<<<<<<<<<<<
           ^^^^^ ^^^^^^    ^ ^   ^                    [14 mismatch]
@@ -4391,7 +4391,7 @@ PRED: E0132B7855CHN0110141M3105179GB682O5O108G0B88
                                        ^ ^^          [3 mismatch]
 
 ### indra  [DECODE-OK] conf1=75% conf2=81%
-- backend: indra  (66 ms)
+- backend: indra  (60 ms)
 GT  : P<CHNYUN<<YAOYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PRCHNUNYADYUKKKKKKKKKKKKKKKKK<<<<<<<<<<<<<<<
        ^   ^^^^^ ^^^^^^^^^^^^^^^^^^                  [24 mismatch]
@@ -4400,7 +4400,7 @@ PRED: E043287855CHN0110141M3105179686820501086O088
         ^  ^                      ^^      ^  ^^^     [8 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=65% conf2=77%
-- backend: indra  (227 ms)
+- backend: indra  (199 ms)
 GT  : P<CHNYUN<<YAOYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: <CCHNUNYADYUKKKKKKSSSSSSKKKKKKK<<<<<<<<<<<<<
       ^^   ^^^^^ ^^^^^^^^^^^^^^^^^^^^                [27 mismatch]
@@ -4409,10 +4409,10 @@ PRED: EO43267855CHN0110141M31051796868205010860002
        ^^  ^                      ^^      ^  ^ ^^^   [10 mismatch]
 
 ## 2026-9-29-B.jpg
-- 官方判定: PASS  verified=True  chosen=cnn  ms=262
+- 官方判定: PASS  verified=True  chosen=cnn  ms=236
 - 官方 line1: P<CHNZHAO<<YONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E216923764CHN6703222M3510203H01JE6IP966FG406
-- 理由: 轻量CNN 识别并通过校验
+- 理由: 融合CNN+CRNN 识别并通过校验
 
 - GT line1: `P<CHNZHAO<<YONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
 - GT line2: `E216923764CHN6703222M3510203H01JE6IP966FG406`
@@ -4435,7 +4435,7 @@ PRED: E216923764CHN6703222M3510203H01JE6IP966FG406
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=90% conf2=87%
-- backend: crnn  (20 ms)
+- backend: crnn  (17 ms)
 - error: decode failed: check digit mismatch
 GT  : P<CHNZHAO<<YONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<< 
 PRED: PP<CAAZAAO<<YONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -4453,7 +4453,7 @@ PRED: E216923764CHN6703222M3510203H01JE6IP966FG406
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (223 ms)
+- backend: tesseract  (189 ms)
 GT  : P<CHNZHAO<<YONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNZHAO<<YONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -4462,7 +4462,7 @@ PRED: E216923764CHN6703222M3510203H014E61P966FTG32
                                      ^  ^     ^^^^   [6 mismatch]
 
 ### paddle  [DECODE-OK] conf1=97% conf2=99%
-- backend: paddle-onnxruntime  (129 ms)
+- backend: paddle-onnxruntime  (120 ms)
 GT  : P<CHNZHAO<<YONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNZHAO<<YONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -4471,7 +4471,7 @@ PRED: E216923764CHN6703222M3510203H01JE6IP966FG406
                                                      [0 mismatch]
 
 ### indra  [DECODE-OK] conf1=96% conf2=86%
-- backend: indra  (64 ms)
+- backend: indra  (59 ms)
 GT  : P<CHNZHAO<<YONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNZHA0<<YONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
               ^                                      [1 mismatch]
@@ -4480,7 +4480,7 @@ PRED: E216923764CHN6703222M3510203H01JE6IP966EGL06
                                              ^ ^     [2 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=94% conf2=87%
-- backend: indra  (261 ms)
+- backend: indra  (231 ms)
 GT  : P<CHNZHAO<<YONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNZHA0<<YONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
               ^                                      [1 mismatch]
@@ -4489,7 +4489,7 @@ PRED: E216923764CHN6703222M3510203H01JE618966FG406
                                         ^^           [2 mismatch]
 
 ## 2026-9-29-C.jpg
-- 官方判定: PASS  verified=True  chosen=fuse  ms=263
+- 官方判定: PASS  verified=True  chosen=fuse  ms=239
 - 官方 line1: P<CHNZHOU<<YUANSU<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E639O21058CHN7005059F3110153050268SZ0B110074
 - 理由: 融合CNN+CRNN 识别并通过校验
@@ -4515,7 +4515,7 @@ PRED: E639021O58CHN7005059F31101530S0Z68SZ0B110074
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=85% conf2=86%
-- backend: crnn  (18 ms)
+- backend: crnn  (16 ms)
 - error: decode failed: bad MRZ length
 GT  : P<CHNZHOU<<YUAASU<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<AZH00<<Y0ANS0<<<<<<<<<<<<<<<<<<<<<<<<<<<  
@@ -4533,7 +4533,7 @@ PRED: E639O21058CHN7005059F3110153050268SZ0B110074
           ^  ^                     ^ ^               [4 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (204 ms)
+- backend: tesseract  (185 ms)
 GT  : P<CHNZHOU<<YUAASU<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNZHOU<<YUANSU<<<<<<<<<<<<<<<<<<<<<<<<<<<
                     ^                                [1 mismatch]
@@ -4542,7 +4542,7 @@ PRED: 63902710S8CHN7005059F31101530S0Z68SZ0B110074
       ^^^^^^ ^^                                      [8 mismatch]
 
 ### paddle  [DECODE-OK] conf1=66% conf2=99%
-- backend: paddle-onnxruntime  (128 ms)
+- backend: paddle-onnxruntime  (112 ms)
 GT  : P<CHNZHOU<<YUAASU<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNZHOU<<YUANSU<<<<<<<<<<<<<<<<<<<<<<<<<<<
                     ^                                [1 mismatch]
@@ -4551,7 +4551,7 @@ PRED: E639O21058CHN7005059F3110153050Z68SZ0B1I0O74
           ^  ^                     ^         ^ ^     [5 mismatch]
 
 ### indra  [DECODE-OK] conf1=88% conf2=83%
-- backend: indra  (58 ms)
+- backend: indra  (53 ms)
 GT  : P<CHNZHOU<<YUAASU<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNZHOU<<YUANSU<<KK<<<<<<<<<<<<<<<<<<<<<<<
                     ^    ^^                          [3 mismatch]
@@ -4560,7 +4560,7 @@ PRED: E639021O58CHN7005059F311015305026B9208110074
                                    ^ ^ ^^^ ^         [6 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=92% conf2=85%
-- backend: indra  (235 ms)
+- backend: indra  (206 ms)
 GT  : P<CHNZHOU<<YUAASU<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNZHOU<<YUANSU<<<<<<<<<<<<<<<<<<<<<<<<<<<
                     ^                                [1 mismatch]
@@ -4569,7 +4569,7 @@ PRED: E639021O58CHN7005059F311015305026BSL08110074
                                    ^ ^ ^ ^ ^         [5 mismatch]
 
 ## 2026-9-29-D.jpg
-- 官方判定: PASS  verified=True  chosen=fuse  ms=252
+- 官方判定: PASS  verified=True  chosen=fuse  ms=247
 - 官方 line1: P<CHNBAO<<HUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E797044113CHN9004300F3405226GE0660ZR06BA1310
 - 理由: 融合CNN+CRNN 识别并通过校验
@@ -4595,7 +4595,7 @@ PRED: E797044113CHN9004300F3405226GE0660IR06BAI310
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=91% conf2=88%
-- backend: crnn  (18 ms)
+- backend: crnn  (17 ms)
 - error: decode failed: check digit mismatch
 GT  : P<CHNNAO<<HUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< 
 PRED: PP<CAABAO<<A0AN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -4613,7 +4613,7 @@ PRED: E797044113CHN9004300F3405226GE0660ZR06BA1310
                                         ^     ^      [2 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (130 ms)
+- backend: tesseract  (115 ms)
 GT  : P<CHNNAO<<HUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNBAO<<HUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
            ^                                         [1 mismatch]
@@ -4622,7 +4622,7 @@ PRED: E797044113CHN9004300F3405226GE6601IR06BA1310
                                     ^ ^^      ^      [4 mismatch]
 
 ### paddle  [DECODE-OK] conf1=96% conf2=98%
-- backend: paddle-onnxruntime  (147 ms)
+- backend: paddle-onnxruntime  (126 ms)
 GT  : P<CHNNAO<<HUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNBAO<<HUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
            ^                                         [1 mismatch]
@@ -4631,7 +4631,7 @@ PRED: E797044113CHN9004300F3405226GE0660IR06BAI310
                                                      [0 mismatch]
 
 ### indra  [DECODE-OK] conf1=94% conf2=86%
-- backend: indra  (68 ms)
+- backend: indra  (62 ms)
 GT  : P<CHNNAO<<HUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNBAO<<HUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
            ^                                         [1 mismatch]
@@ -4640,7 +4640,7 @@ PRED: E797044113CHN9004300F3405226GE06601R06RA1310
                                         ^   ^ ^      [3 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=95% conf2=87%
-- backend: indra  (253 ms)
+- backend: indra  (223 ms)
 GT  : P<CHNNAO<<HUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNBAO<<HUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
            ^                                         [1 mismatch]
@@ -4649,7 +4649,7 @@ PRED: E797044113CHN9004300F3405226GE06601R06RA1310
                                         ^   ^ ^      [3 mismatch]
 
 ## 2026-9-29-E.jpg
-- 官方判定: PASS  verified=True  chosen=cnn  ms=494
+- 官方判定: PASS  verified=True  chosen=cnn  ms=413
 - 官方 line1: P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E454243381CHN0703013F4211172S6310BB626637626
 - 理由: 融合CNN+CRNN 识别并通过校验
@@ -4675,7 +4675,7 @@ PRED: E454243381CHN0703013F4211172S6310BB626637626
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=96% conf2=86%
-- backend: crnn  (20 ms)
+- backend: crnn  (15 ms)
 - error: decode failed: bad MRZ length
 GT  : P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CAC0<<YO0YOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<  
@@ -4693,7 +4693,7 @@ PRED: E454243381CHN0703013F4211172S6310BB626637626
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (398 ms)
+- backend: tesseract  (350 ms)
 GT  : P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -4702,7 +4702,7 @@ PRED: 4542433812HNO0703013F4211172S63I08B671663762
       ^^^^^^ ^^^^^^                  ^ ^  ^^ ^^^^^   [21 mismatch]
 
 ### paddle  [DECODE-OK] conf1=94% conf2=98%
-- backend: paddle-onnxruntime  (144 ms)
+- backend: paddle-onnxruntime  (127 ms)
 GT  : P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -4711,7 +4711,7 @@ PRED: E454243381CHN0703013F4211172S63108B6Z6637626
                                        ^  ^          [2 mismatch]
 
 ### indra  [DECODE-OK] conf1=92% conf2=90%
-- backend: indra  (66 ms)
+- backend: indra  (59 ms)
 GT  : P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -4720,7 +4720,7 @@ PRED: E454243381CHN0703013F4211172S63108862663T626
                                        ^^     ^      [3 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=94% conf2=85%
-- backend: indra  (288 ms)
+- backend: indra  (252 ms)
 GT  : P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -4729,7 +4729,7 @@ PRED: E454243381CHN0703013F4211172S63I088676637626
                                      ^ ^^ ^          [4 mismatch]
 
 ## 2026-9-29-F.jpg
-- 官方判定: PASS  verified=True  chosen=cnn  ms=292
+- 官方判定: PASS  verified=True  chosen=cnn  ms=255
 - 官方 line1: P<CHNDENG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E410968B47CHN9311103F311203262G49S6626Z92252
 - 理由: 融合CNN+CRNN 识别并通过校验
@@ -4755,7 +4755,7 @@ PRED: E410968B47CHN9311103F311203262G49S6626Z92252
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=94% conf2=90%
-- backend: crnn  (19 ms)
+- backend: crnn  (17 ms)
 - error: decode failed: bad MRZ length
 GT  : P<CHNDENG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CADEMG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<< 
@@ -4773,7 +4773,7 @@ PRED: E410968B47CHN9311103F311203262G49S6626Z92252
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (231 ms)
+- backend: tesseract  (199 ms)
 GT  : P<CHNDENG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNDENG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -4782,7 +4782,7 @@ PRED: EW70968B47CHN9311103F31120326ZG49S66Z6292152
        ^^                          ^      ^ ^  ^     [6 mismatch]
 
 ### paddle  [DECODE-OK] conf1=89% conf2=99%
-- backend: paddle-onnxruntime  (132 ms)
+- backend: paddle-onnxruntime  (124 ms)
 GT  : P<CHNDENG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNDENG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -4791,7 +4791,7 @@ PRED: E410968B47CHN9311103F31120326ZG49S6626292252
                                    ^        ^        [2 mismatch]
 
 ### indra  [DECODE-OK] conf1=95% conf2=84%
-- backend: indra  (70 ms)
+- backend: indra  (58 ms)
 GT  : P<CHNDENG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNDENG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -4800,7 +4800,7 @@ PRED: E410968B47CHN9311103F311203262649966Z6292752
                                     ^  ^  ^ ^  ^     [5 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=95% conf2=85%
-- backend: indra  (293 ms)
+- backend: indra  (246 ms)
 GT  : P<CHNDENG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNDENG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -4809,7 +4809,7 @@ PRED: E410968B47CHN9311103F31120326264996628292<52
                                     ^  ^   ^^  ^     [5 mismatch]
 
 ## 2026-9-29-G.jpg
-- 官方判定: PASS  verified=True  chosen=cnn  ms=259
+- 官方判定: PASS  verified=True  chosen=cnn  ms=265
 - 官方 line1: P<CHNDING<<PIN<MO<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E505029416CHN6806178M2604114L2Y8F2Z01K4IF010
 - 理由: 融合CNN+CRNN 识别并通过校验
@@ -4835,7 +4835,7 @@ PRED: E505029416CHN6806178M2604114L2YBF2201K4IF010
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=91% conf2=84%
-- backend: crnn  (17 ms)
+- backend: crnn  (18 ms)
 - error: decode failed: bad MRZ length
 GT  : P<CHNDING<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CADIAG<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<< 
@@ -4853,7 +4853,7 @@ PRED: E505029416CHN6806178M2604114L2Y8F2Z01K4IF010
                                      ^  ^            [2 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (118 ms)
+- backend: tesseract  (106 ms)
 GT  : P<CHNDING<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNDING<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -4862,7 +4862,7 @@ PRED: E505029416CHN6806178M2604114L2Y8F2Z0IK41F010
                                      ^  ^ ^  ^       [4 mismatch]
 
 ### paddle  [DECODE-OK] conf1=88% conf2=99%
-- backend: paddle-onnxruntime  (130 ms)
+- backend: paddle-onnxruntime  (123 ms)
 GT  : P<CHNDING<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNDING<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -4871,7 +4871,7 @@ PRED: E505029416CHN6806178M2604114L2Y8F2Z01K4IF010
                                      ^  ^            [2 mismatch]
 
 ### indra  [DECODE-OK] conf1=92% conf2=83%
-- backend: indra  (64 ms)
+- backend: indra  (58 ms)
 GT  : P<CHNDING<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNDRN6<<PINGM0<<<<<<<<<<<<<<<<<<<<<<<<<<<
             ^ ^       ^                              [3 mismatch]
@@ -4880,7 +4880,7 @@ PRED: E505029416CHN6806178M260411412Y8F2201K4T5010
                                   ^  ^       ^^      [4 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=93% conf2=84%
-- backend: indra  (230 ms)
+- backend: indra  (201 ms)
 GT  : P<CHNDING<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNDING<<PINGM0<<<<<<<<<<<<<<<<<<<<<<<<<<<
                       ^                              [1 mismatch]
@@ -4889,7 +4889,7 @@ PRED: E505029416CHN6806178M2604114T2Y8F22<<<<<<<08
                                   ^  ^   ^^^^^^^^^   [11 mismatch]
 
 ## 2026-9-29-H.jpg
-- 官方判定: PASS  verified=True  chosen=cnn  ms=286
+- 官方判定: PASS  verified=True  chosen=cnn  ms=238
 - 官方 line1: P<CHNDING<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E505029416CHN6806178M2604114L2Y8F2Z01K4IFO34
 - 理由: 轻量CNN 识别并通过校验
@@ -4915,7 +4915,7 @@ PRED: E505029416CHN6806178M2604114L2Y8F2Z01K4IFO34
        ^                             ^      ^^ ^     [5 mismatch]
 
 ### crnn  [decoded] conf1=92% conf2=86%
-- backend: crnn  (18 ms)
+- backend: crnn  (16 ms)
 - error: decode failed: check digit mismatch
 GT  : P<CHNDING<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<< 
 PRED: PP<CAADIAG<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -4933,7 +4933,7 @@ PRED: E505029416CHN6806178M2604114L2Y8F2101K4IF034
        ^                             ^  ^   ^^       [5 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (210 ms)
+- backend: tesseract  (188 ms)
 GT  : P<CHNDING<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNDING<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -4942,7 +4942,7 @@ PRED: F5050Z9416CHN6806178M2604114L2Y8F2Z0O1K41F22
       ^^   ^                         ^    ^^^^^^^^   [12 mismatch]
 
 ### paddle  [DECODE-OK] conf1=90% conf2=99%
-- backend: paddle-onnxruntime  (124 ms)
+- backend: paddle-onnxruntime  (115 ms)
 GT  : P<CHNDING<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNDING<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -4951,13 +4951,13 @@ PRED: E505029416CHN6806178M2604114L2Y8F2ZO1K4IF034
        ^                             ^   ^  ^^       [5 mismatch]
 
 ### indra  [FAIL]
-- backend: indra  (42 ms)
+- backend: indra  (38 ms)
 - error: indra 未找到 MRZ 候选行 (1 行)
 - PRED line1: <空>
 - PRED line2: <空>
 
 ### indra_fullpage  [DECODE-OK] conf1=88% conf2=82%
-- backend: indra  (264 ms)
+- backend: indra  (235 ms)
 GT  : P<CHNDING<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PECHNDING<<FINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^         ^                                   [2 mismatch]
@@ -4966,7 +4966,7 @@ PRED: 5050294162CHN80617882604714221B2201K41T0<<34
       ^^^^^^^^^^   ^^^^^^ ^^^^^ ^^^^^^^^^^^^^^^^     [37 mismatch]
 
 ## 2026-9-29-I.jpg
-- 官方判定: PASS  verified=True  chosen=cnn  ms=260
+- 官方判定: PASS  verified=True  chosen=cnn  ms=211
 - 官方 line1: P<CHNGE<<MOHUA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E592235158CHN6905163M30012716G0B612258S2B846
 - 理由: 融合CNN+CRNN 识别并通过校验
@@ -4992,7 +4992,7 @@ PRED: E592235158CHN6905163M30012716G0B612258S2B846
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=90% conf2=90%
-- backend: crnn  (18 ms)
+- backend: crnn  (16 ms)
 - error: decode failed: bad MRZ length
 GT  : P<CHNGE<<MOHUA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<C4GE<<MOAUA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< 
@@ -5010,7 +5010,7 @@ PRED: E592235158CHN6905163M30012716G0B612258S2B846
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (126 ms)
+- backend: tesseract  (112 ms)
 GT  : P<CHNGE<<MOHUA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNGE<<MOHUA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -5019,7 +5019,7 @@ PRED: E592235158CHN6905163M300127106G0B612258S2384
                                   ^^^^^^^ ^^^^^^^^   [15 mismatch]
 
 ### paddle  [DECODE-OK] conf1=97% conf2=99%
-- backend: paddle-onnxruntime  (130 ms)
+- backend: paddle-onnxruntime  (119 ms)
 GT  : P<CHNGE<<MOHUA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNGE<<MOHUA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -5028,13 +5028,13 @@ PRED: E592235158CHN6905163M30012716G0B61Z258S28846
                                         ^     ^      [2 mismatch]
 
 ### indra  [FAIL]
-- backend: indra  (38 ms)
+- backend: indra  (34 ms)
 - error: indra 未找到 MRZ 候选行 (1 行)
 - PRED line1: <空>
 - PRED line2: <空>
 
 ### indra_fullpage  [DECODE-OK] conf1=95% conf2=85%
-- backend: indra  (253 ms)
+- backend: indra  (212 ms)
 GT  : P<CHNGE<<MOHUA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNGE<<MOHUA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -5043,10 +5043,10 @@ PRED: E592235158CHN6905163M30012716608612258928B46
                                    ^ ^      ^ ^^     [5 mismatch]
 
 ## 2026-9-29-J.jpg
-- 官方判定: PASS  verified=True  chosen=cnn  ms=280
+- 官方判定: PASS  verified=True  chosen=cnn  ms=244
 - 官方 line1: P<CHNGE<<SUDONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E062480684CHN8201113F251225501S8IBBG51B52Z66
-- 理由: 融合CNN+CRNN 识别并通过校验
+- 理由: 轻量CNN 识别并通过校验
 
 - GT line1: `P<CHNGE<<SUDONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
 - GT line2: `E062480684CHN8201113F251225501S8IBBG51B52Z66`
@@ -5069,7 +5069,7 @@ PRED: E062480684CHN8201113F251225501S8IBBG51B52Z66
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=93% conf2=87%
-- backend: crnn  (19 ms)
+- backend: crnn  (16 ms)
 - error: decode failed: check digit mismatch
 GT  : P<CHNGE<<SUDONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CAAGE<<SUDONC<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -5087,7 +5087,7 @@ PRED: E062480684CHN8201113F251225501S8IBBG51B52Z66
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (211 ms)
+- backend: tesseract  (193 ms)
 GT  : P<CHNGE<<SUDONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNGE<<SUDONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -5096,7 +5096,7 @@ PRED: F0624B0684CHN8201113F251225501S81BBGS1B52166
       ^    ^                          ^   ^    ^     [5 mismatch]
 
 ### paddle  [DECODE-OK] conf1=97% conf2=99%
-- backend: paddle-onnxruntime  (127 ms)
+- backend: paddle-onnxruntime  (118 ms)
 GT  : P<CHNGE<<SUDONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNGE<<SUDONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -5105,13 +5105,13 @@ PRED: E062480684CHN8201113F251225501S8IBBG51B52Z66
                                                      [0 mismatch]
 
 ### indra  [FAIL]
-- backend: indra  (49 ms)
+- backend: indra  (40 ms)
 - error: indra 未找到 MRZ 候选行 (1 行)
 - PRED line1: <空>
 - PRED line2: <空>
 
 ### indra_fullpage  [DECODE-OK] conf1=94% conf2=80%
-- backend: indra  (268 ms)
+- backend: indra  (233 ms)
 GT  : P<CHNGE<<SUDONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNGE<<SUDONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -5120,7 +5120,7 @@ PRED: E062480684CHN8201113F251225501881BB651852Z66
                                     ^ ^  ^  ^        [4 mismatch]
 
 ## 2026-9-29-K.jpg
-- 官方判定: PASS  verified=True  chosen=cnn  ms=273
+- 官方判定: PASS  verified=True  chosen=cnn  ms=242
 - 官方 line1: P<CHNGUO<<LURU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E916769I46CHN6008248M240122126QZG26600S16132
 - 理由: 融合CNN+CRNN 识别并通过校验
@@ -5146,7 +5146,7 @@ PRED: E916769I46CHN6008248M240122126QZG26600S16132
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=91% conf2=86%
-- backend: crnn  (18 ms)
+- backend: crnn  (15 ms)
 - error: decode failed: bad MRZ length
 GT  : P<CHNGUO<<LURU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CAAGO<<LORU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< 
@@ -5164,7 +5164,7 @@ PRED: E916769I46CHN6008248M240122126QZG26600S16132
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (205 ms)
+- backend: tesseract  (184 ms)
 GT  : P<CHNGUO<<LURU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNGUO<<LURU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -5173,7 +5173,7 @@ PRED: E916769I46CHNG008248M24012212602G26600SI6132
                    ^                ^^       ^       [4 mismatch]
 
 ### paddle  [DECODE-OK] conf1=96% conf2=98%
-- backend: paddle-onnxruntime  (119 ms)
+- backend: paddle-onnxruntime  (110 ms)
 GT  : P<CHNGUO<<LURU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNGUO<<LURU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -5182,13 +5182,13 @@ PRED: E916769I46CHN6008248M240122126QZG26600S16132
                                                      [0 mismatch]
 
 ### indra  [FAIL]
-- backend: indra  (45 ms)
+- backend: indra  (41 ms)
 - error: indra 未找到 MRZ 候选行 (1 行)
 - PRED line1: <空>
 - PRED line2: <空>
 
 ### indra_fullpage  [DECODE-OK] conf1=94% conf2=89%
-- backend: indra  (257 ms)
+- backend: indra  (209 ms)
 GT  : P<CHNGUO<<LURU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNGUO<<LURU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -5197,7 +5197,7 @@ PRED: E916769I46CHN6008248M24012212602626600SI6132
                                     ^^^      ^       [4 mismatch]
 
 ## 2026-9-29-L.jpg
-- 官方判定: PASS  verified=True  chosen=cnn  ms=273
+- 官方判定: PASS  verified=True  chosen=cnn  ms=233
 - 官方 line1: P<CHNGU<<YINGYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E665282843CHN8807054M28102160012032119B08660
 - 理由: 融合CNN+CRNN 识别并通过校验
@@ -5223,7 +5223,7 @@ PRED: E665282843CHN8807054M28102160012032119B08660
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=94% conf2=86%
-- backend: crnn  (19 ms)
+- backend: crnn  (16 ms)
 - error: decode failed: check digit mismatch
 GT  : P<CHNGU<<YINGYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CAAGO<<YINGYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -5241,7 +5241,7 @@ PRED: E665282843CHN8807054M28102160012032119B08660
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (204 ms)
+- backend: tesseract  (184 ms)
 GT  : P<CHNGU<<YINGYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNGU<<YINGYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -5250,7 +5250,7 @@ PRED: F6652B2843CHN8807054M2810216O01Z032119808660
       ^    ^                      ^  ^      ^        [5 mismatch]
 
 ### paddle  [DECODE-OK] conf1=98% conf2=97%
-- backend: paddle-onnxruntime  (129 ms)
+- backend: paddle-onnxruntime  (125 ms)
 GT  : P<CHNGU<<YINGYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNGU<<YINGYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -5259,7 +5259,7 @@ PRED: E665282843CHN8807054M28102160012032119B08660
                                                      [0 mismatch]
 
 ### indra  [DECODE-OK] conf1=88% conf2=86%
-- backend: indra  (71 ms)
+- backend: indra  (61 ms)
 GT  : P<CHNGU<<YINGYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: <<CHN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
       ^    ^^  ^^^^^^^                               [10 mismatch]
@@ -5268,7 +5268,7 @@ PRED: E665282843CHN8807054M28102160012032119B08660
                                                      [0 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=89% conf2=84%
-- backend: indra  (265 ms)
+- backend: indra  (227 ms)
 GT  : P<CHNGU<<YINGYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PECHNEUCKYINGYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^   ^ ^^                                      [4 mismatch]
@@ -5277,7 +5277,7 @@ PRED: E665282843CHN88070<9<<<<<<<0<<<<<<<<<<<<<<04
                         ^^^^^^^^^^^^^^^^^^^^^^^^^^   [26 mismatch]
 
 ## 2026-9-29-M.jpg
-- 官方判定: PASS  verified=True  chosen=fuse  ms=271
+- 官方判定: PASS  verified=True  chosen=fuse  ms=236
 - 官方 line1: P<CHNGU<<YUYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E096730195CHN8410021M300821488S61022S7Z59328
 - 理由: 融合CNN+CRNN 识别并通过校验
@@ -5303,7 +5303,7 @@ PRED: E096730195CHN8410021M300821488S61V22S2Z59128
                                        ^   ^   ^     [3 mismatch]
 
 ### crnn  [decoded] conf1=87% conf2=89%
-- backend: crnn  (18 ms)
+- backend: crnn  (15 ms)
 - error: decode failed: bad MRZ length
 GT  : P<CHNGU<<YUYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PP<CAAG<<Y0YU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -5321,7 +5321,7 @@ PRED: E096730195CHN8410021M300821488S61022S7Z59328
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (203 ms)
+- backend: tesseract  (184 ms)
 GT  : P<CHNGU<<YUYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNGU<<YUYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -5330,7 +5330,7 @@ PRED: E096730195CHN8410021M300821488S6102ZS71S9328
                                          ^  ^^       [3 mismatch]
 
 ### paddle  [DECODE-OK] conf1=96% conf2=99%
-- backend: paddle-onnxruntime  (122 ms)
+- backend: paddle-onnxruntime  (118 ms)
 GT  : P<CHNGU<<YUYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNGU<<YUYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -5339,13 +5339,13 @@ PRED: E096730195CHN8410021M300821488S6102ZS7259328
                                          ^  ^        [2 mismatch]
 
 ### indra  [FAIL]
-- backend: indra  (44 ms)
+- backend: indra  (40 ms)
 - error: indra 未找到 MRZ 候选行 (1 行)
 - PRED line1: <空>
 - PRED line2: <空>
 
 ### indra_fullpage  [DECODE-OK] conf1=78% conf2=80%
-- backend: indra  (283 ms)
+- backend: indra  (227 ms)
 GT  : P<CHNGU<<YUYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: UYCHN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
       ^^   ^^  ^^^^                                  [8 mismatch]
@@ -5354,7 +5354,7 @@ PRED: 6095730I93CHN8410021M30082148356102257259322
       ^  ^   ^ ^                   ^^     ^ ^    ^   [9 mismatch]
 
 ## 2026-9-29-N.jpg
-- 官方判定: PASS  verified=True  chosen=cnn  ms=288
+- 官方判定: PASS  verified=True  chosen=cnn  ms=240
 - 官方 line1: P<CHNSU<<SHUYUE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E653505611CHN8409285F3001167B0BS1G1886G2O864
 - 理由: 融合CNN+CRNN 识别并通过校验
@@ -5380,7 +5380,7 @@ PRED: E653505611CHN8409285F3001167B0BS1G1886G2O864
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=93% conf2=84%
-- backend: crnn  (19 ms)
+- backend: crnn  (17 ms)
 - error: decode failed: bad MRZ length
 GT  : P<CHNSU<<SHUYUE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CAAS<<SAUYUE<<<<<<<<<<<<<<<<<<<<<<<<<<<<< 
@@ -5398,7 +5398,7 @@ PRED: E653505611CHN8409285F3001167B0BS1G1886G2O864
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (224 ms)
+- backend: tesseract  (195 ms)
 GT  : P<CHNSU<<SHUYUE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHMNSU<<SHUYUE<<<<<<<<<<<<<<<<<<<<<<<<<4<<
           ^^^^ ^^^^^^^                         ^     [12 mismatch]
@@ -5407,7 +5407,7 @@ PRED: F6S3505611CHN8409285F3001167BQOBS1G1886G2088
       ^ ^                          ^^^^^^^ ^^^^^^^   [16 mismatch]
 
 ### paddle  [DECODE-OK] conf1=97% conf2=99%
-- backend: paddle-onnxruntime  (127 ms)
+- backend: paddle-onnxruntime  (118 ms)
 GT  : P<CHNSU<<SHUYUE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNSU<<SHUYUE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -5416,13 +5416,13 @@ PRED: E653505611CHN8409285F3001167B0BS1G1886G2O864
                                                      [0 mismatch]
 
 ### indra  [FAIL]
-- backend: indra  (42 ms)
+- backend: indra  (38 ms)
 - error: indra 未找到 MRZ 候选行 (1 行)
 - PRED line1: <空>
 - PRED line2: <空>
 
 ### indra_fullpage  [DECODE-OK] conf1=94% conf2=84%
-- backend: indra  (278 ms)
+- backend: indra  (228 ms)
 GT  : P<CHNSU<<SHUYUE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNSU<<SHUYUE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -5431,10 +5431,10 @@ PRED: E653505611CHN8409285F30011678O8S161886620864
                                   ^^^  ^    ^ ^      [6 mismatch]
 
 ## 2026-9-29-O.jpg
-- 官方判定: PASS  verified=True  chosen=cnn  ms=281
+- 官方判定: PASS  verified=True  chosen=cnn  ms=240
 - 官方 line1: P<CHNWEN<<YUEYUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E421853076CHN7906282F3506190JJ6M1T1JVTBGC610
-- 理由: 轻量CNN 识别并通过校验
+- 理由: 融合CNN+CRNN 识别并通过校验
 
 - GT line1: `P<CHNWEN<<YUEYUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
 - GT line2: `E421853076CHN7906282F3506190JJ6MVT1JVTBGC610`
@@ -5457,7 +5457,7 @@ PRED: E421853076CHN7906282F3506190JJ6MVT1JVTBGC610
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=85% conf2=85%
-- backend: crnn  (19 ms)
+- backend: crnn  (16 ms)
 - error: decode failed: check digit mismatch
 GT  : P<CHNWEN<<YUEYUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<GAAZEA<<YOEYUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -5475,7 +5475,7 @@ PRED: E421853076CHN7906282F3506190JJ6MVT1JVTBGC610
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (215 ms)
+- backend: tesseract  (190 ms)
 GT  : P<CHNWEN<<YUEYUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNWEN<<YUEYUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -5484,7 +5484,7 @@ PRED: E421853076CHN7906282F3506190JJ6MN11JNTBGC610
                                       ^^  ^          [3 mismatch]
 
 ### paddle  [DECODE-OK] conf1=90% conf2=99%
-- backend: paddle-onnxruntime  (134 ms)
+- backend: paddle-onnxruntime  (126 ms)
 GT  : P<CHNWEN<<YUEYUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNWEN<<YUEYUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -5493,7 +5493,7 @@ PRED: E421853076CHN7906282F3506190JJ6MVT1JVTBGC610
                                                      [0 mismatch]
 
 ### indra  [DECODE-OK] conf1=96% conf2=85%
-- backend: indra  (69 ms)
+- backend: indra  (57 ms)
 GT  : P<CHNWEN<<YUEYUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNWEN<<YUEYUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -5502,7 +5502,7 @@ PRED: E421853076CHN7906282F3506190JJ6MVT1JVTBGC610
                                                      [0 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=95% conf2=86%
-- backend: indra  (294 ms)
+- backend: indra  (262 ms)
 GT  : P<CHNWEN<<YUEYUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNWEN<<YUEYUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -5511,7 +5511,7 @@ PRED: E421853076CHN7906282F3506190JJ6MVT1JMTBGCG22
                                           ^    ^^^   [4 mismatch]
 
 ## 2026-9-29-P.jpg
-- 官方判定: PASS  verified=True  chosen=cnn  ms=276
+- 官方判定: PASS  verified=True  chosen=cnn  ms=244
 - 官方 line1: P<CHNWU<<FANGYAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E766622355CHN0011293F2604181Y861DEUSDLKZG542
 - 理由: 融合CNN+CRNN 识别并通过校验
@@ -5537,7 +5537,7 @@ PRED: E766622355CHN0011293F2604181Y861DEUSDLKZG542
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=90% conf2=85%
-- backend: crnn  (19 ms)
+- backend: crnn  (16 ms)
 - error: decode failed: bad MRZ length
 GT  : P<CHNWU<<FANGYAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CAAA0<<F4NGYAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -5555,7 +5555,7 @@ PRED: E766622355CHN0011293F2604181Y861DEUSDLKZG542
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (211 ms)
+- backend: tesseract  (186 ms)
 GT  : P<CHNWU<<FANGYAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNWU<<FANGYAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -5564,7 +5564,7 @@ PRED: F7666223S5CHN0011293F2604181Y861DEUSDLKZG542
       ^       ^                                      [2 mismatch]
 
 ### paddle  [DECODE-OK] conf1=97% conf2=99%
-- backend: paddle-onnxruntime  (121 ms)
+- backend: paddle-onnxruntime  (122 ms)
 GT  : P<CHNWU<<FANGYAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNWU<<FANGYAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -5573,7 +5573,7 @@ PRED: E766622355CHN0011293F2604181Y861DEUSDLKZG542
                                                      [0 mismatch]
 
 ### indra  [DECODE-OK] conf1=84% conf2=82%
-- backend: indra  (57 ms)
+- backend: indra  (53 ms)
 GT  : P<CHNWU<<FANGYAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNWU<<FANGYAOK<<K<<<<<<<<<<<<<<<<<<<<<<<<
                       ^  ^                           [2 mismatch]
@@ -5582,7 +5582,7 @@ PRED: E766622355CHN0011293F2604181Y861DEUSDLX28542
                                             ^^^      [3 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=89% conf2=84%
-- backend: indra  (267 ms)
+- backend: indra  (232 ms)
 GT  : P<CHNWU<<FANGYAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: YACHN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
       ^^   ^^  ^^^^^^^                               [11 mismatch]
@@ -5591,7 +5591,7 @@ PRED: E766622355CHN0011293F2604181Y861DEUS0LKIG542
                                           ^  ^       [2 mismatch]
 
 ## 2026-9-29-Q.jpg
-- 官方判定: PASS  verified=True  chosen=cnn  ms=241
+- 官方判定: PASS  verified=True  chosen=cnn  ms=240
 - 官方 line1: P<CHNWU<<RUZHU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E436102633CHN8211158F32082106GIB15B16Z6BB264
 - 理由: 融合CNN+CRNN 识别并通过校验
@@ -5617,7 +5617,7 @@ PRED: E436102633CHN8211158F32082106GIB15B16Z6BB264
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=91% conf2=88%
-- backend: crnn  (19 ms)
+- backend: crnn  (17 ms)
 - error: decode failed: check digit mismatch
 GT  : P<CHNWU<<RUZHU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<6AAAO<<RUZHU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -5635,7 +5635,7 @@ PRED: E436102633CHN8211158F32082106GIB15B16Z6BB264
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (127 ms)
+- backend: tesseract  (114 ms)
 GT  : P<CHNWU<<RUZHU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNWU<<RUZHU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -5644,7 +5644,7 @@ PRED: E436102633CHN8211158F328082106GIBI5B1616BB16
                              ^^^^^^^^^^^^^^^^^ ^^^   [20 mismatch]
 
 ### paddle  [DECODE-OK] conf1=97% conf2=98%
-- backend: paddle-onnxruntime  (131 ms)
+- backend: paddle-onnxruntime  (127 ms)
 GT  : P<CHNWU<<RUZHU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNWU<<RUZHU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -5653,7 +5653,7 @@ PRED: E436102633CHN8211158F32082106GIBI5B16Z6BBZ64
                                       ^        ^     [2 mismatch]
 
 ### indra  [DECODE-OK] conf1=92% conf2=82%
-- backend: indra  (65 ms)
+- backend: indra  (58 ms)
 GT  : P<CHNWU<<RUZHU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNWU<<RUZHU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -5662,7 +5662,7 @@ PRED: E436102633CHN8211158F3208210661815B762688764
                                    ^^^   ^ ^ ^^^     [8 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=94% conf2=81%
-- backend: indra  (281 ms)
+- backend: indra  (239 ms)
 GT  : P<CHNWU<<RUZHU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNWU<<RUZHU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -5671,7 +5671,7 @@ PRED: E436102633CHN8211158F3208210661815B762688764
                                    ^^^   ^ ^ ^^^     [8 mismatch]
 
 ## 2026-9-29-R.jpg
-- 官方判定: PASS  verified=True  chosen=cnn  ms=465
+- 官方判定: PASS  verified=True  chosen=cnn  ms=390
 - 官方 line1: P<CHNXI<<YU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E123241791CHN6208185M36010409K94WG6UGCK6FR64
 - 理由: 轻量CNN 识别并通过校验
@@ -5697,7 +5697,7 @@ PRED: E123241791CHN6208185M36010409K94WG6UGCK6FR64
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=92% conf2=82%
-- backend: crnn  (18 ms)
+- backend: crnn  (17 ms)
 - error: decode failed: check digit mismatch
 GT  : P<CHNXI<<YU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<6AAX1<<Y0<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -5715,7 +5715,7 @@ PRED: E123241791CHN6208185M36010409K94WG6UGCK6FR64
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (378 ms)
+- backend: tesseract  (342 ms)
 GT  : P<CHNXI<<YU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHANMXI<<YU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
           ^^^^^^^^^                                  [9 mismatch]
@@ -5724,7 +5724,7 @@ PRED: F723Z4T791CHN6208185M36010409K94HG6UGCK6EB64
       ^^  ^ ^                         ^       ^^     [7 mismatch]
 
 ### paddle  [DECODE-OK] conf1=97% conf2=99%
-- backend: paddle-onnxruntime  (131 ms)
+- backend: paddle-onnxruntime  (121 ms)
 GT  : P<CHNXI<<YU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNXI<<YU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -5733,13 +5733,13 @@ PRED: E123241791CHN6208185M36010409K94WG6UGCK6FR64
                                                      [0 mismatch]
 
 ### indra  [FAIL]
-- backend: indra  (45 ms)
+- backend: indra  (39 ms)
 - error: indra 未找到 MRZ 候选行 (1 行)
 - PRED line1: <空>
 - PRED line2: <空>
 
 ### indra_fullpage  [DECODE-OK] conf1=85% conf2=83%
-- backend: indra  (258 ms)
+- backend: indra  (229 ms)
 GT  : P<CHNXI<<YU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PECHNX<<YU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^    ^ ^^^                                    [5 mismatch]
@@ -5748,10 +5748,10 @@ PRED: E123241791CHN6208185M36010409K944G6UGCK67R64
                                       ^       ^      [2 mismatch]
 
 ## 2026-9-29-S.jpg
-- 官方判定: PASS  verified=True  chosen=fuse  ms=268
+- 官方判定: PASS  verified=True  chosen=cnn  ms=228
 - 官方 line1: P<CHNYUAN<<YOUSUI<<<<<<<<<<<<<<<<<<<<<<<<<<<
-- 官方 line2: FA25881562CHN9505209F3503269GIZI52520121S504
-- 理由: 融合CNN+CRNN 识别并通过校验
+- 官方 line2: FD2S881562CHN9505209F35032690IZI52520721S504
+- 理由: 轻量CNN 识别并通过校验
 
 - GT line1: `P<CHNYUAN<<YOUSUI<<<<<<<<<<<<<<<<<<<<<<<<<<<`
 - GT line2: `E62588I562CHN9505209F3503269G1Z152520121S504`
@@ -5774,7 +5774,7 @@ PRED: E62588I562CHN9505209F3503269G1Z152520121S504
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=92% conf2=85%
-- backend: crnn  (18 ms)
+- backend: crnn  (19 ms)
 - error: decode failed: check digit mismatch
 GT  : P<CHNYUAN<<YOUSUI<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<GAAYUAA<<YOUSUI<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -5792,7 +5792,7 @@ PRED: E62588I562CHN9505209F3503269G1Z152520121S504
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (124 ms)
+- backend: tesseract  (109 ms)
 GT  : P<CHNYUAN<<YOUSUI<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNYUAN<<YOUSUI<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -5801,7 +5801,7 @@ PRED: E62588I562CHN9505209F350326901Z152520121S580
                                   ^             ^^   [3 mismatch]
 
 ### paddle  [DECODE-OK] conf1=97% conf2=96%
-- backend: paddle-onnxruntime  (146 ms)
+- backend: paddle-onnxruntime  (127 ms)
 GT  : P<CHNYUAN<<YOUSUI<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNYUAN<<YOUSUI<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -5810,7 +5810,7 @@ PRED: E625881S62CHN9505209F350326901ZI5252Q12IS504
             ^^                    ^  ^    ^  ^       [6 mismatch]
 
 ### indra  [DECODE-OK] conf1=92% conf2=86%
-- backend: indra  (68 ms)
+- backend: indra  (57 ms)
 GT  : P<CHNYUAN<<YOUSUI<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNYUAN<<YOUSUI<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -5819,7 +5819,7 @@ PRED: E625881S62CHN9505209F350326901715752012T9504
             ^^                    ^ ^  ^     ^^      [7 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=90% conf2=86%
-- backend: indra  (253 ms)
+- backend: indra  (214 ms)
 GT  : P<CHNYUAN<<YOUSUI<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNYUAN<<YOUSUI<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -5828,7 +5828,7 @@ PRED: E625881S62CHN9505209F3503269012152520127SS04
             ^^                    ^ ^        ^ ^     [6 mismatch]
 
 ## 2026-9-29-T.jpg
-- 官方判定: PASS  verified=True  chosen=fuse  ms=274
+- 官方判定: PASS  verified=True  chosen=fuse  ms=244
 - 官方 line1: P<CHNYUAN<<YUESUI<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E0755268S1CHN9004012M27090195GI5BB15B85B1026
 - 理由: 融合CNN+CRNN 识别并通过校验
@@ -5854,7 +5854,7 @@ PRED: E0755268S1CHN9004012M27090195GI5BBISB85B1O26
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=91% conf2=84%
-- backend: crnn  (17 ms)
+- backend: crnn  (16 ms)
 - error: decode failed: check digit mismatch
 GT  : P<CHNYUAN<<YUESUI<<<<<<<<<<<<<<<<<<<<<<<<<<< 
 PRED: PP<CAAYO<A<<YUESUI<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -5872,7 +5872,7 @@ PRED: E0755268S1CHN9004012M27090195GI5BB15B85B1026
                                         ^^     ^     [3 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (204 ms)
+- backend: tesseract  (187 ms)
 GT  : P<CHNYUAN<<YUESUI<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNYUAN<<YUESUI<<<<<<<<<<<<<<<<<<<<<<<<<<4
                                                  ^   [1 mismatch]
@@ -5881,7 +5881,7 @@ PRED: F0755Z68S1CHN9004012M2709019SG15BB1SB8581026
       ^    ^                      ^ ^   ^    ^ ^     [7 mismatch]
 
 ### paddle  [DECODE-OK] conf1=89% conf2=99%
-- backend: paddle-onnxruntime  (131 ms)
+- backend: paddle-onnxruntime  (111 ms)
 GT  : P<CHNYUAN<<YUESUI<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNYUAN<<YUESUI<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -5890,7 +5890,7 @@ PRED: E0755268S1CHN9004012M27090195GI5BBISB85B1O26
                                                      [0 mismatch]
 
 ### indra  [DECODE-OK] conf1=86% conf2=80%
-- backend: indra  (62 ms)
+- backend: indra  (57 ms)
 GT  : P<CHNYUAN<<YUESUI<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNYUANK<YUESUI<<<<555<<<<<<<<<<<<<<<<<<<<
                ^           ^^^                       [4 mismatch]
@@ -5899,7 +5899,7 @@ PRED: E9755Z68S1CHN9004012M27090195615BB1SB853T026
        ^   ^                       ^^   ^    ^^^     [8 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=80% conf2=79%
-- backend: indra  (283 ms)
+- backend: indra  (246 ms)
 GT  : P<CHNYUAN<<YUESUI<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PECHNYDANKYUESUI<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^    ^  ^^^^^^^^                              [10 mismatch]
@@ -5908,7 +5908,7 @@ PRED: E675526351CHN9004012M27090195615BB1SB853T026
        ^     ^^                    ^^   ^    ^^^     [9 mismatch]
 
 ## 2026-9-29-U.jpg
-- 官方判定: PASS  verified=True  chosen=fuse  ms=550
+- 官方判定: PASS  verified=True  chosen=fuse  ms=527
 - 官方 line1: P<CHNYUE<<YUFCHU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E111191503<WU7807091M2505233356G5111B0748734
 - 理由: 融合CNN+CRNN 识别并通过校验
@@ -5935,7 +5935,7 @@ PRED: <19E793523CHN7807991M7305233356GS1116O7S67<4
       ^ ^^^  ^         ^   ^^         ^   ^    ^^    [12 mismatch]
 
 ### crnn  [decoded] conf1=93% conf2=88%
-- backend: crnn  (18 ms)
+- backend: crnn  (17 ms)
 - error: decode failed: check digit mismatch
 GT  : P<CHNYUE<<<<ESHU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: <<CAAYOE<<YDESH0<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -5954,13 +5954,13 @@ PRED: E198793523CHN7807991M7505233356GS1116O7S6734
         ^ ^  ^         ^   ^          ^   ^    ^     [8 mismatch]
 
 ### tesseract  [FAIL]
-- backend: tesseract  (215 ms)
+- backend: tesseract  (183 ms)
 - error: no MRZ candidate decoded
 - PRED line1: <空>
 - PRED line2: <空>
 
 ### paddle  [DECODE-OK] conf1=95% conf2=99%
-- backend: paddle-onnxruntime  (142 ms)
+- backend: paddle-onnxruntime  (131 ms)
 GT  : P<CHNYUE<<<<ESHU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNYUE<<YUESHU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                 ^^                                   [2 mismatch]
@@ -5969,7 +5969,7 @@ PRED: 51S8193223CHN7807091M2505233356G5111BO7S6134
       ^ ^                                            [2 mismatch]
 
 ### indra  [DECODE-OK] conf1=74% conf2=82%
-- backend: indra  (65 ms)
+- backend: indra  (57 ms)
 GT  : P<CHNYUE<<<<ESHU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PENYU<<YUESHUK<<<<<<<<<<<<<<<<<<<<<<<<CE<<<<
        ^^^^^^^^^^^^^^^                      ^^       [17 mismatch]
@@ -5978,7 +5978,7 @@ PRED: 27932230H1NYU7097M2505233359651T1807561<<<36
       ^^^^^^ ^^^^^^ ^^ ^^^^^^^^^^^^ ^^^^^^^^^^^^ ^   [39 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=77% conf2=80%
-- backend: indra  (259 ms)
+- backend: indra  (229 ms)
 GT  : P<CHNYUE<<<<ESHU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PECHN<<ESHUK<<<<<<<<<<<<<<<<<<<<<<<<C<<<<<<<
        ^   ^^ ^^^^^^^^                    ^          [12 mismatch]
@@ -5987,7 +5987,7 @@ PRED: Z759793223CHN7807091125052333566511180756T34
       ^^ ^^               ^          ^    ^^ ^ ^     [10 mismatch]
 
 ## 2026-9-29-W.jpg
-- 官方判定: PASS  verified=True  chosen=paddle  ms=281
+- 官方判定: PASS  verified=True  chosen=paddle  ms=244
 - 官方 line1: P<CHNYUN<<PUYING<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E048156G62CHN6209285F3512252O850ZIGZG2581G50
 - 理由: PaddleOCR 识别并通过校验
@@ -6006,14 +6006,14 @@ PRED: <4<V74VKK2CAA<ADA2H5L3K42252DV5DT3V1475K145L
 
 ### cnn  [DECODE-OK] conf1=97% conf2=92%
 GT  : P<CHNYUN<<PUYING<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-PRED: P<CHHYUN<<PUYYNG<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-          ^        ^                                 [2 mismatch]
+PRED: P<CHNYUN<<PUYYNG<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+                   ^                                 [1 mismatch]
 GT  : E048156G62CHN6209285F35122520X50Z1GZG2581G50
 PRED: E048156662CHN6209285F35122520850Z1BZG2581G50
              ^                     ^    ^            [3 mismatch]
 
 ### crnn  [decoded] conf1=91% conf2=89%
-- backend: crnn  (21 ms)
+- backend: crnn  (16 ms)
 - error: decode failed: check digit mismatch
 GT  : P<CHNYUN<<PUYING<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CAAYOA<<P0YING<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -6024,14 +6024,14 @@ PRED: A948756G62CHN6209285F3512252O85OZ1GZG2581G5Q
 
 ### fuse  [DECODE-OK] conf1=98% conf2=94%
 GT  : P<CHNYUN<<PUYING<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-PRED: P<CHHYUN<<PUYING<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-          ^                                          [1 mismatch]
+PRED: P<CHNYUN<<PUYING<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+                                                     [0 mismatch]
 GT  : E048156G62CHN6209285F35122520X50Z1GZG2581G50
 PRED: E048156662CHN6209285F35122520850Z1BZG2581G50
              ^                     ^    ^            [3 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (233 ms)
+- backend: tesseract  (190 ms)
 GT  : P<CHNYUN<<PUYING<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNYUN<<PUYING<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -6040,7 +6040,7 @@ PRED: F0481S6G62CHN6209285F351225208S0Z1GZG62S8162
       ^    ^                       ^^      ^^^^^^^   [11 mismatch]
 
 ### paddle  [DECODE-OK] conf1=96% conf2=99%
-- backend: paddle-onnxruntime  (147 ms)
+- backend: paddle-onnxruntime  (129 ms)
 GT  : P<CHNYUN<<PUYING<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNYUN<<PUYING<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -6049,7 +6049,7 @@ PRED: E048156G62CHN6209285F3512252O85OZ1GZG258IG50
                                   ^^ ^        ^      [4 mismatch]
 
 ### indra  [DECODE-OK] conf1=96% conf2=90%
-- backend: indra  (62 ms)
+- backend: indra  (55 ms)
 GT  : P<CHNYUN<<PUYING<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNYUN<<PUYING<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -6058,7 +6058,7 @@ PRED: E048156662CHN6209285F351225208502162625B1650
              ^                     ^  ^ ^^^  ^ ^     [8 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=69% conf2=88%
-- backend: indra  (262 ms)
+- backend: indra  (235 ms)
 GT  : P<CHNYUN<<PUYING<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PUCHNG<<<<<<<<<<<<KKKKKKKKKKKK<<<<<<<<<<<<<<
        ^   ^^^  ^^^^^^  ^^^^^^^^^^^^                 [22 mismatch]
@@ -6067,7 +6067,7 @@ PRED: 2048T56662CHN62092851351225208502162625B1650
       ^   ^  ^            ^        ^  ^ ^^^  ^ ^     [11 mismatch]
 
 ## 2026-9-30-A.jpg
-- 官方判定: PASS  verified=True  chosen=paddle  ms=248
+- 官方判定: PASS  verified=True  chosen=paddle  ms=222
 - 官方 line1: POCHNRAO<<MEINA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E821973372CHN8612261F2607078MIMEMDMEMEMIA944
 - 理由: PaddleOCR 识别并通过校验
@@ -6111,7 +6111,7 @@ PRED: E821973372CHN8612261F2607078MIMEMDMEMEMIA944
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (187 ms)
+- backend: tesseract  (168 ms)
 GT  : P<CHNHAO<<MEINN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNRAO<<MEINA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
            ^        ^                                [2 mismatch]
@@ -6120,7 +6120,7 @@ PRED: E821973372CHN8612261F2607078MINEMDMEMEWNIA94
                                     ^       ^^^^^    [6 mismatch]
 
 ### paddle  [DECODE-OK] conf1=97% conf2=99%
-- backend: paddle-onnxruntime  (102 ms)
+- backend: paddle-onnxruntime  (92 ms)
 GT  : P<CHNHAO<<MEINN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POCHNRAO<<MEINA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^   ^        ^                                [3 mismatch]
@@ -6129,7 +6129,7 @@ PRED: E821973372CHN8612261F2607078MIMEMDMEMEMIA944
                                                      [0 mismatch]
 
 ### indra  [DECODE-OK] conf1=94% conf2=89%
-- backend: indra  (69 ms)
+- backend: indra  (60 ms)
 GT  : P<CHNHAO<<MEINN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POCHNRAO<<MEINA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^   ^        ^                                [3 mismatch]
@@ -6138,7 +6138,7 @@ PRED: E821973372CHN8612261F2607078MIMEMDMEM<<<<<56
                                            ^^^^^^^   [7 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=90% conf2=56%
-- backend: indra  (310 ms)
+- backend: indra  (263 ms)
 GT  : P<CHNHAO<<MEINN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: E8CHA73372CHN8612261F2607078MIMEMDMEMENTAGL<
       ^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^    [41 mismatch]
@@ -6147,7 +6147,7 @@ PRED: EASISSERS1CHASTISSE5ESTOSOS3RTENOWEREATVO<46
        ^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^   [40 mismatch]
 
 ## 2026-9-30-AA.jpg
-- 官方判定: PASS  verified=True  chosen=fuse  ms=310
+- 官方判定: PASS  verified=True  chosen=fuse  ms=249
 - 官方 line1: P<CHNLIN<<YUNLAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E940780938CHN8410179F3401077KJYROL12DY2WM670
 - 理由: 融合CNN+CRNN 识别并通过校验
@@ -6167,7 +6167,7 @@ PRED: PP<VZ8DV3ACAV8<4C42VA9AO4DYY<39A4C47VS7VP63M
 ### cnn  [skip]
 
 ### crnn  [decoded] conf1=94% conf2=86%
-- backend: crnn  (19 ms)
+- backend: crnn  (18 ms)
 - error: decode failed: check digit mismatch
 GT  : P<CHNLIN<<YUHLAN<<<<<<<<<<<<<<<<<<<<<<<<<<<< 
 PRED: PP<CAAZ7A<<YUNLAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -6185,7 +6185,7 @@ PRED: E940780938CHN8410179F3401077KJYROL12DY2WM670
                                               ^      [1 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (229 ms)
+- backend: tesseract  (205 ms)
 GT  : P<CHNLIN<<YUHLAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNLIN<<YUNLAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                   ^                                  [1 mismatch]
@@ -6194,7 +6194,7 @@ PRED: E940780938CHN8410179F3401077KJYRDL12DX2WW670
                                       ^    ^         [2 mismatch]
 
 ### paddle  [DECODE-OK] conf1=93% conf2=99%
-- backend: paddle-onnxruntime  (145 ms)
+- backend: paddle-onnxruntime  (135 ms)
 GT  : P<CHNLIN<<YUHLAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNLIN<<YUNLAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                   ^                                  [1 mismatch]
@@ -6203,7 +6203,7 @@ PRED: E940780938CHN8410179F3401077KJYROL12DY2WM670
                                               ^      [1 mismatch]
 
 ### indra  [DECODE-OK] conf1=80% conf2=83%
-- backend: indra  (71 ms)
+- backend: indra  (63 ms)
 GT  : P<CHNLIN<<YUHLAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNLINKKYUNLANK<<<<<<<<<<<<<<<<SSSSSSSS<<<
               ^^  ^   ^                ^^^^^^^^      [12 mismatch]
@@ -6212,7 +6212,7 @@ PRED: E940780938CHN8410179F3401077KJYROL12DY2WN<68
                                               ^^^^   [4 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=82% conf2=84%
-- backend: indra  (273 ms)
+- backend: indra  (240 ms)
 GT  : P<CHNLIN<<YUHLAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNLINKKYUNLAN<<<<<<<<<<<<<<<<<SSSSSSS<<<<
               ^^  ^                    ^^^^^^^       [10 mismatch]
@@ -6221,7 +6221,7 @@ PRED: E940780938CHN8410179F3401077KJYROL12DY2MN<68
                                              ^^^^^   [5 mismatch]
 
 ## 2026-9-30-AB.jpg
-- 官方判定: PASS  verified=True  chosen=cnn  ms=247
+- 官方判定: PASS  verified=True  chosen=cnn  ms=225
 - 官方 line1: P<CHNBAO<<YUEYA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E602701156CHN6901084F2808222Q75OWNC9HSVEJZ42
 - 理由: 轻量CNN 识别并通过校验
@@ -6247,7 +6247,7 @@ PRED: E602701156CHN6901084F2808222Q75OWNC9HSVEJZ42
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=90% conf2=84%
-- backend: crnn  (17 ms)
+- backend: crnn  (16 ms)
 - error: decode failed: check digit mismatch
 GT  : P<CHN0AO<<YUEYA<<<<<<<<<<<<<<<<<<<<<<<<<<<<< 
 PRED: PP<CAAB4O<<YOEYA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -6265,7 +6265,7 @@ PRED: E602701156CHN6901084F2808222Q75OWNC9HSVEJZ42
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (119 ms)
+- backend: tesseract  (105 ms)
 GT  : P<CHN0AO<<YUEYA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNBAO<<YUEYA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
            ^                                         [1 mismatch]
@@ -6274,7 +6274,7 @@ PRED: E602701156CHN6901084F2808222Q750HNC9USVEJZ42
                                      ^^   ^          [3 mismatch]
 
 ### paddle  [DECODE-OK] conf1=95% conf2=99%
-- backend: paddle-onnxruntime  (125 ms)
+- backend: paddle-onnxruntime  (123 ms)
 GT  : P<CHN0AO<<YUEYA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNBAO<<YUEYA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
            ^                                         [1 mismatch]
@@ -6283,7 +6283,7 @@ PRED: E602701156CHN6901084F2808222Q75OWNC9HSVEJZ42
                                                      [0 mismatch]
 
 ### indra  [DECODE-OK] conf1=87% conf2=82%
-- backend: indra  (60 ms)
+- backend: indra  (50 ms)
 GT  : P<CHN0AO<<YUEYA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNBAO<<YUEYA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
            ^                                         [1 mismatch]
@@ -6292,7 +6292,7 @@ PRED: E602707756CHN6901084F28082229750WNC9NSMEJL42
             ^^                    ^  ^    ^ ^  ^     [7 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=96% conf2=83%
-- backend: indra  (242 ms)
+- backend: indra  (218 ms)
 GT  : P<CHN0AO<<YUEYA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNBAO<<YUEYA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
            ^                                         [1 mismatch]
@@ -6301,7 +6301,7 @@ PRED: E602707756CHN6901084F28082220750WNC945NEJL42
             ^^                    ^  ^    ^^^  ^     [8 mismatch]
 
 ## 2026-9-30-AC.jpg
-- 官方判定: PASS  verified=True  chosen=cnn  ms=277
+- 官方判定: PASS  verified=True  chosen=cnn  ms=249
 - 官方 line1: P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E141543482CHN6011103M32062610MU9FH60NPJJ1G24
 - 理由: 融合CNN+CRNN 识别并通过校验
@@ -6327,7 +6327,7 @@ PRED: E141543482CHN6011103M32062610MU9FH60NPJJ1G24
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=89% conf2=83%
-- backend: crnn  (21 ms)
+- backend: crnn  (17 ms)
 - error: decode failed: check digit mismatch
 GT  : P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<2TABO<<KAIY0AN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -6345,7 +6345,7 @@ PRED: E141543482CHN6011103M32062610MU9FH60NPJJ1G24
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (206 ms)
+- backend: tesseract  (186 ms)
 GT  : P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -6354,7 +6354,7 @@ PRED: 7471SW3482CHN6011103M3206261OMU9FH60NP33TG24
       ^^^ ^^                      ^         ^^^      [9 mismatch]
 
 ### paddle  [DECODE-OK] conf1=98% conf2=99%
-- backend: paddle-onnxruntime  (117 ms)
+- backend: paddle-onnxruntime  (112 ms)
 GT  : P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -6363,7 +6363,7 @@ PRED: E141543482CHN6011103M3206261OMU9FH60NPJJ7G24
                                   ^           ^      [2 mismatch]
 
 ### indra  [DECODE-OK] conf1=83% conf2=82%
-- backend: indra  (66 ms)
+- backend: indra  (57 ms)
 GT  : P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -6372,7 +6372,7 @@ PRED: E141543482CHN6011103M3206261OMU9FN60NP331624
                                   ^    ^    ^^ ^     [5 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=90% conf2=76%
-- backend: indra  (278 ms)
+- backend: indra  (239 ms)
 GT  : P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<AA<
                                                ^^    [2 mismatch]
@@ -6381,7 +6381,7 @@ PRED: E141543482CHN6011103M32062610MU9FH6ONP337624
                                          ^  ^^^^     [5 mismatch]
 
 ## 2026-9-30-AC_R.jpg
-- 官方判定: PASS  verified=True  chosen=paddle  ms=277
+- 官方判定: PASS  verified=True  chosen=paddle  ms=239
 - 官方 line1: P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E141543482CHN6011103M3206261OMU9FH60NPJJ7G24
 - 理由: PaddleOCR 识别并通过校验
@@ -6407,7 +6407,7 @@ PRED: E141543482CHN6011103M32062610MU9FH60NPJJ1G24
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=89% conf2=83%
-- backend: crnn  (20 ms)
+- backend: crnn  (16 ms)
 - error: decode failed: check digit mismatch
 GT  : P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<2TABO<<KAIY0AN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -6425,7 +6425,7 @@ PRED: E141543482CHN6011103M32062610MU9FH60NPJJ1G24
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (214 ms)
+- backend: tesseract  (185 ms)
 GT  : P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -6434,7 +6434,7 @@ PRED: 7471SW3482CHN6011103M3206261OMU9FH60NP33TG24
       ^^^ ^^                      ^         ^^^      [9 mismatch]
 
 ### paddle  [DECODE-OK] conf1=99% conf2=99%
-- backend: paddle-onnxruntime  (119 ms)
+- backend: paddle-onnxruntime  (115 ms)
 GT  : P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -6443,7 +6443,7 @@ PRED: E141543482CHN6011103M3206261OMU9FH60NPJJ7G24
                                   ^           ^      [2 mismatch]
 
 ### indra  [DECODE-OK] conf1=83% conf2=82%
-- backend: indra  (65 ms)
+- backend: indra  (57 ms)
 GT  : P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -6452,7 +6452,7 @@ PRED: E141543482CHN6011103M3206261OMU9FN60NP331624
                                   ^    ^    ^^ ^     [5 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=90% conf2=76%
-- backend: indra  (248 ms)
+- backend: indra  (219 ms)
 GT  : P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<AA<
                                                ^^    [2 mismatch]
@@ -6461,7 +6461,7 @@ PRED: E141543482CHN6011103M32062610MU9FH6ONP337624
                                          ^  ^^^^     [5 mismatch]
 
 ## 2026-9-30-AD.jpg
-- 官方判定: PASS  verified=True  chosen=paddle  ms=362
+- 官方判定: PASS  verified=True  chosen=paddle  ms=310
 - 官方 line1: P<CHNCAI<<FANGMENG<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E277194572CHN9601I80530052246MN1TZC2X4MC4X60
 - 理由: PaddleOCR 识别并通过校验
@@ -6487,7 +6487,7 @@ PRED: E277194572CHN9601189F30052246MN1TZC2X4MC4X60
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=93% conf2=91%
-- backend: crnn  (18 ms)
+- backend: crnn  (17 ms)
 - error: decode failed: check digit mismatch
 GT  : P<CHNCAI<<FANGMENG<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CAAC47<<FANGMENG<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -6505,7 +6505,7 @@ PRED: E277194572CHN9601189F30052246MN1TZC2X4MC4X60
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (278 ms)
+- backend: tesseract  (250 ms)
 GT  : P<CHNCAI<<FANGMENG<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHANCAI<<FANGMENG<<<<<ZX<<<<<<L<<<L<<L<4A4
           ^^^^^ ^^^^^^^^^     ^^      ^   ^  ^ ^^^   [22 mismatch]
@@ -6514,7 +6514,7 @@ PRED: E277194572CHN9601189F30052246MN1TZC2X4UNMC46
                                             ^^^^^^   [6 mismatch]
 
 ### paddle  [DECODE-OK] conf1=97% conf2=99%
-- backend: paddle-onnxruntime  (156 ms)
+- backend: paddle-onnxruntime  (139 ms)
 GT  : P<CHNCAI<<FANGMENG<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNCAI<<FANGMENG<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -6523,13 +6523,13 @@ PRED: E277194572CHN9601189F30052246MN1TZC2X4MC4X60
                                                      [0 mismatch]
 
 ### indra  [FAIL]
-- backend: indra  (28 ms)
+- backend: indra  (23 ms)
 - error: indra 未找到 MRZ 候选行 (0 行)
 - PRED line1: <空>
 - PRED line2: <空>
 
 ### indra_fullpage  [DECODE-OK] conf1=90% conf2=62%
-- backend: indra  (245 ms)
+- backend: indra  (217 ms)
 GT  : P<CHNCAI<<FANGMENG<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: NAFANNETIMMIGRATIONADMINISTRATION<<<<<<<<<<<
       ^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^              [32 mismatch]
@@ -6538,7 +6538,7 @@ PRED: PECHNCAIS1FANGMENGE5CCCCC<<6<<<<<<<<<<<<<<04
       ^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   [43 mismatch]
 
 ## 2026-9-30-AE.jpg
-- 官方判定: PASS  verified=True  chosen=cnn  ms=298
+- 官方判定: PASS  verified=True  chosen=cnn  ms=255
 - 官方 line1: P<CHNCHANG<<NI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E309178198CHN9612202F2702261G3JPA90J2I<K6Z66
 - 理由: 轻量CNN 识别并通过校验
@@ -6564,7 +6564,7 @@ PRED: E309178198CHN9612202F2702261G3JPA90J2I<K6Z66
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=92% conf2=86%
-- backend: crnn  (21 ms)
+- backend: crnn  (16 ms)
 - error: decode failed: bad MRZ length
 GT  : P<CHNCHANG<<NI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: 7P<CA24AG<<M1<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< 
@@ -6582,7 +6582,7 @@ PRED: E309178198CHN9612202F2702261G3JPA90J2I<K6Z66
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (223 ms)
+- backend: tesseract  (200 ms)
 GT  : P<CHNCHANG<<NI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNCHANG<<NJI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                    ^^                                [2 mismatch]
@@ -6591,7 +6591,7 @@ PRED: 30977R7198CHN9612202F2702261G3JPA9032T<X6166
       ^^^^^^^                            ^ ^ ^ ^     [11 mismatch]
 
 ### paddle  [DECODE-OK] conf1=94% conf2=99%
-- backend: paddle-onnxruntime  (122 ms)
+- backend: paddle-onnxruntime  (118 ms)
 GT  : P<CHNCHANG<<NI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNCHANG<<NI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -6600,13 +6600,13 @@ PRED: E309178198CHN9612202F2702261G3JPA90J2I<K6Z66
                                                      [0 mismatch]
 
 ### indra  [FAIL]
-- backend: indra  (52 ms)
+- backend: indra  (45 ms)
 - error: indra 未找到 MRZ 候选行 (1 行)
 - PRED line1: <空>
 - PRED line2: <空>
 
 ### indra_fullpage  [DECODE-OK] conf1=94% conf2=81%
-- backend: indra  (226 ms)
+- backend: indra  (207 ms)
 GT  : P<CHNCHANG<<NI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNCHANG<<NI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -6615,10 +6615,10 @@ PRED: E3097T8198CHN9612202F2702261633PA90321<X6Z66
           ^^                      ^ ^    ^ ^ ^       [7 mismatch]
 
 ## 2026-9-30-AF.jpg
-- 官方判定: PASS  verified=True  chosen=cnn  ms=309
+- 官方判定: PASS  verified=True  chosen=cnn  ms=269
 - 官方 line1: P<CHNCHEN<<DAJUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E646452438CHN0211196M3203075FIJJWA3L90ZU0054
-- 理由: 轻量CNN 识别并通过校验
+- 理由: 融合CNN+CRNN 识别并通过校验
 
 - GT line1: `P<CHNCHEN<<<AJUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
 - GT line2: `E646452438CHN0211196M3203075FIJJWA3L90ZU0054`
@@ -6641,7 +6641,7 @@ PRED: E646452438CHN0211196M3203075FIJJWA3L90ZU0054
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=87% conf2=86%
-- backend: crnn  (21 ms)
+- backend: crnn  (18 ms)
 - error: decode failed: check digit mismatch
 GT  : P<CHNCHEN<<<AJUN<<<<<<<<<<<<<<<<<<<<<<<<<<<< 
 PRED: P<C<ACAEA<<DAJ0N<<<<<<<<<<<<<<<<<<<<<<<<<<<<1
@@ -6659,7 +6659,7 @@ PRED: E646452438CHN0211196M3203075FIJJWA3L90ZU0054
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (250 ms)
+- backend: tesseract  (211 ms)
 GT  : P<CHNCHEN<<<AJUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNCHEN<<DAJUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                  ^                                   [1 mismatch]
@@ -6668,7 +6668,7 @@ PRED: G646452432CHN0211196M3203075F1J3J4WMA3L90Z70
       ^        ^                   ^ ^^^^^^^^^ ^^^   [15 mismatch]
 
 ### paddle  [DECODE-OK] conf1=90% conf2=99%
-- backend: paddle-onnxruntime  (137 ms)
+- backend: paddle-onnxruntime  (124 ms)
 GT  : P<CHNCHEN<<<AJUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNCHEN<<DAJUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                  ^                                   [1 mismatch]
@@ -6677,7 +6677,7 @@ PRED: E646452438CHN0211196M3203075FIJJWA3L90ZU0054
                                                      [0 mismatch]
 
 ### indra  [DECODE-OK] conf1=60% conf2=82%
-- backend: indra  (67 ms)
+- backend: indra  (61 ms)
 GT  : P<CHNCHEN<<<AJUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: DACHN<KKKKKKKKKKKKKKKKKK<<<<<<<<<<<<<<<<<<<<
       ^^   ^^^^^^^^^^^^^^^^^^^                       [21 mismatch]
@@ -6686,7 +6686,7 @@ PRED: E646452438CHN0211196M3203075FIJJWA3L902VOU54
                                             ^^^^     [4 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=76% conf2=83%
-- backend: indra  (233 ms)
+- backend: indra  (217 ms)
 GT  : P<CHNCHEN<<<AJUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: DACHN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
       ^^   ^^^^   ^^^^                               [10 mismatch]
@@ -6695,7 +6695,7 @@ PRED: E646452438CHN0211196M3203075FIJJWA3L90LU0030
                                             ^   ^^   [3 mismatch]
 
 ## 2026-9-30-AG.jpg
-- 官方判定: PASS  verified=True  chosen=cnn  ms=256
+- 官方判定: PASS  verified=True  chosen=cnn  ms=235
 - 官方 line1: P<CHNCONG<<YINGXIAO<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E066908744CHN9303298F34112631WW9ZQLBES70S062
 - 理由: 融合CNN+CRNN 识别并通过校验
@@ -6721,7 +6721,7 @@ PRED: E066908744CHN9303298F34112631WW9ZQLBES70S062
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=89% conf2=86%
-- backend: crnn  (18 ms)
+- backend: crnn  (16 ms)
 - error: decode failed: check digit mismatch
 GT  : P<CHNCONG<<<INGXIAO<<<<<<<<<<<<<<<<<<<<<<<<< 
 PRED: PP<<ACOWG<<YIAGXIAO<<<<<<<<<<<<<<<<<<<<<<<<<1
@@ -6739,7 +6739,7 @@ PRED: E066908744CHN9303298F34112631WW9ZQLBES70S062
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (132 ms)
+- backend: tesseract  (115 ms)
 GT  : P<CHNCONG<<<INGXIAO<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNCONG<<YINGXIAO<<<<<<<<<<<<<<<<<<<<<<<<<
                  ^                                   [1 mismatch]
@@ -6748,7 +6748,7 @@ PRED: O066908744CHN9303298F3411263THW9ZQLBES70SD62
       ^                           ^^           ^     [4 mismatch]
 
 ### paddle  [DECODE-OK] conf1=95% conf2=99%
-- backend: paddle-onnxruntime  (123 ms)
+- backend: paddle-onnxruntime  (110 ms)
 GT  : P<CHNCONG<<<INGXIAO<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNCONG<<YINGXIAO<<<<<<<<<<<<<<<<<<<<<<<<<
                  ^                                   [1 mismatch]
@@ -6757,7 +6757,7 @@ PRED: E066908744CHN9303298F3411263TWW9ZQLBES7OS062
                                   ^          ^       [2 mismatch]
 
 ### indra  [DECODE-OK] conf1=89% conf2=84%
-- backend: indra  (64 ms)
+- backend: indra  (57 ms)
 GT  : P<CHNCONG<<<INGXIAO<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: DECHNCONG<<YINGXIAOC<<<<<<<<<<<<<<<<<<<<<<<<
       ^^         ^       ^                           [4 mismatch]
@@ -6766,7 +6766,7 @@ PRED: 2650O87442CHN303298334112637WW92OLBESTOS0<62
       ^^^^^^^^ ^   ^^^^^^^^^^ ^^^^^ ^^^^^^^^^^^^     [36 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=88% conf2=76%
-- backend: indra  (259 ms)
+- backend: indra  (233 ms)
 GT  : P<CHNCONG<<<INGXIAO<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: IACHN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
       ^^   ^^^^   ^^^^^^^                            [13 mismatch]
@@ -6775,10 +6775,10 @@ PRED: 506690R744CHN9303298F3411263TWW92QLBES7OS362
       ^     ^                     ^   ^      ^ ^     [6 mismatch]
 
 ## 2026-9-30-AH.jpg
-- 官方判定: PASS  verified=True  chosen=cnn  ms=276
+- 官方判定: PASS  verified=True  chosen=cnn  ms=238
 - 官方 line1: P<CHNCUI<<LIYI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E581043494CHN7012299F3110201S1UBJ2E<3D3PLJ56
-- 理由: 轻量CNN 识别并通过校验
+- 理由: 融合CNN+CRNN 识别并通过校验
 
 - GT line1: `P<CHNCUI<<LIYI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
 - GT line2: `E581043494CHN7012299F3110201S1UBJ2E<3D3PLJ56`
@@ -6819,7 +6819,7 @@ PRED: E581043494CHN7012299F3110201S1UBJ2E<3D3PLJ56
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (208 ms)
+- backend: tesseract  (189 ms)
 GT  : P<CHNCUI<<LIYI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: CHANCUI<<LIYI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<A
       ^^^^^^^^ ^^^^^                             ^   [14 mismatch]
@@ -6828,7 +6828,7 @@ PRED: E581043494CHN7012299F3110201S7UBJ2E<3D3PL356
                                    ^           ^     [2 mismatch]
 
 ### paddle  [DECODE-OK] conf1=98% conf2=99%
-- backend: paddle-onnxruntime  (118 ms)
+- backend: paddle-onnxruntime  (108 ms)
 GT  : P<CHNCUI<<LIYI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNCUI<<LIYI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -6837,13 +6837,13 @@ PRED: E581043494CHN7012299F3110201S1UBJ2E<3D3PLJ56
                                                      [0 mismatch]
 
 ### indra  [FAIL]
-- backend: indra  (55 ms)
+- backend: indra  (46 ms)
 - error: indra 未找到 MRZ 候选行 (1 行)
 - PRED line1: <空>
 - PRED line2: <空>
 
 ### indra_fullpage  [DECODE-OK] conf1=94% conf2=80%
-- backend: indra  (267 ms)
+- backend: indra  (234 ms)
 GT  : P<CHNCUI<<LIYI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNCUI<<LIYI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -6852,7 +6852,7 @@ PRED: E581043494CHN7012299F3110201810B32F<30303<56
                                   ^ ^ ^ ^  ^ ^^^     [8 mismatch]
 
 ## 2026-9-30-AI.jpg
-- 官方判定: PASS  verified=True  chosen=paddle  ms=283
+- 官方判定: PASS  verified=True  chosen=paddle  ms=236
 - 官方 line1: P<CHNDAI<<XIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E996968603CHN0205089M3208184OK1U4WCP4K4E7L42
 - 理由: PaddleOCR 识别并通过校验
@@ -6878,7 +6878,7 @@ PRED: E996968603CHN0205089M32081840K1U4WCPWK4E7L42
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=90% conf2=86%
-- backend: crnn  (18 ms)
+- backend: crnn  (17 ms)
 - error: decode failed: check digit mismatch
 GT  : P<CHNDAI<<XIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< 
 PRED: P<CAADA7<<XIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -6896,7 +6896,7 @@ PRED: E996968603CHN0205089M32081840K1U4WCPWK4E7L42
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (205 ms)
+- backend: tesseract  (185 ms)
 GT  : P<CHNDAI<<XIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNDAI<<XIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<2
                                                  ^   [1 mismatch]
@@ -6905,7 +6905,7 @@ PRED: F99696R603CHN0205089M32081840K1UAMCP4KLETL92
       ^     ^                         ^^  ^ ^ ^ ^    [8 mismatch]
 
 ### paddle  [DECODE-OK] conf1=98% conf2=99%
-- backend: paddle-onnxruntime  (124 ms)
+- backend: paddle-onnxruntime  (115 ms)
 GT  : P<CHNDAI<<XIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNDAI<<XIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -6914,13 +6914,13 @@ PRED: E996968603CHN0205089M3208184OK1U4WCP4K4E7L42
                                   ^       ^          [2 mismatch]
 
 ### indra  [FAIL]
-- backend: indra  (57 ms)
+- backend: indra  (50 ms)
 - error: indra 未找到 MRZ 候选行 (1 行)
 - PRED line1: <空>
 - PRED line2: <空>
 
 ### indra_fullpage  [DECODE-OK] conf1=95% conf2=85%
-- backend: indra  (249 ms)
+- backend: indra  (208 ms)
 GT  : P<CHNDAI<<XIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNDAI<<XIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -6929,7 +6929,7 @@ PRED: E996968603CHN0205089M32081840K1044CP4KLE1<42
                                      ^ ^  ^ ^ ^^     [6 mismatch]
 
 ## 2026-9-30-AJ.jpg
-- 官方判定: PASS  verified=True  chosen=paddle  ms=284
+- 官方判定: PASS  verified=True  chosen=paddle  ms=236
 - 官方 line1: P<CHNDING<<HANGYAN<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E818572393CHN6603171M2702157FWS91S8GQ4H16188
 - 理由: PaddleOCR 识别并通过校验
@@ -6955,7 +6955,7 @@ PRED: E818572393CHN6603171M2702157EBS91S8GAWH16188
                                          ^^  ^ ^     [4 mismatch]
 
 ### crnn  [decoded] conf1=91% conf2=82%
-- backend: crnn  (20 ms)
+- backend: crnn  (16 ms)
 - error: decode failed: check digit mismatch
 GT  : P<CHNDCNG<<HNNEYAN<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PP<CAZ7AG<<HAMGYAN<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -6973,7 +6973,7 @@ PRED: E818572393CHN6603171M2702157EBS91S8G0WH16188
                                          ^   ^ ^     [3 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (211 ms)
+- backend: tesseract  (184 ms)
 GT  : P<CHNDCNG<<HNNEYAN<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNDING<<HANGYAN<<<<<<<<<<<<<<<<<<<<<<<<<<
             ^     ^ ^                                [3 mismatch]
@@ -6982,7 +6982,7 @@ PRED: FR78572393CHN6603171M2702157FNS9IS8GQWH16188
       ^^^                         ^^  ^  ^^  ^ ^     [10 mismatch]
 
 ### paddle  [DECODE-OK] conf1=97% conf2=99%
-- backend: paddle-onnxruntime  (139 ms)
+- backend: paddle-onnxruntime  (127 ms)
 GT  : P<CHNDCNG<<HNNEYAN<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNDING<<HANGYAN<<<<<<<<<<<<<<<<<<<<<<<<<<
             ^     ^ ^                                [3 mismatch]
@@ -6991,7 +6991,7 @@ PRED: E818572393CHN6603171M2702157FHS9IS8GQWHI6I88
                                   ^^  ^  ^^          [5 mismatch]
 
 ### indra  [DECODE-OK] conf1=88% conf2=84%
-- backend: indra  (71 ms)
+- backend: indra  (59 ms)
 GT  : P<CHNDCNG<<HNNEYAN<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: DECNDING<<HANGYANK<<<<<<<<<<<<<<<<<<<<<<<<<<
       ^^ ^^^^^^ ^^ ^^^^^                             [15 mismatch]
@@ -7000,7 +7000,7 @@ PRED: 9857Z393C3CND03111M2702157F8S9ISSGQURI6I<<88
       ^ ^^^^^ ^  ^^^^^^ ^^^^^^^^^^^^^^^^^^^^^ ^^     [36 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=88% conf2=76%
-- backend: indra  (225 ms)
+- backend: indra  (201 ms)
 GT  : P<CHNDCNG<<HNNEYAN<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNDING<<HANGYAN<<<<<<<<<<<<<<<<<<<<<C<CA<
             ^     ^ ^                        ^ ^^    [6 mismatch]
@@ -7009,10 +7009,10 @@ PRED: E818572393CHN603171427021570HS9IS86QV363<<38
                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^    [29 mismatch]
 
 ## 2026-9-30-B.jpg
-- 官方判定: PASS  verified=True  chosen=cnn  ms=248
+- 官方判定: PASS  verified=True  chosen=cnn  ms=219
 - 官方 line1: P<CHNHU<<HAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E187424516CHN8706216M2406086LKPKOFLA<<<<A936
-- 理由: 轻量CNN 识别并通过校验
+- 理由: 融合CNN+CRNN 识别并通过校验
 
 - GT line1: `P<CHNNU<<HAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
 - GT line2: `E187424516CHN8706216M2406086LKPKOFLA<<<<A936`
@@ -7035,7 +7035,7 @@ PRED: E187424516CHN8706216M2406086LKPKOFLA<<<<A936
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=88% conf2=87%
-- backend: crnn  (20 ms)
+- backend: crnn  (16 ms)
 - error: decode failed: bad MRZ length
 GT  : P<CHNNU<<HAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PPCAAAO<<AAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -7053,7 +7053,7 @@ PRED: E187424516CHN8706216M2406086LKPKOFLA<<<<A936
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (184 ms)
+- backend: tesseract  (167 ms)
 GT  : P<CHNNU<<HAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNHU<<HAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
            ^                                         [1 mismatch]
@@ -7062,7 +7062,7 @@ PRED: E7874Z4S16CHN8706216M2406086LKPKQFLA<<<<BA98
        ^   ^ ^                        ^       ^^^^   [8 mismatch]
 
 ### paddle  [DECODE-OK] conf1=95% conf2=99%
-- backend: paddle-onnxruntime  (110 ms)
+- backend: paddle-onnxruntime  (103 ms)
 GT  : P<CHNNU<<HAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P0CHNHU<<HAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^   ^                                         [2 mismatch]
@@ -7071,13 +7071,13 @@ PRED: E187424516CHN8706216M2406086LKPKOFLA<<<<A936
                                                      [0 mismatch]
 
 ### indra  [FAIL]
-- backend: indra  (50 ms)
+- backend: indra  (42 ms)
 - error: indra 未找到 MRZ 候选行 (1 行)
 - PRED line1: <空>
 - PRED line2: <空>
 
 ### indra_fullpage  [DECODE-OK] conf1=96% conf2=96%
-- backend: indra  (282 ms)
+- backend: indra  (245 ms)
 GT  : P<CHNNU<<HAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POCHNHU<<HA0<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^   ^     ^                                   [3 mismatch]
@@ -7086,7 +7086,7 @@ PRED: E187424516CHN8706216M2406086LKPKOFLA<<<<A936
                                                      [0 mismatch]
 
 ## 2026-9-30-C.jpg
-- 官方判定: PASS  verified=True  chosen=cnn  ms=205
+- 官方判定: PASS  verified=True  chosen=cnn  ms=191
 - 官方 line1: P<AUSRICHARDS<<KEIRA<JAYNE<<<<<<<<<<<<<<<<<<
 - 官方 line2: N7368155<2AUS8703226F2306186<12078730W<<<<68
 - 理由: 轻量CNN 识别并通过校验
@@ -7112,7 +7112,7 @@ PRED: N7368155<2AUS8703226F2306186<12078730W<<<<68
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=90% conf2=81%
-- backend: crnn  (18 ms)
+- backend: crnn  (16 ms)
 - error: decode failed: bad MRZ length
 GT  : P<AUSRICHARDS<<KEIRA<JAYNE<<<<<<<<<<<<<<<<<<
 PRED: P<4<SR7CA4ADS<<KEIRA<JAYNE<<<<<<<<<<<<<<<<<<
@@ -7130,7 +7130,7 @@ PRED: N7368155<2AUS8703226F2306186<12078730W<<<<68
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (134 ms)
+- backend: tesseract  (116 ms)
 GT  : P<AUSRICHARDS<<KEIRA<JAYNE<<<<<<<<<<<<<<<<<<
 PRED: P<AUSRICHARDS<<KEIRA<JAYNE<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -7139,7 +7139,7 @@ PRED: 73687155<2AUS8703226F2306186<12078730W<<<<68
       ^^^^^                                          [5 mismatch]
 
 ### paddle  [DECODE-OK] conf1=92% conf2=99%
-- backend: paddle-onnxruntime  (100 ms)
+- backend: paddle-onnxruntime  (98 ms)
 GT  : P<AUSRICHARDS<<KEIRA<JAYNE<<<<<<<<<<<<<<<<<<
 PRED: P<AUSRICHARDS<<KEIRA<JAYNE<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -7148,7 +7148,7 @@ PRED: N7368155<2AUS8703226F2306186<12078730W<<<<68
                                                      [0 mismatch]
 
 ### indra  [DECODE-OK] conf1=100% conf2=97%
-- backend: indra  (60 ms)
+- backend: indra  (54 ms)
 GT  : P<AUSRICHARDS<<KEIRA<JAYNE<<<<<<<<<<<<<<<<<<
 PRED: P<AUSRICHARDS<<KEIRA<JAYNE<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -7157,7 +7157,7 @@ PRED: N7368155<2AUS8703226F2306186<12078730W<<<<68
                                                      [0 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=100% conf2=97%
-- backend: indra  (207 ms)
+- backend: indra  (180 ms)
 GT  : P<AUSRICHARDS<<KEIRA<JAYNE<<<<<<<<<<<<<<<<<<
 PRED: P<AUSRICHARDS<<KEIRA<JAYNE<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -7166,10 +7166,10 @@ PRED: N7368155<2AUS8703226F2306186<12078730W<<<<68
                                                      [0 mismatch]
 
 ## 2026-9-30-D.jpg
-- 官方判定: PASS  verified=True  chosen=cnn  ms=214
+- 官方判定: PASS  verified=True  chosen=cnn  ms=204
 - 官方 line1: P<CHNZHOU<<QIANG<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: KE00345952CHN9207156M2912095A911<611158<<<14
-- 理由: 轻量CNN 识别并通过校验
+- 理由: 融合CNN+CRNN 识别并通过校验
 
 - GT line1: `P<CHNZHOU<<QIANG<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
 - GT line2: `KE00345952CHN9207156M2912095A911<611158<<<14`
@@ -7192,7 +7192,7 @@ PRED: KE00345952CHN9207156M2912095A911<611158<<<14
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=93% conf2=89%
-- backend: crnn  (18 ms)
+- backend: crnn  (15 ms)
 - error: decode failed: bad MRZ length
 GT  : P<CHNZHOU<<QIANG<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: 4K2<O0<<Q1ANG<<<<<<<<<<<<<<<<<<<<<<<<<<<<   
@@ -7210,7 +7210,7 @@ PRED: KE00345952CHN9207156M2912095A911<611158<<<14
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (124 ms)
+- backend: tesseract  (110 ms)
 GT  : P<CHNZHOU<<QIANG<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: AKCHNZHOU<<QIANG<<<<<<<<<<<<<<<<<<<<<<<<<<<<
       ^^                                             [2 mismatch]
@@ -7219,7 +7219,7 @@ PRED: KE00345952CHN9207156M2912095A911<611158<<<14
                                                      [0 mismatch]
 
 ### paddle  [DECODE-OK] conf1=97% conf2=99%
-- backend: paddle-onnxruntime  (100 ms)
+- backend: paddle-onnxruntime  (92 ms)
 GT  : P<CHNZHOU<<QIANG<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: AKCHNZHOU<<QIANG<<<<<<<<<<<<<<<<<<<<<<<<<<<<
       ^^                                             [2 mismatch]
@@ -7228,7 +7228,7 @@ PRED: KE00345952CHN9207156M2912095A911<611158<<<14
                                                      [0 mismatch]
 
 ### indra  [DECODE-OK] conf1=94% conf2=95%
-- backend: indra  (60 ms)
+- backend: indra  (54 ms)
 GT  : P<CHNZHOU<<QIANG<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: AKCHNZHOU<<QIANG<<<<<<<<<<<<<<<<<<<<<<<<<<<<
       ^^                                             [2 mismatch]
@@ -7237,7 +7237,7 @@ PRED: KE00345952CHN9207156M2912095A911<611158<<<14
                                                      [0 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=91% conf2=95%
-- backend: indra  (221 ms)
+- backend: indra  (199 ms)
 GT  : P<CHNZHOU<<QIANG<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: AKCHNZHOU<<QIANG<<<<<<<<<<<<<<<<<<<<<<<<<<<A
       ^^                                         ^   [3 mismatch]
@@ -7246,7 +7246,7 @@ PRED: KE00345952CHN9207156M2912095A911<611158<<<14
                                                      [0 mismatch]
 
 ## 2026-9-30-E.jpg
-- 官方判定: PASS  verified=True  chosen=cnn  ms=208
+- 官方判定: PASS  verified=True  chosen=cnn  ms=200
 - 官方 line1: P<CHNPHANG<<WANWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: E662323994CHN9009121F2601113NFMFMNPBMOMEA976
 - 理由: 轻量CNN 识别并通过校验
@@ -7272,7 +7272,7 @@ PRED: E662323994CHN9009121F2601113NFMFMNPBMOMEA976
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=90% conf2=78%
-- backend: crnn  (18 ms)
+- backend: crnn  (16 ms)
 - error: decode failed: bad MRZ length
 GT  : P<CHNZHANG<<WANWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POGAZA4AG<<WANWEN<<<<<<<<<<<<<<<<<<<<<<<<<< 
@@ -7290,7 +7290,7 @@ PRED: E662323994CHN9009121F2601113NFMFMNPBMOMEA976
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (121 ms)
+- backend: tesseract  (108 ms)
 GT  : P<CHNZHANG<<WANWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNZHANG<<WANWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
@@ -7299,7 +7299,7 @@ PRED: E662323994CHN9009121F2601113NFMFMNPBMOMEA976
                                                      [0 mismatch]
 
 ### paddle  [DECODE-OK] conf1=98% conf2=99%
-- backend: paddle-onnxruntime  (107 ms)
+- backend: paddle-onnxruntime  (103 ms)
 GT  : P<CHNZHANG<<WANWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POCHNZHANG<<WANWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^                                             [1 mismatch]
@@ -7308,7 +7308,7 @@ PRED: E662323994CHN9009121F2601113NFMFMNPBMOMEA976
                                                      [0 mismatch]
 
 ### indra  [DECODE-OK] conf1=86% conf2=92%
-- backend: indra  (62 ms)
+- backend: indra  (55 ms)
 GT  : P<CHNZHANG<<WANWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POCHNZHANG<<WANWENK<<<<<<<<<<<<<<<<<<<<<<<<<
        ^                ^                            [2 mismatch]
@@ -7317,7 +7317,7 @@ PRED: E662323994CHN9009121F2601113NFMFMNPBNOMER976
                                           ^   ^      [2 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=98% conf2=92%
-- backend: indra  (321 ms)
+- backend: indra  (273 ms)
 GT  : P<CHNZHANG<<WANWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POCHNZHANG<<WANWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^                                             [1 mismatch]
@@ -7326,8 +7326,8 @@ PRED: E662323994CHN9009121F2601113NFMFMNPBMOMEA976
                                                      [0 mismatch]
 
 ## 2026-9-30-F.jpg
-- 官方判定: PASS  verified=True  chosen=fuse  ms=287
-- 官方 line1: P<CNNYAN<<ZHE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+- 官方判定: PASS  verified=True  chosen=fuse  ms=264
+- 官方 line1: P<CHNYAN<<ZHE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: A000000000CHN9801060M24061900DMGNFNM<<<<4998
 - 理由: 融合CNN+CRNN 识别并通过校验
 
@@ -7345,14 +7345,14 @@ PRED: WDDDDDDDDDCHNV8O4C6CN24C649CD6AAAVWW<<<<G44A
 
 ### cnn  [DECODE-OK] conf1=96% conf2=96%
 GT  : P<CNNXAN<<ZHE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-PRED: P<CNNXAN<<ZHE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-                                                     [0 mismatch]
+PRED: P<CHNXAN<<ZHE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+         ^                                           [1 mismatch]
 GT  : A000000000CHN9801060M24061900DMGNFNM<<<<4998
 PRED: A000000000CHN9801060M24061900DMGNFNM<<<<4998
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=89% conf2=81%
-- backend: crnn  (18 ms)
+- backend: crnn  (16 ms)
 - error: decode failed: bad MRZ length
 GT  : P<CNNXAN<<ZHE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PPCA74A<<ZHE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< 
@@ -7363,14 +7363,14 @@ PRED: 420000000CMM9801060M2406190ODMGNFNM<<<<K998
 
 ### fuse  [DECODE-OK] conf1=96% conf2=98%
 GT  : P<CNNXAN<<ZHE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-PRED: P<CNNYAN<<ZHE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-           ^                                         [1 mismatch]
+PRED: P<CHNYAN<<ZHE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+         ^ ^                                         [2 mismatch]
 GT  : A000000000CHN9801060M24061900DMGNFNM<<<<4998
 PRED: A000000000CHN9801060M24061900DMGNFNM<<<<4998
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (218 ms)
+- backend: tesseract  (194 ms)
 GT  : P<CNNXAN<<ZHE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PMCHNYAN<<ZHE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^ ^ ^                                         [3 mismatch]
@@ -7379,7 +7379,7 @@ PRED: 0O0O0OO0O6CHN9801060M2406190ODMGNFNM<<<<A996
       ^^ ^ ^^ ^^                  ^           ^  ^   [10 mismatch]
 
 ### paddle  [DECODE-OK] conf1=96% conf2=99%
-- backend: paddle-onnxruntime  (95 ms)
+- backend: paddle-onnxruntime  (90 ms)
 GT  : P<CNNXAN<<ZHE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PMCHNYAN<<ZHE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^ ^ ^                                         [3 mismatch]
@@ -7388,7 +7388,7 @@ PRED: A000000000CHN9801060M2406190ODMGNFNM<<<<A998
                                   ^           ^      [2 mismatch]
 
 ### indra  [DECODE-OK] conf1=96% conf2=91%
-- backend: indra  (67 ms)
+- backend: indra  (56 ms)
 GT  : P<CNNXAN<<ZHE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PMCHNYAN<<ZHE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^ ^ ^                                         [3 mismatch]
@@ -7397,7 +7397,7 @@ PRED: 4000000O00CHN9801060M24061900DMGNFHM<<<<A998
       ^      ^                          ^     ^      [4 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=90% conf2=85%
-- backend: indra  (294 ms)
+- backend: indra  (242 ms)
 GT  : P<CNNXAN<<ZHE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PMCHNYAN<<ZHE<<<<<<<<<<<<<<<<<<<<<<<<<<<AAAA
        ^ ^ ^                                  ^^^^   [7 mismatch]
@@ -7406,7 +7406,7 @@ PRED: 4000000O00CHN9801060M240619000MNHM<<<<1<<<98
       ^      ^                     ^ ^^^^^  ^ ^^     [11 mismatch]
 
 ## 2026-9-30-G.jpg
-- 官方判定: PASS  verified=True  chosen=cnn  ms=209
+- 官方判定: PASS  verified=True  chosen=cnn  ms=194
 - 官方 line1: P<CHNSUN<<HAI<HUA<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: H224724969CHN0907246M2808185<S3054553<<<<<90
 - 理由: 融合CNN+CRNN 识别并通过校验
@@ -7432,7 +7432,7 @@ PRED: H224724969CHN0907246M2808185<S3054553<<<<<90
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=91% conf2=81%
-- backend: crnn  (19 ms)
+- backend: crnn  (16 ms)
 - error: decode failed: check digit mismatch
 GT  : P<CHHSUN<<HAI<HUA<<<<<<<<<<<<<<<<<<<<<<<<<<< 
 PRED: 7P<CAASDA<<HAI<HUA<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -7450,7 +7450,7 @@ PRED: H224724969CHN0907246M2808185<S3054553<<<<<90
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (125 ms)
+- backend: tesseract  (112 ms)
 GT  : P<CHHSUN<<HAI<HUA<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNSUN<<HAI<HUA<<<<<<<<<<<<<<<<<<<<<<<<<<<
           ^                                          [1 mismatch]
@@ -7459,7 +7459,7 @@ PRED: H224724969CHN0907246M2808185<S3054553<<<<<90
                                                      [0 mismatch]
 
 ### paddle  [DECODE-OK] conf1=88% conf2=98%
-- backend: paddle-onnxruntime  (105 ms)
+- backend: paddle-onnxruntime  (103 ms)
 GT  : P<CHHSUN<<HAI<HUA<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNSUN<<HAI<HUA<<<<<<<<<<<<<<<<<<<<<<<<<<<
           ^                                          [1 mismatch]
@@ -7468,7 +7468,7 @@ PRED: H224724969CHN0907246M2808185<S3054553<<<<<90
                                                      [0 mismatch]
 
 ### indra  [DECODE-OK] conf1=85% conf2=93%
-- backend: indra  (59 ms)
+- backend: indra  (56 ms)
 GT  : P<CHHSUN<<HAI<HUA<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNSUN<<HAI<HUA<<<<<<<<<<<<<<<<<<<<<<<<<<<
           ^                                          [1 mismatch]
@@ -7477,7 +7477,7 @@ PRED: 4Z24724989CHN0907246M2808185<S3054553<<<<<90
       ^^      ^                                      [3 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=91% conf2=68%
-- backend: indra  (371 ms)
+- backend: indra  (322 ms)
 GT  : P<CHHSUN<<HAI<HUA<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: SPECIALADMHNISTRATTVE<<<<<<<<<<<<<<<<<<<<<<<
       ^^^^^^^^^^ ^ ^^^ ^^^^                          [18 mismatch]
@@ -7486,7 +7486,7 @@ PRED: C45CODEOF5ECINGSTA<0<<<<<<<0<<<<<<<<<<<<<<08
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^     ^^   [38 mismatch]
 
 ## 2026-9-30-H.jpg
-- 官方判定: PASS  verified=True  chosen=cnn  ms=209
+- 官方判定: PASS  verified=True  chosen=cnn  ms=194
 - 官方 line1: P<CHNYANG<<ZHEN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: KE90003518CHN9707014F2912268A911<121101<<<72
 - 理由: 融合CNN+CRNN 识别并通过校验
@@ -7512,7 +7512,7 @@ PRED: KE90003518CHN9707014F2912268A911<121101<<<72
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=92% conf2=85%
-- backend: crnn  (19 ms)
+- backend: crnn  (16 ms)
 - error: decode failed: check digit mismatch
 GT  : P<CHNYANG<<ZHEN<<<<<<<<<<<<<<<<<<<<<<<<<<<<< 
 PRED: 7<4<CAY4AG<<ZHEN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -7530,7 +7530,7 @@ PRED: KE90003518CHN9707014F2912268A911<121101<<<72
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (128 ms)
+- backend: tesseract  (110 ms)
 GT  : P<CHNYANG<<ZHEN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: AKCHNYANG<<ZHEN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
       ^^                                             [2 mismatch]
@@ -7539,7 +7539,7 @@ PRED: KE90003518CHN9707014F2912268A911<121101<<<72
                                                      [0 mismatch]
 
 ### paddle  [DECODE-OK] conf1=98% conf2=99%
-- backend: paddle-onnxruntime  (100 ms)
+- backend: paddle-onnxruntime  (95 ms)
 GT  : P<CHNYANG<<ZHEN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: AKCHNYANG<<ZHEN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
       ^^                                             [2 mismatch]
@@ -7548,7 +7548,7 @@ PRED: KE90003518CHN9707014F2912268A911<121101<<<72
                                                      [0 mismatch]
 
 ### indra  [DECODE-OK] conf1=89% conf2=96%
-- backend: indra  (51 ms)
+- backend: indra  (48 ms)
 GT  : P<CHNYANG<<ZHEN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: AKCHNYANG<<ZHEN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
       ^^                                             [2 mismatch]
@@ -7557,7 +7557,7 @@ PRED: KE90003518CHN9707014F2912268A911<121101<<<72
                                                      [0 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=96% conf2=56%
-- backend: indra  (236 ms)
+- backend: indra  (210 ms)
 GT  : P<CHNYANG<<ZHEN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: KEASO03518CHN9707014F2912268A911<121101<<<72
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^^^^   ^^   [40 mismatch]
@@ -7566,7 +7566,7 @@ PRED: KTOBEASCA2ASOSOLVES6TSSESV<3<<<<<<<<<<<<<<06
        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^^^^   ^^   [39 mismatch]
 
 ## 2026-9-30-I.jpg
-- 官方判定: REJECT  verified=False  chosen=None  ms=14
+- 官方判定: REJECT  verified=False  chosen=None  ms=13
 - 理由: 未在照片中定位到 MRZ 双行
 
 ### traditional  [no_pair]
@@ -7584,11 +7584,11 @@ PRED: KTOBEASCA2ASOSOLVES6TSSESV<3<<<<<<<<<<<<<<06
 ### indra  [no_pair]
 
 ### indra_fullpage  [FAIL]
-- backend: indra  (125 ms)
+- backend: indra  (112 ms)
 - error: indra 未找到 MRZ 候选行 (1 行)
 
 ## 2026-9-30-J.jpg
-- 官方判定: REJECT  verified=False  chosen=None  ms=9
+- 官方判定: REJECT  verified=False  chosen=None  ms=8
 - 理由: 未在照片中定位到 MRZ 双行
 
 ### traditional  [no_pair]
@@ -7606,7 +7606,7 @@ PRED: KTOBEASCA2ASOSOLVES6TSSESV<3<<<<<<<<<<<<<<06
 ### indra  [no_pair]
 
 ### indra_fullpage  [FAIL]
-- backend: indra  (129 ms)
+- backend: indra  (115 ms)
 - error: indra 未找到 MRZ 候选行 (1 行)
 
 ## 2026-9-30-K.jpg
@@ -7628,24 +7628,24 @@ PRED: KTOBEASCA2ASOSOLVES6TSSESV<3<<<<<<<<<<<<<<06
 ### indra  [no_pair]
 
 ### indra_fullpage  [FAIL]
-- backend: indra  (130 ms)
+- backend: indra  (113 ms)
 - error: indra 未找到 MRZ 候选行 (1 行)
 
 ## IMG_1792133000_003.jpg
-- 官方判定: PASS  verified=True  chosen=fuse  ms=322
+- 官方判定: PASS  verified=True  chosen=fuse  ms=288
 - 官方 line1: P<SNNSJN<<LINEN<<<PPPPPPPP<<<<<<<<<<<<<<<<<<
 - 官方 line2: EC20426530CHN7410024M2808303LMN0MKKEMG9BA934
 - 理由: 融合CNN+CRNN 识别并通过校验
 
 - GT line1: `P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<`
-- GT line2: `EE20426536CHN7410024M2808303LMNGMBKENG9BA970`
+- GT line2: `EE20426536CHN7410024M2808303LMNGMBKCMDPBA970`
 
 ### traditional  [decoded] conf1=76% conf2=64%
 - error: decode failed: check digit mismatch
 GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
 PRED: MPMC9A3IX<<L1N1H<<<<<<<<<<<<<<<<<<<<<<<<<<<<
       ^^^^^^^^^ ^^^^^^  ^^^^^^^^        ^            [24 mismatch]
-GT  : EE20426536CHN7410024M2808303LMNGMBKENG9BA970
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 PRED: MFFZQ<2<S36CHHZ4JQQP4NP8C8<C<LAHGAA<LA6LAF43
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^   [43 mismatch]
 
@@ -7653,9 +7653,86 @@ PRED: MFFZQ<2<S36CHHZ4JQQP4NP8C8<C<LAHGAA<LA6LAF43
 GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
 PRED: P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
                                                      [0 mismatch]
-GT  : EE20426536CHN7410024M2808303LMNGMBKENG9BA970
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 PRED: EE20426536CHN7410024M2808303LMNGMBKENG9BA970
+                                         ^^^^        [4 mismatch]
+
+### crnn  [decoded] conf1=88% conf2=81%
+- backend: crnn  (18 ms)
+- error: decode failed: bad MRZ length
+GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+PRED: POCA1A<<E7MIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  
+       ^^^^^^^^^^  ^^   ^^^^^^^^        ^       ^^   [23 mismatch]
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
+PRED: EC0426536CAN7410024M2808303LMNGW8KCND88RS1S 
+       ^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^   [42 mismatch]
+
+### fuse  [DECODE-OK] conf1=92% conf2=92%
+GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+PRED: P<SNNSJN<<LINEN<<<PPPPPPPP<<<<<<<<<<<<<<<<<<
+                ^         ^             ^            [3 mismatch]
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
+PRED: EC20426530CHN7410024M2808303LMN0MKKEMG9BA934
+       ^       ^                     ^ ^ ^ ^^   ^^   [9 mismatch]
+
+### tesseract  [DECODE-OK]
+- backend: tesseract  (210 ms)
+GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+PRED: P<CHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        ^^ ^^^  ^ ^^    ^^^^^^^^        ^            [17 mismatch]
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
+PRED: EE20426536CHN7410024M2808303LMNGMBKCWDPBA970
+                                          ^          [1 mismatch]
+
+### paddle  [DECODE-OK] conf1=93% conf2=99%
+- backend: paddle-onnxruntime  (105 ms)
+GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+PRED: POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+       ^^^ ^^^  ^ ^^    ^^^^^^^^        ^            [18 mismatch]
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
+PRED: EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
                                                      [0 mismatch]
+
+### indra  [FAIL]
+- backend: indra  (46 ms)
+- error: indra 未找到 MRZ 候选行 (1 行)
+- PRED line1: <空>
+- PRED line2: <空>
+
+### indra_fullpage  [DECODE-OK] conf1=97% conf2=87%
+- backend: indra  (263 ms)
+GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+PRED: POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+       ^^^ ^^^  ^ ^^    ^^^^^^^^        ^            [18 mismatch]
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
+PRED: EE20426536CHN7410024M2808303LMNGMBKCNPSB9<70
+                                          ^^^ ^^     [5 mismatch]
+
+## IMG_1792133002_004.jpg
+- 官方判定: PASS  verified=True  chosen=fuse  ms=286
+- 官方 line1: P<SNNSJN<<LINEN<<<PPPPPPPP<<<<<<<<<<<<<<<<<<
+- 官方 line2: EC20426530CHN7410024M2808303LMN0MKKEMG9BA934
+- 理由: 融合CNN+CRNN 识别并通过校验
+
+- GT line1: `P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<`
+- GT line2: `EE20426536CHN7410024M2808303LMNGMBKCMDPBA970`
+
+### traditional  [decoded] conf1=76% conf2=64%
+- error: decode failed: check digit mismatch
+GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+PRED: MPMC9A3IX<<L1N1H<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+      ^^^^^^^^^ ^^^^^^  ^^^^^^^^        ^            [24 mismatch]
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
+PRED: MFFZQ<2<S36CHHZ4JQQP4NP8C8<C<LAHGAA<LA6LAF43
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^   [43 mismatch]
+
+### cnn  [DECODE-OK] conf1=86% conf2=91%
+GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+PRED: P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+                                                     [0 mismatch]
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
+PRED: EE20426536CHN7410024M2808303LMNGMBKENG9BA970
+                                         ^^^^        [4 mismatch]
 
 ### crnn  [decoded] conf1=88% conf2=81%
 - backend: crnn  (19 ms)
@@ -7663,7 +7740,7 @@ PRED: EE20426536CHN7410024M2808303LMNGMBKENG9BA970
 GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
 PRED: POCA1A<<E7MIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  
        ^^^^^^^^^^  ^^   ^^^^^^^^        ^       ^^   [23 mismatch]
-GT  : EE20426536CHN7410024M2808303LMNGMBKENG9BA970
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 PRED: EC0426536CAN7410024M2808303LMNGW8KCND88RS1S 
        ^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^   [42 mismatch]
 
@@ -7671,135 +7748,58 @@ PRED: EC0426536CAN7410024M2808303LMNGW8KCND88RS1S
 GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
 PRED: P<SNNSJN<<LINEN<<<PPPPPPPP<<<<<<<<<<<<<<<<<<
                 ^         ^             ^            [3 mismatch]
-GT  : EE20426536CHN7410024M2808303LMNGMBKENG9BA970
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 PRED: EC20426530CHN7410024M2808303LMN0MKKEMG9BA934
-       ^       ^                     ^ ^  ^     ^^   [7 mismatch]
+       ^       ^                     ^ ^ ^ ^^   ^^   [9 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (234 ms)
+- backend: tesseract  (215 ms)
 GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
 PRED: P<CHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         ^^ ^^^  ^ ^^    ^^^^^^^^        ^            [17 mismatch]
-GT  : EE20426536CHN7410024M2808303LMNGMBKENG9BA970
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 PRED: EE20426536CHN7410024M2808303LMNGMBKCWDPBA970
-                                         ^^^^        [4 mismatch]
+                                          ^          [1 mismatch]
 
 ### paddle  [DECODE-OK] conf1=93% conf2=99%
-- backend: paddle-onnxruntime  (122 ms)
+- backend: paddle-onnxruntime  (109 ms)
 GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
 PRED: POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^^^ ^^^  ^ ^^    ^^^^^^^^        ^            [18 mismatch]
-GT  : EE20426536CHN7410024M2808303LMNGMBKENG9BA970
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 PRED: EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
-                                         ^^^^        [4 mismatch]
+                                                     [0 mismatch]
 
 ### indra  [FAIL]
-- backend: indra  (50 ms)
+- backend: indra  (43 ms)
 - error: indra 未找到 MRZ 候选行 (1 行)
 - PRED line1: <空>
 - PRED line2: <空>
 
 ### indra_fullpage  [DECODE-OK] conf1=97% conf2=87%
-- backend: indra  (292 ms)
+- backend: indra  (248 ms)
 GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
 PRED: POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^^^ ^^^  ^ ^^    ^^^^^^^^        ^            [18 mismatch]
-GT  : EE20426536CHN7410024M2808303LMNGMBKENG9BA970
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 PRED: EE20426536CHN7410024M2808303LMNGMBKCNPSB9<70
-                                         ^ ^^ ^^     [5 mismatch]
-
-## IMG_1792133002_004.jpg
-- 官方判定: PASS  verified=True  chosen=fuse  ms=323
-- 官方 line1: P<SNNSJN<<LINEN<<<PPPPPPPP<<<<<<<<<<<<<<<<<<
-- 官方 line2: EC20426530CHN7410024M2808303LMN0MKKEMG9BA934
-- 理由: 融合CNN+CRNN 识别并通过校验
-
-- GT line1: `P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<`
-- GT line2: `EE20426536CHN7410024M2808303LMNGMBKENG9BA970`
-
-### traditional  [decoded] conf1=76% conf2=64%
-- error: decode failed: check digit mismatch
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
-PRED: MPMC9A3IX<<L1N1H<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-      ^^^^^^^^^ ^^^^^^  ^^^^^^^^        ^            [24 mismatch]
-GT  : EE20426536CHN7410024M2808303LMNGMBKENG9BA970
-PRED: MFFZQ<2<S36CHHZ4JQQP4NP8C8<C<LAHGAA<LA6LAF43
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^   [43 mismatch]
-
-### cnn  [DECODE-OK] conf1=86% conf2=91%
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
-PRED: P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
-                                                     [0 mismatch]
-GT  : EE20426536CHN7410024M2808303LMNGMBKENG9BA970
-PRED: EE20426536CHN7410024M2808303LMNGMBKENG9BA970
-                                                     [0 mismatch]
-
-### crnn  [decoded] conf1=88% conf2=81%
-- backend: crnn  (20 ms)
-- error: decode failed: bad MRZ length
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
-PRED: POCA1A<<E7MIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  
-       ^^^^^^^^^^  ^^   ^^^^^^^^        ^       ^^   [23 mismatch]
-GT  : EE20426536CHN7410024M2808303LMNGMBKENG9BA970
-PRED: EC0426536CAN7410024M2808303LMNGW8KCND88RS1S 
-       ^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^   [42 mismatch]
-
-### fuse  [DECODE-OK] conf1=92% conf2=92%
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
-PRED: P<SNNSJN<<LINEN<<<PPPPPPPP<<<<<<<<<<<<<<<<<<
-                ^         ^             ^            [3 mismatch]
-GT  : EE20426536CHN7410024M2808303LMNGMBKENG9BA970
-PRED: EC20426530CHN7410024M2808303LMN0MKKEMG9BA934
-       ^       ^                     ^ ^  ^     ^^   [7 mismatch]
-
-### tesseract  [DECODE-OK]
-- backend: tesseract  (233 ms)
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
-PRED: P<CHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-        ^^ ^^^  ^ ^^    ^^^^^^^^        ^            [17 mismatch]
-GT  : EE20426536CHN7410024M2808303LMNGMBKENG9BA970
-PRED: EE20426536CHN7410024M2808303LMNGMBKCWDPBA970
-                                         ^^^^        [4 mismatch]
-
-### paddle  [DECODE-OK] conf1=93% conf2=99%
-- backend: paddle-onnxruntime  (108 ms)
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
-PRED: POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-       ^^^ ^^^  ^ ^^    ^^^^^^^^        ^            [18 mismatch]
-GT  : EE20426536CHN7410024M2808303LMNGMBKENG9BA970
-PRED: EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
-                                         ^^^^        [4 mismatch]
-
-### indra  [FAIL]
-- backend: indra  (47 ms)
-- error: indra 未找到 MRZ 候选行 (1 行)
-- PRED line1: <空>
-- PRED line2: <空>
-
-### indra_fullpage  [DECODE-OK] conf1=97% conf2=87%
-- backend: indra  (288 ms)
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
-PRED: POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-       ^^^ ^^^  ^ ^^    ^^^^^^^^        ^            [18 mismatch]
-GT  : EE20426536CHN7410024M2808303LMNGMBKENG9BA970
-PRED: EE20426536CHN7410024M2808303LMNGMBKCNPSB9<70
-                                         ^ ^^ ^^     [5 mismatch]
+                                          ^^^ ^^     [5 mismatch]
 
 ## IMG_1792133232_005.jpg
-- 官方判定: PASS  verified=True  chosen=fuse  ms=337
+- 官方判定: PASS  verified=True  chosen=fuse  ms=279
 - 官方 line1: P<SNNSJN<<LINEN<<<PPPPPPPP<<<<<<<<<<<<<<<<<<
 - 官方 line2: EC20426530CHN7410024M2808303LMN0MKKEMG9BA934
 - 理由: 融合CNN+CRNN 识别并通过校验
 
 - GT line1: `P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<`
-- GT line2: `EE20426536CHN7410024M2808303LMNGMBKENG9BA970`
+- GT line2: `EE20426536CHN7410024M2808303LMNGMBKCMDPBA970`
 
 ### traditional  [decoded] conf1=76% conf2=64%
 - error: decode failed: check digit mismatch
 GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
 PRED: MPMC9A3IX<<L1N1H<<<<<<<<<<<<<<<<<<<<<<<<<<<<
       ^^^^^^^^^ ^^^^^^  ^^^^^^^^        ^            [24 mismatch]
-GT  : EE20426536CHN7410024M2808303LMNGMBKENG9BA970
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 PRED: MFFZQ<2<S36CHHZ4JQQP4NP8C8<C<LAHGAA<LA6LAF43
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^   [43 mismatch]
 
@@ -7807,17 +7807,17 @@ PRED: MFFZQ<2<S36CHHZ4JQQP4NP8C8<C<LAHGAA<LA6LAF43
 GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
 PRED: P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
                                                      [0 mismatch]
-GT  : EE20426536CHN7410024M2808303LMNGMBKENG9BA970
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 PRED: EE20426536CHN7410024M2808303LMNGMBKENG9BA970
-                                                     [0 mismatch]
+                                         ^^^^        [4 mismatch]
 
 ### crnn  [decoded] conf1=88% conf2=81%
-- backend: crnn  (23 ms)
+- backend: crnn  (19 ms)
 - error: decode failed: bad MRZ length
 GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
 PRED: POCA1A<<E7MIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  
        ^^^^^^^^^^  ^^   ^^^^^^^^        ^       ^^   [23 mismatch]
-GT  : EE20426536CHN7410024M2808303LMNGMBKENG9BA970
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 PRED: EC0426536CAN7410024M2808303LMNGW8KCND88RS1S 
        ^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^   [42 mismatch]
 
@@ -7825,58 +7825,58 @@ PRED: EC0426536CAN7410024M2808303LMNGW8KCND88RS1S
 GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
 PRED: P<SNNSJN<<LINEN<<<PPPPPPPP<<<<<<<<<<<<<<<<<<
                 ^         ^             ^            [3 mismatch]
-GT  : EE20426536CHN7410024M2808303LMNGMBKENG9BA970
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 PRED: EC20426530CHN7410024M2808303LMN0MKKEMG9BA934
-       ^       ^                     ^ ^  ^     ^^   [7 mismatch]
+       ^       ^                     ^ ^ ^ ^^   ^^   [9 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (239 ms)
+- backend: tesseract  (210 ms)
 GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
 PRED: P<CHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         ^^ ^^^  ^ ^^    ^^^^^^^^        ^            [17 mismatch]
-GT  : EE20426536CHN7410024M2808303LMNGMBKENG9BA970
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 PRED: EE20426536CHN7410024M2808303LMNGMBKCWDPBA970
-                                         ^^^^        [4 mismatch]
+                                          ^          [1 mismatch]
 
 ### paddle  [DECODE-OK] conf1=93% conf2=99%
-- backend: paddle-onnxruntime  (107 ms)
+- backend: paddle-onnxruntime  (104 ms)
 GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
 PRED: POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^^^ ^^^  ^ ^^    ^^^^^^^^        ^            [18 mismatch]
-GT  : EE20426536CHN7410024M2808303LMNGMBKENG9BA970
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 PRED: EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
-                                         ^^^^        [4 mismatch]
+                                                     [0 mismatch]
 
 ### indra  [FAIL]
-- backend: indra  (47 ms)
+- backend: indra  (42 ms)
 - error: indra 未找到 MRZ 候选行 (1 行)
 - PRED line1: <空>
 - PRED line2: <空>
 
 ### indra_fullpage  [DECODE-OK] conf1=97% conf2=87%
-- backend: indra  (287 ms)
+- backend: indra  (246 ms)
 GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
 PRED: POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^^^ ^^^  ^ ^^    ^^^^^^^^        ^            [18 mismatch]
-GT  : EE20426536CHN7410024M2808303LMNGMBKENG9BA970
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 PRED: EE20426536CHN7410024M2808303LMNGMBKCNPSB9<70
-                                         ^ ^^ ^^     [5 mismatch]
+                                          ^^^ ^^     [5 mismatch]
 
 ## IMG_1792133581_006.jpg
-- 官方判定: PASS  verified=True  chosen=fuse  ms=313
+- 官方判定: PASS  verified=True  chosen=fuse  ms=281
 - 官方 line1: P<SNNSJN<<LINEN<<<PPPPPPPP<<<<<<<<<<<<<<<<<<
 - 官方 line2: EC20426530CHN7410024M2808303LMN0MKKEMG9BA934
 - 理由: 融合CNN+CRNN 识别并通过校验
 
 - GT line1: `P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<`
-- GT line2: `EE20426536CHN7410024M2808303LMNGMBKENG9BA970`
+- GT line2: `EE20426536CHN7410024M2808303LMNGMBKCMDPBA970`
 
 ### traditional  [decoded] conf1=76% conf2=64%
 - error: decode failed: check digit mismatch
 GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
 PRED: MPMC9A3IX<<L1N1H<<<<<<<<<<<<<<<<<<<<<<<<<<<<
       ^^^^^^^^^ ^^^^^^  ^^^^^^^^        ^            [24 mismatch]
-GT  : EE20426536CHN7410024M2808303LMNGMBKENG9BA970
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 PRED: MFFZQ<2<S36CHHZ4JQQP4NP8C8<C<LAHGAA<LA6LAF43
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^   [43 mismatch]
 
@@ -7884,17 +7884,17 @@ PRED: MFFZQ<2<S36CHHZ4JQQP4NP8C8<C<LAHGAA<LA6LAF43
 GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
 PRED: P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
                                                      [0 mismatch]
-GT  : EE20426536CHN7410024M2808303LMNGMBKENG9BA970
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 PRED: EE20426536CHN7410024M2808303LMNGMBKENG9BA970
-                                                     [0 mismatch]
+                                         ^^^^        [4 mismatch]
 
 ### crnn  [decoded] conf1=88% conf2=81%
-- backend: crnn  (20 ms)
+- backend: crnn  (18 ms)
 - error: decode failed: bad MRZ length
 GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
 PRED: POCA1A<<E7MIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  
        ^^^^^^^^^^  ^^   ^^^^^^^^        ^       ^^   [23 mismatch]
-GT  : EE20426536CHN7410024M2808303LMNGMBKENG9BA970
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 PRED: EC0426536CAN7410024M2808303LMNGW8KCND88RS1S 
        ^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^   [42 mismatch]
 
@@ -7902,57 +7902,57 @@ PRED: EC0426536CAN7410024M2808303LMNGW8KCND88RS1S
 GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
 PRED: P<SNNSJN<<LINEN<<<PPPPPPPP<<<<<<<<<<<<<<<<<<
                 ^         ^             ^            [3 mismatch]
-GT  : EE20426536CHN7410024M2808303LMNGMBKENG9BA970
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 PRED: EC20426530CHN7410024M2808303LMN0MKKEMG9BA934
-       ^       ^                     ^ ^  ^     ^^   [7 mismatch]
+       ^       ^                     ^ ^ ^ ^^   ^^   [9 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (227 ms)
+- backend: tesseract  (209 ms)
 GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
 PRED: P<CHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         ^^ ^^^  ^ ^^    ^^^^^^^^        ^            [17 mismatch]
-GT  : EE20426536CHN7410024M2808303LMNGMBKENG9BA970
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 PRED: EE20426536CHN7410024M2808303LMNGMBKCWDPBA970
-                                         ^^^^        [4 mismatch]
+                                          ^          [1 mismatch]
 
 ### paddle  [DECODE-OK] conf1=93% conf2=99%
-- backend: paddle-onnxruntime  (111 ms)
+- backend: paddle-onnxruntime  (103 ms)
 GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
 PRED: POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^^^ ^^^  ^ ^^    ^^^^^^^^        ^            [18 mismatch]
-GT  : EE20426536CHN7410024M2808303LMNGMBKENG9BA970
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 PRED: EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
-                                         ^^^^        [4 mismatch]
+                                                     [0 mismatch]
 
 ### indra  [FAIL]
-- backend: indra  (48 ms)
+- backend: indra  (42 ms)
 - error: indra 未找到 MRZ 候选行 (1 行)
 - PRED line1: <空>
 - PRED line2: <空>
 
 ### indra_fullpage  [DECODE-OK] conf1=97% conf2=87%
-- backend: indra  (283 ms)
+- backend: indra  (243 ms)
 GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
 PRED: POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^^^ ^^^  ^ ^^    ^^^^^^^^        ^            [18 mismatch]
-GT  : EE20426536CHN7410024M2808303LMNGMBKENG9BA970
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 PRED: EE20426536CHN7410024M2808303LMNGMBKCNPSB9<70
-                                         ^ ^^ ^^     [5 mismatch]
+                                          ^^^ ^^     [5 mismatch]
 
 ## IMG_1792133649_007.jpg
-- 官方判定: PASS  verified=True  chosen=fuse  ms=472
+- 官方判定: PASS  verified=True  chosen=fuse  ms=405
 - 官方 line1: P<CHNHIA<<LININ<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: EE20426536CHN7410024M2808303LMNGMBKENNBNN956
 - 理由: 融合CNN+CRNN 识别并通过校验
 
-- GT line1: `P<CHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
+- GT line1: `POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
 - GT line2: `EE20426536CHN7410024M28083034MNGMNKFH6BB8994`
 
 ### traditional  [decoded] conf1=72% conf2=65%
 - error: decode failed: check digit mismatch
-GT  : P<CHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: <<<A<L7<<<<J1A1N<<<<<<<<<<<<<<<<<<<<<<2I2IJI
-      ^ ^^^^^^  ^^^^^^                      ^^^^^^   [19 mismatch]
+      ^^^^^^^^  ^^^^^^                      ^^^^^^   [20 mismatch]
 GT  : EE20426536CHN7410024M28083034MNGMNKFH6BB8994
 PRED: <<2K<2<S3<LA4Z43FVPAPPHCH3D3LPWGPA<LA566<<<L
       ^^ ^^ ^^ ^^^^^ ^^^^^^^^^^ ^ ^^^ ^^^^^^^^^^^^   [37 mismatch]
@@ -7960,61 +7960,61 @@ PRED: <<2K<2<S3<LA4Z43FVPAPPHCH3D3LPWGPA<LA566<<<L
 ### cnn  [skip]
 
 ### crnn  [decoded] conf1=92% conf2=50%
-- backend: crnn  (15 ms)
+- backend: crnn  (14 ms)
 - error: decode failed: bad MRZ length
-GT  : P<CHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<<4<<LIIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<     
-        ^^^^^^^^^^^^^                        ^^^^^   [18 mismatch]
+       ^^^^^^^^^^^^^^                        ^^^^^   [19 mismatch]
 GT  : EE20426536CHN7410024M28083034MNGMNKFH6BB8994
 PRED: <<<<5<CA400QM2COA9OSLMNCMB<QMP9K976         
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   [44 mismatch]
 
 ### fuse  [DECODE-OK] conf1=96% conf2=97%
-GT  : P<CHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNHIA<<LININ<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-           ^      ^                                  [2 mismatch]
+       ^   ^      ^                                  [3 mismatch]
 GT  : EE20426536CHN7410024M28083034MNGMNKFH6BB8994
 PRED: EE20426536CHN7410024M2808303LMNGMBKENNBNN956
                                   ^    ^ ^^^ ^^ ^^   [9 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (449 ms)
-GT  : P<CHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+- backend: tesseract  (383 ms)
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-                                                     [0 mismatch]
+       ^                                             [1 mismatch]
 GT  : EE20426536CHN7410024M28083034MNGMNKFH6BB8994
 PRED: EE20426536CHN7410024M2808303LMNGMBKCMDPSA944
                                   ^    ^ ^^^^^^ ^    [9 mismatch]
 
 ### paddle  [DECODE-OK] conf1=96% conf2=99%
-- backend: paddle-onnxruntime  (74 ms)
-GT  : P<CHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+- backend: paddle-onnxruntime  (75 ms)
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-       ^                                             [1 mismatch]
+                                                     [0 mismatch]
 GT  : EE20426536CHN7410024M28083034MNGMNKFH6BB8994
 PRED: EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
                                   ^    ^ ^^^^ ^ ^^   [9 mismatch]
 
 ### indra  [DECODE-OK] conf1=86% conf2=88%
-- backend: indra  (61 ms)
-GT  : P<CHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+- backend: indra  (54 ms)
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<CACEA<
-       ^                                    ^^^^^    [6 mismatch]
+                                            ^^^^^    [5 mismatch]
 GT  : EE20426536CHN7410024M28083034MNGMNKFH6BB8994
 PRED: EE20426536CHN7410024M2808303LMNGMBKCNS3<<<94
                                   ^    ^ ^^^^^^^     [9 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=83% conf2=89%
-- backend: indra  (275 ms)
-GT  : P<CHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+- backend: indra  (236 ms)
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POCHNJIAKLIMINKKKKK<<<<<<<<<<<<<<<<CCACEAE<<
-       ^      ^^^^^^^^^^^                ^^^^^^^     [19 mismatch]
+              ^^^^^^^^^^^                ^^^^^^^     [18 mismatch]
 GT  : EE20426536CHN7410024M28083034MNGMNKFH6BB8994
 PRED: EE20426536CHN7410024M2808303LMNGMBKCM5PSR970
                                   ^    ^ ^^^^^^ ^^   [10 mismatch]
 
 ## IMG_1792133682_008.jpg
-- 官方判定: PASS  verified=True  chosen=indra  ms=222
+- 官方判定: PASS  verified=True  chosen=indra  ms=208
 - 官方 line1: <<CHN<<<<<<<<<<<<<<A<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: EE20426536CHN7410024M2808303LMNGMSK<<<<<<<20
 - 理由: IndraOCR 识别并通过校验
@@ -8041,7 +8041,7 @@ PRED: <827K5G<33BNE7004582M75300140M502UUHO49U1C19
       ^^ ^^^^^ ^^^^ ^^^^^^ ^^^^^^^^ ^^^^^^^^^^^^^^   [39 mismatch]
 
 ### crnn  [decoded] conf1=86% conf2=83%
-- backend: crnn  (21 ms)
+- backend: crnn  (18 ms)
 - error: decode failed: bad MRZ length
 GT  : P<QSN<<<<<SIYJN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POC74<<EIM7N<<<<<<<<<<<<<<<<<<<<<<<<<<<<<   
@@ -8060,7 +8060,7 @@ PRED: 8827K5G033BNE7000582M7590014GM502UO484YU1110
       ^^ ^^^^^ ^^^^ ^^ ^^^ ^^^^^^^^ ^^^^^^^^^^^^^    [37 mismatch]
 
 ### tesseract  [DECODE-OK]
-- backend: tesseract  (107 ms)
+- backend: tesseract  (95 ms)
 GT  : P<QSN<<<<<SIYJN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         ^^ ^^^  ^ ^^                                 [8 mismatch]
@@ -8069,7 +8069,7 @@ PRED: EE20426536CHN7410024M2808303LMNGMBKCNDPBR970
                                           ^   ^      [2 mismatch]
 
 ### paddle  [DECODE-OK] conf1=96% conf2=99%
-- backend: paddle-onnxruntime  (111 ms)
+- backend: paddle-onnxruntime  (104 ms)
 GT  : P<QSN<<<<<SIYJN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^^^ ^^^  ^ ^^                                 [9 mismatch]
@@ -8078,7 +8078,7 @@ PRED: EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
                                                      [0 mismatch]
 
 ### indra  [DECODE-OK] conf1=99% conf2=84%
-- backend: indra  (70 ms)
+- backend: indra  (61 ms)
 GT  : P<QSN<<<<<SIYJN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^^^ ^^^  ^ ^^                                 [9 mismatch]
@@ -8087,7 +8087,7 @@ PRED: EE20426536CHN741002428083038MNGMBKCMOP<<<<58
                           ^^^^^^^^^^^^^^^^^^^^^^^^   [24 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=86% conf2=58%
-- backend: indra  (460 ms)
+- backend: indra  (386 ms)
 GT  : P<QSN<<<<<SIYJN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: EEUSE26536CHN7410024M2808303LMNGMBKCMOPAG79<
       ^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^    [42 mismatch]
@@ -8099,21 +8099,21 @@ PRED: SCHASEIOO9USEOSSOET9MENEKEN6ARVA<<<<<<<<<<28
 
 | engine | ran | decode_ok | exact(GT) | char acc |
 |---|---|---|---|---|
-| traditional | 106 | 0 | 0 | 41.9% |
-| cnn | 89 | 67 | 37 | 92.7% |
-| crnn | 106 | 13 | 1 | 74.3% |
-| fuse | 106 | 84 | 37 | 92.6% |
-| tesseract | 106 | 99 | 5 | 86.0% |
-| paddle | 106 | 99 | 17 | 91.6% |
-| indra | 106 | 88 | 2 | 70.0% |
-| indra_fullpage | 115 | 103 | 1 | 65.5% |
+| traditional | 106 | 0 | 0 | 42.1% |
+| cnn | 89 | 67 | 30 | 92.0% |
+| crnn | 106 | 13 | 1 | 74.8% |
+| fuse | 106 | 84 | 32 | 91.8% |
+| tesseract | 106 | 99 | 7 | 86.7% |
+| paddle | 106 | 99 | 18 | 92.3% |
+| indra | 106 | 88 | 3 | 70.5% |
+| indra_fullpage | 115 | 103 | 1 | 65.8% |
 
 ## 需人工核对的照片（98 张，GT 已缺失或全引擎不匹配）
 
 - [08806d29a6268e1f_0003.jpg] (无引擎完全匹配)
     l1=`P<CHEDE<MAIENFELD<<PIERRE<<<<<<<<<<<<<<<<<<<`
     l2=`S2100023<6CHE7108019M2002293<<<<<<<<<<<<<<06`
-- [0f9780b8e1e3cc21_0008.jpg] (无引擎完全匹配)
+- [0f9780b8e1e3cc21_0008.jpg] (2)
     l1=`P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<`
     l2=`3400072370USA6707046F1608078910000193<113538`
 - [16c07a99a0fb81e4_0013.jpg] (无引擎完全匹配)
@@ -8127,7 +8127,7 @@ PRED: SCHASEIOO9USEOSSOET9MENEKEN6ARVA<<<<<<<<<<28
     l2=`5B00000008CHN8509037F1505018192000015555KK92`
 - [23f16a7d9b6ab9da_0062.jpg] (无引擎完全匹配)
     l1=`P<UKRGRYTSENKO<<IVAN<<<<<<<<<<<<<<<<<<<<<<<<`
-    l2=`4400000147UKH8307255M19080333052125257S5S500`
+    l2=`EK000001<7UKR8307255M19080333052125257<<<<00`
 - [28a42952ba25584a_0078.png] (无引擎完全匹配)
     l1=`P<CHNNGKELNPONBPJLBLO<<<<<<<<<<<<<<<<<<<<<<<`
     l2=`Q100547988CHN8410124F1907173192044155<<5<<46`
@@ -8141,8 +8141,8 @@ PRED: SCHASEIOO9USEOSSOET9MENEKEN6ARVA<<<<<<<<<<28
     l1=`P<POLKOWALSKI<<JAN<<<<<<<<<<<<<<<<<<<<<<<<<<`
     l2=`ZF40004998P0L8101028M3203031<<<<<<<<<<<<<<00`
 - [4086f51e94e9c5c7_0007.jpg] (2)
-    l1=`P<GUSSHIRNONA<<NALENYINA<<<<<<<<<<<<<<<<<<<<`
-    l2=`1100000000HUS8008046F0902274555<55555<5K5K08`
+    l1=`PDRUSSMIRNOVA<<VALENTINA<<<<<<<<<<<<<<<<<<<<`
+    l2=`1100000000RUS8008046F0902274<<<<<<<<<<<<<<08`
 - [41ab45d4bde758dc_0306.jpg] (2)
     l1=`P<AGRHUSEYNLI<<ORKHAN<<<<<<<<<<<<<<<<<<<<<<<`
     l2=`3110003442AZE7503153M230801030KJU52555<<<<86`
@@ -8179,7 +8179,7 @@ PRED: SCHASEIOO9USEOSSOET9MENEKEN6ARVA<<<<<<<<<<28
 - [86c6d990773daff2_0002.jpg] (无引擎完全匹配)
     l1=`P<MLTMIGALLBF<<GIOWANND<<<<<<<<<<<<<<<<<<<<<`
     l2=`0981489<<5MLT6811118M2006268<<<<<<<<<<<<<<06`
-- [8a5e3bc18a6ff7d2_0043.jpg] (无引擎完全匹配)
+- [8a5e3bc18a6ff7d2_0043.jpg] (2)
     l1=`P<NLDDE<BRUIJN<<WILLEKE<LISELOYYE<<<<<<<<<<<`
     l2=`18ECI20142NLS6503101F2403096999999990<<<<<84`
 - [8de1f04907363a2d_0000.jpg] (1)
@@ -8200,19 +8200,19 @@ PRED: SCHASEIOO9USEOSSOET9MENEKEN6ARVA<<<<<<<<<<28
 - [a955e21ae58d8c1d_0013.jpg] (1)
     l1=`P<SYRNANSOUR<<DANI<<<<<<<<<<<<<<<<<<<<<<<<<<`
     l2=`N000000001SYH8801018M27082410104006915555<12`
-- [acd3e9fd1ce9bd0a_0016.jpg] (2)
+- [acd3e9fd1ce9bd0a_0016.jpg] (无引擎完全匹配)
     l1=`P<GRRUK<SPECIMEN<<ANGELA<ZOE<<<<<<<<<<<<<<<<`
     l2=`5334755143GBH8812049F25092865<<<<<<<SD<SDS78`
 - [b1442018a8167bf5_0046.jpg] (2)
     l1=`P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<`
     l2=`E000077347USA6502056F3010149500100120<095838`
-- [b284565582147454_0098.jpg] (1)
+- [b284565582147454_0098.jpg] (无引擎完全匹配)
     l1=`P<NPALFF<<SUAS<N<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
     l2=`5E75870985KCN8507022F2404152213471C117621884`
-- [b284565582147454_0115.jpg] (1)
+- [b284565582147454_0115.jpg] (无引擎完全匹配)
     l1=`P<NPALFF<<SUAS<N<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
     l2=`5E75870985KCN8507022F2404152213471C117621884`
-- [b2b5008f3839530d_0001.jpg] (1)
+- [b2b5008f3839530d_0001.jpg] (无引擎完全匹配)
     l1=`P<SNNNIORDC<<ANA<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
     l2=`M0N0062122SVN7811182F261212218IIA785M565EK14`
 - [b30dc79ee9550e9e_0024.jpg] (无引擎完全匹配)
@@ -8227,7 +8227,7 @@ PRED: SCHASEIOO9USEOSSOET9MENEKEN6ARVA<<<<<<<<<<28
 - [c2aee55b9017575f_0028.jpg] (无引擎完全匹配)
     l1=`P<NUSOBRAZEYS<<YKSYKR<<<<<<<<<<<<<<<<<<<<<<<`
     l2=`D2DM1601M8KBS5608087M2002156<<<<<<<<<<<<<<08`
-- [cb64e780ab32f735_0004.jpg] (2)
+- [cb64e780ab32f735_0004.jpg] (无引擎完全匹配)
     l1=`P<SNKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<`
     l2=`7B12318830SVK1111112F34091871111111111<<<<06`
 - [cd83b43756aff32d_0013.jpg] (无引擎完全匹配)
@@ -8377,7 +8377,7 @@ PRED: SCHASEIOO9USEOSSOET9MENEKEN6ARVA<<<<<<<<<<28
 - [2026-9-30-E.jpg] (1)
     l1=`P<CHNZHANG<<WANWEN<<<<<<<<<<<<<<<<<<<<<<<<<<`
     l2=`E662323994CHN9009121F2601113NFMFMNPBMOMEA976`
-- [2026-9-30-F.jpg] (1)
+- [2026-9-30-F.jpg] (无引擎完全匹配)
     l1=`P<CNNXAN<<ZHE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
     l2=`A000000000CHN9801060M24061900DMGNFNM<<<<4998`
 - [2026-9-30-G.jpg] (无引擎完全匹配)
@@ -8386,20 +8386,20 @@ PRED: SCHASEIOO9USEOSSOET9MENEKEN6ARVA<<<<<<<<<<28
 - [2026-9-30-H.jpg] (2)
     l1=`P<CHNYANG<<ZHEN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
     l2=`KE90003518CHN9707014F2912268A911<121101<<<72`
-- [IMG_1792133000_003.jpg] (1)
+- [IMG_1792133000_003.jpg] (无引擎完全匹配)
     l1=`P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<`
-    l2=`EE20426536CHN7410024M2808303LMNGMBKENG9BA970`
-- [IMG_1792133002_004.jpg] (1)
+    l2=`EE20426536CHN7410024M2808303LMNGMBKCMDPBA970`
+- [IMG_1792133002_004.jpg] (无引擎完全匹配)
     l1=`P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<`
-    l2=`EE20426536CHN7410024M2808303LMNGMBKENG9BA970`
-- [IMG_1792133232_005.jpg] (1)
+    l2=`EE20426536CHN7410024M2808303LMNGMBKCMDPBA970`
+- [IMG_1792133232_005.jpg] (无引擎完全匹配)
     l1=`P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<`
-    l2=`EE20426536CHN7410024M2808303LMNGMBKENG9BA970`
-- [IMG_1792133581_006.jpg] (1)
+    l2=`EE20426536CHN7410024M2808303LMNGMBKCMDPBA970`
+- [IMG_1792133581_006.jpg] (无引擎完全匹配)
     l1=`P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<`
-    l2=`EE20426536CHN7410024M2808303LMNGMBKENG9BA970`
+    l2=`EE20426536CHN7410024M2808303LMNGMBKCMDPBA970`
 - [IMG_1792133649_007.jpg] (无引擎完全匹配)
-    l1=`P<CHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
+    l1=`POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
     l2=`EE20426536CHN7410024M28083034MNGMNKFH6BB8994`
 - [IMG_1792133682_008.jpg] (无引擎完全匹配)
     l1=`P<QSN<<<<<SIYJN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<`

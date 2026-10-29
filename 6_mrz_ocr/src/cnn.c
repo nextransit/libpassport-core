@@ -152,21 +152,52 @@ static void conv2_pool2(const cnn_t *net,
         for (int x = 0; x < OW; ++x) {
             /* Load the 3x3x8 receptive field once per pixel into locals
              * so memory traffic is 72 loads instead of 16*72.
-             * W layout: (kh,kw,ci,co) => idx = ((kh*3+kw)*C1+ci)*C2+co.
-             * Summation order is unchanged (co outer, tap,ci inner). */
+             * W layout: (kh,kw,ci,co) => idx = ((kh*3+kw)*C1+ci)*C2+co. */
             float inp[9][CNN_C1];
             for (int kh = 0; kh < 3; ++kh)
                 for (int kw = 0; kw < 3; ++kw)
                     for (int ci = 0; ci < CNN_C1; ++ci)
                         inp[kh*3+kw][ci] = pp[y+kh][x+kw][ci];
-            for (int co = 0; co < CNN_C2; ++co) {
-                float s = net->conv2_b[co];
-                for (int tap = 0; tap < 9; ++tap)
-                    for (int ci = 0; ci < CNN_C1; ++ci)
-                        s += inp[tap][ci] *
-                             net->conv2_w[(tap * CNN_C1 + ci) * CNN_C2 + co];
-                a2[y][x][co] = s > 0.0f ? s : 0.0f;
+            /* Accumulate all 16 output channels in parallel.
+             *
+             * This is the hot loop of the whole recogniser: conv2 holds
+             * 110 592 of the ~126 000 multiply-accumulates a glyph costs
+             * (88%), and 44 glyphs x 2 lines run it 88 times per photo.
+             *
+             * The previous form put `co` OUTERMOST, so the weight index
+             * stepped by CNN_C2 between consecutive multiplies.  A stride
+             * of 16 floats defeats both auto-vectorisation and the
+             * hardware prefetcher, and the compiler emitted 16 separate
+             * scalar dot products.
+             *
+             * The layout is (kh,kw,ci,co), so for one (tap,ci) the 16 co
+             * weights are CONTIGUOUS.  With `co` innermost the inner
+             * statement becomes `acc[0..15] += scalar * w[0..15]` -- a
+             * unit-stride vector multiply-add that maps directly onto
+             * NEON (4x float32x4) or SSE (4x __m128), which is what makes
+             * this ~3x faster on the same CPU.
+             *
+             * BIT-EXACT, not merely equivalent: each acc[co] still starts
+             * from its own bias and then receives the taps in the same
+             * (tap, ci) order as before, so every individual
+             * floating-point sum is the identical sequence of operations.
+             * Only the interleaving of the 16 independent sums changes,
+             * and IEEE-754 says independent sums cannot affect each
+             * other.  Verified by the probs_fnv checksum in
+             * tools/bench_cnn_kernel.c. */
+            float acc[CNN_C2];
+            for (int co = 0; co < CNN_C2; ++co) acc[co] = net->conv2_b[co];
+            for (int tap = 0; tap < 9; ++tap) {
+                const float *wrow = net->conv2_w + tap * CNN_C1 * CNN_C2;
+                for (int ci = 0; ci < CNN_C1; ++ci) {
+                    const float v = inp[tap][ci];
+                    const float *w = wrow + ci * CNN_C2;
+                    for (int co = 0; co < CNN_C2; ++co)
+                        acc[co] += v * w[co];
+                }
             }
+            for (int co = 0; co < CNN_C2; ++co)
+                a2[y][x][co] = acc[co] > 0.0f ? acc[co] : 0.0f;
         }
     /* 2x2 pool over 6x16 -> 3x8x16, then 1x1 conv 16->4 (per-pixel
      * linear recombine) giving 3x8x4 = 96 features. Flatten (c,y,x)
@@ -249,53 +280,73 @@ void cnn_row_features_batch(const cnn_t *net,
 void cnn_fc_batch(const cnn_t *net,
                   const float *feat, int rows,
                   float *probs) {
-    /* fc1: X(rows x 96) * W1(96 x 64) + b1 -> h[rows][64], ReLU.
-     * h layout [row][unit] keeps fc2's inner j access contiguous. */
-    float h[CNN_BATCH_MAX][CNN_HIDDEN];
+    /* Both FC layers are accumulated ROW-PARALLEL rather than
+     * feature-serial.
+     *
+     * The previous form computed one (row, output) dot product at a
+     * time, so the accumulation `s += f[i]*w[i]` over i was a serial
+     * floating-point dependency chain: 96 dependent FMAs with ~4-cycle
+     * latency each, i.e. ~380 cycles minimum per cell no matter how wide
+     * the machine is.  Measured 1.77 us per glyph for 8.5 k MACs, which
+     * is 4.8 GMAC/s -- about a fifth of what the same core reaches in
+     * conv2 after the same treatment.
+     *
+     * The 44 rows are independent, so making the ROW the innermost index
+     * turns the chain into a unit-stride vector: `h[j][0..rows-1] +=
+     * featT[i][0..rows-1] * w[j][i]`.  That needs the feature matrix
+     * transposed once (96x44 floats = 17 KB, L1-resident) and h stored
+     * as [unit][row] instead of [row][unit].
+     *
+     * BIT-EXACT: each h[j][r] still starts from its bias and then
+     * receives i = 0,1,2,... in order, and each logit[o][r] receives
+     * j = 0,1,2,... in order.  The row index only selects WHICH
+     * independent accumulator is updated, so no individual sum changes. */
+    float featT[CNN_FLAT][CNN_BATCH_MAX];
+    for (int r = 0; r < rows; ++r) {
+        const float *f = feat + r * CNN_FLAT;
+        for (int i = 0; i < CNN_FLAT; ++i) featT[i][r] = f[i];
+    }
+
+    /* fc1: h[j][r] = b1[j] + sum_i featT[i][r] * w1[j][i], ReLU. */
+    float h[CNN_HIDDEN][CNN_BATCH_MAX];
     for (int j = 0; j < CNN_HIDDEN; ++j) {
         const float *w = net->fc1_w + j * CNN_FLAT;
-        float b = net->fc1_b[j];
-        for (int r = 0; r < rows; ++r) {
-            const float *f = feat + r * CNN_FLAT;
-            float s = b;
-            for (int i = 0; i < CNN_FLAT; i += 4) {
-                s += f[i + 0] * w[i + 0];
-                s += f[i + 1] * w[i + 1];
-                s += f[i + 2] * w[i + 2];
-                s += f[i + 3] * w[i + 3];
-            }
-            h[r][j] = s > 0.0f ? s : 0.0f;
+        const float b = net->fc1_b[j];
+        float *hj = h[j];
+        for (int r = 0; r < rows; ++r) hj[r] = b;
+        for (int i = 0; i < CNN_FLAT; ++i) {
+            const float wi = w[i];
+            const float *fr = featT[i];
+            for (int r = 0; r < rows; ++r)
+                hj[r] += fr[r] * wi;
         }
+        for (int r = 0; r < rows; ++r)
+            hj[r] = hj[r] > 0.0f ? hj[r] : 0.0f;
     }
-    /* fc2: for each output o, stream w2[o][0..63] once over all rows,
-     * col-wise dot H(rows x 64) -> logits[rows][37], then softmax per
-     * row.  Inner j order identical to the old per-row code. */
-    float logits[CNN_BATCH_MAX][CNN_OUT];
+
+    /* fc2: logits[o][r] = b2[o] + sum_j h[j][r] * w2[o][j]. */
+    float logits[CNN_OUT][CNN_BATCH_MAX];
     for (int o = 0; o < CNN_OUT; ++o) {
         const float *w = net->fc2_w + o * CNN_HIDDEN;
-        float b = net->fc2_b[o];
-        for (int r = 0; r < rows; ++r) {
-            const float *hr = h[r];
-            float s = b;
-            int j = 0;
-            for (; j + 4 <= CNN_HIDDEN; j += 4) {
-                s += hr[j + 0] * w[j + 0];
-                s += hr[j + 1] * w[j + 1];
-                s += hr[j + 2] * w[j + 2];
-                s += hr[j + 3] * w[j + 3];
-            }
-            for (; j < CNN_HIDDEN; ++j) s += hr[j] * w[j];
-            logits[r][o] = s;
+        const float b = net->fc2_b[o];
+        float *lo = logits[o];
+        for (int r = 0; r < rows; ++r) lo[r] = b;
+        for (int j = 0; j < CNN_HIDDEN; ++j) {
+            const float wj = w[j];
+            const float *hj = h[j];
+            for (int r = 0; r < rows; ++r)
+                lo[r] += hj[r] * wj;
         }
     }
-    /* softmax per row. */
+
+    /* softmax per row (logits are [output][row], so o is strided). */
     for (int r = 0; r < rows; ++r) {
         float mx = -1e30f;
         for (int o = 0; o < CNN_OUT; ++o)
-            if (logits[r][o] > mx) mx = logits[r][o];
+            if (logits[o][r] > mx) mx = logits[o][r];
         float sum = 0.0f;
         for (int o = 0; o < CNN_OUT; ++o) {
-            float p = expf(logits[r][o] - mx);
+            float p = expf(logits[o][r] - mx);
             probs[r * CNN_OUT + o] = p;
             sum += p;
         }

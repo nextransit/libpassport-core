@@ -205,6 +205,23 @@ static int mrz_code_plausible(const char *l, int len, int off) {
     return 0;
 }
 
+/* Same question for a bare 3-character buffer.
+ *
+ * Split out so the line-1 issuing-state repair (below) can test a
+ * candidate triple without materialising it into a full 44-char line
+ * first.  Identical semantics to mrz_code_plausible: '<' anywhere means
+ * "a state prints a partial code", which is always accepted. */
+static int mrz_code3_plausible(const char c3[3]) {
+    int i, n;
+    for (i = 0; i < 3; ++i)
+        if (c3[i] == '<') return 1;
+    n = (int)(sizeof(k_iso3) - 1) / 3;
+    for (i = 0; i < n; ++i)
+        if (k_iso3[i * 3] == c3[0] && k_iso3[i * 3 + 1] == c3[1] &&
+            k_iso3[i * 3 + 2] == c3[2]) return 1;
+    return 0;
+}
+
 /* The nationality in line 2 (cols 10..12). */
 static int mrz_nat_suspect(const char *l, int len) {
     return len == 44 ? !mrz_code_plausible(l, len, 10) : 0;
@@ -1740,6 +1757,77 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
                 dest[c] = '<';
                 if (dg) dg->gate[c] |= 4;
             }
+    }
+
+    /* (c2) Line-1 issuing-state repair against the ICAO state registry.
+     *
+     * Line 1 has NO check digit, so unlike line 2 it has no arithmetic
+     * constraint to search against -- which is why it has never had a
+     * beam at all, only the three heuristics above.  But its columns
+     * 2..4 are not free text: ICAO 9303 requires them to be an issuing
+     * state code from the MRTD registry.  That is a hard, verifiable
+     * constraint on exactly three characters, and it is the only
+     * content constraint line 1 has ever had.
+     *
+     * On the phone corpus this is what separates a misread state code
+     * from a correctly read one: the four images whose line 1 was wrong
+     * all carried codes no state issues ("HUG", "CHY", "CNN", "ATA"),
+     * while every hand-read ground truth carried a real one.  The same
+     * failure shows up on device-only differences: the emulator reads
+     * "P<CHNBU" where the handset reads "P<GHNBU", and only "CHN" is a
+     * country.
+     *
+     * The search is exhaustive over the top-3 of the three columns (27
+     * combinations, each a single table lookup) and only runs when the
+     * greedy triple is NOT a valid code.  So:
+     *   - a reading that is already valid is never touched (zero
+     *     regression risk on correct output);
+     *   - the repair only ever replaces "impossible" with "possible",
+     *     and among the possible ones it takes the highest-probability
+     *     combination, which is the same maximum-likelihood rule the
+     *     line-2 beam uses.
+     *
+     * MRZ_OCR_NOISSUERFIX=1 disables it for A/B measurement. */
+    if (line_idx == 0 && total == 44) {
+        static int issuer_fix = -1;
+        if (issuer_fix < 0) {
+            const char *e = getenv("MRZ_OCR_NOISSUERFIX");
+            issuer_fix = !(e && e[0] == '1' && e[1] == 0);
+        }
+        char cur[3] = { dest[2], dest[3], dest[4] };
+        if (issuer_fix && !mrz_code3_plausible(cur)) {
+            double best_lp = -1e300;
+            char best3[3];
+            int found = 0;
+            for (int a = 0; a < 3; ++a) {
+                for (int b = 0; b < 3; ++b) {
+                    for (int c = 0; c < 3; ++c) {
+                        char cand[3] = {
+                            MRZ_OCR_GLYPHS[t3[2].cand[a]].ch,
+                            MRZ_OCR_GLYPHS[t3[3].cand[b]].ch,
+                            MRZ_OCR_GLYPHS[t3[4].cand[c]].ch,
+                        };
+                        if (!mrz_code3_plausible(cand)) continue;
+                        double lp = mrz_beam_lp(&t3[2], a) +
+                                    mrz_beam_lp(&t3[3], b) +
+                                    mrz_beam_lp(&t3[4], c);
+                        if (lp > best_lp) {
+                            best_lp = lp;
+                            best3[0] = cand[0];
+                            best3[1] = cand[1];
+                            best3[2] = cand[2];
+                            found = 1;
+                        }
+                    }
+                }
+            }
+            if (found) {
+                dest[2] = best3[0];
+                dest[3] = best3[1];
+                dest[4] = best3[2];
+                if (dg) { dg->gate[2] |= 8; dg->gate[3] |= 8; dg->gate[4] |= 8; }
+            }
+        }
     }
 
     /* (d) Line-2 checksum beam search.

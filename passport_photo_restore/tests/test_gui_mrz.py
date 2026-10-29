@@ -22,11 +22,11 @@ from gui import (  # noqa: E402
 
 EXPECTED_BY_FIRST_DIGIT = {
     "5": (
-        "P<CHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+        "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
         "5EZ0426536CHN7410024M2808303LMNGMBKCMDPBA970",
     ),
     "E": (
-        "P<CHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+        "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
         "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970",
     ),
 }

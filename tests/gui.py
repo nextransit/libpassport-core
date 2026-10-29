@@ -4329,7 +4329,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
 
         out = {"grade": "REJECT", "verified": False, "loc": {}, "ocr": {},
                "decode": {}, "reason": "", "engines": [], "band_rgb": None,
-               "work2": None, "scale": 1.0, "ms": 0.0}
+               "work2": None, "scale": 1.0, "ms": 0.0,
+               "algorithm_ms": 0.0, "total_ms": 0.0}
         t_start = _time.perf_counter()
         rgb = _cv2.cvtColor(_cv2.imread(path), _cv2.COLOR_BGR2RGB)
         if rgb is None:
@@ -4360,7 +4361,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 result = hyp_b
                 result["no_reflection_crop"] = True
         out.update(result)
-        out["ms"] = (_time.perf_counter() - t_start) * 1000.0
+        algorithm_ms = (_time.perf_counter() - t_start) * 1000.0
+        out["algorithm_ms"] = algorithm_ms
+        out["ms"] = algorithm_ms
         return out
     def _ocr_photo_hypothesis(self, path, rgb, work, st, cropper):
         """Run detection + engines for one bottom-of-page hypothesis.
@@ -4550,8 +4553,11 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         if hit is not None:
             rec = dict(hit)
             rec["cached"] = True
+            rec.setdefault("algorithm_ms", rec.get("ms", 0.0))
+            rec.setdefault("total_ms", 0.0)
             return rec
         rec = self._ocr_photo_engines(path)
+        rec.setdefault("algorithm_ms", rec.get("ms", 0.0))
         # band_rgb / work2 are big numpy arrays the GUI never reads.
         cache[key] = {k: v for k, v in rec.items()
                       if k not in ("band_rgb", "work2")}
@@ -4603,26 +4609,23 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         def worker():
             err = None
             rec = {}
-            proc_ms = 0.0
-            self.after(0, lambda: self._set_status_bar(
-                "MRZ OCR 识别中…", 50, done=0, total=1))
+            total_started = time.perf_counter()
             try:
                 # Full photo pipeline: structure detect -> de-reflection
                 # -> native band -> multi-engine OCR. The previous
                 # direct pass fed the FULL photo to the legacy
                 # traditional tool and reported its "pipeline ran"
                 # status as 判定 PASS even when nothing MRZ was read.
-                t0 = time.time()
                 rec = self._ocr_photo_engines_cached(path)
-                proc_ms = (time.time() - t0) * 1000
+                rec["total_ms"] = (time.perf_counter() - total_started) * 1000.0
             except Exception as e:  # noqa: BLE001
                 err = e
             self.after(0, lambda: self._ocr_render_picked_result(
-                path, rec, proc_ms, err))
+                path, rec, err))
 
         threading.Thread(target=worker, daemon=True).start()
 
-    def _ocr_render_picked_result(self, path, rec, proc_ms, err):
+    def _ocr_render_picked_result(self, path, rec, err):
         """Paint the picked-image pipeline result into the diff pane.
 
         `rec` is a passport_pipeline.process_image record (nested: ocr /
@@ -4663,7 +4666,10 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         engines_for_ms = rec.get("engines") or []
         eng_ms = [e.get("ms", 0) for e in engines_for_ms
                   if isinstance(e.get("ms", 0), (int, float))]
-        ms_line = f"耗时  : 总计 {proc_ms:.0f} ms"
+        algorithm_ms = float(rec.get("algorithm_ms", rec.get("ms", 0.0)))
+        total_ms = float(rec.get("total_ms", algorithm_ms))
+        ms_line = (f"算法耗时(pic→OCR文本): {algorithm_ms:.1f} ms"
+                   f"   总耗时(含外围): {total_ms:.1f} ms")
         if rec.get("cached"):
             ms_line += "   (缓存命中，识别结果直接复用)"
         if eng_ms:
@@ -4779,7 +4785,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 "line1": l1, "line2": l2, "conf1": c1, "conf2": c2,
                 "band": band_abs,
                 "crop_offset": (crop.get("x", 0), crop.get("y", 0)),
-                "ok": bool(ocr.get("ok")), "ms": proc_ms,
+                "ok": bool(ocr.get("ok")),
+                "algorithm_ms": algorithm_ms,
+                "total_ms": total_ms,
             }
         }
         self._preview_last_pm = self._ocr_last[cid]["cnn"]
