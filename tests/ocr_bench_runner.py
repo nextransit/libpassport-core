@@ -66,23 +66,45 @@ METHODS = {
     "paddle":      ("PaddleOCR", PADDLE),
     "indra":       ("IndraOCR",  INDRA),
     "crnn":        ("CRNN",      CRNN),
+    # fuse 与 cnn 共用 host CNN tool，靠环境变量切换到 CNN+CRNN 融合头
+    # （见 6_mrz_ocr/src/mrz_ocr_cnn.c）。GUI 的 METHOD_ORDER 一直包含
+    # "fuse"，这里缺失会让 GUI 跑全部方案时 KeyError，traceback 混进
+    # stdout 后 GUI 的 json.loads 报 "Expecting value: line 1 column 1"。
+    "fuse":        ("融合CNN+CRNN", CNN),
 }
 
-def run_one(tool: Path, image: Path) -> dict:
+# 每个方法调用工具时附加的环境变量。host CNN tool 用这些开关选择
+# 识别头（MRZ_OCR_LINE_MODELS=1 用按行训练的权重，MRZ_OCR_FUSE=1 打开
+# 融合头，MRZ_OCR_CRNN=1 换成序列头）。
+# 与 tests/gui.py 的照片链路保持同一套组合。
+METHOD_ENV = {
+    "cnn":  {"MRZ_OCR_LINE_MODELS": "1", "MRZ_OCR_CRNN": "0"},
+    "fuse": {"MRZ_OCR_LINE_MODELS": "1", "MRZ_OCR_CRNN": "0",
+             "MRZ_OCR_FUSE": "1"},
+}
+
+def run_one(tool: Path, image: Path, env_extra: dict | None = None) -> dict:
     """Invoke the OCR tool and parse its text output.
 
     Compiled C tools are invoked directly; Python tools
     (*.py, e.g. tesseract_tool.py) are wrapped with sys.executable so
     the active interpreter (which has the extra OCR deps installed)
-    is the one that runs Wrappers."""
+    is the one that runs Wrappers.
+
+    env_extra: environment overrides for the tool (e.g. the fusion head
+    switches of the host CNN tool)."""
     t0 = time.perf_counter()
     try:
         if str(tool).endswith(".py"):
             args = [sys.executable, str(tool), str(image)]
         else:
             args = [str(tool), str(image)]
+        env = None
+        if env_extra:
+            env = dict(os.environ)
+            env.update(env_extra)
         r = subprocess.run(args, text=True,
-                           capture_output=True, timeout=15)
+                           capture_output=True, timeout=15, env=env)
         ms = (time.perf_counter() - t0) * 1000.0
     except subprocess.TimeoutExpired:
         return {"ok": False, "line1": "", "line2": "", "conf1": 0,
@@ -234,6 +256,12 @@ def run(case_ids: list[str] | None, methods: list[str],
 
     If on_record(done, total, case_id) is given it is invoked after each
     case completes, letting a caller drive a live progress bar."""
+    unknown = [m for m in methods if m not in METHODS]
+    if unknown:
+        raise KeyError(
+            f"unknown method(s): {', '.join(unknown)}; "
+            f"known: {', '.join(sorted(METHODS))}")
+
     corpus = json.loads(CORPUS_JSON.read_text())
     records = corpus["records"]
     if case_ids is not None:
@@ -285,7 +313,7 @@ def run(case_ids: list[str] | None, methods: list[str],
             elif m == "indra" and rec["id"] in batch_indra:
                 r = batch_indra[rec["id"]]
             else:
-                r = run_one(METHODS[m][1], image_path)
+                r = run_one(METHODS[m][1], image_path, METHOD_ENV.get(m))
             c1, t1, s1 = compare(rec["line1"], r["line1"])
             c2, t2, s2 = compare(rec["line2"], r["line2"])
             per_method[m] = {"raw": r,

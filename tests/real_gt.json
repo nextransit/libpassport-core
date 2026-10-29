@@ -2,8 +2,8 @@
   "_comment": "Hand-labeled MRZ ground truth for 5 real photos from assets/pic (read from 3x-upscaled crops on 2026-09-26). Composite digits verified with the TRUE ICAO formula cd(L2[0:10]+L2[13:20]+L2[21:43]) — all pass. NOTE: the repo's own composite implementation (cd(L2[0:43])) FAILS on all 5, which is itself a confirmed bug (P0). Use this file for the real-photo eval gate: char-acc per line, line-exact, and true-ICAO validity of OCR output.",
   "gt": {
     "08806d29a6268e1f_0003.jpg": {
-      "line1": "PMCHEDE<MAIENFELD<<PIERRE<<<<<<<<<<<<<<<<<<<<",
-      "line2": "S2100023<6CHE7108019M2002293<<<<<<<<<<<<<<6",
+      "line1": "PMCHEDE<MAIENFELD<<PIERRE<<<<<<<<<<<<<<<<<<<",
+      "line2": "S2100023<6CHE7108019M2002293<<<<<<<<<<<<<<<6",
       "note": "Switzerland TD3, doc code PM; guilloche rainbow background; line height ~12px"
     },
     "1cce0f3fc387c893_0001.jpg": {
@@ -12,8 +12,8 @@
       "note": "Poland specimen TD3, doc code PS (col1 != '<' breaks strict mask); 432x295 -> line height ~8px, hardest resolution case"
     },
     "28a42952ba25584a_0078.png": {
-      "line1": "Q<CHNNGKELMPONBPJLBLO<<<<<<<<<<<<<<<<<<<<<<<SAC",
-      "line2": "Q100547988CHN8410124F190717319204415<<<<<<<46",
+      "line1": "Q<CHNNGKELMPONBPJLBLO<<<<<<<<<<<<<<<<<<<<SAC",
+      "line2": "Q100547988CHN8410124F190717319204415<<<<<<46",
       "note": "China exit-entry permit specimen, doc code Q (excluded by strict mask col0 whitelist {P,I,A,V,C,<})"
     },
     "31611582cbf14d7f_0018.jpg": {
@@ -27,7 +27,7 @@
       "note": "Azerbaijan; only line2 legible by eye"
     },
     "239e042aba0c3ab2_0102.jpg": {
-      "line1": "PSCHNYANG<<ZHAO<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+      "line1": "PSCHNYANG<<ZHAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
       "line2": "SE00000008CHN8509037F150501819200001<<<<<<92",
       "note": "China exit-entry permit; hand-read from the 3x-upscaled crop on 2026-10-26; all five ICAO check digits (incl. the composite one) verify."
     },

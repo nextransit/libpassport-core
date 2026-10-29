@@ -29,7 +29,7 @@ def session():
     if _SESSION is None:
         so = ort.SessionOptions()
         so.log_severity_level = 3
-        so.intra_op_num_threads = int(os.environ.get("MRZ_THREADS", "4"))
+        so.intra_op_num_threads = int(os.environ.get("MRZ_THREADS", "1"))
         so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
         _SESSION = ort.InferenceSession(MODEL, so, providers=["CPUExecutionProvider"])
     return _SESSION

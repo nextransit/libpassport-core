@@ -228,8 +228,12 @@ class _OnnxRec:
         self._height = int(shape[1])
         self._max_width = 3200
         self._characters = ["blank"] + list(chars)
+        so = ort.SessionOptions()
+        so.intra_op_num_threads = max(
+            1, int(os.environ.get("MRZ_PADDLE_THREADS", "4")))
+        so.inter_op_num_threads = 1
         self._session = ort.InferenceSession(
-            str(model_path), providers=["CPUExecutionProvider"])
+            str(model_path), so, providers=["CPUExecutionProvider"])
         self._input_name = self._session.get_inputs()[0].name
 
     def _prepare(self, image):
@@ -533,6 +537,47 @@ def _emit(ok, line1, line2, c1, c2, band_box, ms=None,
         print(f"result.note     : {note}")
     if ms is not None:
         print(f"ms: {ms:.1f}")
+
+
+def read_band(img_path):
+    """In-process entry point for the resident engine pool.
+
+    Same work as ``main([img_path])`` but without the process start-up
+    and without the ONNX import cost: the recognizer is created once and
+    kept in the module global ``_OCR``.
+    """
+    rec, mode = _get_rec()
+    ok, line1, line2, c1, c2, band, err, ms = _decode_one(
+        rec, img_path, _OCR_ERROR if mode == "fallback" else "")
+    return {
+        "ok": bool(ok),
+        "line1": line1,
+        "line2": line2,
+        "conf1": int(c1),
+        "conf2": int(c2),
+        "band": band,
+        "backend": mode,
+        "note": _OCR_ERROR if mode == "fallback" else "",
+        "error": err or "",
+        "ms": ms,
+    }
+
+
+def format_kv(result):
+    """Render a read_band() result in the same KV contract as _emit()."""
+    out = [
+        f"result.backend  : {result.get('backend', '')}",
+        f"result.ok       : {'OK' if result.get('ok') else 'unreadable'}",
+        f"result.line1    : {result.get('line1', '')}",
+        f"result.line2    : {result.get('line2', '')}",
+        f"result.conf1    : {int(result.get('conf1', 0))}",
+        f"result.conf2    : {int(result.get('conf2', 0))}",
+        f"band.x band.y band.w band.h : {result.get('band', '')}",
+    ]
+    note = result.get("note") or ""
+    if note:
+        out.append(f"result.note     : {note}")
+    return "\n".join(out)
 
 
 def main(argv):

@@ -14,6 +14,19 @@ add_library(mrz_ocr STATIC src/template.c src/mrz_geom.c src/mrz_ocr.c src/mrz_o
 target_include_directories(mrz_ocr PUBLIC include src)
 target_link_libraries(mrz_ocr PUBLIC face ${M_LIB})
 
+# The exported weights live in headers.  Without listing them as
+# dependencies, replacing cnn_weights.h / crnn_weights.h does NOT
+# trigger a rebuild, so a freshly trained model silently keeps running
+# the previous weights.  Keep this list in sync with the headers that
+# src/cnn.c and src/crnn.c actually include.
+set(MRZ_WEIGHT_HEADERS
+    src/cnn_weights.h
+    src/cnn_weights_line1.h
+    src/cnn_weights_line2.h
+    src/crnn_weights.h)
+set_property(TARGET mrz_ocr APPEND PROPERTY
+             OBJECT_DEPENDS ${MRZ_WEIGHT_HEADERS})
+
 add_executable(mrz_ocr_tool src/main.c)
 target_link_libraries(mrz_ocr_tool PRIVATE mrz_ocr)
 

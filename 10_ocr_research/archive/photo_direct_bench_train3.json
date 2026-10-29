@@ -2023,8 +2023,8 @@
     ]
    },
    "gt": {
-    "line1": "PMCHEDE<MAIENFELD<<PIERRE<<<<<<<<<<<<<<<<<<<<",
-    "line2": "S2100023<6CHE7108019M2002293<<<<<<<<<<<<<<6"
+    "line1": "PMCHEDE<MAIENFELD<<PIERRE<<<<<<<<<<<<<<<<<<<",
+    "line2": "S2100023<6CHE7108019M2002293<<<<<<<<<<<<<<<6"
    },
    "raw": {
     "traditional": {
@@ -3128,7 +3128,7 @@
     ]
    },
    "gt": {
-    "line1": "PSCHNYANG<<ZHAO<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line1": "PSCHNYANG<<ZHAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
     "line2": "SE00000008CHN8509037F150501819200001<<<<<<92"
    },
    "raw": {
@@ -3257,7 +3257,7 @@
     "wall_ms": 248.60799999441952,
     "reason": "融合CNN+CRNN 识别并通过校验",
     "chosen": "fuse",
-    "line1": "P<URRGRYYSDNCO<<INAN<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line1": "P<UKRGRYTSENKO<<IVAN<<<<<<<<<<<<<<<<<<<<<<<<",
     "line2": "4400000147UKH8307255M19080333052125257S5S500",
     "engines": [
      {
@@ -3388,7 +3388,7 @@
      "decode_ok": true,
      "engine_ok": true,
      "engine_status": "OK",
-     "line1": "P<URRGRYYSDNCO<<INAN<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line1": "P<UKRGRYTSENKO<<IVAN<<<<<<<<<<<<<<<<<<<<<<<<",
      "line2": "4400000147UKH8307255M19080333052125257S5S500",
      "conf1": 99,
      "conf2": 98,
@@ -3549,8 +3549,8 @@
     ]
    },
    "gt": {
-    "line1": "Q<CHNNGKELMPONBPJLBLO<<<<<<<<<<<<<<<<<<<<<<<SAC",
-    "line2": "Q100547988CHN8410124F190717319204415<<<<<<<46"
+    "line1": "Q<CHNNGKELMPONBPJLBLO<<<<<<<<<<<<<<<<<<<<SAC",
+    "line2": "Q100547988CHN8410124F190717319204415<<<<<<46"
    },
    "raw": {
     "traditional": {
@@ -6189,7 +6189,7 @@
      "engine_ok": false,
      "engine_status": "FAIL",
      "line1": "",
-     "line2": "98SO701805KNH7307052F1204089K201781104<<<<08",
+     "line2": "9850701805KNH7307052F1204089K201781104<<<<07",
      "conf1": 0,
      "conf2": 0,
      "backend": "tesseract",
@@ -6203,7 +6203,7 @@
      "engine_ok": false,
      "engine_status": "FAIL",
      "line1": "T<TWN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
-     "line2": "98SO701805KNH7307052F1204089K201781104<<<<08",
+     "line2": "9850701805KNH7307052F1204089K201781104<<<<07",
      "conf1": 98,
      "conf2": 99,
      "backend": "paddle-onnxruntime",
@@ -13209,7 +13209,7 @@
      "engine_ok": true,
      "engine_status": "OK",
      "line1": "P<BRBYRBY<<NDLDGA<<<<<<<<<<<<<<<<Q<<<<<<<<<<",
-     "line2": "0000000000GHB6802295M22101042N02HB8000000N40",
+     "line2": "0000000000SRB6802295F22101042902968000000<40",
      "conf1": 89,
      "conf2": 86,
      "backend": "",
@@ -13237,7 +13237,7 @@
      "engine_ok": true,
      "engine_status": "OK",
      "line1": "P<BRBTBBT<<NDLDCA<<<<<<<<<<<<<<<<Q<<<<<<<<<<",
-     "line2": "0000000000GHB6802295M22101042N02HB8000000N40",
+     "line2": "0000000000SRB6802295F22101042902968000000<40",
      "conf1": 95,
      "conf2": 92,
      "backend": "",

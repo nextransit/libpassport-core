@@ -183,20 +183,39 @@ def main(argv=None):
     ap.add_argument("--dirs", default="")
     ap.add_argument("--methods", default="")
     ap.add_argument("--no-indra-fullpage", action="store_true")
+    ap.add_argument("--resident", action="store_true",
+                    help="预加载模型并常驻引擎；测的是单次完整识别时间，"
+                         "不含进程/模型启动开销")
+    ap.add_argument("--no-preload", action="store_true",
+                    help="与 --resident 相反：每张照片重新起进程（历史口径）")
     ap.add_argument("--json", type=Path,
                     default=ROOT / "10_ocr_research" / "photo_direct_bench.json")
     args = ap.parse_args(argv)
 
     gui = _load_gui()
+    # The GUI pre-warms the resident engine pool on startup; the bench
+    # warms it itself when --resident is given, so disable the GUI's
+    # background warm-up to keep timings comparable.
+    gui.PassportGUI.AUTO_WARM_ENGINES = False
     app = gui.PassportGUI()
     app.update()
     app.withdraw()
+    resident = bool(args.resident) and not args.no_preload
+    preload_ms = 0.0
+    if resident:
+        # Load every model BEFORE the first photo so the reported times
+        # are recognition time, not process / model start-up time.
+        sys.path.insert(0, str(ROOT / "tests"))
+        import mrz_engine_pool
+        preload_ms = mrz_engine_pool.warmup_all(gui_module=gui)
+        print(f"preloaded engines in {preload_ms:.0f} ms")
     try:
         app.rst_method_both.set(True)
         methods = list(gui.METHOD_ORDER)
         if args.methods:
             wanted = [m.strip() for m in args.methods.split(",") if m.strip()]
             methods = [m for m in methods if m in wanted]
+        app._rst_selected_methods = lambda: list(methods)
         keys = list(methods)
         if "indra" in methods and not args.no_indra_fullpage:
             keys.append("indra_fullpage")
@@ -212,6 +231,10 @@ def main(argv=None):
             photos = photos[:args.limit]
 
         gt_map = app._gt_map()
+        # gui.py defaults to the resident engine pool (interactive speed);
+        # the bench must pin the flag so --no-preload keeps the historical
+        # per-photo sub-process behaviour and numbers stay comparable.
+        app._rst_resident = resident
         records = []
         started = time.perf_counter()
         for idx, (label, path) in enumerate(photos, 1):
@@ -300,7 +323,8 @@ def main(argv=None):
                                 rgb, pair, scale, band_path, [m],
                                 native_band=native_band,
                                 source_path=str(path),
-                                allow_tesseract_fallback=False)
+                                allow_tesseract_fallback=False,
+                                resident=resident)
                             record["raw"][m] = _slim(results[0])
                         except Exception as exc:
                             record["raw"][m] = {
@@ -384,6 +408,9 @@ def main(argv=None):
         payload = {
             "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
             "elapsed_s": round(elapsed, 3),
+            "resident": resident,
+            "preload_ms": round(preload_ms, 3),
+            "tesseract_fallback": False,
             "methods": methods,
             "official": official,
             "raw": raw_stats,
@@ -397,6 +424,14 @@ def main(argv=None):
         return 0
     finally:
         app.destroy()
+        if resident:
+            # Release the resident C tools explicitly instead of relying
+            # on interpreter shutdown.
+            try:
+                import mrz_engine_pool
+                mrz_engine_pool.close_all()
+            except Exception:
+                pass
 
 
 if __name__ == "__main__":

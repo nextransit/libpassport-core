@@ -4,16 +4,13 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-int main(int argc, char **argv) {
-    if (argc != 2) {
-        fprintf(stderr, "usage: %s <image>\n", argv[0]);
-        return 2;
-    }
-    face_image_t *img = face_image_load_ppm(argv[1]);
-    if (!img) img = face_image_load_bmp(argv[1]);
-    if (!img) { fprintf(stderr, "cannot load %s\n", argv[1]); return 2; }
-    mrz_ocr_init();
+/* Print one recognition result in the shared KV contract. */
+static int run_one_cnn(const char *path) {
+    face_image_t *img = face_image_load_ppm(path);
+    if (!img) img = face_image_load_bmp(path);
+    if (!img) { fprintf(stderr, "cannot load %s\n", path); return 2; }
     mrz_ocr_result_t r;
     mrz_ocr_status_t s = mrz_ocr_recognise_cnn(img, &r);
     printf("method            : cnn\n");
@@ -40,6 +37,33 @@ int main(int argc, char **argv) {
     printf("result.issuersusp : %d\n", r.line1_issuer_suspect);
     printf("band.x band.y band.w band.h : %d %d %d %d\n",
            r.band_x, r.band_y, r.band_w, r.band_h);
+    printf("result.done     : 1\n");
     face_image_free(img);
     return s == MRZ_OCR_OK ? 0 : 1;
+}
+
+/* Resident mode: read one image path per line from stdin, print one
+ * result block per line.  Keeps the model loaded so the caller pays
+ * the recognition cost only, not a process start per image. */
+static int serve(void) {
+    char line[4096];
+    mrz_ocr_init();
+    while (fgets(line, sizeof(line), stdin)) {
+        size_t n = strlen(line);
+        while (n && (line[n - 1] == '\n' || line[n - 1] == '\r')) line[--n] = 0;
+        if (!n) continue;
+        run_one_cnn(line);
+        fflush(stdout);
+    }
+    return 0;
+}
+
+int main(int argc, char **argv) {
+    if (argc == 2 && strcmp(argv[1], "--serve") == 0) return serve();
+    if (argc != 2) {
+        fprintf(stderr, "usage: %s <image> | --serve\n", argv[0]);
+        return 2;
+    }
+    mrz_ocr_init();
+    return run_one_cnn(argv[1]);
 }
