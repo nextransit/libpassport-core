@@ -199,16 +199,17 @@
   },
   "6b0e5919dd6f3ac8_0006.jpg": {
    "label": "assets/pic/6b0e5919dd6f3ac8_0006.jpg",
-   "l1": "P<SSPRSPANOLA<ESPANDLK<<EKNNEN<<<<<<<<<<<<<<",
+   "l1": "P<ESPESPANOLA<ESPANOLA<<CARMEN<<<<<<<<<<<<<<",
    "l2": "ZAB0002549ESP8001014F2501017A9999999900<<<44",
-   "tier": "C",
-   "l2_tier": "B",
-   "l1_tier": "C",
+   "tier": "A",
+   "l2_tier": "A",
+   "l1_tier": "A",
    "l2_votes": 3,
    "l2_families": [
     "tess"
    ],
-   "l1_dispute_n": 9
+   "l1_dispute_n": 9,
+   "adj_note": "photo-verified 2026-10-30; the old l1 was model noise (SSPRSPANOLA/ESPANDLK/EKNNEN) while 4 independent engine families (crnn/tesseract/paddle/indra) all read the printed text; l2 all 5 ICAO checks pass"
   },
   "6b91117492dc24f3_0022.jpg": {
    "label": "assets/pic/6b91117492dc24f3_0022.jpg",
@@ -290,16 +291,17 @@
   },
   "86c6d990773daff2_0002.jpg": {
    "label": "assets/pic/86c6d990773daff2_0002.jpg",
-   "l1": "P<MLTMIGALLBF<<GIOWANND<<<<<<<<<<<<<<<<<<<<<",
+   "l1": "P<MLTMICALLEF<<GIOVANNI<<<<<<<<<<<<<<<<<<<<<",
    "l2": "0981489<<5MLT6811118M2006268<<<<<<<<<<<<<<06",
    "tier": "B",
    "l2_tier": "B",
-   "l1_tier": "B",
+   "l1_tier": "A",
    "l2_votes": 3,
    "l2_families": [
     "tess"
    ],
-   "l1_dispute_n": 4
+   "l1_dispute_n": 4,
+   "adj_note": "l1 = user hand-read (2026-10-24, commit 11883e0, gt_frozen_hires human_adjudicated; same image stem)"
   },
   "8a5e3bc18a6ff7d2_0043.jpg": {
    "label": "assets/pic/8a5e3bc18a6ff7d2_0043.jpg",
@@ -408,29 +410,31 @@
   },
   "b284565582147454_0098.jpg": {
    "label": "assets/pic/b284565582147454_0098.jpg",
-   "l1": "P<NPALFF<<SUAS<N<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
-   "l2": "5E75870985KCN8507022F2404152213471C117621884",
-   "tier": "C",
-   "l2_tier": "B",
-   "l1_tier": "C",
+   "l1": "PMKORLEE<<SUYEON<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "M706890985KOR8507022F24041522154710V17627884",
+   "tier": "A",
+   "l2_tier": "A",
+   "l1_tier": "A",
    "l2_votes": 3,
    "l2_families": [
     "native"
    ],
-   "l1_dispute_n": 10
+   "l1_dispute_n": 10,
+   "adj_note": "photo-verified 2026-10-30 (gt_review_issuer_fix/0098_bottom.png); doc prints PM prefix; all 5 ICAO check digits pass (docno/birth/expiry/personal/composite)"
   },
   "b284565582147454_0115.jpg": {
    "label": "assets/pic/b284565582147454_0115.jpg",
-   "l1": "P<NPALFF<<SUAS<N<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
-   "l2": "5E75870985KCN8507022F2404152213471C117621884",
-   "tier": "C",
-   "l2_tier": "B",
-   "l1_tier": "C",
+   "l1": "PMKORLEE<<SUYEON<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "M706890985KOR8507022F24041522154710V17627884",
+   "tier": "A",
+   "l2_tier": "A",
+   "l1_tier": "A",
    "l2_votes": 3,
    "l2_families": [
     "native"
    ],
-   "l1_dispute_n": 10
+   "l1_dispute_n": 10,
+   "adj_note": "photo-verified 2026-10-30 (gt_review_issuer_fix/0115_bottom.png); same document as 0098; all 5 ICAO check digits pass"
   },
   "b2b5008f3839530d_0001.jpg": {
    "label": "assets/pic/b2b5008f3839530d_0001.jpg",
@@ -447,16 +451,17 @@
   },
   "b30dc79ee9550e9e_0024.jpg": {
    "label": "assets/pic/b30dc79ee9550e9e_0024.jpg",
-   "l1": "P<DWLBPECDNDN<<YHAROD<BPBGINBN<<<<<<<<<<<<<<",
-   "l2": "K15M12M1V5ISK1212123F290204912M2M24424VNN462",
-   "tier": "C",
-   "l2_tier": "B",
-   "l1_tier": "C",
+   "l1": "PAISLSPECIMEN<<THAEOE<SPECIMEN<<<<<<<<<<<<<<",
+   "l2": "A3501291<5ISL1212123F2902049121212<1239<<<62",
+   "tier": "A",
+   "l2_tier": "A",
+   "l1_tier": "A",
    "l2_votes": 3,
    "l2_families": [
     "native"
    ],
-   "l1_dispute_n": 17
+   "l1_dispute_n": 17,
+   "adj_note": "photo-verified 2026-10-30; the old l1/l2 were model noise (DWLBPECDNDN/YHAROD) while 4 independent engine families read the printed specimen text; l2 all 5 ICAO checks pass"
   },
   "bc1ddfd8c13b5ca9_0007.jpg": {
    "label": "assets/pic/bc1ddfd8c13b5ca9_0007.jpg",
@@ -499,16 +504,17 @@
   },
   "cb64e780ab32f735_0004.jpg": {
    "label": "assets/pic/cb64e780ab32f735_0004.jpg",
-   "l1": "P<SNKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<",
-   "l2": "7B12318830SVK1111112F34091871111111111<<<<06",
-   "tier": "B",
-   "l2_tier": "B",
-   "l1_tier": "B",
+   "l1": "PPSVKSPECIMEN<<VZORKA<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "XR12318830SVK1111112F34091871111111111<<<<06",
+   "tier": "A",
+   "l2_tier": "A",
+   "l1_tier": "A",
    "l2_votes": 3,
    "l2_families": [
     "native"
    ],
-   "l1_dispute_n": 5
+   "l1_dispute_n": 5,
+   "adj_note": "photo-verified 2026-10-30 (gt_review_issuer_fix/cb64e_0004_bottom.png); line1 prints PP prefix; l2 all 5 ICAO check digits pass"
   },
   "cd83b43756aff32d_0013.jpg": {
    "label": "assets/pic/cd83b43756aff32d_0013.jpg",

@@ -720,10 +720,23 @@ def _rst_mrz_shaped(line1, line2):
     Guards the "preferred engine" choice against engines that run their
     own detection on the FULL photo and lock onto page decoration
     (document titles like 'PASSPORT / PASSEPORT / CESKA REPUBLIKA'
-    satisfy '44 uppercase chars' but are not MRZ). A real TD3 line pair
-    always has: 44 chars per line, [A-Z0-9<] only, line1 col1 == '<'
-    (doc-type filler), and digits at most of the five line-2 check
-    positions."""
+    satisfy '44 uppercase chars' but are not MRZ).  A real TD3 line pair
+    always has: 44 chars per line, [A-Z0-9<] only, a valid document-type
+    character at line1 col1, and digits at most of the five line-2 check
+    positions.
+
+    Two ICAO 9303-4 facts drive the details here:
+
+    * line1 col1 is the document-type filler.  The spec says '<', but a
+      state may print its own letter there, and this corpus genuinely
+      contains PD (diplomatic), PE, PM and PP documents -- plus a PO
+      specimen.  Requiring '<' there rejected six real passports.
+    * line2 col13..19 (date of birth) and col21..27 (date of expiry) are
+      six DIGITS each, always.  A read that puts letters there is not a
+      TD3 line 2 at all: page body text ('000905<606BBG0<<<<66<6<6<...')
+      otherwise slipped through because a line made mostly of '<' can
+      satisfy the check digits by accident.
+    """
     if not line1 or not line2:
         return False
     if len(line1) != 44 or len(line2) != 44:
@@ -731,7 +744,9 @@ def _rst_mrz_shaped(line1, line2):
     charset = set("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<")
     if any(c not in charset for c in line1 + line2):
         return False
-    if line1[1] != "<":
+    if not (line1[1] == "<" or "A" <= line1[1] <= "Z"):
+        return False
+    if not line2[13:19].isdigit() or not line2[21:27].isdigit():
         return False
     digit_cols = (9, 19, 27, 42, 43)
     digits = sum(1 for i in digit_cols if line2[i].isdigit())
@@ -3541,8 +3556,49 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             self._rst_request_paddle_warmup()
         if "indra" in methods:
             self._rst_request_indra_warmup()
+        # Tiered engine cascade (MRZ_CASCADE=1): run the cheap C tier
+        # first; if the fused head already produced a checksum-valid
+        # reading, the expensive engines (tesseract 125 ms, paddle 107
+        # ms, indra 50 ms mean on the 2026-10-30 bench) cannot improve
+        # on a verified decode, so skip them entirely.  Measured 202
+        # ms -> target ~1xx ms mean; the acceptance bench gates this
+        # (official PASS must not drop, per-photo regressions = 0).
+        cascade = (
+            os.environ.get("MRZ_CASCADE", "") == "1"
+            and len(methods) > 1
+            and any(m in methods for m in ("traditional", "cnn", "crnn", "fuse"))
+            and any(m in methods for m in ("tesseract", "paddle", "indra"))
+        )
         if len(methods) == 1:
             results = [run_one(methods[0])]
+        elif cascade:
+            fast = [m for m in methods
+                    if m in ("traditional", "cnn", "crnn", "fuse")]
+            slow = [m for m in methods
+                    if m not in ("traditional", "cnn", "crnn", "fuse")]
+            with ThreadPoolExecutor(max_workers=len(fast)) as pool:
+                fast_futures = {
+                    method: future
+                    for method, future in (
+                        (method, pool.submit(run_one, method))
+                        for method in fast)
+                }
+                fast_results = [fast_futures[m].result() for m in fast]
+            if any(r["decode_ok"] and r["method"] == "fuse"
+                   for r in fast_results):
+                return fast_results, (
+                    _time.perf_counter() - wall_started) * 1000.0
+            with ThreadPoolExecutor(max_workers=len(slow)) as pool:
+                slow_futures = {
+                    method: future
+                    for method, future in (
+                        (method, pool.submit(run_one, method))
+                        for method in slow)
+                }
+                slow_results = [slow_futures[m].result() for m in slow]
+            by_method = dict(zip(fast, fast_results))
+            by_method.update(zip(slow, slow_results))
+            results = [by_method[m] for m in methods]
         else:
             with ThreadPoolExecutor(max_workers=len(methods)) as pool:
                 by_method = {
@@ -4506,7 +4562,15 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         #   3. neither -> REJECT: the engines read page body text (a
         #      legal-notice page is 44 uppercase chars too), so there is
         #      no MRZ to report.
-        decoded_any = any(r.get("decode_ok") for r in results)
+        # A checksum-valid read is only a PASS when it is also a TD3
+        # STRUCTURE: the five check digits can be satisfied by accident
+        # when the "line" is mostly '<' filler, which is exactly what
+        # happens when an engine reads a legal-notice page.  Requiring
+        # both keeps a garbage-but-checksum-valid pair out of "verified".
+        decoded_any = any(
+            r.get("decode_ok")
+            and _rst_mrz_shaped(r.get("line1"), r.get("line2"))
+            for r in results)
         shaped_any = any(_rst_mrz_shaped(r.get("line1"), r.get("line2"))
                          for r in results)
         if decoded_any:

@@ -51,9 +51,15 @@ def line2_checksum_ok(line: str) -> bool:
 
 
 def line1_structurally_valid(line: str) -> bool:
+    # ICAO 9303-4 TD3 line 1: 'P' followed by ONE additional document-type
+    # character at the discretion of the issuing state ('<' or a letter --
+    # e.g. PD diplomatic / PS service / PM; this corpus genuinely prints
+    # PDRUSS…, PMKOR… and PPSVK… documents).  Only the issuer (cols 2-4)
+    # must be pure letters.
     return (
         len(line) == 44
-        and line[:2] == "P<"
+        and line[0] == "P"
+        and (line[1] == "<" or "A" <= line[1] <= "Z")
         and set(line[2:5]) <= (ALPHA - {"<"})
         and set(line[5:]) <= ALPHA
     )

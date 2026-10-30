@@ -36,7 +36,12 @@ GT_DEFAULT = ROOT / "10_ocr_research" / "archive" / "photo_auto_gt_all.json"
 ARCHIVE = ROOT / "10_ocr_research" / "archive"
 
 # 验收门槛（与 mrz-gt-train-loop skill 的验收标准一致）
-ACCEPT_MIN_PASS = 105          # 官方 PASS 张数下限
+# PASS 下限 104（2026-10-30 从 105 下调）：判定层加严后，旧门的 105 张
+# 里有 1 张是假阳性 —— 6dafa3b3 的 line2 把 dob/expiry 读成字母
+# （照片印刷为 751128 / 151114），旧门只看校验位就判了 PASS；新门按
+# ICAO 结构要求日期位为 6 位数字后，它正确降为 SUSPECT。105 -> 104 是
+# 去掉一个假阳性，不是能力下降。
+ACCEPT_MIN_PASS = 104          # 官方 PASS 张数下限
 ACCEPT_MIN_RAW_FUSE = 84       # raw fuse decode 张数下限
 ACCEPT_MIN_RATE = 2.0          # 官方单张路径速率下限（张/秒，约 ≤500ms/张）
 
