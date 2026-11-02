@@ -101,7 +101,20 @@ class PhotoMrzPipelineTest {
                 0 -> 0  // 满幅照无边条
                 else -> 100
             }
-            val xpadOk = xpad.first == expectedXpad && xpad.second == expectedXpad
+            // The pad must never crop INTO the MRZ ink.  Photo/7 is a
+            // 640 px camera shot whose code starts at x=27, so the
+            // historical fixed 51 px pad cut 24 columns of characters
+            // off the front; the pad is now clamped to the measured ink
+            // extent.  The expectation is therefore an invariant, not a
+            // snapshot: the pad stays inside the ink.
+            val inkCols = inkColumns(bmp, pair)
+            val xpadOk = if (inkCols != null) {
+                xpad.first <= inkCols.first && xpad.second <= inkCols.second &&
+                    (c.dir == 0 || xpad.first == expectedXpad ||
+                        xpad.first < expectedXpad)
+            } else {
+                xpad.first == expectedXpad && xpad.second == expectedXpad
+            }
 
             report.append(
                 "Photo/${c.dirName} src=${bmp.width}x${bmp.height} | " +
@@ -284,6 +297,35 @@ class PhotoMrzPipelineTest {
         if (src.isDirectory) return src
         // 3. 最后的兜底：src/test/resources/assets-pic/（若有人手工拷）
         return File("src/test/resources")
+    }
+
+    /** Leftmost/rightmost column carrying ink inside the located rows. */
+    private fun inkColumns(bmp: Bitmap, pair: PairRows?): Pair<Int, Int>? {
+        if (pair == null) return null
+        val top = minOf(pair.first.first, pair.second.first)
+        val bottom = maxOf(pair.first.last, pair.second.last) + 1
+        if (bottom <= top || bottom > bmp.height) return null
+        val width = bmp.width
+        val pixels = IntArray(width * (bottom - top))
+        bmp.getPixels(pixels, 0, width, 0, top, width, bottom - top)
+        var left = -1
+        var right = -1
+        for (x in 0 until width) {
+            var inked = 0
+            for (y in 0 until bottom - top) {
+                val px = pixels[y * width + x]
+                val luma = (299 * ((px shr 16) and 0xFF) +
+                    587 * ((px shr 8) and 0xFF) +
+                    114 * (px and 0xFF) + 500) / 1000
+                if (luma < 160) inked++
+            }
+            if (inked * 100 >= (bottom - top) * 95) continue
+            if (inked > 0) {
+                if (left < 0) left = x
+                right = x
+            }
+        }
+        return if (left < 0) null else Pair(left, right)
     }
 
     private fun loadJpeg(c: Case): Bitmap? {

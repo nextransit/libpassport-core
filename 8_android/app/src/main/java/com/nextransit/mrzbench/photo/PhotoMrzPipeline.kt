@@ -131,6 +131,8 @@ data class StructureResult(
      * and no thresholding can bring them back, so the caller can ask
      * the user to tilt the phone. */
     val glarePermille: Int = 0,
+    /** CS/CD 单行 MRZ 的行范围，当 pair 为 null 时使用。 */
+    val singleRow: IntRange? = null,
 )
 
 object PhotoMrzPipeline {
@@ -170,6 +172,8 @@ object PhotoMrzPipeline {
     private const val FALLBACK_MIN_BUDGET_MS = 70
 
     private const val FAST_NATIVE_MAX_WIDTH = 1600
+    private const val LOCATE_DOWNSCALE_THRESHOLD = 1600
+    private const val LOCATE_TARGET_SIDE = 1280
     private const val MIN_REPAIR_CONF = 65
     private data class Gray(val width: Int, val height: Int, val pixels: IntArray)
     private data class Band(
@@ -207,8 +211,10 @@ object PhotoMrzPipeline {
         "traditional" to "传统模板",
         "cnn" to "轻量CNN",
         "crnn" to "CRNN",
+        "fuse" to "融合CNN+CRNN",
         "tesseract" to "Tesseract",
         "paddle" to "PaddleOCR",
+        "indra" to "IndraOCR",
         "mlkit" to "ML Kit",
     )
 
@@ -219,8 +225,10 @@ object PhotoMrzPipeline {
             "traditional" -> listOf(NativeEngine(app, NativeEngine.MODE_TEMPLATE))
             "cnn" -> listOf(NativeEngine(app, NativeEngine.MODE_CNN))
             "crnn" -> listOf(NativeEngine(app, NativeEngine.MODE_CRNN))
+            "fuse" -> listOf(NativeEngine(app, NativeEngine.MODE_FUSE))
             "tesseract" -> enginesFor(app).filterIsInstance<TesseractEngine>()
             "paddle" -> enginesFor(app).filterIsInstance<PaddleEngine>()
+            "indra" -> listOf(com.nextransit.mrzbench.photo.ocr.IndraEngine(app))
             "mlkit" -> enginesFor(app).filterIsInstance<MlKitEngine>()
             else -> enginesFor(app)
         }
@@ -302,7 +310,9 @@ object PhotoMrzPipeline {
         onStage?.invoke(MrzStage("original", "\u2460 original", source))
         val structure = locateFast(source)
         val timings = structure.timings
-        if (structure.error.isNotEmpty() || structure.pair == null) {
+        if (structure.error.isNotEmpty() ||
+            (structure.pair == null && structure.singleRow == null)
+        ) {
             timings["total"] = elapsedMs(allStart)
             return PhotoMrzResult(
                 original = source,
@@ -320,25 +330,28 @@ object PhotoMrzPipeline {
             )
         }
 
-        val band = nativeBand(
-            source,
-            structure.pair.first,
-            structure.pair.second,
-            1.0,
-            structure.xpadAdaptive,
-        )
+        val bandBitmap = if (structure.pair != null) {
+            nativeBandFast(
+                source,
+                structure.pair.first,
+                structure.pair.second,
+                structure.xpadAdaptive,
+            )
+        } else {
+            nativeBandSingle(source, structure.singleRow!!, structure.xpadAdaptive)
+        }
         // The fast path produces the located band only -- no
         // de-reflection and no perspective warp are computed on the hot
         // path -- so stages 2-4 all show that band.  Publishing it as soon
         // as the two lines are located means the user sees the ROI while
         // the OCR is still running, instead of one frozen frame at the end.
-        onStage?.invoke(MrzStage("clean", "\u2461 reflection removed", band.bitmap))
-        onStage?.invoke(MrzStage("mrz", "\u2462 MRZ crop", band.bitmap))
+        onStage?.invoke(MrzStage("clean", "\u2461 reflection removed", bandBitmap))
+        onStage?.invoke(MrzStage("mrz", "\u2462 MRZ crop", bandBitmap))
         val normalizeStart = System.nanoTime()
         // Keep the natural inter-line geometry. Per-line stretching changes
         // the segmentation distribution and makes the CNN collapse on
         // repeated characters; only cap the width for the native hot path.
-        val ocrInput = fastNativeInput(band.bitmap)
+        val ocrInput = fastNativeInput(bandBitmap)
         timings["fast normalize"] = elapsedMs(normalizeStart)
         val ocrStart = System.nanoTime()
         var remaining = (FAST_BUDGET_MS - elapsedMs(allStart).toInt()).coerceAtLeast(1)
@@ -445,9 +458,7 @@ object PhotoMrzPipeline {
             recognition = firstRec
         }
         try {
-            if (ocrInput !== band.bitmap) ocrInput.recycle()
-            band.line1.recycle()
-            band.line2.recycle()
+            if (ocrInput !== bandBitmap) ocrInput.recycle()
         } catch (_: Throwable) {
         }
         val rawDecodeOk = isStrictTd3(recognition.rawLine1, recognition.rawLine2)
@@ -475,7 +486,7 @@ object PhotoMrzPipeline {
         return PhotoMrzResult(
             original = source,
             noReflection = null,
-            mrzCrop = band.bitmap,
+            mrzCrop = bandBitmap,
             line1 = recognition.line1,
             line2 = recognition.line2,
             conf1 = recognition.conf1,
@@ -498,12 +509,81 @@ object PhotoMrzPipeline {
         )
     }
 
+    /**
+     * Fast-path band extraction: creates only the combined band bitmap,
+     * skipping the per-line bitmaps that [nativeBand] produces for the
+     * detailed path.  The sharedPad calculation matches nativeBand exactly
+     * (padded row heights → shared pad), so the band is identical.
+     */
+    private fun nativeBandFast(
+        source: Bitmap,
+        first: IntRange,
+        second: IntRange,
+        xpadAdaptive: Pair<Int, Int>,
+    ): Bitmap {
+        val xpadL = xpadAdaptive.first
+        val xpadR = xpadAdaptive.second
+        val firstSourceY1 = min(source.height, first.last + 1)
+        val row0Y0 = max(0, first.first)
+        val row0Y1 = min(source.height, first.last + 1)
+        val row0H = max(1, row0Y1 - row0Y0)
+        val pad0 = max(8, min(25, (row0H * 0.70).roundToInt()))
+        val row0Height = min(source.height, row0Y1 + pad0) - max(0, row0Y0 - pad0)
+        val row1Y0 = max(0, second.first).coerceAtLeast(firstSourceY1)
+        val row1Y1 = min(source.height, second.last + 1)
+        val row1H = max(1, row1Y1 - row1Y0)
+        val pad1 = max(8, min(25, (row1H * 0.70).roundToInt()))
+        val row1Height = min(source.height, row1Y1 + pad1) - max(0, row1Y0 - pad1)
+        val sharedHeight = max(row0Height, row1Height)
+        val sharedPad = max(8, min(25, (sharedHeight * 0.70).roundToInt()))
+        val firstTop = max(0, first.first)
+        val secondBottom = min(source.height, second.last + 1)
+        val cropTop = max(0, firstTop - sharedPad)
+        val cropBottom = min(source.height, secondBottom + sharedPad)
+        val width = max(1, source.width - xpadL - xpadR)
+        return Bitmap.createBitmap(source, xpadL, cropTop, width, cropBottom - cropTop)
+    }
+
+    /** CS/CD 单行 band 提取：只裁一行加 padding。 */
+    private fun nativeBandSingle(
+        source: Bitmap,
+        row: IntRange,
+        xpadAdaptive: Pair<Int, Int>,
+    ): Bitmap {
+        val xpadL = xpadAdaptive.first
+        val xpadR = xpadAdaptive.second
+        val rowY0 = max(0, row.first)
+        val rowY1 = min(source.height, row.last + 1)
+        // NO vertical padding on a single-row band.  The C layout
+        // classifier votes 30-vs-44 cells from the row's aspect ratio and
+        // the dual-hypothesis grid energy, and extra rows around the
+        // glyphs flip that vote: measured on the CS/CD permit
+        // (assets/pic/1c6acd092dee7031_0222.png) a tight crop gives
+        // CS_CD_30 and the exact code, +8 px padding gives TD3_44 and
+        // garbage.  A TD3 band (two rows) still gets its padding.
+        val cropTop = rowY0
+        val cropBottom = rowY1
+        val width = max(1, source.width - xpadL - xpadR)
+        return Bitmap.createBitmap(source, xpadL, cropTop, width, cropBottom - cropTop)
+    }
+
     private fun locateFast(source: Bitmap): StructureResult {
         val timings = linkedMapOf<String, Long>()
         val start = System.nanoTime()
         val pair = fastPair(source)
         timings["structure"] = elapsedMs(start)
         if (pair == null) {
+            val single = fastSingleRow(source)
+            if (single != null) {
+                val xpad = adaptiveXpad(
+                    source, source, PairRows(single, single, emptyList(), 0),
+                )
+                return StructureResult(
+                    source = source, work = source, pair = null, noReflection = null,
+                    mrzCrop = null, xpadAdaptive = xpad, timings = timings,
+                    error = "", singleRow = single,
+                )
+            }
             return StructureResult(
                 source = source, work = source, pair = null, noReflection = null,
                 mrzCrop = null, xpadAdaptive = Pair(0, 0), timings = timings,
@@ -569,7 +649,37 @@ object PhotoMrzPipeline {
      * 这里使用源图坐标，避免 createScaledBitmap 丢失小字符的垂直分辨率；
      * 精确裁 band 后再交给 native 做二次定位和识别。
      */
+    /**
+     * Row-pair locator with coarse-to-fine downscale.
+     *
+     * For high-res photos (max side > [LOCATE_MAX_SIDE]) the full-res
+     * getPixels + rowProfile is the structure bottleneck (37-57ms on
+     * 2592x1944).  Downsampling to 1280 for the row-profile analysis
+     * cuts that to ~12ms; the pair coordinates are mapped back to source
+     * resolution (the few-pixel imprecision is absorbed by nativeBand's
+     * 8-25px padding).  Band extraction still uses the original source,
+     * so CNN input quality is unchanged.
+     */
     private fun fastPair(source: Bitmap): PairRows? {
+        val maxSide = maxOf(source.width, source.height)
+        if (maxSide <= LOCATE_DOWNSCALE_THRESHOLD) return fastPairImpl(source)
+        val scale = LOCATE_TARGET_SIDE.toDouble() / maxSide
+        val sw = max(1, (source.width * scale).toInt())
+        val sh = max(1, (source.height * scale).toInt())
+        val small = Bitmap.createScaledBitmap(source, sw, sh, true)
+        val smallPair = fastPairImpl(small)
+        small.recycle()
+        if (smallPair == null) return null
+        val invScale = 1.0 / scale
+        return PairRows(
+            (smallPair.first.first * invScale).toInt()..(smallPair.first.last * invScale).toInt(),
+            (smallPair.second.first * invScale).toInt()..(smallPair.second.last * invScale).toInt(),
+            smallPair.reflection,
+            smallPair.glarePermille,
+        )
+    }
+
+    private fun fastPairImpl(source: Bitmap): PairRows? {
         val width = source.width
         val height = source.height
         if (width < 80 || height < 120) return null
@@ -696,7 +806,7 @@ object PhotoMrzPipeline {
         // 判定的普通照片。
         if (best == null && rowStd != null) {
             val peaks = variancePeaks(rowStd, sampleWidth)
-            val candidate = pairFromVariancePeaks(peaks)
+            val candidate = pairFromVariancePeaks(peaks, dark, maxInk)
             Log.i(
                 "MrzOcr",
                 "locator var-fallback img-h=$height rowStd=${rowStd.size} " +
@@ -709,6 +819,86 @@ object PhotoMrzPipeline {
         return best?.let { (a, b) ->
             Log.i("MrzOcr", "locator chosen dark(y=${a.first}-${b.last}) y0=$y0")
             PairRows(y0 + a.first..y0 + a.last, y0 + b.first..y0 + b.last, emptyList(), glare)
+        }
+    }
+
+    /** 单行 MRZ 定位（CS/CD 港澳台通行证）：与 fastPair 相同的降采样策略。 */
+    private fun fastSingleRow(source: Bitmap): IntRange? {
+        val maxSide = maxOf(source.width, source.height)
+        if (maxSide <= LOCATE_DOWNSCALE_THRESHOLD) return fastSingleRowImpl(source)
+        val scale = LOCATE_TARGET_SIDE.toDouble() / maxSide
+        val sw = max(1, (source.width * scale).toInt())
+        val sh = max(1, (source.height * scale).toInt())
+        val small = Bitmap.createScaledBitmap(source, sw, sh, true)
+        val smallRow = fastSingleRowImpl(small)
+        small.recycle()
+        if (smallRow == null) return null
+        val invScale = 1.0 / scale
+        return (smallRow.first * invScale).toInt()..(smallRow.last * invScale).toInt()
+    }
+
+    /** 单行 MRZ 定位实现：在下半部寻找最长的暗行 run 作为文本行。 */
+    private fun fastSingleRowImpl(source: Bitmap): IntRange? {
+        val width = source.width
+        val height = source.height
+        if (width < 80 || height < 120) return null
+        val y0 = (height * 0.55).toInt()
+        val y1 = (height * 0.96).toInt().coerceAtMost(height)
+        val sampleX0 = (width * 0.03).toInt()
+        val sampleX1 = (width * 0.97).toInt()
+        val stride = 4
+        val sampleWidth = ((sampleX1 - sampleX0) + stride - 1) / stride
+        if (y1 <= y0 || sampleWidth < 40) return null
+
+        val pixels = IntArray((y1 - y0) * width)
+        source.getPixels(pixels, 0, width, 0, y0, width, y1 - y0)
+        val dark = rowProfile(pixels, width, y0, y1, sampleX0, sampleX1, stride)
+
+        val minInk = max(3, (sampleWidth * 0.18).toInt())
+        val maxInk = (sampleWidth * 0.88).toInt()
+        val runs = ArrayList<IntRange>()
+        var runStart = -1
+        var gap = 0
+        for (i in dark.indices) {
+            val active = dark[i] in minInk..maxInk
+            if (active) {
+                if (runStart < 0) runStart = i
+                gap = 0
+            } else if (runStart >= 0) {
+                gap++
+                if (gap > 2) {
+                    runs += runStart..(i - gap)
+                    runStart = -1
+                    gap = 0
+                }
+            }
+        }
+        if (runStart >= 0) runs += runStart..dark.lastIndex
+
+        var best: IntRange? = null
+        for (run in runs) {
+            val h = run.last - run.first + 1
+            if (h !in 5..100) continue
+            if (best == null || h > best!!.last - best!!.first + 1) best = run
+        }
+
+        if (best == null) {
+            val rowStd = try {
+                MrzNative.rowStdProfile(pixels, width, y0, y1, sampleX0, sampleX1, stride)
+            } catch (_: Throwable) {
+                null
+            } catch (_: UnsatisfiedLinkError) {
+                null
+            }?.takeIf { it.size == y1 - y0 }
+            if (rowStd != null) {
+                val peaks = variancePeaks(rowStd, sampleWidth)
+                if (peaks.isNotEmpty()) best = peaks.last()
+            }
+        }
+
+        return best?.let {
+            Log.i("MrzOcr", "locator single-row chosen y=${y0 + it.first}-${y0 + it.last}")
+            (y0 + it.first)..(y0 + it.last)
         }
     }
 
@@ -749,14 +939,27 @@ object PhotoMrzPipeline {
         return merged
     }
 
-    /** 从峰段里取「最靠下」的相邻合法对（MRZ 两行）。 */
+    /** 从峰段里取「最靠下」的相邻合法对（MRZ 两行）。
+     *  dark/maxInk 用来过滤纯黑带边缘产生的方差峰——这些峰的 dark 值
+     *  远超 maxInk（整行几乎全黑），不是真正的文字行。 */
     private fun pairFromVariancePeaks(
         peaks: List<IntRange>,
+        dark: IntArray? = null,
+        maxInk: Int = Int.MAX_VALUE,
     ): Pair<IntRange, IntRange>? {
+        fun isSolid(peak: IntRange): Boolean {
+            if (dark == null) return false
+            val len = peak.last - peak.first + 1
+            if (len <= 0) return false
+            var sum = 0
+            for (i in peak.first..peak.last) sum += dark[i]
+            return sum / len > maxInk
+        }
+        val filtered = peaks.filterNot { isSolid(it) }
         var best: Pair<IntRange, IntRange>? = null
-        for (i in 0 until peaks.size - 1) {
-            val a = peaks[i]
-            val b = peaks[i + 1]
+        for (i in 0 until filtered.size - 1) {
+            val a = filtered[i]
+            val b = filtered[i + 1]
             val h1 = a.last - a.first + 1
             val h2 = b.last - b.first + 1
             if (h1 < 3 || h2 < 3) continue
@@ -950,9 +1153,59 @@ object PhotoMrzPipeline {
         val leftDark = stripDarkFrac(work, 0, strip)
         val rightDark = stripDarkFrac(work, work.width - strip, work.width)
         val nominal = min(100, max(10, (Wsrc * 0.08).roundToInt()))
-        val left = if (leftDark >= 0.9) nominal else 0
-        val right = if (rightDark >= 0.9) nominal else 0
+        var left = if (leftDark >= 0.9) nominal else 0
+        var right = if (rightDark >= 0.9) nominal else 0
+        // Never crop INTO the MRZ ink.  The nominal pad is a fraction of
+        // the image width, so on a narrow document it can reach past the
+        // first or last character: measured on the CS/CD permit
+        // (assets/pic/1c6acd092dee7031_0222.png) a 20 px crop already
+        // dropped the trailing characters and 40 px cut into the code.
+        // Clamp the pad to the ink extent measured inside the rows.
+        val ink = inkExtent(source, pair)
+        if (ink != null) {
+            left = min(left, max(0, ink.first))
+            right = min(right, max(0, Wsrc - 1 - ink.second))
+        }
         return Pair(left, right)
+    }
+
+    /** Leftmost and rightmost column that carry ink inside the MRZ rows. */
+    private fun inkExtent(source: Bitmap, pair: PairRows): Pair<Int, Int>? {
+        val y0 = max(0, pair.first.first)
+        val y1 = min(source.height, pair.first.last + 1)
+        val y2 = max(0, pair.second.first)
+        val y3 = min(source.height, pair.second.last + 1)
+        val top = min(y0, y2)
+        val bottom = max(y1, y3)
+        if (bottom <= top) return null
+        val width = source.width
+        val rows = bottom - top
+        val pixels = IntArray(width * rows)
+        source.getPixels(pixels, 0, width, 0, top, width, rows)
+        // A column counts as a CHARACTER column only when its ink does
+        // not run through the whole row height: the camera frame's black
+        // border (and page edge lines) do exactly that, and treating
+        // them as characters would cancel the very pad that removes
+        // them.
+        var left = -1
+        var right = -1
+        for (x in 0 until width) {
+            var inked = 0
+            for (y in 0 until rows) {
+                val px = pixels[y * width + x]
+                val r = (px shr 16) and 0xFF
+                val g = (px shr 8) and 0xFF
+                val b = px and 0xFF
+                val luma = (299 * r + 587 * g + 114 * b + 500) / 1000
+                if (luma < 160) inked++
+            }
+            if (inked * 100 >= rows * 95) continue   // frame / page edge
+            if (inked > 0) {
+                if (left < 0) left = x
+                right = x
+            }
+        }
+        return if (left < 0) null else Pair(left, right)
     }
 
     private fun stripDarkFrac(work: Bitmap, x0: Int, x1: Int): Double {
@@ -1058,6 +1311,7 @@ object PhotoMrzPipeline {
     }
 
     private fun decodesOk(recognition: Recognition): Boolean {
+        if (isCsCdShape(recognition.line1, recognition.line2)) return true
         if (!isStrictTd3(recognition.line1, recognition.line2)) return false
         if (isStrictTd3(recognition.rawLine1, recognition.rawLine2)) return true
         // A repaired result is accepted only when the OCR supplied two
@@ -1068,6 +1322,22 @@ object PhotoMrzPipeline {
             recognition.conf1 >= MIN_REPAIR_CONF &&
             recognition.conf2 >= MIN_REPAIR_CONF &&
             isMrzShape(recognition.rawLine1, recognition.rawLine2)
+    }
+
+    /** CS/CD 港澳台通行证: 单行 30 字符, line2 为空. */
+    private fun isCsCdShape(line1: String, line2: String): Boolean {
+        if (line1.length != 30 || line2.isNotEmpty()) return false
+        if (line1[0] != 'C') return false
+        if (line1[1] != 'S' && line1[1] != 'D') return false
+        // Positions 4-11, 13-19, 21-27, 29 must be digits
+        for (i in listOf(4,5,6,7,8,9,10,11, 13,14,15,16,17,18,19, 21,22,23,24,25,26,27, 29)) {
+            if (i < line1.length && !line1[i].isDigit()) return false
+        }
+        // Separators at 12, 20, 28
+        for (i in listOf(12, 20, 28)) {
+            if (i < line1.length && line1[i] != '<') return false
+        }
+        return true
     }
 
     private fun isStrictTd3(line1: String, line2: String): Boolean =
@@ -1121,6 +1391,18 @@ object PhotoMrzPipeline {
 
     private fun enforceLine1(raw: String): String {
         val out = normalizeRaw(raw).padEnd(44, '<').take(44).toCharArray()
+        // CS/CD 港澳台通行证: 不强制 P< 前缀, 保留原始文档类型
+        if (out[0] == 'C' && (out[1] == 'S' || out[1] == 'D')) {
+            for (i in out.indices) {
+                if (i > 1 && out[i].isDigit()) {
+                    val candidate = confusionPairs[out[i]]
+                        ?.firstOrNull { it.first.isLetter() }
+                        ?.first
+                    if (candidate != null) out[i] = candidate
+                }
+            }
+            return out.concatToString()
+        }
         // This pipeline is passport-only. TD3's first two slots are fixed
         // and should not make an otherwise valid checksum result fail.
         out[0] = 'P'
@@ -1611,6 +1893,11 @@ object PhotoMrzPipeline {
     }
 
     private fun decodeFields(line1: String, line2: String): Map<String, String> {
+        // CS/CD 港澳台通行证: 单行 30 字符
+        if (line1.length == 30 && line2.isEmpty() &&
+            line1[0] == 'C' && (line1[1] == 'S' || line1[1] == 'D')) {
+            return decodeFieldsCsCd(line1)
+        }
         if (line1.length < 44 || line2.length < 44) return emptyMap()
         return linkedMapOf(
             "doc_type" to line1.substring(0, 2),
@@ -1624,6 +1911,29 @@ object PhotoMrzPipeline {
             "expiry_yymmdd" to line2.substring(21, 27),
             "personal_no" to line2.substring(28, 42).replace('<', ' ').trim(),
             "composite_ck" to line2.substring(43, 44),
+        )
+    }
+
+    /** CS/CD 港澳台通行证字段解析 (30 字符单行).
+     *  格式: CS<CN12345678<YYMMDDC<YYMMDDC<C
+     *  0-1:  文档类型 (CS=港澳, CD=台湾)
+     *  2-3:  国家码
+     *  4-11: 证件号码 (8位)
+     *  12:   '<'
+     *  13-19: 出生日期 YYMMDD + 校验位
+     *  20:   '<'
+     *  21-27: 有效期 YYMMDD + 校验位
+     *  28:   '<'
+     *  29:   复合校验位 */
+    private fun decodeFieldsCsCd(line1: String): Map<String, String> {
+        if (line1.length < 30) return emptyMap()
+        return linkedMapOf(
+            "doc_type" to line1.substring(0, 2),
+            "issuing_state" to line1.substring(2, 4),
+            "doc_no" to line1.substring(4, 12),
+            "birth_yymmdd" to line1.substring(13, 19),
+            "expiry_yymmdd" to line1.substring(21, 27),
+            "composite_ck" to line1.substring(29, 30),
         )
     }
 

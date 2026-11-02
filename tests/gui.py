@@ -433,8 +433,13 @@ def _rst_adaptive_xpad(rgb, pair, scale, nominal):
             rows = rgb[a:b]
             if rows.size:
                 dark = (rows @ wts) < 160
-                col_any = dark.any(axis=0)
-                idx = np.where(col_any)[0]
+                # A column counts as a CHARACTER column only when its
+                # ink does not run through the whole row height: the
+                # camera frame's black border and page edge lines do
+                # exactly that, and treating them as characters would
+                # cancel the very pad that removes them.
+                cov = dark.sum(axis=0) / max(1, rows.shape[0])
+                idx = np.where((cov > 0.0) & (cov < 0.95))[0]
                 if len(idx):
                     ink_l = int(idx[0])
                     ink_r = int(idx[-1])
