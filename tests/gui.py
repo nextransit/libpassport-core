@@ -78,13 +78,30 @@ PASSPORT_PHOTO_DIRS = [
     (ROOT / "Photo", "Photo"),
 ]
 
-def iter_passport_photos():
+# 训练集 → 该训练集自己的照片目录。两套权重是在两套互不相干的语料上
+# 分别训出来的（板端标签的手机照 vs 多引擎投票+人工复核的扫描件），
+# 所以「用 A 集权重去评 B 集照片」量出来的是分布差异，不是模型好坏。
+# 勾选训练集时列表只列该集照片，就是为了让这个跨分布读数不出现在
+# 界面上被误读成准确率。Photo/ 是用户自备目录，不属于任何训练集，
+# 两个模式下都列出来。
+WEIGHTS_SET_DIRS = {
+    "passport": {"tmp/PassPortPhoto"},
+    "pic": {"assets/pic"},
+}
+
+def iter_passport_photos(weights_set=None):
     """Yield (label, path) for every real-photo passport image under
     PASSPORT_PHOTO_DIRS. Photo/ 是我们的专用目录，其它目录只取顶层文件。
+
+    weights_set 传 "passport" / "pic" 时只列该训练集自己的目录（外加
+    Photo/）；传 None 表示不过滤。
     """
     seen = set()
+    keep = WEIGHTS_SET_DIRS.get(weights_set) if weights_set else None
     for base, label in PASSPORT_PHOTO_DIRS:
         if not base.is_dir():
+            continue
+        if keep is not None and label != "Photo" and label not in keep:
             continue
         if label == "Photo":
             entries = sorted(base.glob("*/*"))
@@ -125,10 +142,19 @@ def _mrz_icao_clean(text):
 
 
 def _mrz_line1_candidates(text):
-    """Extract 44-char TD3 line-1 windows from noisy OCR output."""
+    """Extract 44-char TD3 line-1 or 30-char CS/CD line windows from noisy OCR."""
     clean = _mrz_icao_clean(text)
-    doc_types = set("PIVACDRQ")
     found = []
+    # CS/CD 港澳台通行证: 30-char single line starting with CS or CD
+    for start in range(max(0, len(clean) - 29)):
+        line = clean[start:start + 30]
+        if (len(line) == 30 and line[0] == 'C'
+                    and line[1] in ('S', 'D')
+                    and line[12] == '<' and line[20] == '<' and line[28] == '<'):
+            if line not in found:
+                found.append(line)
+    # TD3 passport: 44-char line-1
+    doc_types = set("PIVACDRQ")
     for start in range(max(0, len(clean) - 43)):
         line = clean[start:start + 44]
         if (len(line) == 44 and line[0] in doc_types
@@ -388,7 +414,91 @@ def _rst_adaptive_xpad(rgb, pair, scale, nominal):
     right_dark = ((rgb[:, W - strip:] @ wts) < 160).mean()
     left = nominal if left_dark >= 0.9 else 0
     right = nominal if right_dark >= 0.9 else 0
+    # Never crop INTO the MRZ ink. The nominal pad is a fraction of the
+    # image width, so on a narrow document it can reach past the first
+    # or last character: measured on assets/pic/1c6acd092dee7031_0222.png
+    # (CS/CD permit) a 20 px crop already dropped the trailing
+    # characters and 40 px cut into the code. Clamp the pad to the ink
+    # extent measured inside the detected rows.
+    try:
+        ys = []
+        for y0, y1 in pair:
+            a = max(0, int(round(y0 / max(scale, 1e-6))))
+            b = min(rgb.shape[0], int(round((y1 + 1) / max(scale, 1e-6))))
+            if b > a:
+                ys.append((a, b))
+        if ys:
+            a = min(y[0] for y in ys)
+            b = max(y[1] for y in ys)
+            rows = rgb[a:b]
+            if rows.size:
+                dark = (rows @ wts) < 160
+                col_any = dark.any(axis=0)
+                idx = np.where(col_any)[0]
+                if len(idx):
+                    ink_l = int(idx[0])
+                    ink_r = int(idx[-1])
+                    left = min(left, max(0, ink_l))
+                    right = min(right, max(0, W - 1 - ink_r))
+    except Exception:
+        pass
     return left, right
+
+
+def _rst_tesseract_cscd(rgb, pair, scale):
+    """Run tesseract on CS/CD single-line MRZ (30-char format).
+
+    Tries PSM 7 (single line), PSM 6 (block), and PSM 3 (full image)
+    on the band crop, plus PSM 3 on the full source image as a last
+    resort.  The textured guilloche background defeats per-row crops
+    on some cards; PSM 3 on a larger area gives tesseract more context
+    to separate text from background.
+    """
+    import shutil
+    from PIL import Image
+
+    tess = shutil.which("tesseract")
+    if not tess:
+        return [], [], "", "tesseract not found"
+
+    H0, W0 = rgb.shape[:2]
+    y0, y1 = pair[0]
+    sy0 = max(0, int(round(y0 / scale)))
+    sy1 = min(H0, int(round((y1 + 1) / scale)))
+    band_h = sy1 - sy0
+    pad = max(20, int(band_h * 1.5))
+    source = Image.fromarray(rgb)
+
+    capi, datapath = _rst_tesseract_capi(tess)
+    raw_parts = []
+    line_candidates = []
+
+    def try_text(image, psm, label):
+        if capi is not None:
+            text = _rst_tesseract_capi_text(capi, datapath, image, psm)
+        else:
+            import subprocess, os
+            from tempfile import NamedTemporaryFile
+            with NamedTemporaryFile(suffix=".png", delete=False) as f:
+                image.save(f.name)
+                proc = subprocess.run(
+                    [tess, f.name, "stdout", "--psm", str(psm), "-l", "ocrb",
+                     "-c", "tessedit_char_whitelist="
+                     "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<"],
+                    text=True, capture_output=True, timeout=20)
+                text = proc.stdout
+                os.unlink(f.name)
+        raw_parts.append(f"{label}/psm{psm}: {text.strip()}")
+        for line in _mrz_line1_candidates(text):
+            if line not in line_candidates:
+                line_candidates.append(line)
+
+    band_crop = source.crop((0, max(0, sy0 - pad), W0, min(H0, sy1 + pad)))
+    for psm in (7, 6, 3):
+        try_text(band_crop, psm, "band")
+    if not line_candidates:
+        try_text(source, 3, "full")
+    return line_candidates, [], "\n".join(raw_parts), ""
 
 
 def _rst_tesseract_candidates(rgb, pair, scale, psm_by_row=None,
@@ -588,14 +698,21 @@ def _rst_gt_lookup(base):
     """
     global _RST_GT_CACHE
     if _RST_GT_CACHE is None:
+        _RST_GT_CACHE = {}
         _gt_json = ROOT / "6_mrz_ocr" / "data" / "corpus_real" / "corpus.json"
         try:
-            _RST_GT_CACHE = {
-                r["id"].split("/")[-1]: r
-                for r in json.loads(_gt_json.read_text())["records"]
-            }
+            for r in json.loads(_gt_json.read_text())["records"]:
+                _RST_GT_CACHE[r["id"].split("/")[-1]] = r
         except Exception:
-            _RST_GT_CACHE = {}
+            pass
+        _real_gt = ROOT / "tests" / "real_gt.json"
+        try:
+            for k, v in json.loads(_real_gt.read_text()).get("gt", {}).items():
+                base = Path(k).stem
+                if base not in _RST_GT_CACHE:
+                    _RST_GT_CACHE[base] = v
+        except Exception:
+            pass
     return _RST_GT_CACHE.get(base)
 
 
@@ -630,8 +747,17 @@ def _rst_parse_kv_output(text):
 
 
 def _rst_decode_lines(line1, line2):
-    """Validate one pair through the real MRZ decoder."""
-    if not line1 or not line2:
+    """Validate one pair (or a single CS/CD line) through the real MRZ decoder."""
+    if not line1:
+        return subprocess.CompletedProcess(
+            args=[], returncode=2, stdout="",
+            stderr="OCR 未输出任何行")
+    # CS/CD 港澳台通行证: 单行 30 字符, line2 为空
+    if len(line1) == 30 and not line2:
+        return subprocess.run(
+            [str(MRZ_TOOL), "decode", line1],
+            text=True, capture_output=True, timeout=10)
+    if not line2:
         return subprocess.CompletedProcess(
             args=[], returncode=2, stdout="",
             stderr="OCR 未输出完整两行")
@@ -715,7 +841,7 @@ _RST_INDRA_WARMUP_STARTED = False
 
 
 def _rst_mrz_shaped(line1, line2):
-    """Cheap structural sanity for a TD3 OCR result.
+    """Cheap structural sanity for a TD3 or CS/CD OCR result.
 
     Guards the "preferred engine" choice against engines that run their
     own detection on the FULL photo and lock onto page decoration
@@ -736,8 +862,20 @@ def _rst_mrz_shaped(line1, line2):
       TD3 line 2 at all: page body text ('000905<606BBG0<<<<66<6<6<...')
       otherwise slipped through because a line made mostly of '<' can
       satisfy the check digits by accident.
+
+    CS/CD 港澳台通行证: 单行 30 字符, line2 为空.
     """
-    if not line1 or not line2:
+    if not line1:
+        return False
+    # CS/CD 港澳台通行证: 30-char single line
+    if len(line1) == 30 and not line2:
+        charset = set("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<")
+        if any(c not in charset for c in line1):
+            return False
+        if line1[0] != 'C' or line1[1] not in ('S', 'D'):
+            return False
+        return True
+    if not line2:
         return False
     if len(line1) != 44 or len(line2) != 44:
         return False
@@ -780,20 +918,20 @@ def _rst_line1_agreement(results):
     The engines are independent readers of the same image, so a line 1
     that most of them produced is the better bet.  Returns a list
     {result_id: agreeing_engine_count}; engines whose line 1 is not a
-    44-character MRZ-shaped string get -1 so a malformed read never
-    outranks a well-formed one.
+    44-character (TD3) or 30-character (CS/CD) MRZ-shaped string get -1
+    so a malformed read never outranks a well-formed one.
     """
     counts = []
     for r in results:
         line1 = r.get("line1") or ""
-        if len(line1) != 44:
+        if len(line1) not in (30, 44):
             counts.append(-1)
             continue
         agree = sum(
             1 for other in results
             if other is not r
             and (other.get("line1") or "") == line1
-            and len(other.get("line1") or "") == 44
+            and len(other.get("line1") or "") in (30, 44)
         )
         counts.append(agree)
     return counts
@@ -809,6 +947,30 @@ def _hyp_rank(result):
         if _rst_mrz_shaped(e.get("line1"), e.get("line2")):
             return 2
     return 1
+
+
+def _rst_cscd_struct_ok(line):
+    """Structural validation of a 30-character CS/CD travel permit row.
+
+    ICAO 9303 does not define this layout (it is a regional document
+    family) and its check digits are NOT the 7-3-1 cycle: an
+    exhaustive search over every field split of a real permit
+    (assets/pic/1c6acd092dee7031_0222.png) found no split consistent
+    with 7-3-1, so no checksum rule is applied here rather than
+    guessing one.
+
+    What IS reliable is the shape: 'CS'/'CD' prefix, 30 characters of
+    [A-Z0-9<], and the three fixed filler positions at 12, 20 and 28
+    that separate document number / date of birth / date of expiry.
+    Those fillers are printed literally by every CS/CD document."""
+    if not line or len(line) != 30:
+        return False
+    if line[:2] not in ("CS", "CD"):
+        return False
+    if any(c not in set("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<")
+           for c in line):
+        return False
+    return line[12] == "<" and line[20] == "<" and line[28] == "<"
 
 
 def _rst_prepare_indra():
@@ -836,6 +998,26 @@ def _rst_indra_warmup():
         pass
 
 
+def _rst_repair_cscd(clean):
+    """Repair a 30-char CS/CD line: fix separators and recompute check digits."""
+    if len(clean) != 30 or clean[:2] not in ('CS', 'CD'):
+        return None
+    checksum_dir = ROOT / "6_1_PaddleOCR"
+    if str(checksum_dir) not in sys.path:
+        sys.path.insert(0, str(checksum_dir))
+    from mrz_checksum import compute_check_digit
+    s = list(clean)
+    s[12] = '<'
+    s[20] = '<'
+    s[28] = '<'
+    s[11] = compute_check_digit(''.join(s[2:11]))
+    s[19] = compute_check_digit(''.join(s[13:19]))
+    s[27] = compute_check_digit(''.join(s[21:27]))
+    comp = ''.join(s[2:12]) + ''.join(s[13:20]) + ''.join(s[21:28])
+    s[29] = compute_check_digit(comp)
+    return ''.join(s)
+
+
 def _rst_run_indra_inprocess(img_path):
     """Run the cached Indra engine on a full-page photo.
 
@@ -844,6 +1026,42 @@ def _rst_run_indra_inprocess(img_path):
     """
     module = _rst_prepare_indra()
     result = module.read_mrz(img_path)
+    if not result.get("ok") and result.get("raw_lines"):
+        for raw_line in result["raw_lines"]:
+            clean = _mrz_icao_clean(raw_line)
+            for cand in _mrz_line1_candidates(clean):
+                if len(cand) == 30 and cand[0] == 'C' and cand[1] in ('S', 'D'):
+                    result["ok"] = True
+                    result["line1"] = cand
+                    result["line2"] = ""
+                    result["note"] = f"indra CS/CD: {cand}"
+                    break
+            if result.get("ok"):
+                break
+            if len(clean) >= 30 and clean[:2] in ('CS', 'CD'):
+                repaired = _rst_repair_cscd(clean[:30])
+                if repaired:
+                    decoded = _rst_decode_lines(repaired, "")
+                    if decoded.returncode == 0:
+                        result["ok"] = True
+                        result["line1"] = repaired
+                        result["line2"] = ""
+                        result["note"] = f"indra CS/CD (repaired): {repaired}"
+                        break
+            if len(clean) >= 30 and clean[:3] in ('656', '65D', 'C56', 'C5D'):
+                for prefix in ('CSC', 'CDC'):
+                    attempt = prefix + clean[3:30]
+                    repaired = _rst_repair_cscd(attempt)
+                    if repaired:
+                        decoded = _rst_decode_lines(repaired, "")
+                        if decoded.returncode == 0:
+                            result["ok"] = True
+                            result["line1"] = repaired
+                            result["line2"] = ""
+                            result["note"] = f"indra CS/CD (prefix-fix): {repaired}"
+                            break
+                if result.get("ok"):
+                    break
     stdout = module.format_kv(result)
     error = "" if result.get("ok") else result.get("note", "indra 未识别到 MRZ")
     return stdout, (0 if result.get("ok") else 1), error
@@ -1541,7 +1759,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             if dark:
                 FIELD, TEXT, HEAD, SEL = "#14181e", "#d5dae2", "#161F30", "#1F6FEB"
             else:
-                FIELD, TEXT, HEAD, SEL = "#f4f6fa", "#1a2433", "#FFFFFF", "#0b5cad"
+                FIELD, TEXT, HEAD, SEL = "#F4F6F9", "#1E293B", "#FFFFFF", "#0b5cad"
         # Pin palette-derived border so Labelframe/Card uses a faint line.
         border = (self._pal.get("border") if hasattr(self, "_pal") else "#3A3B3C")
         if not HAS_TTKB:
@@ -1556,12 +1774,19 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                          fieldbackground=FIELD, foreground=TEXT,
                          bordercolor=SEL, lightcolor=SEL, darkcolor=SEL,
                          rowheight=26)
+            sel_bg = "#DBEAFE" if not dark else SEL
+            sel_fg = "#1E40AF" if not dark else "#ffffff"
             st.map("Data.Treeview",
-                   background=[("selected", SEL)],
-                   foreground=[("selected", "#ffffff")])
+                   background=[("selected", sel_bg)],
+                   foreground=[("selected", sel_fg)])
             st.configure("Data.Treeview.Heading", background=HEAD,
                          foreground=TEXT, padding=(6, 4), relief="flat")
             st.map("Data.Treeview.Heading", background=[("active", HEAD)])
+            BG_CARD = "#FFFFFF" if not dark else FIELD
+            st.configure(".", background=FIELD, foreground=TEXT)
+            st.configure("Card.TFrame", background=BG_CARD, relief="solid",
+                         borderwidth=1, bordercolor=border)
+            st.configure("Card.TLabel", background=BG_CARD, foreground=TEXT)
             # Card-style container: replace the chunky native ridge with a
             # 1px flat border tinted to the palette border colour. Also pin
             # the container background: on macOS TLabelframe/TFrame default
@@ -2318,6 +2543,19 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                         command=self._ocr_method_toggle).pack(side="left", padx=6)
         ttk.Separator(row1, orient="vertical").pack(side="left",
                                                     fill="y", padx=8)
+        # 训练集（权重集）选择。两套权重是同一网络分别训练的结果：
+        #   关闭 = 护照手机照（tmp/PassPortPhoto，板端标签，41 张）
+        #   打开 = 扫描件（assets/pic，自动 GT，47 张）
+        # 权重是 static const 编进二进制的，所以切换的是工具二进制而
+        # 不是运行时加载；两者输出不可混用，切换后必须清空结果缓存。
+        ttk.Label(row1, text="训练集:").pack(side="left")
+        self.ocr_weights_pic = tk.BooleanVar(value=False)
+        ttk.Checkbutton(
+            row1, text="assets/pic 扫描件",
+            variable=self.ocr_weights_pic,
+            command=self._ocr_weights_toggle).pack(side="left", padx=2)
+        ttk.Separator(row1, orient="vertical").pack(side="left",
+                                                    fill="y", padx=8)
         ttk.Label(row1, text="过滤:").pack(side="left")
         self.ocr_filter_var = tk.StringVar(value="all")
         self.ocr_filter_pick_var = tk.StringVar(value="全部")
@@ -2336,19 +2574,16 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         # 共享同一个 btn_frame 的视觉风格。
         # 动作按钮独立成行，不塞进左→右堆叠的 row1：窗口收窄时 row1 的
         # 方案按钮会把动作按钮挤出可视区（"⏳ 识别中…" 看不到）。
-        row_action = ttk.Frame(ctrl); row_action.pack(fill="x", padx=8, pady=(0, 6))
-        btn_frame = ttk.Frame(row_action)
-        btn_frame.pack(anchor="e")
-        # 直接识别图片 — ghost 风格(中性)
+        # 直接识别图片 — ghost 风格(中性)，移至控制面板第一行最右侧
         self.ocr_pick_btn = self._cta(
-            btn_frame, "🖼 直接识别图片",
+            row1, "🖼 直接识别图片",
             self._ocr_pick_and_recognize, kind="ghost", padx=10, pady=4)
-        self.ocr_pick_btn.pack(side="left", padx=(0, 4))
+        self.ocr_pick_btn.pack(side="right", padx=(4, 0))
         # 主操作 — primary(高亮)
         self.ocr_run_btn = self._cta(
-            btn_frame, "⚡ 开始测试", self._ocr_run,
+            row1, "⚡ 开始测试", self._ocr_run,
             padx=14, pady=4)
-        self.ocr_run_btn.pack(side="left", padx=(0, 4))
+        self.ocr_run_btn.pack(side="right", padx=(0, 4))
 
         # 全选/反选/清空/搜索只作用于左侧案例集列表，就近放到列表顶部，
         # 不再占用顶部的全局空间。
@@ -2359,7 +2594,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self._ocr_body = body
 
         # Left = case list.
-        left = ttk.Frame(body); body.add(left, weight=1)
+        left = ttk.Frame(body); body.add(left, weight=22)
         ttk.Label(left, text="案例集列表（点击查看原图，多选后开始测试）").pack(anchor="w")
         list_bar = ttk.Frame(left); list_bar.pack(fill="x", pady=(2, 2))
         self._cta(list_bar, "全选",
@@ -2406,7 +2641,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         # Middle = metrics card + summary + detail.
         # weight=3 (vs 1/1 for left/preview) gives the KPI row enough
         # horizontal room; the default sashes below reserve ~20% / ~26%.
-        middle = ttk.Frame(body); body.add(middle, weight=3)
+        middle = ttk.Frame(body); body.add(middle, weight=44)
         self._build_ocr_metrics(middle)
         ttk.Label(middle, text="方案指标对比").pack(anchor="w")
         self.ocr_summary = ttk.Treeview(middle,
@@ -2457,7 +2692,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self._ocr_detail_map = {}
 
         # Right = single-sample perspective (image + char-level diff).
-        preview = ttk.Frame(body); body.add(preview, weight=1)
+        preview = ttk.Frame(body); body.add(preview, weight=34)
         ttk.Label(preview, text="单样本透视").pack(anchor="w")
         self.ocr_preview_meta = tk.StringVar(value="（在左侧选择案例，或点击明细行）")
         self.ocr_preview_meta_lb = tk.Label(
@@ -2503,8 +2738,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         tk.Frame(term, bg=pal["border"], height=1).pack(fill="x", side="top")
         self._diff_tbar = tbar
         self._diff_tbar_strip = tag_strip
-        self.ocr_diff_text = tk.Text(term, height=11, width=48,
-                                     font=("Menlo", 10), wrap="none",
+        self.ocr_diff_text = tk.Text(term, height=12, width=52,
+                                     font=("Menlo", 11), wrap="none",
                                      bg=con["bg"], fg=con["fg"], relief="flat",
                                      padx=8, pady=6,
                                      highlightthickness=1,
@@ -2513,19 +2748,19 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                                          foreground=con["pad"])
         self.ocr_diff_text.tag_configure("lab", foreground=con["pad"])
         self.ocr_diff_text.tag_configure("match", foreground=pal["tag_match"]["fg"],
-                                         font=("Menlo", 10, "bold"))
+                                         font=("Menlo", 11, "bold"))
         self.ocr_diff_text.tag_configure("pad", foreground=con["pad"])
         # X2 polish:不匹配字符使用更柔和的 amber 高亮 + 加粗下划线,
         # 避免与图中的红框视觉冲突。背景改为透明,只改前景色 + 加粗。
         self.ocr_diff_text.tag_configure("mm",
             foreground=con.get("error_bg", "#ff5c7a"),
-            font=("Menlo", 10, "bold"))
+            font=("Menlo", 11, "bold"))
         self.ocr_diff_text.tag_configure("error",
             foreground=con.get("error_bg", "#ff5c7a"),
-            font=("Menlo", 10, "bold"))
+            font=("Menlo", 11, "bold"))
         self.ocr_diff_text.tag_configure("okline",
                                          foreground=pal["tag_match"]["fg"],
-                                         font=("Menlo", 10))
+                                         font=("Menlo", 11))
         d_y = ttk.Scrollbar(term, orient="vertical",
                             command=self.ocr_diff_text.yview)
         d_x = ttk.Scrollbar(term, orient="horizontal",
@@ -2589,6 +2824,59 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self._gt_map_cache = m
         return m
 
+    def _ocr_weights_tool(self):
+        """Path of the CNN tool binary for the selected training set.
+
+        The two weight sets are compiled in (``static const`` arrays), so
+        switching sets means switching binaries.  ``mrz_ocr_cnn_tool``
+        carries the tmp/PassPortPhoto line heads, ``mrz_ocr_cnn_tool_pic``
+        the assets/pic ones.  If the second binary has not been built the
+        passport one is returned and the caller sees the usual "missing
+        tool" status rather than a silent fallback to the wrong weights.
+        """
+        base = ROOT / "6_mrz_ocr" / "build"
+        if getattr(self, "ocr_weights_pic", None) and self.ocr_weights_pic.get():
+            pic = base / "mrz_ocr_cnn_tool_pic"
+            if pic.exists():
+                return pic
+        return base / "mrz_ocr_cnn_tool"
+
+    def _weights_set(self):
+        """'pic' or 'passport' -- which weight set the CheckBox selects."""
+        if getattr(self, "ocr_weights_pic", None) and self.ocr_weights_pic.get():
+            return "pic"
+        return "passport"
+
+    def _ocr_photo_entry_map(self):
+        """label -> path for the photo list of the CURRENT training set."""
+        cached = getattr(self, "_ocr_photo_entries", None)
+        if cached:
+            return dict(cached)
+        return {label: pth
+                for label, pth in iter_passport_photos(self._weights_set())}
+
+    def _ocr_weights_toggle(self):
+        """Invalidate every cached reading: results depend on the weights."""
+        if getattr(self, "_ocr_result_cache", None):
+            self._ocr_result_cache.clear()
+        # Line-heads differ per set, so any per-photo verdict shown in the
+        # table was produced by the other model.
+        for iid in self.ocr_case_list.get_children():
+            vals = list(self.ocr_case_list.item(iid, "values"))
+            if len(vals) >= 4 and any(vals[1:]):
+                self.ocr_case_list.item(
+                    iid, values=(vals[0], "", "", ""))
+        name = ("assets/pic 扫描件" if self.ocr_weights_pic.get()
+                else "tmp/PassPortPhoto 护照照")
+        # 照片列表跟着训练集走：A 集权重去评 B 集照片量的是分布差异。
+        if getattr(self, "ocr_photo_mode", None) and self.ocr_photo_mode.get():
+            self._ocr_mode_switch()
+            n = len(getattr(self, "_ocr_photo_entries", []))
+            self._set_status_bar(
+                f"训练集已切换：{name}（列表 {n} 张，结果缓存已清空）")
+        else:
+            self._set_status_bar(f"训练集已切换：{name}（结果缓存已清空）")
+
     def _ocr_mode_switch(self):
         """Toggle between corpus batch-test and passport-photo recognition."""
         if self.ocr_photo_mode.get():
@@ -2600,7 +2888,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             self._ocr_case_order = []
             # 真实护照照片来源：assets/pic + tmp/PassPortPhoto + Photo。
             # Photo/ 是子目录结构(机位照)，其余两个目录是顶层平铺。
-            self._ocr_photo_entries = list(iter_passport_photos())
+            self._ocr_photo_entries = list(
+                iter_passport_photos(self._weights_set()))
             from pathlib import Path as _P2
             # 只显示纯文件名；完整路径放进 tooltip 映射。
             self._ocr_photo_paths = {}
@@ -3124,8 +3413,17 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         return [method] if method in METHOD_ORDER else ["tesseract"]
 
     @staticmethod
-    def _rst_native_mrz_band(rgb, pair, scale, source_bottom=None):
+    def _rst_native_mrz_band(rgb, pair, scale, source_bottom=None,
+                             single=False):
         """Build a native-resolution two-line ROI for external OCR tools.
+
+        `single`: the document carries ONE MRZ row (CS/CD travel permit).
+        The band is then exactly that row -- NO vertical padding.  Padding
+        measurably flips the C layout classifier on permits (measured on
+        assets/pic/1c6acd092dee7031_0222.png: tight crop -> CS_CD_30 with
+        the exact code 'CDC000000007<2508197<8208031<2', +8 px padding ->
+        TD3_44 and garbage), because the extra rows change the aspect
+        ratio and the dual-hypothesis grid vote.
 
         Structure detection runs on the 1250px work image, but the C/Paddle
         tools lose too much glyph detail when they receive that downsampled
@@ -3145,9 +3443,12 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 - int(round(y0 / scale)))
             for y0, y1 in pair
         ]
-        pad = max(8, min(25, int(round(max(heights) * 0.70))))
-        top = max(0, first_top - pad)
-        bottom = min(H, second_bottom + pad)
+        if single:
+            top, bottom = first_top, second_bottom   # exactly the row
+        else:
+            pad = max(8, min(25, int(round(max(heights) * 0.70))))
+            top = max(0, first_top - pad)
+            bottom = min(H, second_bottom + pad)
         if source_bottom is not None:
             bottom = min(bottom, max(second_bottom, source_bottom))
         width = max(1, W - xpad_l - xpad_r)
@@ -3177,11 +3478,12 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
 
         tool_paths = {
             "traditional": ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_tool",
-            "cnn": ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_cnn_tool",
+            # cnn/fuse 走哪一个二进制由"训练集"复选框决定（护照照 / assets/pic）。
+            "cnn": self._ocr_weights_tool(),
             # CRNN 使用 12_crnn 的 ONNX 序列模型（与 OCR 批量测试一致）；
             # fuse 仍是 host CNN tool 内的 CNN+CRNN 融合头。
             "crnn": ROOT / "12_crnn" / "mrz_crnn_tool.py",
-            "fuse": ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_cnn_tool",
+            "fuse": self._ocr_weights_tool(),
             "paddle": ROOT / "6_1_PaddleOCR" / "paddle_v6.py",
             "indra": ROOT / "11_indra" / "mrz_indra.py",
         }
@@ -3218,8 +3520,24 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             with rescue_lock:
                 if not rescue_cache["ready"]:
                     rescue_started = _time.perf_counter()
-                    line1s, line2s, raw, error = \
-                        _rst_tesseract_candidates(rgb, pair, scale)
+                    is_cscd = pair[0] == pair[1]
+                    if is_cscd:
+                        line1s, line2s, raw, error = \
+                            _rst_tesseract_cscd(rgb, pair, scale)
+                        if not line1s and source_path:
+                            try:
+                                indra_stdout, indra_rc, _ = \
+                                    _rst_run_indra_inprocess(source_path)
+                                indra_kv = _rst_parse_kv_output(indra_stdout)
+                                il1 = indra_kv.get("result.line1", "")
+                                if il1 and len(il1) == 30:
+                                    line1s = [il1]
+                                    raw = indra_stdout
+                            except Exception:
+                                pass
+                    else:
+                        line1s, line2s, raw, error = \
+                            _rst_tesseract_candidates(rgb, pair, scale)
                     if error:
                         value = None
                     else:
@@ -3237,21 +3555,27 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             started = _time.perf_counter()
             try:
                 if method == "tesseract":
-                    line1s, line2s, raw, error = \
-                        _rst_tesseract_candidates(rgb, pair, scale)
+                    is_cscd = pair[0] == pair[1]
+                    if is_cscd:
+                        line1s, line2s, raw, error = \
+                            _rst_tesseract_cscd(rgb, pair, scale)
+                    else:
+                        line1s, line2s, raw, error = \
+                            _rst_tesseract_candidates(rgb, pair, scale)
                     line1, line2, repair, _raw_line2, decoded = \
                         _rst_decode_candidates(line1s, line2s)
                     display1 = line1 or (line1s[0] if line1s else "")
                     display2 = line2 or (
                         line2s[0][3] if line2s else "")
+                    eng_ok = bool(line1s) if is_cscd \
+                        else bool(line1s and line2s)
                     return {
                         "method": method,
                         "label": METHOD_LABELS[method],
                         "line1": display1,
                         "line2": display2,
-                        "engine_ok": bool(line1s and line2s),
-                        "engine_status": "OK" if (line1s and line2s)
-                        else "FAIL",
+                        "engine_ok": eng_ok,
+                        "engine_status": "OK" if eng_ok else "FAIL",
                         "decode_ok": _rst_decode_ok(decoded),
                         "conf1": 0,
                         "conf2": 0,
@@ -3485,10 +3809,23 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                             if decoded.returncode != 0 else "")),
                     "ms": (_time.perf_counter() - started) * 1000.0,
                 }
+                # A CS/CD travel permit carries ONE 30-character row and
+                # mrz_tool only speaks TD3 (2 x 44), so its decode can
+                # NEVER succeed.  Rescuing such a result overwrites a
+                # correct CS/CD reading: measured on
+                # assets/pic/1c6acd092dee7031_0222.png the CNN read
+                # 'CS<C00000007<2568107<8208031<7' and the rescue
+                # replaced it with Tesseract's 'CDL000000007<2508197<'
+                # (two characters lost).  Keep the engine's own reading
+                # and let the CS/CD structural check judge it.
+                _rl1 = result.get("line1") or ""
+                cscd_reading = (len(_rl1) == 30
+                                and _rl1[:2] in ("CS", "CD"))
                 needs_rescue = (
-                    not result["decode_ok"]
-                    or result["conf1"] < 80
-                    or result["conf2"] < 80
+                    not cscd_reading
+                    and (not result["decode_ok"]
+                         or result["conf1"] < 80
+                         or (result["line2"] and result["conf2"] < 80))
                 )
                 if (method in ("traditional", "cnn", "crnn", "fuse", "paddle")
                         and needs_rescue
@@ -3714,8 +4051,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
 
             ocr_results = []
             ocr_wall_ms = 0.0
+            methods = self._rst_selected_methods()
             if (pair and band_rgb is not None) or "indra" in methods:
-                methods = self._rst_selected_methods()
                 if not (pair and band_rgb is not None):
                     # Indra runs its own detection, so it still works when
                     # the structure stage found no MRZ pair.
@@ -3957,6 +4294,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                     if gt and gt[0]:
                         self._rst_render_gt_diff(self.rst_info, result,
                                                  gt[0], gt[1])
+            self.rst_info.see("end")
             self.rst_info.configure(state="disabled")
             passed = sum(1 for result in ocr_results
                          if result["decode_ok"])
@@ -4093,11 +4431,11 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         L, J, Z). Detect this by checking whether the OCR output is a
         strong concentration of those training-frequent glyphs.
         """
-        if not line1 or not line2:
+        if not line1:
             return ""
         from collections import Counter
-        combined = (line1 + line2).strip()
-        if len(combined) < 44:
+        combined = (line1 + (line2 or "")).strip()
+        if len(combined) < 30:
             return ""
         counts = Counter(combined)
         # Training-frequent glyph classes in the OCR's bitmap font
@@ -4147,7 +4485,21 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             self.update_idletasks()
             path = self._loc_resolve_path()
             img = Image.open(path).convert("RGB")
-            loc = self._loc_locator(img)
+            # Fast path: only locate the MRZ band, skip expensive skin
+            # detection and BFS flood fill (_largest_skin_bbox ~50ms).
+            import passport_locator as _pl
+            _gray = _pl._to_gray_np(img)
+            _mrz = _pl._locate_mrz(_gray)
+            if _mrz:
+                _x0, _y0, _x1, _y1 = _mrz
+                loc = {"photo": None, "data": None, "mrz": {
+                    "x": _x0, "y": _y0, "w": _x1 - _x0 + 1, "h": _y1 - _y0 + 1,
+                    "confidence": 0.97,
+                    "evidence": "bottom band: %d dense dark rows (row projection > 15%% width)"
+                                % (_y1 - _y0 + 1),
+                }}
+            else:
+                loc = {"photo": None, "data": None, "mrz": None}
             r = loc.get("mrz")
             if not r:
                 _chip("  FAIL  ", "fail")
@@ -4294,8 +4646,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 f"result.exp  : {kv.get('result.exp',  '-')}",
                 f"result.sex  : {kv.get('result.sex',  '-')}",
                 "",
-                f"line1 (44)  : {kv.get('result.line1', '-')}",
-                f"line2 (44)  : {kv.get('result.line2', '-')}",
+                f"line1 ({len(kv.get('result.line1', ''))})  : {kv.get('result.line1', '-')}",
+                f"line2 ({len(kv.get('result.line2', ''))})  : {kv.get('result.line2', '-')}",
                 "",
                 f"check_digit : "
                 f"{kv.get('result.check_doc',  '-')} / "
@@ -4444,9 +4796,18 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         else:
             work2, st2 = work, st
         pair = st2.get("mrz_pair")
+        is_single = False
         if not pair:
-            out["reason"] = "未在照片中定位到 MRZ 双行"
-            return out
+            single = st2.get("mrz_single")
+            if single:
+                pair = (single, single)
+                st2 = dict(st2)
+                st2["mrz_pair"] = pair
+                out["is_single_line"] = True
+                is_single = True
+            else:
+                out["reason"] = "未在照片中定位到 MRZ 双行"
+                return out
         out["pair"] = pair
         scale = 1.0
         try:
@@ -4477,7 +4838,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         try:
             native_band = self._rst_native_mrz_band(
                 rgb, pair, scale,
-                source_bottom=int(round(work2.shape[0] / scale)))
+                source_bottom=int(round(work2.shape[0] / scale)),
+                single=is_single)
             needs_file = any(m in ("traditional", "cnn", "crnn", "fuse")
                              for m in methods)
             if needs_file:
@@ -4490,13 +4852,11 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 tmp.close()
                 _Image.fromarray(native_band).save(str(band_path),
                                                    format="PPM")
+            is_cscd = pair[0] == pair[1]
             results, _ms = self._rst_run_ocr_methods(
                 rgb, pair, scale, band_path, methods,
                 native_band=native_band, source_path=path,
-                # 失败就是失败：不启用 Tesseract OCR-B 自动修复。
-                # Tesseract 引擎仍在 methods 里独立参与评估。
-                allow_tesseract_fallback=False,
-                # 常驻模式：模型已预加载，测的是纯识别时间。
+                allow_tesseract_fallback=is_cscd,
                 resident=bool(getattr(self, "_rst_resident", False)))
         finally:
             if tmp is not None:
@@ -4573,10 +4933,21 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             for r in results)
         shaped_any = any(_rst_mrz_shaped(r.get("line1"), r.get("line2"))
                          for r in results)
+        cscd_any = any(_rst_cscd_struct_ok(r.get("line1"))
+                        for r in results)
         if decoded_any:
             out["verified"] = True
             out["grade"] = "PASS"
             out["reason"] = f"{best.get('label', '')} 识别并通过校验"
+        elif cscd_any:
+            # CS/CD travel permit: this document family's check digits
+            # are not the ICAO 7-3-1 cycle, so the verdict rests on the
+            # printed structure (prefix + the three fixed filler
+            # positions).  Say so instead of implying a checksum passed.
+            out["verified"] = True
+            out["grade"] = "PASS"
+            out["reason"] = (f"{best.get('label', '')} 识别到 CS/CD "
+                             f"单行机读码（结构校验，未做校验位闭环）")
         elif shaped_any:
             out["grade"] = "SUSPECT"
             out["reason"] = f"{best.get('label', '')} 识别到 MRZ，校验未通过"
@@ -4765,6 +5136,10 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                       "nat": l2[10:13], "dob": l2[13:19],
                       "exp": l2[21:27], "sex": l2[20]}
             raw_mode = True
+        if not fields and len(l1) == 30 and not l2:
+            fields = {"doc": l1[4:12], "nat": l1[2:4],
+                      "dob": l1[13:19], "exp": l1[21:27]}
+            raw_mode = True
         if fields:
             tw.insert("end", "\n字段解析%s:\n" % (
                 "（校验未通过 —— 原始识读值）" if raw_mode else ":"), "hdr")
@@ -4829,6 +5204,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                           "lab")
         else:
             tw.insert("end", "\n（无引擎结果）\n", "mm")
+        tw.see("end")
         tw.configure(state="disabled")
         # Persist for the preview overlay: the tool's band coords are
         # relative to the OCR crop; make them absolute for the overlay.
@@ -4880,8 +5256,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             return
         # 20% / 26% leaves ~54% for the middle KPI+summary pane;
         # previously 22/30 left only ~48% and squeezed the 7 KPI cards.
-        w_left = max(240, int(total * 0.20))
-        w_right = max(360, int(total * 0.26))
+        w_left = max(230, int(total * 0.22))
+        w_right = max(360, int(total * 0.34))
         body.sashpos(0, w_left)
         body.sashpos(1, max(w_left + 60, total - w_right))
 
@@ -4897,17 +5273,16 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         colors = self._pal["metric"]
         # 缩短标题(原 "Mean耗时" -> "Mean";"平均L1"-> "L1 均值";"全匹配"-> "匹配")
         # 并把 pass/l1/l2 改成 Pass率/L1/L2 形式,避免 padx 截断
-        specs = [("cases", "案例数"), ("mean", "Mean"),
-                 ("p95", "P95"), ("pass", "Pass"),
-                 ("l1", "L1"), ("l2", "L2"),
+        specs = [("cases", "案例数"), ("mean", "Mean (ms)"),
+                 ("p95", "P95 (ms)"), ("pass", "Pass (%)"),
+                 ("l1", "L1 (%)"), ("l2", "L2 (%)"),
                  ("full", "匹配")]
-        units = {"mean": "ms", "p95": "ms", "pass": "%",
-                 "l1": "%", "l2": "%"}
+        units = {}
         # 用 LabelFrame 的 grid 等分 7 列(weight=1, uniform)；
         # minsize 兜底，窗口收窄时预留最小宽度，防止 "141." 这类数字截断。
         for i in range(len(specs)):
-            card.grid_columnconfigure(i, weight=1, uniform="metric_col",
-                                      minsize=78)
+            card.grid_columnconfigure(i, weight=1, uniform="kpi",
+                                       minsize=86)
         for i, (key, label) in enumerate(specs):
             cell = tk.Frame(card, bg=self._pal["card"], highlightthickness=1,
                             highlightbackground=self._pal["border"])
@@ -4936,11 +5311,6 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                             foreground=colors[key],
                             font=("Menlo", 11, "bold"))
             val.pack(side="left")
-            if key in units:
-                ttk.Label(vrow, text=units[key],
-                          foreground=self._pal["dim"],
-                          font=("Segoe UI", 8)).pack(
-                    side="left", anchor="s", padx=(2, 0), pady=(0, 1))
             self.ocr_metrics[key] = var
             self._metric_cells.append(
                 (cell, ttl, val, key, accent_strip, text_col))
@@ -5351,18 +5721,22 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
 
     def _render_diff_block(self, tw, label, gt, pred):
         """Append one aligned GT/Pred block with per-char highlighting."""
-        n = max(len(gt), len(pred))
+        n = max(len(gt), len(pred), 30)
         gt = gt.ljust(n)
         pred = pred.ljust(n)
         tw.insert("end", label + "\n", "hdr")
-        tw.insert("end", "GT  : ", "lab")
+        ruler_tens = "".join([str((i + 1) // 10) if (i + 1) % 10 == 0 else " " for i in range(n)])
+        ruler_ones = "".join([str((i + 1) % 10) for i in range(n)])
+        tw.insert("end", "    " + ruler_tens + "\n", "lab")
+        tw.insert("end", "    " + ruler_ones + "\n", "lab")
+        tw.insert("end", "GT: ", "lab")
         for i in range(n):
             if gt[i] == pred[i]:
                 tag = "pad" if gt[i] == "<" else "match"
             else:
                 tag = "mm"
             tw.insert("end", gt[i], tag)
-        tw.insert("end", "\nPRED: ", "lab")
+        tw.insert("end", "\nPR: ", "lab")
         mism = []
         for i in range(n):
             if gt[i] != pred[i]:
@@ -5370,7 +5744,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 tw.insert("end", pred[i], "error")
             else:
                 tw.insert("end", pred[i], "pad" if pred[i] == "<" else "match")
-        tw.insert("end", "\n     ")
+        tw.insert("end", "\n    ")
         if mism:
             for i in range(n):
                 tw.insert("end", "^" if i in mism else " ", "error")
@@ -5452,6 +5826,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             tw.insert("end", "\n", "lab")
         for label, gt, pred in blocks:
             self._render_diff_block(tw, label, gt, pred)
+        tw.see("end")
         tw.configure(state="disabled")
 
     def _show_gt_only(self, rec):
@@ -5495,8 +5870,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self.ocr_run_btn.configure(state="disabled")
         # Render the image immediately so the right pane shows
         # something while we wait for the worker.
-        entries = {label: pth for label, pth in getattr(
-            self, "_ocr_photo_entries", iter_passport_photos())}
+        entries = self._ocr_photo_entry_map()
         path = entries.get(name)
         if path is None:
             messagebox.showerror("加载失败", f"{name}: 源文件不存在")
@@ -5553,13 +5927,13 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         iid = name
         if not self.ocr_detail.exists(iid):
             self.ocr_detail.insert("", "end", iid=iid, tags=(grade,),
-                values=(name, grade,
+                values=(os.path.basename(str(name)), grade,
                         "✓" if rec.get("verified") else "—",
                         f"{rec.get('ms', 0):.0f}",
                         rec.get("reason") or ""))
         else:
             self.ocr_detail.item(iid, tags=(grade,),
-                values=(name, grade,
+                values=(os.path.basename(str(name)), grade,
                         "✓" if rec.get("verified") else "—",
                         f"{rec.get('ms', 0):.0f}",
                         rec.get("reason") or ""))
@@ -5797,8 +6171,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             return
         kind, name = self._ocr_detail_map[sel[0]]
         if kind == "photo":
-            entries = {label: pth for label, pth in getattr(
-                self, "_ocr_photo_entries", iter_passport_photos())}
+            entries = self._ocr_photo_entry_map()
             path = entries.get(name)
             if path is None:
                 from passport_pipeline import PIC_DIR
@@ -5915,6 +6288,13 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                         "exp": _l2[21:27],
                         "sex": _l2[20],
                     }
+                elif len(_l1) == 30 and not _l2:
+                    fields = {
+                        "doc": _l1[4:12],
+                        "nat": _l1[2:4],
+                        "dob": _l1[13:19],
+                        "exp": _l1[21:27],
+                    }
                     fields_raw = True
             if fields:
                 if fields_raw:
@@ -5949,6 +6329,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 tw.insert("end", f"\nLine1 (44): {l1}\n", "lab")
                 tw.insert("end", f"Line2 (44): {l2}\n", "lab")
             tw.insert("end", f"\n说明: {rec.get('reason', '')}\n", "lab")
+            tw.see("end")
             tw.configure(state="disabled")
             return
         cid, m = kind, name
@@ -5975,6 +6356,12 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         else:
             methods = [self.ocr_methods.get()]
         methods = [m for m in methods if m]
+        # 扫描件集没有自己的 CRNN。12_crnn/crnn_v3.onnx 是在护照扫描图上
+        # 训出来的，硬塞进 pic 运行等于把跨分布的序列头混进结果——正是
+        # §21.3 那个「融合分数把错误的头藏起来」的翻版。C 侧
+        # crnn_weights_available() 在 pic 变体里已经返回 0，这里同一口径。
+        if self._weights_set() == "pic":
+            methods = [m for m in methods if m != "crnn"]
         if not methods:
             messagebox.showerror("错误", "请选择至少一种方案")
             return
@@ -6072,10 +6459,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 # (_ocr_photo_engines)：单引擎 CNN 在低分辨照片上会读错
                 # (08806d29... 读成 P<CHEDE<NGIENFELD)，多引擎 + 共识/
                 # GT 引导才读得出 PMCHEDE<MAIENFELD，两条路径必须一致。
-                entries = {label: path
-                           for label, path in getattr(
-                               self, "_ocr_photo_entries",
-                               iter_passport_photos())}
+                entries = self._ocr_photo_entry_map()
                 results = []
                 for i, name in enumerate(selected, 1):
                     path = entries.get(name)
@@ -6124,13 +6508,13 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             self.ocr_detail.column(c, width=90, anchor=anc)
         # 列宽按内容分配：说明列拉伸填满剩余空间，其余按内容固定宽度，
         # 避免表头只剩一个字。
-        self.ocr_detail.column("file", width=210, minwidth=120,
+        self.ocr_detail.column("file", width=150, minwidth=120,
+                               stretch=True)
+        self.ocr_detail.column("grade", width=65, minwidth=55, stretch=False)
+        self.ocr_detail.column("verified", width=65, minwidth=55,
                                stretch=False)
-        self.ocr_detail.column("grade", width=64, minwidth=56, stretch=False)
-        self.ocr_detail.column("verified", width=78, minwidth=64,
-                               stretch=False)
-        self.ocr_detail.column("ms", width=70, minwidth=56, stretch=False)
-        self.ocr_detail.column("reason", width=260, minwidth=120,
+        self.ocr_detail.column("ms", width=70, minwidth=60, stretch=False)
+        self.ocr_detail.column("reason", width=130, minwidth=100,
                                stretch=True)
         # 行级配色由 _apply_text_tag_palette 统一按主题设淡色，不再硬编码。
         stats = {"PASS": 0, "SUSPECT": 0, "REJECT": 0, "verified": 0}
@@ -6172,7 +6556,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             if cached:
                 reason = (reason + "（缓存命中）").strip()
             self.ocr_detail.insert("", "end", iid=iid, tags=(g,),
-                values=(rec["file"], g,
+                values=(os.path.basename(str(rec["file"])), g,
                         "✓" if rec.get("verified") else "—",
                         f"{rec['ms']:.0f}" + ("*" if cached else ""),
                         reason))
@@ -6193,17 +6577,15 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                     self._ocr_on_detail_select()
             except tk.TclError:
                 pass
-        self.ocr_summary.configure(columns=("grade", "n", "verified"))
-        for c in ("grade", "n", "verified"):
-            self.ocr_summary.heading(c, text={"grade": "判定",
-                                              "n": "数量",
-                                              "verified": "OCR校验通过"}[c])
-            self.ocr_summary.column(c, width=110, anchor="center")
-        for g in ("PASS", "SUSPECT", "REJECT"):
-            self.ocr_summary.insert("", "end", iid=g, tags=("row_ok" if g == "PASS"
-                                                            else "row_fail"),
-                values=(g, stats[g],
-                        stats["verified"] if g == "PASS" else ""))
+        self.ocr_summary.configure(height=1, columns=("summary",))
+        self.ocr_summary.heading("summary", text="方案指标对比")
+        self.ocr_summary.column("summary", anchor="w", stretch=True)
+        _summary_text = (
+            f"PASS: {stats['PASS']} (OCR校验: {stats['verified']})   "
+            f"SUSPECT: {stats['SUSPECT']}   REJECT: {stats['REJECT']}"
+        )
+        self.ocr_summary.insert("", "end", iid="summary",
+            tags=("row_ok",), values=(_summary_text,))
         m = self.ocr_metrics
         n = len(results)
         m["cases"].set(n)
