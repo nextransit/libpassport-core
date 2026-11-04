@@ -57,8 +57,12 @@
  *
  * Fine grid (run on full image): -0.5..+0.5 at 0.1 deg.
  * 11 angles -> 11 full-image projections. */
-static const int MRZ_SKEW_COARSE_N = 9; /* -4..+4 at 1.0 deg */
-static const int MRZ_SKEW_FINE_N   = 11; /* -5..+5 at 0.1 deg */
+/* The grid sizes are macros, not `static const int` variables: a
+ * file-scope array dimension must be an integer constant expression in
+ * C.  gcc-13 rejects the variable form outright, which blocks the
+ * loongarch64 cross build. */
+#define MRZ_SKEW_COARSE_N 9  /* -4..+4 at 1.0 deg */
+#define MRZ_SKEW_FINE_N   11 /* -5..+5 at 0.1 deg */
 static const double MRZ_SKEW_COARSE_DEG[MRZ_SKEW_COARSE_N] = {
     -4.0, -3.0, -2.0, -1.0,  0.0,
      1.0,  2.0,  3.0,  4.0
@@ -292,5 +296,113 @@ void mrz_normalize_local_contrast(const uint8_t *gray_in, int W, int H,
     }
     free(col_base);
     free(flip);
+}
+
+static float _median_of_5(float v[5]) {
+    for (int i = 1; i < 5; ++i) {
+        float key = v[i];
+        int j = i - 1;
+        while (j >= 0 && v[j] > key) { v[j + 1] = v[j]; --j; }
+        v[j + 1] = key;
+    }
+    return v[2];
+}
+
+void mrz_dewarp_parabolic(const uint8_t *src, uint8_t *dst,
+                          int width, int height, int src_stride, int dst_stride) {
+    if (width < 64 || height < 16) {
+        if (src != dst)
+            for (int y = 0; y < height; ++y)
+                memcpy(dst + y * dst_stride, src + y * src_stride, width);
+        return;
+    }
+    const int NUM_SLICES = 15;
+    int marginX = width / 20;
+    int validW = width - 2 * marginX;
+    int sliceW = validW / NUM_SLICES;
+    int winH = (height * 90) / 100;
+    if (winH < 8) winH = 8;
+    float sliceCenterY[15];
+    int safeH = height < 512 ? height : 512;
+
+    for (int s = 0; s < NUM_SLICES; ++s) {
+        int x0 = marginX + s * sliceW;
+        int x1 = x0 + sliceW;
+        int32_t rowGrad[512];
+        memset(rowGrad, 0, sizeof(rowGrad));
+        for (int y = 2; y < safeH - 2; ++y) {
+            const uint8_t *row = src + y * src_stride;
+            int32_t sumGrad = 0;
+            for (int x = x0 + 1; x < x1 - 1; ++x) {
+                int diff = (int)row[x + 1] - (int)row[x - 1];
+                sumGrad += diff < 0 ? -diff : diff;
+            }
+            rowGrad[y] = sumGrad;
+        }
+        int32_t curWinSum = 0, maxWinSum = -1;
+        int bestTopY = 0;
+        for (int y = 0; y < safeH; ++y) {
+            curWinSum += rowGrad[y];
+            if (y >= winH) curWinSum -= rowGrad[y - winH];
+            if (y >= winH - 1 && curWinSum > maxWinSum) {
+                maxWinSum = curWinSum;
+                bestTopY = y - winH + 1;
+            }
+        }
+        int64_t wySum = 0, wSum = 0;
+        int yEnd = bestTopY + winH;
+        if (yEnd > safeH) yEnd = safeH;
+        for (int y = bestTopY; y < yEnd; ++y) {
+            wySum += (int64_t)y * rowGrad[y];
+            wSum  += rowGrad[y];
+        }
+        sliceCenterY[s] = (wSum > 0) ? (float)((double)wySum / wSum) : (float)height * 0.5f;
+    }
+
+    float yL[5] = {sliceCenterY[0], sliceCenterY[1], sliceCenterY[2], sliceCenterY[3], sliceCenterY[4]};
+    float yM[5] = {sliceCenterY[5], sliceCenterY[6], sliceCenterY[7], sliceCenterY[8], sliceCenterY[9]};
+    float yR[5] = {sliceCenterY[10], sliceCenterY[11], sliceCenterY[12], sliceCenterY[13], sliceCenterY[14]};
+    float yLeft  = _median_of_5(yL);
+    float yMid   = _median_of_5(yM);
+    float yRight = _median_of_5(yR);
+
+    const float d = 0.6f;
+    float b = (yRight - yLeft) / (2.0f * d);
+    float a = (0.5f * (yLeft + yRight) - yMid) / (d * d);
+    float abs_a = a < 0 ? -a : a;
+    float abs_b = b < 0 ? -b : b;
+    {   const char *e = getenv("MRZ_OCR_DEWARP_DBG");
+        if (e && e[0] && strcmp(e,"0") != 0)
+            fprintf(stderr, "DEWARP h=%d yL=%.1f yM=%.1f yR=%.1f a=%.2f b=%.2f\n",
+                    height, yLeft, yMid, yRight, a, b); }
+    if (abs_a < 2.0f && abs_b < 2.0f) {
+        if (src != dst)
+            for (int y = 0; y < height; ++y)
+                memcpy(dst + y * dst_stride, src + y * src_stride, width);
+        return;
+    }
+
+    float targetY = (yLeft + yMid + yRight) / 3.0f;
+    float halfW = width * 0.5f;
+    for (int x = 0; x < width; ++x) {
+        float u = (x - halfW) / halfW;
+        float curveY = yMid + b * u + a * (u * u);
+        float dy = curveY - targetY;
+        int y0_base = (int)floor(dy);
+        float fy = dy - y0_base;
+        int w1 = (int)(fy * 256.0f + 0.5f);
+        int w0 = 256 - w1;
+        for (int y = 0; y < height; ++y) {
+            int sy = y + y0_base;
+            if (sy >= 0 && sy < height - 1) {
+                uint8_t p0 = src[sy * src_stride + x];
+                uint8_t p1 = src[(sy + 1) * src_stride + x];
+                dst[y * dst_stride + x] = (uint8_t)((p0 * w0 + p1 * w1) >> 8);
+            } else {
+                int cY = sy < 0 ? 0 : (sy > height - 1 ? height - 1 : sy);
+                dst[y * dst_stride + x] = src[cY * src_stride + x];
+            }
+        }
+    }
 }
 

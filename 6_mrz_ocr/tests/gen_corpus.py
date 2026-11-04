@@ -118,8 +118,78 @@ def base_pairs():
     return pairs
 
 
-def random_pair(rnd: random.Random) -> tuple[str, str]:
-    """ICAO-valid random record: alpha-only line 1, checked line 2."""
+def iso3_pool() -> list[str]:
+    """Real ISO-3166-1 alpha-3 codes, parsed from the tool's own table.
+
+    Single source of truth: the same k_iso3 that mrz_code3_plausible()
+    (src/mrz_ocr_cnn.c) checks against.  Generating nationalities from
+    this pool keeps the corpus inside the priors the production pipeline
+    correctly applies to real documents.  Falls back to a short built-in
+    list if the header cannot be parsed."""
+    import re
+    try:
+        src = (ROOT / "src" / "mrz_ocr_cnn.c").read_text()
+        m = re.search(r'static const char k_iso3\[\]\s*=\s*"([^"]+)"', src)
+        if m:
+            s = m.group(1)
+            return [s[i:i + 3] for i in range(0, len(s) - len(s) % 3, 3)]
+    except OSError:
+        pass
+    return ["AFG", "CHN", "DEU", "GBR", "USA", "JPN", "KOR", "FRA", "ITA",
+            "ESP", "RUS", "IND", "BRA", "CAN", "AUS", "UTO"]
+
+
+def random_date(rnd: random.Random, lo_year: int, hi_year: int) -> str:
+    """Calendar-valid YYMMDD.  Feb 29 only on leap years."""
+    y = rnd.randint(lo_year, hi_year)
+    m = rnd.randint(1, 12)
+    leap = (y % 4 == 0 and y % 100 != 0) or y % 400 == 0
+    dmax = [31, 29 if leap else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1]
+    return f"{y % 100:02d}{m:02d}{rnd.randint(1, dmax):02d}"
+
+
+def random_pair(rnd: random.Random, plausible: bool = True) -> tuple[str, str]:
+    """ICAO-valid random record: alpha-only line 1, checked line 2.
+
+    plausible=True (default) draws every field from a real-document
+    distribution: nationality/issuer from the ISO-3166 pool (they differ
+    on ~20% of real passports), calendar-valid dates, digit-dominant
+    document numbers ('<'-filled when short), and a personal-number field
+    that mixes letters, digits and filler the way real optional data
+    does.  The previous fully-random drawing produced month-43 birthdays
+    and nationalities no state issues, which collide with the pipeline's
+    structural priors (issuer fix / strict ICAO / checksum beam) -- the
+    benchmark then measured that collision, not recognition."""
+    if plausible:
+        pool = iso3_pool()
+        issuer = rnd.choice(pool)
+        nat = issuer if rnd.random() < 0.8 else rnd.choice(pool)
+        surname = "".join(rnd.choice(ALPHA) for _ in range(rnd.randint(3, 12)))
+        given = "".join(rnd.choice(ALPHA) for _ in range(rnd.randint(0, 15)))
+        l1 = build_line1(issuer, surname, given)
+        r = rnd.random()
+        if r < 0.6:
+            pn = "".join(rnd.choice(DIGIT) for _ in range(9))
+        elif r < 0.8:
+            pn = "".join(rnd.choice(ALNUM) for _ in range(9))
+        else:
+            k = rnd.randint(7, 8)
+            pn = ("".join(rnd.choice(ALNUM) for _ in range(k))).ljust(9, "<")
+        bd = random_date(rnd, 1940, 2009)
+        ex = random_date(rnd, 2015, 2039)
+        u = rnd.random()
+        if u < 0.35:
+            pers = "<" * 14
+        elif u < 0.65:
+            pers = "".join(rnd.choice(DIGIT) for _ in range(14))
+        elif u < 0.9:
+            pers = "".join(rnd.choice(ALNUM) for _ in range(14))
+        else:
+            pers = ("".join(rnd.choice(ALNUM) for _ in range(rnd.randint(6, 12))
+                            )).ljust(14, "<")
+        l2 = build_line2(pn, nat, bd, rnd.choice("MF<"), ex, pers)
+        assert icao_valid(l1, l2), (l1, l2)
+        return l1, l2
     issuer = "".join(rnd.choice(ALPHA) for _ in range(3))
     surname = "".join(rnd.choice(ALPHA) for _ in range(rnd.randint(3, 12)))
     given = "".join(rnd.choice(ALPHA) for _ in range(rnd.randint(0, 15)))
@@ -168,7 +238,7 @@ VARIANTS_REALISTIC = [
 
 
 def render(out_dir: Path, name: str, l1: str, l2: str, v: tuple,
-           noise_seed: int) -> Path:
+           noise_seed: int, font: str = "bitmap", aa: bool = False) -> Path:
     scale, hgap, vgap, skew, noise, rot, blur, illum, invert = v
     p = out_dir / f"{name}.ppm"
     cmd = [str(GEN), str(p), l1, l2,
@@ -182,6 +252,10 @@ def render(out_dir: Path, name: str, l1: str, l2: str, v: tuple,
         cmd.append(f"illum={illum}")
     if invert:
         cmd.append("invert=1")
+    if font == "ocrb":
+        cmd.append("font=ocrb")
+    if aa:
+        cmd.append("aa=1")
     subprocess.check_call(cmd, stdout=subprocess.DEVNULL,
                           stderr=subprocess.DEVNULL)
     return p
@@ -198,6 +272,17 @@ def main() -> int:
                     help="corpus seed (ground truth + variant + noise)")
     ap.add_argument("--extra-pairs", type=int, default=None,
                     help="override the number of random records")
+    ap.add_argument("--aa", action="store_true",
+                    help="anti-aliased strokes (grey edges, like a scan)")
+    ap.add_argument("--font", choices=("bitmap", "ocrb"), default="bitmap",
+                    help="glyph shapes: bitmap = the hand-simplified bank "
+                         "in src/template.c (historical default), ocrb = the "
+                         "real OCR-B TrueType rendering (tools/ocrb_glyphs.h)")
+    ap.add_argument("--legacy-random", action="store_true",
+                    help="draw fully-random fields (random 3-letter "
+                         "nationalities, non-calendar dates) instead of the "
+                         "plausible real-document distribution.  Kept only "
+                         "to reproduce the pre-2026-11-05 corpora.")
     a = ap.parse_args()
     if a.eval == a.train:
         ap.error("pick exactly one of --eval / --train")
@@ -219,7 +304,7 @@ def main() -> int:
         i += 1
         name = f"img_{i:04d}_{pair_tag}_v{var_idx}"
         noise_seed = a.seed * 100000 + i * 7919
-        render(out_dir, name, l1, l2, v, noise_seed)
+        render(out_dir, name, l1, l2, v, noise_seed, a.font, a.aa)
         scale, hgap, vgap, skew, noise, rot, blur, illum, invert = v
         records.append({
             "id": name, "profile": profile,
@@ -233,20 +318,25 @@ def main() -> int:
     base = base_pairs()
 
     if a.eval:
-        # Frozen evaluation corpus: base docs in all clean variants,
-        # random docs in clean + realistic variants. ~630 images.
-        for p_idx, (l1, l2) in enumerate(base):
-            for v_idx, v in enumerate(VARIANTS_CLEAN):
-                add(l1, l2, v, f"b{p_idx}", v_idx, "clean")
-        n_extra = a.extra_pairs if a.extra_pairs is not None else 55
+        # Frozen evaluation corpus.  The BASE_DOCS identities live in the
+        # TRAINING corpus, so they must NOT appear here: when the seed-2002
+        # corpus carried them (plus the identical clean renders), 60 of 1380
+        # eval images leaked into training and the seen texts scored ~88%
+        # full vs ~13% for unseen ones -- the headline number was then a
+        # leak measurement.  Eval is plausible-random docs only, drawn from
+        # a seed disjoint from the training corpus's text seeds.
+        n_extra = a.extra_pairs if a.extra_pairs is not None else 60
         for p_idx in range(n_extra):
-            l1, l2 = random_pair(random.Random(a.seed * 31 + p_idx))
+            l1, l2 = random_pair(random.Random(a.seed * 31 + p_idx),
+                                 plausible=not a.legacy_random)
             for v_idx, v in enumerate(VARIANTS_CLEAN):
                 add(l1, l2, v, f"x{p_idx}", v_idx, "clean")
             for v_idx, v in enumerate(VARIANTS_REALISTIC):
                 add(l1, l2, v, f"x{p_idx}", v_idx, "realistic")
     else:
-        # Training corpus: more identities, heavier realistic mix.
+        # Training corpus: base docs + more identities, heavier realistic
+        # mix.  Eval texts use seed*31, training uses seed*131, so the two
+        # random-document pools cannot collide for distinct corpus seeds.
         for p_idx, (l1, l2) in enumerate(base):
             for v_idx, v in enumerate(VARIANTS_CLEAN):
                 add(l1, l2, v, f"b{p_idx}", v_idx, "clean")
@@ -254,7 +344,8 @@ def main() -> int:
                 add(l1, l2, v, f"b{p_idx}", v_idx, "realistic")
         n_extra = a.extra_pairs if a.extra_pairs is not None else 120
         for p_idx in range(n_extra):
-            l1, l2 = random_pair(random.Random(a.seed * 131 + p_idx))
+            l1, l2 = random_pair(random.Random(a.seed * 131 + p_idx),
+                                 plausible=not a.legacy_random)
             for v_idx, v in enumerate(VARIANTS_CLEAN):
                 add(l1, l2, v, f"x{p_idx}", v_idx, "clean")
             for v_idx, v in enumerate(VARIANTS_REALISTIC):
@@ -262,6 +353,9 @@ def main() -> int:
 
     out = out_dir / "corpus.json"
     out.write_text(json.dumps({"version": 2, "seed": a.seed,
+                               "font": a.font,
+                               "aa": bool(a.aa),
+                               "plausible": not a.legacy_random,
                                "count": len(records),
                                "records": records}, indent=2))
     n_clean = sum(1 for r in records if r["profile"] == "clean")

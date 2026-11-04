@@ -346,6 +346,98 @@ def fast_pair(gray: np.ndarray):
     return (y0 + a[0], y0 + a[1]), (y0 + b[0], y0 + b[1])
 
 
+def fast_single_row(gray: np.ndarray):
+    """Locate a single MRZ text row (CS/CD 1x30 format)."""
+    h, w = gray.shape
+    if w < 80 or h < 120:
+        return None
+    y0 = int(h * 0.55)
+    y1 = min(int(h * 0.96), h)
+    sx0 = int(w * 0.03)
+    sx1 = int(w * 0.97)
+    stride = 4
+    sample_w = (sx1 - sx0 + stride - 1) // stride
+    if y1 <= y0 or sample_w < 40:
+        return None
+    rows = gray[y0:y1]
+    dark = ((rows[:, sx0:sx1:stride] < 170).sum(axis=1)).astype(int)
+    min_ink = max(3, int(sample_w * 0.18))
+    max_ink = int(sample_w * 0.88)
+    runs = []
+    start = -1
+    gap = 0
+    for i in range(len(dark)):
+        if min_ink <= dark[i] <= max_ink:
+            if start < 0:
+                start = i
+            gap = 0
+        elif start >= 0:
+            gap += 1
+            if gap > 2:
+                runs.append((start, i - gap))
+                start = -1
+                gap = 0
+    if start >= 0:
+        runs.append((start, len(dark) - 1))
+    best = None
+    for run in runs:
+        rh = run[1] - run[0] + 1
+        if rh < 5 or rh > 100:
+            continue
+        if best is None or rh > best[1] - best[0] + 1:
+            best = run
+    if best is None:
+        return None
+    return (y0 + best[0], y0 + best[1])
+
+
+def native_band_single(gray, row, xpad_l, xpad_r):
+    """Crop a single-row band with padding (CS/CD).
+    Also crops horizontally to the text region, excluding border/shadow."""
+    h, w = gray.shape
+    ry0, ry1 = row
+    s0 = max(0, ry0)
+    s1 = min(h, ry1 + 1)
+    row_h = max(1, s1 - s0)
+    pad = max(3, min(8, int(round(row_h * 0.25))))
+    crop_top = max(0, s0 - pad)
+    crop_bottom = min(h, s1 + pad)
+    # Find horizontal text boundaries (exclude large border runs)
+    sub = gray[crop_top:crop_bottom, xpad_l:max(1, w - xpad_r)]
+    sw = sub.shape[1]
+    col_dark = (sub < 170).sum(axis=0)
+    thr = max(2, row_h // 4)
+    runs = []
+    start = -1
+    for x in range(sw):
+        if col_dark[x] >= thr:
+            if start < 0:
+                start = x
+        elif start >= 0:
+            runs.append((start, x - 1))
+            start = -1
+    if start >= 0:
+        runs.append((start, sw - 1))
+    if len(runs) >= 3:
+        widths = [e - s + 1 for s, e in runs]
+        medw = sorted(widths)[len(widths) // 2]
+        # Skip border runs (much wider than median)
+        first = 0
+        last = len(runs) - 1
+        while first < last and widths[first] > medw * 4:
+            first += 1
+        while last > first and widths[last] > medw * 4:
+            last -= 1
+        text_left = xpad_l + runs[first][0]
+        text_right = xpad_l + runs[last][1]
+        # Add small horizontal padding
+        hpad = max(3, medw // 2)
+        text_left = max(0, text_left - hpad)
+        text_right = min(w, text_right + hpad)
+        return crop_top, crop_bottom, text_left, text_right
+    return crop_top, crop_bottom, xpad_l, max(1, w - xpad_r)
+
+
 def adaptive_xpad(gray, pair):
     h, w = gray.shape
     if w < 40:

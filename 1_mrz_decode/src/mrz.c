@@ -297,3 +297,69 @@ mrz_status_t mrz_td3_decode(const char *lines, mrz_td3_t *out) {
 
     return MRZ_OK;
 }
+
+mrz_status_t mrz_cscd_decode(const char *line, mrz_cscd_t *out) {
+    if (line == NULL || out == NULL) return MRZ_ERR_BAD_FIELD;
+    memset(out, 0, sizeof(*out));
+
+    /* Build a flat 30-char buffer, dropping any '\n'. */
+    char flat[MRZ_CSCD_LINE_LEN + 1];
+    size_t w = 0;
+    for (size_t i = 0; line[i] != '\0' && w < MRZ_CSCD_LINE_LEN; ++i) {
+        char c = line[i];
+        if (c == '\n' || c == '\r') continue;
+        flat[w++] = c;
+    }
+    if (w != MRZ_CSCD_LINE_LEN) return MRZ_ERR_BAD_LENGTH;
+    flat[MRZ_CSCD_LINE_LEN] = '\0';
+
+    /* Validate every char. */
+    for (size_t i = 0; i < MRZ_CSCD_LINE_LEN; ++i)
+        if (!is_valid_mrz_char(flat[i])) return MRZ_ERR_INVALID_CHAR;
+
+    /* Doc type must be CS or CD. */
+    if (flat[0] != 'C' || (flat[1] != 'S' && flat[1] != 'D'))
+        return MRZ_ERR_BAD_FIELD;
+
+    /* Separators at positions 12, 20, 28 must be '<'. */
+    if (flat[12] != '<' || flat[20] != '<' || flat[28] != '<')
+        return MRZ_ERR_BAD_FIELD;
+
+    /* Slice fields. */
+    slice(flat, 0, 2,  out->doc_type,          sizeof(out->doc_type));
+    slice(flat, 2, 2,  out->issuing_state,     sizeof(out->issuing_state));
+    slice(flat, 4, 8,  out->doc_no,            sizeof(out->doc_no));
+    slice(flat, 13, 6, out->birth_date_yymmdd, sizeof(out->birth_date_yymmdd));
+    slice(flat, 21, 6, out->expiry_date_yymmdd,sizeof(out->expiry_date_yymmdd));
+
+    /* Extract check digits. */
+    out->ck_doc_no     = flat[11] - '0';
+    out->ck_birth_date = flat[19] - '0';
+    out->ck_expiry_date= flat[27] - '0';
+    out->ck_composite  = flat[29] - '0';
+
+    /* Verify doc-no check digit (covers positions 2-10, 9 chars). */
+    int got = mrz_check_digit(flat + 2, 9);
+    if (got < 0 || got != out->ck_doc_no) return MRZ_ERR_BAD_CHECK;
+
+    /* Verify birth date check digit (positions 13-18, 6 chars). */
+    got = mrz_check_digit(flat + 13, 6);
+    if (got < 0 || got != out->ck_birth_date) return MRZ_ERR_BAD_CHECK;
+
+    /* Verify expiry date check digit (positions 21-26, 6 chars). */
+    got = mrz_check_digit(flat + 21, 6);
+    if (got < 0 || got != out->ck_expiry_date) return MRZ_ERR_BAD_CHECK;
+
+    /* Verify composite check digit.
+     * Covers positions 2-11 + 13-19 + 21-27 (24 chars, '<' excluded).
+     * Since '<' has value 0, we can concatenate the three spans. */
+    char comp[25];
+    memcpy(comp,      flat + 2,  10);
+    memcpy(comp + 10, flat + 13,  7);
+    memcpy(comp + 17, flat + 21,  7);
+    comp[24] = '\0';
+    got = mrz_check_digit(comp, 24);
+    if (got < 0 || got != out->ck_composite) return MRZ_ERR_BAD_CHECK;
+
+    return MRZ_OK;
+}

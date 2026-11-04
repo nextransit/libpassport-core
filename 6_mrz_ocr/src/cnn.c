@@ -10,8 +10,20 @@
  */
 #include "cnn.h"
 #include "cnn_weights.h"
+/* Two line-head weight sets ship side by side: the phone-photo passport
+ * corpus (tmp/PassPortPhoto, trained through the board labels) and the
+ * scraped low-resolution corpus (assets/pic).  They are the same
+ * architecture with different weights, so they are selected at COMPILE
+ * time rather than loaded at run time -- the arrays are `static const`
+ * and land in .rodata, which is what keeps the on-device footprint flat.
+ * tools/train_two_sets.sh builds both; the GUI picks the binary. */
+#if defined(MRZ_WEIGHTS_SET_PIC)
+#include "cnn_weights_line1_pic.h"
+#include "cnn_weights_line2_pic.h"
+#else
 #include "cnn_weights_line1.h"
 #include "cnn_weights_line2.h"
+#endif
 
 #include <string.h>
 #include <stdlib.h>

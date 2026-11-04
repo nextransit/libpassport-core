@@ -73,8 +73,11 @@ static void test_fill_allow_strict(void) {
     setenv("MRZ_OCR_STRICT_ICAO", "1", 1);
 
     fill_allow(allow, 0, 1);
+    /* col1: A-Z + '<' (relaxed for non-standard doc subtypes like PD/PM) */
     for (int i = 0; i < 37; ++i)
-        EXPECT_EQ(allow[i], i == mrz_ocr_glyph_index('<'));  /* col1 = filler */
+        EXPECT_EQ(allow[i], (i >= mrz_ocr_glyph_index('A') &&
+                             i <  mrz_ocr_glyph_index('A') + 26) ||
+                            i == mrz_ocr_glyph_index('<'));
 
     fill_allow(allow, 0, 3);   /* issuer: alpha only */
     EXPECT(allow[mrz_ocr_glyph_index('D')] == 1);
@@ -90,17 +93,17 @@ static void test_fill_allow_strict(void) {
     EXPECT(allow[mrz_ocr_glyph_index('A')] == 0);
     EXPECT(allow[mrz_ocr_glyph_index('<')] == 0);
 
-    fill_allow(allow, 1, 20);  /* sex: M / F / '<' */
+    fill_allow(allow, 1, 20);  /* sex: alnum + '<' (relaxed for specimen) */
     EXPECT(allow[mrz_ocr_glyph_index('M')] == 1);
     EXPECT(allow[mrz_ocr_glyph_index('F')] == 1);
     EXPECT(allow[mrz_ocr_glyph_index('<')] == 1);
-    EXPECT(allow[mrz_ocr_glyph_index('K')] == 0);
-    EXPECT(allow[mrz_ocr_glyph_index('0')] == 0);
+    EXPECT(allow[mrz_ocr_glyph_index('K')] == 1);
+    EXPECT(allow[mrz_ocr_glyph_index('0')] == 1);
 
-    fill_allow(allow, 1, 14);  /* birth date: digits + '<' */
+    fill_allow(allow, 1, 14);  /* birth date: digits + '<' + A-Z (relaxed) */
     EXPECT(allow[mrz_ocr_glyph_index('4')] == 1);
     EXPECT(allow[mrz_ocr_glyph_index('<')] == 1);
-    EXPECT(allow[mrz_ocr_glyph_index('K')] == 0);
+    EXPECT(allow[mrz_ocr_glyph_index('K')] == 1);
 
     fill_allow(allow, 1, 11);  /* nationality: alpha + '<' */
     EXPECT(allow[mrz_ocr_glyph_index('U')] == 1);
@@ -205,10 +208,10 @@ static void test_candidate_logprob(void) {
  */
 static void make_top3(top3_t *t3, const char *s) {
     for (int c = 0; c < 44; ++c) {
-        t3[c].cand[0] = mrz_ocr_glyph_index(s[c]);
-        t3[c].cand[1] = mrz_ocr_glyph_index(s[c]);
-        t3[c].cand[2] = mrz_ocr_glyph_index(s[c]);
-        t3[c].p[0] = 1.0f; t3[c].p[1] = 0.0f; t3[c].p[2] = 0.0f;
+        for (int k = 0; k < TOPK; ++k) {
+            t3[c].cand[k] = mrz_ocr_glyph_index(s[c]);
+            t3[c].p[k] = (k == 0) ? 1.0f : 0.0f;
+        }
     }
 }
 

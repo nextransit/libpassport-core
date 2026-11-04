@@ -56,9 +56,10 @@ add_library(mrz_ocr STATIC
     ${MRZ_DIR}/src/mrz_ocr.c
     ${MRZ_DIR}/src/mrz_ocr_cnn.c
     ${MRZ_DIR}/src/mrz_ocr_crnn.c
+    ${MRZ_DIR}/src/mrz_classify.c
     ${MRZ_DIR}/src/crnn.c
     ${MRZ_DIR}/src/cnn.c)
-set_source_files_properties(${MRZ_DIR}/src/template.c ${MRZ_DIR}/src/mrz_geom.c ${MRZ_DIR}/src/mrz_ocr.c ${MRZ_DIR}/src/mrz_ocr_cnn.c ${MRZ_DIR}/src/mrz_ocr_crnn.c ${MRZ_DIR}/src/crnn.c ${MRZ_DIR}/src/cnn.c PROPERTIES COMPILE_OPTIONS "-fvisibility=default;")
+set_source_files_properties(${MRZ_DIR}/src/template.c ${MRZ_DIR}/src/mrz_geom.c ${MRZ_DIR}/src/mrz_ocr.c ${MRZ_DIR}/src/mrz_ocr_cnn.c ${MRZ_DIR}/src/mrz_ocr_crnn.c ${MRZ_DIR}/src/mrz_classify.c ${MRZ_DIR}/src/crnn.c ${MRZ_DIR}/src/cnn.c PROPERTIES COMPILE_OPTIONS "-fvisibility=default;")
 target_include_directories(mrz_ocr PUBLIC
     ${MRZ_DIR}/include
     ${MRZ_DIR}/src

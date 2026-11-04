@@ -43,6 +43,27 @@ static int do_decode(int argc, char **argv) {
         fprintf(stderr, "decode needs 1 argument (the MRZ string)\n");
         return 2;
     }
+    /* Determine total length (excluding newlines) to pick decoder. */
+    size_t len = 0;
+    for (const char *p = argv[1]; *p; ++p)
+        if (*p != '\n' && *p != '\r') ++len;
+
+    if (len == MRZ_CSCD_LINE_LEN) {
+        mrz_cscd_t f;
+        mrz_status_t s = mrz_cscd_decode(argv[1], &f);
+        if (s != MRZ_OK) {
+            fprintf(stderr, "decode failed: %s\n", mrz_strerror(s));
+            return 1;
+        }
+        printf("doc_type       : '%s'\n",  f.doc_type);
+        printf("issuing_state  : '%s'\n",  f.issuing_state);
+        printf("doc_no         : '%s'  ck=%d\n", f.doc_no, f.ck_doc_no);
+        printf("birth_yymmdd   : '%s'  ck=%d\n", f.birth_date_yymmdd, f.ck_birth_date);
+        printf("expiry_yymmdd  : '%s'  ck=%d\n", f.expiry_date_yymmdd, f.ck_expiry_date);
+        printf("composite_ck   : %d\n",     f.ck_composite);
+        return 0;
+    }
+
     mrz_td3_t f;
     mrz_status_t s = mrz_td3_decode(argv[1], &f);
     if (s != MRZ_OK) {

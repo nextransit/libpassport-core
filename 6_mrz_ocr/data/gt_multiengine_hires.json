@@ -773,7 +773,7 @@
    ],
    "l2_tier": "B",
    "l2_frozen": true,
-   "l1": "P<SNKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<",
+   "l1": "P<SNKSPECIMEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<",
    "l1_tier": "B",
    "l1_frozen": true,
    "l1_dispute": [
@@ -815,13 +815,13 @@
    ],
    "l1_dispute_n": 5,
    "raw_l1": [
-    "P<SNKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<",
+    "P<SNKSPECIMEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<",
     "P<SHKSPKCINEN<<TIOXKA<<<<<<<<<<<<<<<<<<<<<<<",
     "PPSVKSPECIMEN<<VZORKA<<<<<<<<<<<<<<<<<<<<<<<",
-    "P<SNKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<",
+    "P<SNKSPECIMEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<",
     "P<SHKSPKCINEN<<TIOXKA<<<<<<<<<<<<<<<<<<<<<<<",
     "PPSVKSPECIMEN<<VZORKA<<<<<<<<<<<<<<<<<<<<<<<",
-    "P<SNKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<",
+    "P<SNKSPECIMEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<",
     "P<SHKSPKCINEN<<TIOXKA<<<<<<<<<<<<<<<<<<<<<<<",
     "PPSVKSPECIMEN<<VZORKA<<<<<<<<<<<<<<<<<<<<<<<"
    ],

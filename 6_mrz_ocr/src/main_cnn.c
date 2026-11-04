@@ -37,6 +37,15 @@ static int run_one_cnn(const char *path) {
     printf("result.issuersusp : %d\n", r.line1_issuer_suspect);
     printf("band.x band.y band.w band.h : %d %d %d %d\n",
            r.band_x, r.band_y, r.band_w, r.band_h);
+    /* Document layout: TD3 (2x44 passport) vs CS/CD (1x30 travel permit)
+     * vs TD1 (3x30 back).  Callers need this to know how many characters
+     * each line is supposed to carry -- a 30-character reading compared
+     * against a 44-character GT is a guaranteed mismatch, not an error. */
+    printf("result.layout     : %d\n", (int)r.doc_layout);
+    printf("result.layoutname : %s\n",
+           r.doc_layout == MRZ_LAYOUT_TD3_DOUBLE_44 ? "TD3_44" :
+           r.doc_layout == MRZ_LAYOUT_SINGLE_LINE_30 ? "CS_CD_30" :
+           r.doc_layout == MRZ_LAYOUT_TD1_TRIPLE_30 ? "TD1_30" : "UNKNOWN");
     printf("result.done     : 1\n");
     face_image_free(img);
     return s == MRZ_OCR_OK ? 0 : 1;

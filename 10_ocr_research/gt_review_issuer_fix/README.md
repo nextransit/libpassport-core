@@ -35,7 +35,7 @@ GT-exact 掉的 3 张（NPA×2、SNK）经照片放大核实是**统一真值本
 - 注：NPA/CHN 都不是真值（真值 KOR），issuer fix 在这两张上无害但也无益。
 
 ### 2.2 cb64e780ab32f735_0004.jpg（斯洛伐克样本页）
-- 现GT l1: `P<SNKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<<<<<` ✗
+- 现GT l1: `P<SNKSPECIMEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<<<<<` ✗
 - 现GT l2: `7B12318830SVK1111112F34091871111111111<<<<06`（l2 首列 7 亦疑）
 - 照片实际（见 `cb64e_0004_bottom.png`）：
   - l1: `PPSVKSPECIMEN<<VZORKA<<<<<<<<<<<<<<<<<<<<<<<<`（前两列印刷为 PP）

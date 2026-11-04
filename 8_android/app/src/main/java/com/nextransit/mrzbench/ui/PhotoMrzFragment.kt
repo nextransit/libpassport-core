@@ -14,6 +14,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.ImageView
+import android.widget.ScrollView
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -24,6 +25,7 @@ import com.nextransit.mrzbench.data.Cyber
 import com.nextransit.mrzbench.photo.MrzStage
 import com.nextransit.mrzbench.photo.MrzTally
 import com.nextransit.mrzbench.photo.MrzVerdict
+import com.nextransit.mrzbench.photo.PhotoBatchRunner
 import com.nextransit.mrzbench.photo.PhotoMrzPipeline
 import com.nextransit.mrzbench.photo.PhotoMrzResult
 import com.nextransit.mrzbench.photo.verdict
@@ -54,14 +56,18 @@ class PhotoMrzFragment : Fragment() {
     private lateinit var pick: Button
     private lateinit var sample: Button
     private lateinit var run: Button
+    private lateinit var batch: Button
+    private lateinit var batchGroup: Button
     private lateinit var methodButton: Button
     private lateinit var allToggle: CheckBox
+    private lateinit var scroll: ScrollView
     private lateinit var status: TextView
     private lateinit var result: TextView
     private val images = mutableMapOf<String, ImageView>()
     private lateinit var stageLabels: TextView
     private var source: Bitmap? = null
     private var method = "auto"
+    private var batchGroupFilter = "all"
 
     private val picker = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -106,8 +112,11 @@ class PhotoMrzFragment : Fragment() {
         pick = view.findViewById(R.id.btn_photo_pick)
         sample = view.findViewById(R.id.btn_photo_sample)
         run = view.findViewById(R.id.btn_photo_run)
+        batch = view.findViewById(R.id.btn_photo_batch)
+        batchGroup = view.findViewById(R.id.btn_photo_batch_group)
         methodButton = view.findViewById(R.id.btn_photo_method)
         allToggle = view.findViewById(R.id.cb_photo_all)
+        scroll = view.findViewById(R.id.photo_scroll)
         status = view.findViewById(R.id.photo_status)
         result = view.findViewById(R.id.photo_result)
         stageLabels = view.findViewById(R.id.photo_stage_labels)
@@ -121,6 +130,8 @@ class PhotoMrzFragment : Fragment() {
         sample.setOnClickListener { showSamplePicker() }
         run.setOnClickListener { startPipeline() }
         methodButton.setOnClickListener { showMethodPicker() }
+        batch.setOnClickListener { startBatchTest() }
+        batchGroup.setOnClickListener { showBatchGroupPicker() }
     }
 
     private fun photoMethodOptions(): List<Pair<String, String>> =
@@ -175,6 +186,11 @@ class PhotoMrzFragment : Fragment() {
         for (f in picFiles.sorted()) {
             if (!f.endsWith(".jpg", true) && !f.endsWith(".jpeg", true) && !f.endsWith(".png", true)) continue
             results += "pic/$f" to "pic/$f"
+        }
+        val passPortFiles = ctx.assets.list("PassPortPhoto") ?: emptyArray()
+        for (f in passPortFiles.sorted()) {
+            if (!f.endsWith(".jpg", true) && !f.endsWith(".jpeg", true) && !f.endsWith(".png", true)) continue
+            results += "PassPortPhoto/$f" to "PassPortPhoto/$f"
         }
         return results
     }
@@ -322,6 +338,7 @@ class PhotoMrzFragment : Fragment() {
             appendColored(sb, output.error + "\n", Cyber.warn)
         }
         result.text = sb
+        scrollToBottom()
     }
 
     private fun renderAll(outputs: List<Pair<String, PhotoMrzResult>>) {
@@ -368,6 +385,11 @@ class PhotoMrzFragment : Fragment() {
             sb.append("\n")
         }
         result.text = sb
+        scrollToBottom()
+    }
+
+    private fun scrollToBottom() {
+        scroll.post { scroll.fullScroll(View.FOCUS_DOWN) }
     }
 
     private fun appendColored(sb: SpannableStringBuilder, text: String, color: Int) {
@@ -379,6 +401,126 @@ class PhotoMrzFragment : Fragment() {
             sb.length,
             Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
         )
+    }
+
+    private fun showBatchGroupPicker() {
+        val options = listOf(
+            "all" to "全部",
+            "assets/pic" to "assets/pic",
+            "Photo" to "Photo",
+            "tmp/PassPortPhoto" to "tmp/PassPortPhoto",
+        )
+        val labels = options.map { it.second }.toTypedArray()
+        val checked = options.indexOfFirst { it.first == batchGroupFilter }.coerceAtLeast(0)
+        AlertDialog.Builder(requireContext())
+            .setTitle("图片源")
+            .setSingleChoiceItems(labels, checked) { dialog, which ->
+                batchGroupFilter = options[which].first
+                batchGroup.text = "图片源: ${options[which].second}"
+                dialog.dismiss()
+            }
+            .setNegativeButton(android.R.string.cancel) { d, _ -> d.dismiss() }
+            .show()
+    }
+
+    private fun startBatchTest() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val allEntries = withContext(Dispatchers.IO) {
+                    PhotoBatchRunner.listAllPhotos(requireContext())
+                }
+                val entries = when (batchGroupFilter) {
+                    "assets/pic" -> allEntries.filter { it.group == "assets/pic" }
+                    "Photo" -> allEntries.filter { it.group == "Photo" }
+                    "tmp/PassPortPhoto" -> allEntries.filter { it.group == "tmp/PassPortPhoto" }
+                    else -> allEntries
+                }
+                if (entries.isEmpty()) {
+                    status.text = "未找到图片"
+                    return@launch
+                }
+                batch.isEnabled = false
+                pick.isEnabled = false
+                run.isEnabled = false
+                status.text = "批量测试 0/${entries.size}  算法=$method"
+                val summary = withContext(Dispatchers.Default) {
+                    PhotoBatchRunner.run(
+                        requireContext(),
+                        entries,
+                        method,
+                    ) { done, total, _ ->
+                        android.os.Handler(android.os.Looper.getMainLooper()).post {
+                            status.text = "批量测试 $done/$total  算法=$method"
+                        }
+                    }
+                }
+                renderBatchSummary(summary)
+            } catch (t: Throwable) {
+                status.text = "批量测试失败: ${t.message ?: t.javaClass.simpleName}"
+            } finally {
+                batch.isEnabled = true
+                pick.isEnabled = true
+                run.isEnabled = true
+            }
+        }
+    }
+
+    private fun renderBatchSummary(summary: PhotoBatchRunner.BatchSummary) {
+        val sb = SpannableStringBuilder()
+        appendColored(sb, "批量测试结果\n\n", Cyber.neonCyan)
+        appendColored(sb, "总数  ", Cyber.textDim)
+        sb.append("${summary.total}\n")
+        appendColored(sb, "PASS  ", Cyber.textDim)
+        appendColored(sb, "${summary.pass}\n", Cyber.ok)
+        appendColored(sb, "SUSPECT  ", Cyber.textDim)
+        appendColored(sb, "${summary.suspect}\n", Cyber.warn)
+        appendColored(sb, "FAIL  ", Cyber.textDim)
+        appendColored(sb, "${summary.fail}\n", Cyber.err)
+        appendColored(sb, "校验位通过  ", Cyber.textDim)
+        sb.append("${summary.decoded}/${summary.total}\n")
+        appendColored(sb, "GT 匹配数  ", Cyber.textDim)
+        sb.append("${summary.gtCount}\n")
+        appendColored(sb, "line1 字符准确率  ", Cyber.textDim)
+        appendColored(sb, "${"%.2f".format(summary.l1CharAcc * 100)}%\n", Cyber.neonCyan)
+        appendColored(sb, "line2 字符准确率  ", Cyber.textDim)
+        appendColored(sb, "${"%.2f".format(summary.l2CharAcc * 100)}%\n", Cyber.neonCyan)
+        appendColored(sb, "精确匹配  ", Cyber.textDim)
+        appendColored(sb, "${summary.exactMatch}/${summary.gtCount}\n", Cyber.neonCyan)
+        appendColored(sb, "p50  ", Cyber.textDim)
+        sb.append("${summary.msP50.toInt()} ms\n")
+        appendColored(sb, "p95  ", Cyber.textDim)
+        sb.append("${summary.msP95.toInt()} ms\n\n")
+        appendColored(sb, "明细\n", Cyber.neonPurple)
+        summary.results.forEach { r ->
+            val color = when (r.verdict) {
+                MrzVerdict.PASS -> Cyber.ok
+                MrzVerdict.SUSPECT -> Cyber.warn
+                MrzVerdict.FAIL -> Cyber.err
+            }
+            appendColored(sb, "${r.entry.path}  ", Cyber.textDim)
+            appendColored(
+                sb,
+                when (r.verdict) {
+                    MrzVerdict.PASS -> "PASS"
+                    MrzVerdict.SUSPECT -> "SUSPECT"
+                    MrzVerdict.FAIL -> "FAIL"
+                } + "  ${r.backend}  ${r.ms}ms\n",
+                color,
+            )
+            if (r.line1.isNotEmpty() || r.line2.isNotEmpty()) {
+                appendColored(sb, "  ${r.line1}\n  ${r.line2}\n", Cyber.neonCyan)
+            }
+            if (r.error.isNotEmpty()) {
+                appendColored(sb, "  note: ${r.error}\n", Cyber.warn)
+            }
+        }
+        result.text = sb
+        scrollToBottom()
+        status.text = "批量测试完成  " +
+            "PASS ${summary.pass}/${summary.total}  " +
+            "line1 ${"%.1f".format(summary.l1CharAcc * 100)}%  " +
+            "line2 ${"%.1f".format(summary.l2CharAcc * 100)}%  " +
+            "p50 ${summary.msP50.toInt()}ms"
     }
 
     private fun decode(uri: Uri): Bitmap {

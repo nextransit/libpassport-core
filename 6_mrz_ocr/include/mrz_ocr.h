@@ -22,6 +22,14 @@ typedef enum {
     MRZ_OCR_ERR_TIMEOUT         = -7,
 } mrz_ocr_status_t;
 
+/* Document layout classification (TD3 vs CS/CD vs TD1). */
+typedef enum {
+    MRZ_LAYOUT_UNKNOWN       = 0,
+    MRZ_LAYOUT_SINGLE_LINE_30,   /* 港澳通行证(CS) / 台湾通行证(CD) 正面单行 30 字符 */
+    MRZ_LAYOUT_TD3_DOUBLE_44,    /* 护照 (TD3) 双行 44 字符 */
+    MRZ_LAYOUT_TD1_TRIPLE_30,    /* 回乡证(CR) / 台胞证背面 三行 30 字符 */
+} mrz_doc_layout_t;
+
 /* One recognised character: the symbol, the per-character confidence
  * (0..100), and the bounding box (in original image coords). */
 typedef struct {
@@ -119,6 +127,8 @@ typedef struct {
      * a state may print a partial code.  A field containing '<' is
      * never flagged. */
     int             line1_issuer_suspect;
+    /* Document layout classification result. */
+    mrz_doc_layout_t doc_layout;
 } mrz_ocr_result_t;
 
 /* Initialise the embedded OCR-B template bank. Always returns
@@ -230,13 +240,39 @@ void mrz_rotate_band(const uint8_t *src, int W, int H, double deg,
                      uint8_t fill, int bilinear, uint8_t *dst);
 void mrz_normalize_local_contrast(const uint8_t *gray, int W, int H,
                                   uint8_t *out);
+void mrz_dewarp_parabolic(const uint8_t *src, uint8_t *dst,
+                          int width, int height, int src_stride, int dst_stride);
 
 int mrz_ocr_locate_band(const uint8_t *bin, int W, int H,
                         mrz_ocr_rect_t *out);
 int mrz_ocr_split_lines(const uint8_t *bin, int W, int H,
                         mrz_ocr_rect_t *out);
+
+/* Single-row fallback for documents that carry ONE MRZ row (CS/CD
+ * travel permits, 1 x 30 characters).  Returns 0 and fills out[0] when
+ * the band is dominated by a single text row. */
+int mrz_ocr_split_lines_single(const uint8_t *bin, int W, int H,
+                               mrz_ocr_rect_t *out);
+
+/* Two rows if the band has them, one row otherwise.
+ * `n_lines` is set to 1 or 2 and the caller must not read out[1] when it
+ * is 1.  Returns -1 when neither shape fits (drop the frame). */
+int mrz_ocr_split_lines_n(const uint8_t *bin, int W, int H,
+                          mrz_ocr_rect_t *out, int *n_lines);
 int mrz_ocr_segment_line(const uint8_t *bin, int W, int H,
                          mrz_ocr_rect_t *chars, int max_chars);
+
+/* Classify the MRZ document layout (TD3 vs CS/CD vs TD1) using
+ * aspect-ratio prior + dual-hypothesis grid valley energy.
+ * binaryBottomLine: the bottom line's binary image (foreground=1).
+ * lineW/lineH: dimensions of the bottom line.
+ * stride: row stride of binaryBottomLine.
+ * allCandidateLines: all candidate line rects found by split_lines.
+ * numLines: number of candidate lines. */
+mrz_doc_layout_t mrz_classify_layout(const uint8_t *binaryBottomLine,
+                                     int lineW, int lineH, int stride,
+                                     const mrz_ocr_rect_t *allCandidateLines,
+                                     int numLines);
 
 /* CNN-based recognition (alternative to the template-bank pipeline). */
 mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,

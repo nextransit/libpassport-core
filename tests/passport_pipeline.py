@@ -218,6 +218,7 @@ def ocr_crop(image: Path, loc, tool: Path = CNN, margin: int = 8,
         except OSError:
             pass
     r["crop"] = {"x": x0, "y": y0, "w": x1 - x0, "h": y1 - y0}
+    r["upscale"] = upscale
     return r
 
 

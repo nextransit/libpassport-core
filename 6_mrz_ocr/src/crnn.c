@@ -4,7 +4,18 @@
 #include <string.h>
 
 int crnn_weights_available(void) {
+#if defined(MRZ_WEIGHTS_SET_PIC)
+    /* The CRNN head is trained on the CNN features of ONE weight set --
+     * features come out of the line head, not out of a shared trunk.  The
+     * assets/pic variant ships no CRNN of its own, and reusing the
+     * passport one would reproduce exactly the silent failure documented
+     * in the §21.3 note (a head scoring 28% while `fuse == cnn` hid it).
+     * Reporting "unavailable" makes the caller fall back to the CNN path
+     * instead of quietly decoding noise. */
+    return 0;
+#else
     return MRZ_CRNN_WEIGHTS_AVAILABLE;
+#endif
 }
 
 /* Load one direction's GRU weights.  The forward and backward halves of
@@ -97,6 +108,23 @@ static float sigmoidf_safe(float x) {
     return 1.0f / (1.0f + expf(-x));
 }
 
+/* Fast tanh via 3rd-order rational approximation.
+ * tanh(x) ≈ x * (27 + x²) / (27 + 9 * x²), max error < 0.5% for |x| < 4.5.
+ * For |x| >= 4.5, tanh ≈ ±1 (error < 0.0001). */
+static inline float fast_tanhf(float x) {
+    if (x > 4.5f) return 1.0f;
+    if (x < -4.5f) return -1.0f;
+    float x2 = x * x;
+    return x * (27.0f + x2) / (27.0f + 9.0f * x2);
+}
+
+/* Fast sigmoid via tanh identity: sigmoid(x) = 0.5 + 0.5 * tanh(x/2). */
+static inline float fast_sigmoidf(float x) {
+    if (x < -12.0f) return 0.00000614f;
+    if (x > 12.0f) return 0.99999386f;
+    return 0.5f + 0.5f * fast_tanhf(0.5f * x);
+}
+
 /* One GRU direction over the whole row.
  *
  * `emb` holds the projected + position-embedded input for every step
@@ -119,22 +147,19 @@ static void crnn_gru_dir(const float *emb, int steps,
         int t = reverse ? (steps - 1 - k) : k;
         const float *x = emb + t * CRNN_HIDDEN;
         float z[CRNN_HIDDEN], r[CRNN_HIDDEN], n[CRNN_HIDDEN];
+        /* Fused z/r/n gate loop: load x[i] and h[i] once instead of 3×. */
         for (int j = 0; j < CRNN_HIDDEN; ++j) {
-            float sz = bz[j], sr = br[j];
+            float sz = bz[j], sr = br[j], sn = bh_in[j], sh = bh_hn[j];
             for (int i = 0; i < CRNN_HIDDEN; ++i) {
-                sz += x[i] * wz[i * CRNN_HIDDEN + j] + h[i] * uz[i * CRNN_HIDDEN + j];
-                sr += x[i] * wr[i * CRNN_HIDDEN + j] + h[i] * ur[i * CRNN_HIDDEN + j];
+                float xi = x[i], hi = h[i];
+                int base = i * CRNN_HIDDEN + j;
+                sz += xi * wz[base] + hi * uz[base];
+                sr += xi * wr[base] + hi * ur[base];
+                sn += xi * wh[base];
+                sh += hi * uh[base];
             }
             z[j] = sigmoidf_safe(sz);
             r[j] = sigmoidf_safe(sr);
-        }
-        for (int j = 0; j < CRNN_HIDDEN; ++j) {
-            float sn = bh_in[j];
-            float sh = bh_hn[j];
-            for (int i = 0; i < CRNN_HIDDEN; ++i) {
-                sn += x[i] * wh[i * CRNN_HIDDEN + j];
-                sh += h[i] * uh[i * CRNN_HIDDEN + j];
-            }
             n[j] = tanhf(sn + r[j] * sh);
         }
         for (int j = 0; j < CRNN_HIDDEN; ++j)

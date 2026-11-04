@@ -33,6 +33,8 @@ __pycache__/
 6_mrz_ocr/data/corpus/
 6_mrz_ocr/data/corpus_eval/
 6_mrz_ocr/data/corpus_train/
+6_mrz_ocr/data/corpus_eval_v2/
+6_mrz_ocr/data/corpus_train_v2/
 6_mrz_ocr/data/hard_slices.npz
 6_mrz_ocr/failures_*.json
 3_face_recognition/tests/data/
@@ -59,3 +61,4 @@ tmp/
 
 # mrz_ocr bench scratch images
 6_mrz_ocr/data/_*.ppm
+14_ultimateMRZ-SDK/

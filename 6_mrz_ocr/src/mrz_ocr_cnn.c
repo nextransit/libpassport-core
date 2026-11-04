@@ -298,42 +298,83 @@ int mrz_ocr_line1_issuer_suspect(const char *line1) {
 }
 
 
-/* ---- top-3 candidates among the allowed classes ---- */
-typedef struct { int cand[3]; float p[3]; } top3_t;
+/* ---- top-K candidates among the allowed classes ----
+ * K=5 gives the checksum beam search enough alternatives to recover
+ * characters that the CNN confuses with visually similar digits
+ * (D↔6, B↔0, A↔3, M↔H) in the personal-number field.  With K=3
+ * the correct character was sometimes absent from the candidate list
+ * and no amount of beam depth could rescue it. */
+#define TOPK 5
+typedef struct { int cand[TOPK]; float p[TOPK]; } top3_t;
 
 static void top3_of(const float *probs, int allow[37], top3_t *t) {
-    for (int k = 0; k < 3; ++k) { t->cand[k] = -1; t->p[k] = -1.0f; }
+    for (int k = 0; k < TOPK; ++k) { t->cand[k] = -1; t->p[k] = -1.0f; }
     for (int o = 0; o < 37; ++o) {
         if (allow[o] == 0) continue;
         float p = probs[o];
-        if (p > t->p[0]) {
-            t->p[2] = t->p[1]; t->cand[2] = t->cand[1];
-            t->p[1] = t->p[0]; t->cand[1] = t->cand[0];
-            t->p[0] = p; t->cand[0] = o;
-        } else if (p > t->p[1]) {
-            t->p[2] = t->p[1]; t->cand[2] = t->cand[1];
-            t->p[1] = p; t->cand[1] = o;
-        } else if (p > t->p[2]) {
-            t->p[2] = p; t->cand[2] = o;
+        /* insertion sort into the top-K array (descending) */
+        int k = TOPK - 1;
+        if (p > t->p[k]) {
+            t->p[k] = p; t->cand[k] = o;
+            while (k > 0 && t->p[k] > t->p[k-1]) {
+                float tp = t->p[k]; t->p[k] = t->p[k-1]; t->p[k-1] = tp;
+                int tc = t->cand[k]; t->cand[k] = t->cand[k-1]; t->cand[k-1] = tc;
+                k--;
+            }
         }
     }
     int lt = mrz_ocr_glyph_index('<');
     if (t->cand[0] < 0) {
-        t->cand[0] = t->cand[1] = t->cand[2] = lt;
-        t->p[0] = t->p[1] = t->p[2] = 0.0f;
+        for (int k = 0; k < TOPK; ++k) { t->cand[k] = lt; t->p[k] = 0.0f; }
     } else {
-        for (int k = 1; k < 3; ++k) {
+        for (int k = 1; k < TOPK; ++k) {
             if (t->cand[k] < 0) { t->cand[k] = t->cand[0]; t->p[k] = 0.0f; }
         }
     }
 }
 
 /* ---- per-position character whitelist (syntax mask) ---- */
+/* Set by mrz_ocr_recognise_cnn after layout classification; read by
+ * fill_allow and decode_row to switch between TD3 and CS/CD masks. */
+static mrz_doc_layout_t g_doc_layout = MRZ_LAYOUT_TD3_DOUBLE_44;
+
 static void fill_allow(int allow[37], int line_idx, int col) {
     int d0 = mrz_ocr_glyph_index('0');
     int a0 = mrz_ocr_glyph_index('A');
     int lt = mrz_ocr_glyph_index('<');
     for (int i = 0; i < 37; ++i) allow[i] = 1;
+
+    /* CS/CD single-line 30-char mask (港澳台通行证). */
+    if (g_doc_layout == MRZ_LAYOUT_SINGLE_LINE_30) {
+        if (col == 0) {
+            for (int i = 0; i < 37; ++i) allow[i] = 0;
+            allow[mrz_ocr_glyph_index('C')] = 1;
+        } else if (col == 1) {
+            for (int i = 0; i < 37; ++i) allow[i] = 0;
+            allow[mrz_ocr_glyph_index('S')] = 1;
+            allow[mrz_ocr_glyph_index('D')] = 1;
+        } else if (col == 2) {
+            for (int i = 0; i < 37; ++i) allow[i] = 0;
+            allow[mrz_ocr_glyph_index('C')] = 1;
+            allow[lt] = 1;
+        } else if (col == 3) {
+            /* A-Z excluding I,O + 0-9 */
+            for (int i = 0; i < 37; ++i) allow[i] = 0;
+            for (int i = 0; i < 26; ++i) {
+                char ch = 'A' + i;
+                if (ch == 'I' || ch == 'O') continue;
+                allow[a0 + i] = 1;
+            }
+            for (int i = 0; i < 10; ++i) allow[d0 + i] = 1;
+        } else if (col == 12 || col == 20 || col == 28) {
+            for (int i = 0; i < 37; ++i) allow[i] = (i == lt);
+        } else {
+            /* All other positions: digits only */
+            for (int i = 0; i < 37; ++i)
+                allow[i] = (i >= d0 && i <= d0 + 9) ? 1 : 0;
+        }
+        return;
+    }
 
     if (!strict_icao_mode()) {
         /* Loose legacy mask: numeric check digits, M/F/< sex, and the
@@ -366,15 +407,22 @@ static void fill_allow(int allow[37], int line_idx, int col) {
      * contains the ground truth and only removes impossible classes. */
     if (line_idx == 0) {
         if (col == 0) {
-            /* Document type letter: ICAO 9303 limits this to the
-             * passport path accepts only P. Fixing this slot is safe for
-             * this module and avoids rejecting an otherwise valid TD3
-             * result because the first glyph is the weakest one. */
+            /* ICAO 9303 document type: A (alien/ID), C (card/travel
+             * permit), I (ID card), P (passport), V (visa).  Restricting
+             * to P alone silently discards ID cards and travel permits. */
             for (int i = 0; i < 37; ++i) allow[i] = 0;
+            allow[mrz_ocr_glyph_index('A')] = 1;
+            allow[mrz_ocr_glyph_index('C')] = 1;
+            allow[mrz_ocr_glyph_index('I')] = 1;
             allow[mrz_ocr_glyph_index('P')] = 1;
+            allow[mrz_ocr_glyph_index('V')] = 1;
         } else if (col == 1) {
-            /* Type-line filler: "P<..." */
-            for (int i = 0; i < 37; ++i) allow[i] = (i == lt);
+            /* Document type qualifier: '<' (normal P<) or A-Z subtype
+             * (PO specimen, PA official, PD diplomatic, etc.).  ICAO
+             * 9303 allows any capital letter here; restricting to '<'
+             * alone silently discards specimen passports. */
+            for (int i = 0; i < 37; ++i)
+                allow[i] = (i == lt) || (i >= a0 && i < a0 + 26);
         } else if (col >= 2 && col <= 4) {
             /* Issuing state: 3 alpha */
             for (int i = 0; i < 37; ++i) allow[i] = (i >= a0 && i < a0 + 26);
@@ -397,14 +445,16 @@ static void fill_allow(int allow[37], int line_idx, int col) {
             for (int i = 0; i < 37; ++i)
                 allow[i] = (i >= a0 && i < a0 + 26) || i == lt;
         } else if ((col <= 18) || (col >= 21 && col <= 26)) {
-            /* Birth / expiry dates: numeric ('<' = unknown date) */
+            /* Birth / expiry dates: numeric ('<' = unknown date).
+             * Some specimen/test docs have letters here, allow A-Z too. */
             for (int i = 0; i < 37; ++i)
-                allow[i] = ((i >= d0 && i <= d0 + 9) || i == lt) ? 1 : 0;
+                allow[i] = ((i >= d0 && i <= d0 + 9) || i == lt ||
+                            (i >= a0 && i < a0 + 26)) ? 1 : 0;
         } else if (col == 20) {
-            for (int i = 0; i < 37; ++i) allow[i] = 0;
-            allow[mrz_ocr_glyph_index('M')] = 1;
-            allow[mrz_ocr_glyph_index('F')] = 1;
-            allow[lt] = 1;
+            /* Sex: M / F / '<' plus alnum (relaxed for specimen docs). */
+            for (int i = 0; i < 37; ++i)
+                allow[i] = (i >= a0 && i < a0 + 26) ||
+                           (i >= d0 && i <= d0 + 9) || i == lt;
         } else if (col <= 41) {
             /* Personal number: alnum + '<' */
             for (int i = 0; i < 37; ++i)
@@ -460,8 +510,8 @@ typedef struct {
     char alt[64];
     unsigned char gate[MRZ_DIAG_CHARS];
     unsigned char ch[MRZ_DIAG_CHARS];
-    int cand[MRZ_DIAG_CHARS][3];
-    float p[MRZ_DIAG_CHARS][3];
+    int cand[MRZ_DIAG_CHARS][TOPK];
+    float p[MRZ_DIAG_CHARS][TOPK];
     float ink[MRZ_DIAG_CHARS];
 } mrz_diag_line_t;
 
@@ -587,7 +637,7 @@ static void mrz_diag_write(const mrz_ocr_result_t *out) {
         for (int c = 0; c < n; ++c) {
             if (c) fputc(',', f);
             fprintf(f, "{\"i\":%d,\"top\":[", c);
-            for (int k = 0; k < 3; ++k) {
+            for (int k = 0; k < TOPK; ++k) {
                 if (k) fputc(',', f);
                 int g = d->cand[c][k];
                 if (g >= 0 && g < 37) {
@@ -1036,7 +1086,7 @@ int mrz_ocr_last_seg_score(void) { return g_last_seg_score; }
  * medw+8 (the distribution the CNN was trained on). When no good grid
  * exists the caller falls back to the run-based segmenter. */
 static int segment_line_grid(const uint8_t *bin, int W, int H,
-                             mrz_ocr_rect_t *chars, int max_chars,
+                             mrz_ocr_rect_t *chars, int n_cells,
                              int line_idx) {
     mrz_diag_line_t *dg = mrz_diag_line(line_idx);
     if (dg) {
@@ -1052,7 +1102,7 @@ static int segment_line_grid(const uint8_t *bin, int W, int H,
     int medw = runs.medw;
     int cell = medw + 8;
     if (cell < medw + 4) cell = medw + 4;
-    if (max_chars < 44) return -1;        /* grid mode needs all 44 slots */
+    if (n_cells < 30) return -1;        /* grid mode needs at least 30 slots */
     if (dg) { dg->nrun = nrun; dg->medw = medw; dg->cell = cell; }
 
     /* column projection, computed once and shared by pitch search and
@@ -1063,8 +1113,8 @@ static int segment_line_grid(const uint8_t *bin, int W, int H,
         for (int y = 0; y < H; ++y) col[x] += bin[y * W + x] ? 1 : 0;
 
     /* --- pitch estimate --- */
-    int Lmin = W / 52; if (Lmin < 10) Lmin = 10;
-    int Lmax = W / 32; if (Lmax < Lmin + 2) Lmax = Lmin + 2;
+    int Lmin = W / (n_cells + 8); if (Lmin < 10) Lmin = 10;
+    int Lmax = W / (n_cells - 12); if (Lmax < Lmin + 2) Lmax = Lmin + 2;
     if (dg) { dg->Lmin = Lmin; dg->Lmax = Lmax; }
     int diffs[95]; int nd = 0;
     for (int i = 1; i < nrun; ++i) {
@@ -1115,22 +1165,25 @@ static int segment_line_grid(const uint8_t *bin, int W, int H,
 
     double first_center = (double)runs.center[left_run];
     double last_center = (double)runs.center[right_run];
-    double Lfit = (last_center - first_center) / 43.0;
-    if (Lfit < (double)Lmin || Lfit > (double)Lmax)
-        Lfit = (double)L0;
+    double Lfit = (last_center - first_center) / (n_cells - 1.0);
     if (dg) { dg->L0 = L0; dg->Lfit = Lfit; }
 
 
     double Lcand[12]; int nL = 0;
     double lstart = floor((Lfit - 1.0) * 4.0) / 4.0;
     double lend = ceil((Lfit + 1.0) * 4.0) / 4.0;
+    /* When Lfit falls outside [Lmin,Lmax] the text doesn't fill the band
+     * (e.g. CS/CD with border/shadow at the edges).  Use Lfit-centred
+     * candidates instead of L0, which was derived from autocorrelation
+     * of the full band including borders and is wrong. */
+    double lo = (Lfit >= Lmin && Lfit <= Lmax) ? (double)Lmin : Lfit * 0.7;
+    double hi = (Lfit >= Lmin && Lfit <= Lmax) ? (double)Lmax : Lfit * 1.3;
     for (double L = lstart; L <= lend + 0.001 && nL < 12; L += 0.25) {
-        if (L >= (double)Lmin && L <= (double)Lmax)
+        if (L >= lo && L <= hi)
             Lcand[nL++] = L;
     }
     if (nL == 0) {
-        Lcand[nL++] = (double)L0;
-        Lfit = (double)L0;
+        Lcand[nL++] = (Lfit >= Lmin && Lfit <= Lmax) ? (double)L0 : Lfit;
     }
 
     /* --- phase search ---
@@ -1185,11 +1238,11 @@ static int segment_line_grid(const uint8_t *bin, int W, int H,
         int nsteps = (int)((c0_max - c0_min) / PSTEP) + 1;
         for (int si = 0; si < nsteps; ++si) {
             double c0d = c0_min + si * PSTEP;
-            double last = c0d + 43.0 * L;
+            double last = c0d + (double)(n_cells - 1) * L;
             if (last < last_center - cell || last > last_center + cell)
                 continue;
             int cost = 0;
-            for (int k = 0; k < 44; ++k) {
+            for (int k = 0; k < n_cells; ++k) {
                 double cx = c0d + (double)k * L;
                 int edges[2] = {
                     (int)(cx - (double)(cell / 2) + 0.5),
@@ -1258,7 +1311,7 @@ static int segment_line_grid(const uint8_t *bin, int W, int H,
     }
     if (cell_use < 6) cell_use = 6;
     if (dg) dg->win_w = cell_use;
-    for (int k = 0; k < 44; ++k) {
+    for (int k = 0; k < n_cells; ++k) {
         double cx = best_c0 + (double)k * best_L;
         int x0 = (int)(cx - (double)(cell_use / 2) + 0.5);
         int ww = cell_use;
@@ -1282,10 +1335,10 @@ static int segment_line_grid(const uint8_t *bin, int W, int H,
         for (int i = 0; i < nrun; ++i) {
             int c = runs.center[i];
             double pos = ((double)c - best_c0) / best_L;
-            if (pos < -0.6 || pos > 43.6) continue;   /* outside the row */
+            if (pos < -0.6 || pos > (double)(n_cells - 1) + 0.6) continue;   /* outside the row */
             int k = (int)floor(pos + 0.5);
             if (k < 0) k = 0;
-            if (k > 43) k = 43;
+            if (k > n_cells - 1) k = n_cells - 1;
             double d = fabs(pos - (double)k);
             sum += d;
             cnt++;
@@ -1326,7 +1379,7 @@ static double mrz_candidate_logprob(const char *line, const top3_t *t3) {
     for (int c = 0; c < 44; ++c) {
         int g = mrz_ocr_glyph_index(line[c]);
         float p = 0.0f;
-        for (int k = 0; k < 3; ++k)
+        for (int k = 0; k < TOPK; ++k)
             if (t3[c].cand[k] == g) { p = t3[c].p[k]; break; }
         if (p <= 1e-6f) p = 1e-6f;
         s += log((double)p);
@@ -1452,7 +1505,7 @@ static double mrz_beam_opt_suffix(const mrz_beam_ctx *ctx, int k) {
         int c = ctx->cols[i];
         const top3_t *t = &ctx->t3[c];
         double best = 0.0;
-        for (int j = 1; j < 3; ++j) {
+        for (int j = 1; j < TOPK; ++j) {
             if (t->cand[j] < 0) continue;
             if (j > 1 && t->cand[j] == t->cand[1]) continue;
             if (t->cand[j] == t->cand[0]) continue;
@@ -1511,7 +1564,7 @@ static void mrz_beam_recurse(mrz_beam_ctx *ctx, int k, int used,
      * silently dropped.  (Measured: with the budget consumed at the
      * fourth flip the walk aborted early and every reading that
      * needed four corrections was lost.) */
-    for (int j = 1; used < ctx->depth && j < 3; ++j) {
+    for (int j = 1; used < ctx->depth && j < TOPK; ++j) {
         int g = t->cand[j];
         if (g < 0) continue;
         if (j > 1 && g == t->cand[1]) continue;   /* duplicate */
@@ -1670,16 +1723,16 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
         fill_allow(allow, line_idx, c);
         top3_of(probs + c * CNN_OUT, allow, &t3[c]);
         if (dg && c < MRZ_DIAG_CHARS) {
-            for (int k = 0; k < 3; ++k) {
+            for (int k = 0; k < TOPK; ++k) {
                 dg->cand[c][k] = t3[c].cand[k];
                 dg->p[c][k] = t3[c].p[k];
             }
         }
         if (dbg) {
-            fprintf(stderr, "TOPK L%d c%02d: %c(%.3f) %c(%.3f) %c(%.3f)\n", line_idx,
-                    c, MRZ_OCR_GLYPHS[t3[c].cand[0]].ch, t3[c].p[0],
-                    MRZ_OCR_GLYPHS[t3[c].cand[1]].ch, t3[c].p[1],
-                    MRZ_OCR_GLYPHS[t3[c].cand[2]].ch, t3[c].p[2]);
+            fprintf(stderr, "TOPK L%d c%02d:", line_idx, c);
+            for (int k = 0; k < TOPK; ++k)
+                fprintf(stderr, " %c(%.3f)", MRZ_OCR_GLYPHS[t3[c].cand[k]].ch, t3[c].p[k]);
+            fprintf(stderr, "\n");
         }
     }
 
@@ -1723,6 +1776,7 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
         for (int c = 0; c < total; ++c) {
             char ch0 = dest[c];
             if (ch0 == 'X' || ch0 == 'R') {
+                if (t3[c].p[0] >= 0.95f) continue;
                 float thr = (gate > 0.0f) ? gate : 60.0f;
                 if (patch_ink[c] < thr) {
                     dest[c] = '<';
@@ -1799,9 +1853,9 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
             double best_lp = -1e300;
             char best3[3];
             int found = 0;
-            for (int a = 0; a < 3; ++a) {
-                for (int b = 0; b < 3; ++b) {
-                    for (int c = 0; c < 3; ++c) {
+            for (int a = 0; a < TOPK; ++a) {
+                for (int b = 0; b < TOPK; ++b) {
+                    for (int c = 0; c < TOPK; ++c) {
                         char cand[3] = {
                             MRZ_OCR_GLYPHS[t3[2].cand[a]].ch,
                             MRZ_OCR_GLYPHS[t3[3].cand[b]].ch,
@@ -1945,8 +1999,13 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
                 char best_copy[45];
                 memcpy(best_copy, best, 45);
                 double best_score_copy = best_score;
+                static float amb_margin = -1.0f;
+                if (amb_margin < 0.0f) {
+                    const char *e = getenv("MRZ_OCR_AMB_MARGIN");
+                    amb_margin = (e && e[0]) ? (float)atof(e) : MRZ_AMBIGUITY_MARGIN;
+                }
                 mrz_beam_search(dest, t3, idxs, picks, best_copy, &best_score_copy,
-                                alt, &alt_score, MRZ_AMBIGUITY_MARGIN);
+                                alt, &alt_score, amb_margin);
             }
 
             /* The search only replaces the decode when it actually
@@ -1968,12 +2027,81 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
                 if (amb && alt_score > -1e299) {
                     double gap = best_score - alt_score;
                     int ndiff = mrz_alt_diff_count(best, alt);
-                    if (gap < MRZ_AMBIGUITY_MARGIN &&
+                    static float amb_margin2 = -1.0f;
+                    if (amb_margin2 < 0.0f) {
+                        const char *e = getenv("MRZ_OCR_AMB_MARGIN");
+                        amb_margin2 = (e && e[0]) ? (float)atof(e) : MRZ_AMBIGUITY_MARGIN;
+                    }
+                    if (gap < amb_margin2 &&
                         ndiff >= MRZ_AMBIGUITY_MIN_DIFF &&
                         mrz_alt_is_material(best, alt)) {
                         amb->ambiguous = 1;
                         amb->margin = (int)(gap * 1000.0);
                         memcpy(amb->alt, alt, 45);
+                    }
+                }
+            }
+        }
+    }
+
+    /* (e) Tail check-digit rescue.
+     *
+     * Positions 42 and 43 are BOTH deterministic functions of the
+     * preceding characters:
+     *   42 = check digit over the 14-char personal number (28..41)
+     *   43 = composite check digit over cols 0..9, 13..19, 21..42
+     * When the classifier drops one of them to '<' (tail drift in a long
+     * run of filler), neither the greedy decode nor a top-3 beam can
+     * recover it: the digit is outside the candidate set and the line
+     * stays checksum-invalid.  Recompute it instead of asking a slower
+     * external engine to rescue the read.
+     *
+     * Guard: only fire when the three leading field check digits already
+     * close, i.e. the identity fields are trustworthy.  A '<' in a
+     * check-digit slot can NEVER be checksum-valid, so this path cannot
+     * overwrite a reading the decoder would otherwise have accepted.
+     * Set MRZ_OCR_NO_CD_RESCUE=1 for A/B measurement. */
+    if (line_idx == 1 && total == 44) {
+        static int cd_rescue_enabled = -1;
+        if (cd_rescue_enabled < 0) {
+            const char *e = getenv("MRZ_OCR_NO_CD_RESCUE");
+            cd_rescue_enabled = !(e && e[0] == '1' && e[1] == 0);
+        }
+        if (cd_rescue_enabled
+            && dest[9]  >= '0' && dest[9]  <= '9'
+            && dest[19] >= '0' && dest[19] <= '9'
+            && dest[27] >= '0' && dest[27] <= '9') {
+            char buf[15];
+            memcpy(buf, dest, 9); buf[9] = 0;
+            int ok9  = (check_digit_of(buf, 9) == (dest[9]  - '0'));
+            memcpy(buf, dest + 13, 6); buf[6] = 0;
+            int ok19 = (check_digit_of(buf, 6) == (dest[19] - '0'));
+            memcpy(buf, dest + 21, 6); buf[6] = 0;
+            int ok27 = (check_digit_of(buf, 6) == (dest[27] - '0'));
+            if (ok9 && ok19 && ok27) {
+                /* 42: only replace a FILLER, never a digit the network
+                 * actually emitted (that case belongs to the beam). */
+                if (dest[42] == '<') {
+                    memcpy(buf, dest + 28, 14); buf[14] = 0;
+                    dest[42] = '0' + check_digit_of(buf, 14);
+                    if (dg) dg->gate[42] |= 16;
+                }
+                /* 43: composite over the (possibly just repaired) col 42. */
+                if (dest[42] >= '0' && dest[42] <= '9') {
+                    memcpy(buf, dest + 28, 14); buf[14] = 0;
+                    int ok42 = (check_digit_of(buf, 14) == (dest[42] - '0'));
+                    if (ok42) {
+                        char comp[40];
+                        memcpy(comp, dest, 10);
+                        memcpy(comp + 10, dest + 13, 7);
+                        memcpy(comp + 17, dest + 21, 22);
+                        comp[39] = 0;
+                        int expected = check_digit_of(comp, 39);
+                        if (dest[43] < '0' || dest[43] > '9' ||
+                            (dest[43] - '0') != expected) {
+                            dest[43] = '0' + expected;
+                            if (dg) dg->gate[43] |= 16;
+                        }
                     }
                 }
             }
@@ -2345,7 +2473,83 @@ static uint8_t *mrz_scratch_band_gray(size_t n)             { return (uint8_t *)
 static uint8_t *mrz_scratch_band_bin (size_t n)             { return (uint8_t *)mrz_scratch_alloc(n); }
 static uint8_t *mrz_scratch_rot     (size_t n)              { return (uint8_t *)mrz_scratch_alloc(n); }
 static uint8_t *mrz_scratch_norm    (size_t n)              { return (uint8_t *)mrz_scratch_alloc(n); }
+static uint8_t *mrz_scratch_layout_bin(size_t n)            { return (uint8_t *)mrz_scratch_alloc(n); }
 static uint8_t *mrz_scratch_line    (size_t n)              { return (uint8_t *)mrz_scratch_alloc(n); }
+
+/* Sauvola binarization: local threshold T = m * (1 + k*(s/R - 1)).
+ * Better than Otsu for documents with guilloche / patterned backgrounds
+ * (CS/CD travel permits) where a global threshold merges text and
+ * background into one blob.  Uses integral images for O(1) per-pixel
+ * local mean/std.  Window is ~bw/40 (one half character cell). */
+static void mrz_sauvola(const uint8_t *gray, int w, int h, uint8_t *bin,
+                        int window, float k) {
+    if (w <= 0 || h <= 0) return;
+    int r = window / 2;
+    if (r < 3) r = 3;
+    int wh = 2 * r + 1;
+    size_t iw = (size_t)(w + 1), ih = (size_t)(h + 1);
+    int64_t *isum  = (int64_t *)calloc(iw * ih, sizeof(int64_t));
+    int64_t *isumsq = (int64_t *)calloc(iw * ih, sizeof(int64_t));
+    if (!isum || !isumsq) { free(isum); free(isumsq); return; }
+    for (int y = 0; y < h; ++y) {
+        int64_t rs = 0, rsq = 0;
+        for (int x = 0; x < w; ++x) {
+            int v = gray[(size_t)y * w + x];
+            rs  += v;
+            rsq += (int64_t)v * v;
+            isum   [(size_t)(y+1) * iw + (x+1)] = isum  [(size_t)y * iw + x] + rs;
+            isumsq [(size_t)(y+1) * iw + (x+1)] = isumsq[(size_t)y * iw + x] + rsq;
+        }
+    }
+    const float R = 128.0f;
+    for (int y = 0; y < h; ++y) {
+        int y0 = y - r; if (y0 < 0) y0 = 0;
+        int y1 = y + r; if (y1 >= h) y1 = h - 1;
+        int wy = y1 - y0 + 1;
+        for (int x = 0; x < w; ++x) {
+            int x0 = x - r; if (x0 < 0) x0 = 0;
+            int x1 = x + r; if (x1 >= w) x1 = w - 1;
+            int wx = x1 - x0 + 1;
+            float area = (float)(wx * wy);
+            int64_t s  = isum  [(size_t)(y1+1) * iw + (x1+1)]
+                       - isum  [(size_t)y0     * iw + (x1+1)]
+                       - isum  [(size_t)(y1+1) * iw + x0]
+                       + isum  [(size_t)y0     * iw + x0];
+            int64_t sq = isumsq [(size_t)(y1+1) * iw + (x1+1)]
+                       - isumsq [(size_t)y0     * iw + (x1+1)]
+                       - isumsq [(size_t)(y1+1) * iw + x0]
+                       + isumsq [(size_t)y0     * iw + x0];
+            float m = (float)s / area;
+            float var = (float)sq / area - m * m;
+            if (var < 0.0f) var = 0.0f;
+            float sd = sqrtf(var);
+            float t = m * (1.0f + k * (sd / R - 1.0f));
+            bin[(size_t)y * w + x] = (gray[(size_t)y * w + x] < t) ? 1 : 0;
+        }
+    }
+    free(isum);
+    free(isumsq);
+}
+
+/* Row-projection energy: sum of squared row ink counts.  Same metric
+ * as the skew estimator -- maximised when text rows are sharp and
+ * distinct, minimised by blur or curvature that spreads ink across
+ * gap rows.  Used as the dewarp safety gate. */
+static double mrz_row_proj_energy(const uint8_t *bin, int W, int H) {
+    if (W <= 0 || H <= 0) return 0.0;
+    long *proj = (long *)calloc((size_t)H, sizeof(long));
+    if (!proj) return 0.0;
+    for (int y = 0; y < H; ++y) {
+        const uint8_t *row = bin + (size_t)y * W;
+        long c = 0;
+        for (int x = 0; x < W; ++x) c += row[x];
+        proj[y] = c;
+    }
+    double score = 0.0;
+    for (int y = 0; y < H; ++y) score += (double)proj[y] * (double)proj[y];
+    free(proj);
+    return score;
+}
 static float   *mrz_scratch_glyphs  (size_t n_floats)       { return (float *)mrz_scratch_alloc(n_floats * sizeof(float)); }
 static float   *mrz_scratch_feats   (size_t n_floats)       { return (float *)mrz_scratch_alloc(n_floats * sizeof(float)); }
 static float   *mrz_scratch_probs   (size_t n_floats)       { return (float *)mrz_scratch_alloc(n_floats * sizeof(float)); }
@@ -2383,7 +2587,7 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
     size_t n = (size_t)W * H;
     uint8_t *gray = mrz_scratch_gray(n);
     uint8_t *bin = NULL, *band_gray = NULL, *band_bin = NULL, *rot = NULL;
-    uint8_t *line_pixels = NULL;
+    uint8_t *layout_bin = NULL, *glyph_sauvola = NULL, *line_pixels = NULL;
     const cnn_t *net0 = NULL;
     const cnn_t *net1 = NULL;
     float (*glyphs)[CNN_IN_H][CNN_IN_W] = NULL;
@@ -2430,6 +2634,13 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
     if (mrz_ocr_locate_band(bin, W, H, &band) != 0) {
         status = MRZ_OCR_ERR_NO_BAND; goto cleanup;
     }
+    /* When the caller sends a pre-cropped band (H <= 80) locate_band()
+     * may over-refine and find only the text core (e.g. 6 px inside a
+     * 31 px CS/CD band).  That strips the vertical context the splitter
+     * and CNN need.  Fall back to the full input in that case. */
+    if (H <= 80 && band.h < H / 2) {
+        band.x = 0; band.y = 0; band.w = W; band.h = H;
+    }
     if (mrz_ocr_deadline_expired()) {
         status = MRZ_OCR_ERR_TIMEOUT;
         goto cleanup;
@@ -2440,7 +2651,7 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
         g_diag.band_x = bx; g_diag.band_y = by;
         g_diag.band_w = bw; g_diag.band_h = bh;
     }
-    if (bw < MRZ_OCR_GLYPH_W * 5 || bh < MRZ_OCR_GLYPH_H) {
+    if (bw < MRZ_OCR_GLYPH_W * 5 || bh < 4) {
         status = MRZ_OCR_ERR_BAD_GEOMETRY; goto cleanup;
     }
 
@@ -2462,9 +2673,25 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
             double v = atof(ppc_env);
             if (v >= 8.0 && v <= 128.0) target = v;
         }
+        /* Cell count of the band.  TD3 has 44 cells per row, CS/CD 30, but
+         * the layout is only classified after the band has been binarised
+         * and split (further down), so the safe value for the TD3 path is
+         * used here: 44.  Dividing by 30 instead under-scales the TD3
+         * upscale by 30/44 and measurably costs TD3 decode accuracy. */
         double ppc = (double)bw / 44.0;
         double up  = (ppc > 0.0) ? target / ppc : 1.0;
         if (up < 1.0) up = 1.0;
+        /* Height-based upscaling for short bands (CS/CD guilloche
+         * background can produce bands as short as 6-8px). Ensure the
+         * upscaled height is at least 2 * MRZ_OCR_GLYPH_H so the CNN
+         * has enough pixels to work with. */
+        {
+            double min_h = (double)MRZ_OCR_GLYPH_H * 2.0;
+            if ((double)bh * up < min_h) {
+                double up_h = min_h / (double)bh;
+                if (up_h > up) up = up_h;
+            }
+        }
         if (up > 4.0) up = 4.0;          /* bound the scratch footprint */
         diag_up = up;
         int nw = (int)((double)bw * up + 0.5);
@@ -2473,7 +2700,9 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
         if (nh < bh) nh = bh;
         band_gray = mrz_scratch_band_gray((size_t)nw * nh);
         band_bin  = mrz_scratch_band_bin ((size_t)nw * nh);
-        if (!band_gray || !band_bin) { status = MRZ_OCR_ERR_LOAD; goto cleanup; }
+        layout_bin = mrz_scratch_layout_bin((size_t)nw * nh);
+        glyph_sauvola = mrz_scratch_layout_bin((size_t)nw * nh);
+        if (!band_gray || !band_bin || !layout_bin || !glyph_sauvola) { status = MRZ_OCR_ERR_LOAD; goto cleanup; }
         if (nw == bw && nh == bh) {
             for (int y = 0; y < bh; ++y)
                 memcpy(band_gray + y * bw, gray + (by + y) * W + bx, bw);
@@ -2519,6 +2748,80 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
             for (int i = 0; i < bw * bh; ++i) band_bin[i] = (band_gray[i] < tb) ? 1 : 0;
         }
     }
+    {
+        static int dw_en = -1;
+        if (dw_en < 0) { const char *e = getenv("MRZ_OCR_DEWARP"); dw_en = (e && e[0] && strcmp(e,"0") != 0) ? 1 : 0; }
+        if (dw_en) {
+            /* Safety gate (step 2 of the cascade): only keep the dewarped
+             * version if its row-projection energy improves by >= 12% over
+             * the baseline.  This prevents the parabolic dewarp from
+             * damaging straight bands where the fitted parabola is noise
+             * rather than real curvature. */
+            double base_score = mrz_row_proj_energy(band_bin, bw, bh);
+            uint8_t *dwp = mrz_scratch_rot((size_t)bw * bh);
+            if (dwp) {
+                mrz_dewarp_parabolic(band_gray, dwp, bw, bh, bw, bw);
+                int tb2 = mrz_ocr_otsu(dwp, (size_t)bw * bh);
+                uint8_t *dwp_bin = mrz_scratch_rot((size_t)bw * bh);
+                if (dwp_bin) {
+                    for (int i = 0; i < bw * bh; ++i)
+                        dwp_bin[i] = (dwp[i] < tb2) ? 1 : 0;
+                    double new_score = mrz_row_proj_energy(dwp_bin, bw, bh);
+                    if (new_score > base_score * 1.12) {
+                        memcpy(band_gray, dwp, (size_t)bw * bh);
+                        memcpy(band_bin, dwp_bin, (size_t)bw * bh);
+                    }
+                } else {
+                    memcpy(band_gray, dwp, (size_t)bw * bh);
+                    for (int i = 0; i < bw * bh; ++i)
+                        band_bin[i] = (dwp[i] < tb2) ? 1 : 0;
+                }
+            }
+        }
+    }
+    /* Sauvola binarization for layout analysis (split_lines + classify_layout).
+     * Otsu merges text with guilloche backgrounds on CS/CD permits; Sauvola's
+     * local threshold separates them, giving a cleaner line rectangle and
+     * ink-group count.  The Otsu band_bin is kept for glyph extraction
+     * because the CNN weights were trained on Otsu binaries. */
+    {
+        int sw = bw / 40;
+        if (sw < 7) sw = 7;
+        if (sw > 31) sw = 31;
+        float sk = 0.2f;
+        {   /* MRZ_OCR_SAUVOLA_K=0.2 overrides the Sauvola k parameter. */
+            const char *ke = getenv("MRZ_OCR_SAUVOLA_K");
+            if (ke && ke[0]) { float v = (float)atof(ke); if (v > 0.0f && v < 1.0f) sk = v; }
+        }
+        mrz_sauvola(band_gray, bw, bh, layout_bin, sw, sk);
+        /* A second Sauvola with lower k for glyph extraction: keeps more
+         * of the character strokes (the CNN expects thicker strokes than
+         * k=0.2 produces).  Used only for CS/CD (guilloche background). */
+        float gk = 0.1f;
+        {   /* MRZ_OCR_GLYPH_SAUVOLA_K overrides the glyph Sauvola k. */
+            const char *gke = getenv("MRZ_OCR_GLYPH_SAUVOLA_K");
+            if (gke && gke[0]) { float v = (float)atof(gke); if (v > 0.0f && v < 1.0f) gk = v; }
+        }
+        mrz_sauvola(band_gray, bw, bh, glyph_sauvola, sw, gk);
+        {   /* MRZ_OCR_SAUVOLA=1: dump row profile for debugging. */
+            static int sdbg = -1;
+            if (sdbg < 0) { const char *e = getenv("MRZ_OCR_SAUVOLA"); sdbg = (e && e[0] && strcmp(e,"0") != 0) ? 1 : 0; }
+            if (sdbg) {
+                int *rd = (int *)calloc((size_t)bh, sizeof(int));
+                if (rd) {
+                    for (int y = 0; y < bh; ++y)
+                        for (int x = 0; x < bw; ++x)
+                            if (layout_bin[(size_t)y*bw+x]) rd[y]++;
+                    int pk = 0; for (int y = 0; y < bh; ++y) if (rd[y] > pk) pk = rd[y];
+                    int th = pk / 6; if (th < 4) th = 4;
+                    fprintf(stderr, "SAUVOLA window=%d k=%.2f bw=%d bh=%d peak=%d thr=%d\n", sw, sk, bw, bh, pk, th);
+                    for (int y = 0; y < bh; ++y)
+                        fprintf(stderr, "  y=%2d dark=%4d %c\n", y, rd[y], rd[y] >= th ? '*' : ' ');
+                    free(rd);
+                }
+            }
+        }
+    }
     if (timing_on) { clock_gettime(CLOCK_MONOTONIC, &_t1); _ms_band=(_t1.tv_sec-_t0.tv_sec)*1e3+(_t1.tv_nsec-_t0.tv_nsec)/1e6; _t0=_t1; }
 
     /* 4b. Local-contrast normalisation against illumination gradients.
@@ -2540,23 +2843,189 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
         }
     }
 
-    /* 4. Split the two TD3 lines on the deskewed band bin map. */
+    /* 4. Split the band into MRZ rows: two for a TD3 passport, one for a
+     *    CS/CD travel permit (1 x 30).  The two-row splitter is tried
+     *    first so TD3 behaviour is untouched. */
     mrz_ocr_rect_t lines[2];
-    if (mrz_ocr_split_lines(band_bin, bw, bh, lines) != 0) {
+    int split_n = 2;
+    /* TD3 (two-row) uses Otsu — unchanged.  CS/CD (one-row) uses Sauvola
+     * because Otsu merges text with the guilloche background, producing a
+     * band-height line rectangle that classify_layout rejects. */
+    if (mrz_ocr_split_lines(band_bin, bw, bh, lines) == 0) {
+        split_n = 2;
+    } else if (mrz_ocr_split_lines(layout_bin, bw, bh, lines) == 0) {
+        split_n = 2;
+    } else if (mrz_ocr_split_lines_single(layout_bin, bw, bh, &lines[0]) == 0) {
+        split_n = 1;
+    } else if (mrz_ocr_split_lines_single(band_bin, bw, bh, &lines[0]) == 0) {
+        split_n = 1;
+    } else {
         status = MRZ_OCR_ERR_BAD_LINES; goto cleanup;
+    }
+    /* When split_lines finds two rows but one is tiny (< 8 px), it likely
+     * picked up noise or a black border as a "line".  Fall back to the
+     * single-line splitter so a CS/CD permit is not mis-split into a
+     * 6 px garbage row + the real text row.  Measured on 2026-9-30-J:
+     * l0=(0,6) l1=(20,11) — the 6 px row is edge noise. */
+    if (split_n == 2) {
+        int hmin = lines[0].h < lines[1].h ? lines[0].h : lines[1].h;
+        if (hmin < 8) {
+            mrz_ocr_rect_t single;
+            if (mrz_ocr_split_lines_single(layout_bin, bw, bh, &single) == 0 ||
+                mrz_ocr_split_lines_single(band_bin, bw, bh, &single) == 0) {
+                lines[0] = single;
+                split_n = 1;
+            }
+        }
+    }
+    /* Height-ratio correction for TD3 (2-line): when l0 is significantly
+     * taller than l1 (h0 > h1 * 4/3), l0 likely includes extra content
+     * (page text, guilloche, reflection) above MRZ line 1. Find the
+     * transition from extra content (low density) to MRZ text (high
+     * density) by locating the maximum darkness gradient, then back
+     * off slightly to include character tops. Trim l0 to start from
+     * that point.
+     * Measured on Photo/3-8: l0=57-63px, l1=37-44px, ratio=1.4-1.9 —
+     * the correction trims the extra content and brings h0 ≈ h1. */
+    if (split_n == 2 && lines[0].h > lines[1].h * 4 / 3 && lines[1].h > 8) {
+        int ly = lines[0].y, lh = lines[0].h;
+        int target_h = lines[1].h;
+        int *lrow = (int *)calloc((size_t)lh, sizeof(int));
+        if (lrow) {
+            for (int y = 0; y < lh; ++y) {
+                int c = 0;
+                for (int x = 0; x < bw; ++x)
+                    if (band_bin[(size_t)(ly + y) * bw + x]) c++;
+                lrow[y] = c;
+            }
+            int lpeak = 0;
+            for (int y = 0; y < lh; ++y)
+                if (lrow[y] > lpeak) lpeak = lrow[y];
+            int search_limit = lh - target_h * 7 / 10;
+            if (search_limit < 1) search_limit = 1;
+            int max_grad_y = -1, max_grad = 0;
+            for (int y = 1; y < search_limit; ++y) {
+                int grad = lrow[y] - lrow[y - 1];
+                if (grad > max_grad) {
+                    max_grad = grad;
+                    max_grad_y = y;
+                }
+            }
+            if (max_grad_y > 0 && max_grad > lpeak / 10) {
+                int backoff = target_h / 5;
+                int trim_y = max_grad_y - backoff;
+                if (trim_y < 1) trim_y = 1;
+                if (trim_y < search_limit) {
+                    lines[0].y = ly + trim_y;
+                    lines[0].h = lh - trim_y;
+                }
+            }
+            free(lrow);
+        }
+    }
+    /* Refine a single-line rectangle that is too tall (includes background
+     * above/below the MRZ text).  Re-scan the Sauvola row projection with
+     * a higher threshold (peak/3) to find the densest text sub-region. */
+    if (split_n == 1) {
+        int expected_h = bw / 29;
+        if (lines[0].h > expected_h * 3 / 2) {
+            int *rd = (int *)calloc((size_t)bh, sizeof(int));
+            if (rd) {
+                for (int y = 0; y < bh; ++y)
+                    for (int x = 0; x < bw; ++x)
+                        if (layout_bin[(size_t)y * bw + x]) rd[y]++;
+                int pk = 0;
+                for (int y = lines[0].y; y < lines[0].y + lines[0].h && y < bh; ++y)
+                    if (rd[y] > pk) pk = rd[y];
+                int hi_thr = pk / 3;
+                if (hi_thr >= 4) {
+                    int best_top = -1, best_bot = -1;
+                    long best_ink = -1;
+                    int y = lines[0].y;
+                    int y_end = lines[0].y + lines[0].h;
+                    if (y_end > bh) y_end = bh;
+                    while (y < y_end) {
+                        if (rd[y] < hi_thr) { y++; continue; }
+                        int top = y, last = y;
+                        long ink = 0;
+                        for (;;) {
+                            while (y < y_end && rd[y] >= hi_thr) { ink += rd[y]; last = y; y++; }
+                            if (y >= y_end) break;
+                            int z = y;
+                            while (z < y_end && rd[z] < hi_thr) z++;
+                            if (z < y_end && z - last <= 2) {
+                                for (int q = y; q < z; ++q) ink += rd[q];
+                                y = z;
+                            } else break;
+                        }
+                        if (last - top + 1 >= 2 && ink > best_ink) {
+                            best_ink = ink; best_top = top; best_bot = last;
+                        }
+                    }
+                    if (best_top >= 0 && best_bot - best_top + 1 >= expected_h / 2) {
+                        lines[0].y = best_top;
+                        lines[0].h = best_bot - best_top + 1;
+                    }
+                }
+                free(rd);
+            }
+        }
     }
     if (diag_on) {
         g_diag.line[0].y = lines[0].y; g_diag.line[0].h = lines[0].h;
-        g_diag.line[1].y = lines[1].y; g_diag.line[1].h = lines[1].h;
+        if (split_n > 1) {
+            g_diag.line[1].y = lines[1].y; g_diag.line[1].h = lines[1].h;
+        }
     }
-    {   /* MRZ_OCR_LINES=1: report the band and the two line boxes, plus
-         * their height ratio -- the quantity that decides whether the
-         * splitter found two MRZ rows or a decoration row plus one. */
+    {   /* MRZ_OCR_LINES=1: report the band and the line boxes, plus their
+         * height ratio -- the quantity that decides whether the splitter
+         * found two MRZ rows or a decoration row plus one. */
         static int ldbg = -1;
         if (ldbg < 0) { const char *e = getenv("MRZ_OCR_LINES"); ldbg = (e && e[0] && strcmp(e, "0") != 0) ? 1 : 0; }
-        if (ldbg) fprintf(stderr, "LINES band=%dx%d l0=(y%d h%d) l1=(y%d h%d) ratio=%.2f\n",
-                          bw, bh, lines[0].y, lines[0].h, lines[1].y, lines[1].h,
-                          lines[1].h > 0 ? (double)lines[0].h / (double)lines[1].h : 0.0);
+        if (ldbg) {
+            if (split_n > 1)
+                fprintf(stderr, "LINES band=%dx%d n=%d l0=(y%d h%d) l1=(y%d h%d) ratio=%.2f\n",
+                        bw, bh, split_n, lines[0].y, lines[0].h, lines[1].y, lines[1].h,
+                        lines[1].h > 0 ? (double)lines[0].h / (double)lines[1].h : 0.0);
+            else
+                fprintf(stderr, "LINES band=%dx%d n=%d l0=(y%d h%d)\n",
+                        bw, bh, split_n, lines[0].y, lines[0].h);
+        }
+    }
+
+    /* 4c. Document layout classification: TD3 (2x44) vs CS/CD (1x30).
+     * Uses the bottom row's binary pixels + dual-hypothesis grid valley
+     * energy, and the pairing test to reject a Chinese caption line
+     * above a permit's single MRZ row. */
+    int n_lines = 2, n_cells = 44;
+    int line_map[2] = { 0, 1 };
+    {
+        int bi = split_n - 1;                       /* bottom row */
+        const uint8_t *bot = layout_bin + (size_t)lines[bi].y * bw;
+        g_doc_layout = mrz_classify_layout(bot, bw, lines[bi].h, bw,
+                                           lines, split_n);
+        if (g_doc_layout == MRZ_LAYOUT_SINGLE_LINE_30) {
+            n_lines = 1;
+            n_cells = 30;
+            line_map[0] = bi;
+        } else if (split_n == 1) {
+            /* One 44-cell row with no partner: a TD3 passport whose line 1
+             * was lost to glare, crop or tilt.  Decoding it as a two-line
+             * record would read the second half of the same physical row,
+             * so drop the frame instead. */
+            status = MRZ_OCR_ERR_BAD_LINES; goto cleanup;
+        }
+    }
+    /* For CS/CD (SINGLE_LINE_30), use Otsu (band_bin) for glyph extraction
+     * because Sauvola with low k produces almost-all-black glyphs on the
+     * guilloche background.  Otsu's global threshold separates text from
+     * the pattern better at the per-glyph level.  An env override keeps
+     * Sauvola available for experimentation. */
+    const uint8_t *glyph_bin = band_bin;
+    {
+        const char *ge = getenv("MRZ_OCR_GLYPH_BIN");
+        if (ge && ge[0] == 's' && g_doc_layout == MRZ_LAYOUT_SINGLE_LINE_30)
+            glyph_bin = glyph_sauvola;
     }
 
     glyphs     = (float (*)[CNN_IN_H][CNN_IN_W])mrz_scratch_glyphs(44 * (CNN_IN_H * CNN_IN_W));
@@ -2606,14 +3075,14 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
          * The weights are log-probabilities, so a cell that ONE head is
          * confident about outvotes a cell where the other head is not.
          * MRZ_OCR_FUSE_ALPHA scales the CRNN term; the shipped default
-         * 0.5 was the best value on the held-out split for line 2 and
-         * within 0.1pp of the best for line 1.
+         * 0.2 was the best value on the 50-photo passport split (PASS 35
+         * vs 34 at 0.5); lower alpha keeps CRNN as a light correction.
          */
         const char *fuse_env = getenv("MRZ_OCR_FUSE");
         const int use_fuse =
             fuse_env && fuse_env[0] && strcmp(fuse_env, "0") != 0 &&
             crnn_weights_available();
-        float fuse_alpha = 0.5f;
+        float fuse_alpha = 0.2f;
         {
             const char *a = getenv("MRZ_OCR_FUSE_ALPHA");
             if (a && a[0]) {
@@ -2661,6 +3130,7 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
          * passes was measurably slower on A53 (~+5 ms p50). */
         const char *par_env = getenv("MRZ_OCR_PAR");
         int do_par = par_env && par_env[0] && strcmp(par_env, "0") != 0;
+        if (g_doc_layout == MRZ_LAYOUT_SINGLE_LINE_30) do_par = 0;
         /* The dual-line worker runs the per-character FC inside the worker
          * thread, which has no CRNN branch. The sequence head is a strictly
          * serial per-row recurrence, so the parallel split buys nothing for
@@ -2713,7 +3183,7 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                 if (!line_pixels_l[li]) { status = MRZ_OCR_ERR_LOAD; goto cleanup; }
                 for (int y = 0; y < line_h_l[li]; ++y)
                     memcpy(line_pixels_l[li] + y * bw,
-                           band_bin + (base_l[li] + y) * bw, bw);
+                           glyph_bin + (base_l[li] + y) * bw, bw);
 
                 mrz_diag_line_t *dg_line = mrz_diag_line(li);
                 int nchars = segment_line_grid(line_pixels_l[li], bw,
@@ -2896,20 +3366,25 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
              * cnn forward, TTA, decode back-to-back per line so
              * the just-written glyph buffer is still in L1 when
              * cnn_row_features_batch reads it. */
-            for (int li = 0; li < 2; ++li) {
-                int base = (li == 0) ? lines[0].y : lines[1].y;
-                int line_h = (li == 0) ? lines[0].h : lines[1].h;
+            for (int li = 0; li < n_lines; ++li) {
+                int pli = line_map[li];
+                int base = lines[pli].y;
+                int line_h = lines[pli].h;
+                int line_x = lines[pli].x;
+                int line_w = lines[pli].w;
+                if (line_w <= 0 || line_x + line_w > bw) { line_x = 0; line_w = bw; }
                 if (line_h <= 0) continue;
                 mrz_scratch_select_half(li);
-                line_pixels = mrz_scratch_line((size_t)bw * line_h);
+                line_pixels = mrz_scratch_line((size_t)line_w * line_h);
                 if (!line_pixels) { status = MRZ_OCR_ERR_LOAD; goto cleanup; }
                 for (int y = 0; y < line_h; ++y)
-                    memcpy(line_pixels + y * bw, band_bin + (base + y) * bw, bw);
+                    memcpy(line_pixels + y * line_w,
+                           glyph_bin + (base + y) * bw + line_x, line_w);
 
                 mrz_ocr_rect_t chars[44];
-                int nchars = segment_line_grid(line_pixels, bw, line_h, chars, 44, li);
+                int nchars = segment_line_grid(line_pixels, line_w, line_h, chars, n_cells, li);
                 if (nchars <= 0)
-                    nchars = segment_line_cnn(line_pixels, bw, line_h, chars, 44);
+                    nchars = segment_line_cnn(line_pixels, line_w, line_h, chars, n_cells);
                 if (diag_on) {
                     mrz_diag_line_t *dg_line = mrz_diag_line(li);
                     if (dg_line && nchars >= 0) dg_line->nchars = nchars;
@@ -2918,10 +3393,10 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                     line_pixels = NULL;
                     status = MRZ_OCR_ERR_BAD_LINES; goto cleanup;
                 }
-                if (nchars > 44) nchars = 44;
+                if (nchars > n_cells) nchars = n_cells;
                 for (int c = 0; c < nchars; ++c)
                     resample_char_gray(band_gray, bw, bh,
-                                       chars[c].x, base + chars[c].y,
+                                       line_x + chars[c].x, base + chars[c].y,
                                        chars[c].w, chars[c].h,
                                        NULL, 0, glyphs[c]);
                 if (timing_on) {
@@ -3013,6 +3488,7 @@ cleanup:
     /* Structural veto on the line-2 reading.  Computed here, after both
      * the sequential and the parallel path have written out->line2, so
      * the two paths cannot disagree about it. */
+    out->doc_layout = g_doc_layout;
     out->line2_struct_ok = mrz_line2_struct_sane(out->line2, out->line2_len);
     out->line2_nat_suspect = mrz_nat_suspect(out->line2, out->line2_len);
     out->line1_country_mismatch = mrz_line1_country_mismatch(
@@ -3031,7 +3507,7 @@ cleanup:
     (void)probs_tta; (void)probs; (void)feats;
     (void)glyphs_tta; (void)glyphs; (void)net0; (void)net1;
     (void)line_pixels;
-    (void)rot; (void)band_bin; (void)band_gray;
+    (void)rot; (void)band_bin; (void)band_gray; (void)layout_bin; (void)glyph_sauvola;
     (void)bin; (void)gray;
     if (tm && tm[0] && strcmp(tm, "0")) {
         fprintf(stderr, "TIMING gray=%.2fms band+deskew=%.2fms resample=%.2fms decode=%.2fms\n",

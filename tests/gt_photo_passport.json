@@ -1,0 +1,567 @@
+{
+ "_comment": "auto-GT by multi-engine consensus (build_gt_multiengine.py); ALL records stored incl. tier C / no_band, ready for human review & fix",
+ "gt": {
+  "2026-9-29-A.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-29-A.jpg",
+   "l1": "P<CHNYUN<<YAOYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E0132B7855CHN0110141M3105179GB682O5O108G0B88",
+   "tier": "C",
+   "l2_tier": "B",
+   "l1_tier": "C",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 15
+  },
+  "2026-9-29-B.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-29-B.jpg",
+   "l1": "P<CHNZHAO<<YONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E216923764CHN6703222M3510203H01JE6IP966FG406",
+   "tier": "C",
+   "l2_tier": "B",
+   "l1_tier": "C",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 43
+  },
+  "2026-9-29-C.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-29-C.jpg",
+   "l1": "P<CHNZHOU<<YUAASU<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E639021O58CHN7005059F31101530S0Z68SZ0B110074",
+   "tier": "C",
+   "l2_tier": "B",
+   "l1_tier": "C",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 44
+  },
+  "2026-9-29-D.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-29-D.jpg",
+   "l1": "P<CHNNAO<<HUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E797044113CHN9004300F3405226GE0660IR06BAI310",
+   "tier": "C",
+   "l2_tier": "B",
+   "l1_tier": "C",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 14
+  },
+  "2026-9-29-E.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-29-E.jpg",
+   "l1": "P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E454243381CHN0703013F4211172S63108B626637626",
+   "tier": "B",
+   "l2_tier": "B",
+   "l1_tier": "A",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 0
+  },
+  "2026-9-29-F.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-29-F.jpg",
+   "l1": "P<CHNDENG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E410968B47CHN9311103F311203262G49S6626292Z52",
+   "tier": "B",
+   "l2_tier": "B",
+   "l1_tier": "A",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 0
+  },
+  "2026-9-29-G.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-29-G.jpg",
+   "l1": "P<CHNDING<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E505029416CHN6806178M2604114L2YBF2201K4IF010",
+   "tier": "C",
+   "l2_tier": "B",
+   "l1_tier": "C",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 44
+  },
+  "2026-9-29-H.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-29-H.jpg",
+   "l1": "P<CHNDING<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "EZ05029416CHN6806178M2604114L2YBF2Z01KA1F034",
+   "tier": "C",
+   "l2_tier": "B",
+   "l1_tier": "C",
+   "l2_votes": 2,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 44
+  },
+  "2026-9-29-I.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-29-I.jpg",
+   "l1": "P<CHNGE<<MOHUA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E592235158CHN6905163M30012716G0B612258S2B846",
+   "tier": "B",
+   "l2_tier": "B",
+   "l1_tier": "A",
+   "l2_votes": 2,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 0
+  },
+  "2026-9-29-J.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-29-J.jpg",
+   "l1": "P<CHNGE<<SUDONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E062480684CHN8201113F251225501S8IBBG51B52Z66",
+   "tier": "C",
+   "l2_tier": "B",
+   "l1_tier": "C",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 44
+  },
+  "2026-9-29-K.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-29-K.jpg",
+   "l1": "P<CHNGUO<<LURU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E916769I46CHN6008248M240122126QZG26600S16132",
+   "tier": "B",
+   "l2_tier": "B",
+   "l1_tier": "A",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 0
+  },
+  "2026-9-29-L.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-29-L.jpg",
+   "l1": "P<CHNGU<<YINGYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E665282843CHN8807054M28102160012032119B08660",
+   "tier": "B",
+   "l2_tier": "B",
+   "l1_tier": "A",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 0
+  },
+  "2026-9-29-M.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-29-M.jpg",
+   "l1": "P<CHNGU<<YUYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E096730195CHN8410021M300821488S61022S7Z59328",
+   "tier": "C",
+   "l2_tier": "B",
+   "l1_tier": "C",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 44
+  },
+  "2026-9-29-N.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-29-N.jpg",
+   "l1": "P<CHNSU<<SHUYUE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E653505611CHN8409285F3001167B0BS1G1886G2O864",
+   "tier": "C",
+   "l2_tier": "B",
+   "l1_tier": "C",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 44
+  },
+  "2026-9-29-O.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-29-O.jpg",
+   "l1": "P<CHNWEN<<YUEYUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E421853076CHN7906282F3506190JJ6MVT1JVTBGC610",
+   "tier": "B",
+   "l2_tier": "B",
+   "l1_tier": "A",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 0
+  },
+  "2026-9-29-P.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-29-P.jpg",
+   "l1": "P<CHNWU<<FANGYAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E766622355CHN0011293F2604181Y861DEUSDLKZG542",
+   "tier": "C",
+   "l2_tier": "B",
+   "l1_tier": "C",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 44
+  },
+  "2026-9-29-Q.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-29-Q.jpg",
+   "l1": "P<CHNWU<<RUZHU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E436102633CHN8211158F32082106GIB15B16Z6BB264",
+   "tier": "C",
+   "l2_tier": "B",
+   "l1_tier": "C",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 44
+  },
+  "2026-9-29-R.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-29-R.jpg",
+   "l1": "P<CHNXI<<YU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E123241791CHN6208185M36010409K94WG6UGCK6FR64",
+   "tier": "B",
+   "l2_tier": "B",
+   "l1_tier": "A",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 0
+  },
+  "2026-9-29-S.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-29-S.jpg",
+   "l1": "P<CHNYUAN<<YOUSUI<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E62588I562CHN9505209F3503269G1Z152520121S504",
+   "tier": "B",
+   "l2_tier": "B",
+   "l1_tier": "A",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 0
+  },
+  "2026-9-29-T.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-29-T.jpg",
+   "l1": "P<CHNYUAN<<YUESUI<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E0755268S1CHN9004012M27090195GI5BBISB85B1O26",
+   "tier": "C",
+   "l2_tier": "B",
+   "l1_tier": "C",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 44
+  },
+  "2026-9-29-U.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-29-U.jpg",
+   "l1": "P<CHNYUE<<<<ESHU<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E158193223CHN7807091M2505233356G5111BO7S6134",
+   "tier": "C",
+   "l2_tier": "B",
+   "l1_tier": "C",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 16
+  },
+  "2026-9-29-W.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-29-W.jpg",
+   "l1": "P<CHNYUN<<PUYING<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E048156G62CHN6209285F35122520X50Z1GZG2581G50",
+   "tier": "C",
+   "l2_tier": "B",
+   "l1_tier": "C",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 16
+  },
+  "2026-9-30-A.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-30-A.jpg",
+   "l1": "P<CHNHAO<<MEINN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E821973372CHN8612261F2607078MIMEMDMEMEMIA944",
+   "tier": "C",
+   "l2_tier": "B",
+   "l1_tier": "C",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 15
+  },
+  "2026-9-30-AA.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-30-AA.jpg",
+   "l1": "P<CHNLIN<<YUHLAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E940780938CHN8410179F3401077KJYROL12DY2WW670",
+   "tier": "C",
+   "l2_tier": "B",
+   "l1_tier": "C",
+   "l2_votes": 3,
+   "l2_families": [
+    "tess"
+   ],
+   "l1_dispute_n": 16
+  },
+  "2026-9-30-AB.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-30-AB.jpg",
+   "l1": "P<CHN0AO<<YUEYA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E602701156CHN6901084F2808222Q75OWNC9HSVEJZ42",
+   "tier": "C",
+   "l2_tier": "B",
+   "l1_tier": "C",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 44
+  },
+  "2026-9-30-AC.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-30-AC.jpg",
+   "l1": "P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E141543482CHN6011103M32062610MU9FH60NPJJ1G24",
+   "tier": "C",
+   "l2_tier": "B",
+   "l1_tier": "C",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 44
+  },
+  "2026-9-30-AC_R.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-30-AC_R.jpg",
+   "l1": "P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E141543482CHN6011103M32062610MU9FH60NPJJ1G24",
+   "tier": "C",
+   "l2_tier": "B",
+   "l1_tier": "C",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 44
+  },
+  "2026-9-30-AD.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-30-AD.jpg",
+   "l1": "P<CHNCAI<<FANGMENG<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E277194572CHN9601189F30052246MN1TZC2X4MC4X60",
+   "tier": "C",
+   "l2_tier": "B",
+   "l1_tier": "C",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 43
+  },
+  "2026-9-30-AE.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-30-AE.jpg",
+   "l1": "P<CHNCHANG<<NI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E309178198CHN9612202F2702261G3JPA90J2I<K6Z66",
+   "tier": "C",
+   "l2_tier": "B",
+   "l1_tier": "C",
+   "l2_votes": 2,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 42
+  },
+  "2026-9-30-AF.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-30-AF.jpg",
+   "l1": "P<CHNCHEN<<<AJUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E646452438CHN0211196M3203075FIJJWA3L90ZU0054",
+   "tier": "C",
+   "l2_tier": "B",
+   "l1_tier": "C",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 16
+  },
+  "2026-9-30-AG.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-30-AG.jpg",
+   "l1": "P<CHNCONG<<<INGXIAO<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E066908744CHN9303298F34112631WW9ZQLBES70S062",
+   "tier": "C",
+   "l2_tier": "A",
+   "l1_tier": "C",
+   "l2_votes": 4,
+   "l2_families": [
+    "native",
+    "tess"
+   ],
+   "l1_dispute_n": 19
+  },
+  "2026-9-30-AH.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-30-AH.jpg",
+   "l1": "P<CHNCUI<<LIYI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E581043494CHN7012299F3110201S1UBJ2E<3D3PLJ56",
+   "tier": "B",
+   "l2_tier": "B",
+   "l1_tier": "A",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 0
+  },
+  "2026-9-30-AI.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-30-AI.jpg",
+   "l1": "P<CHNDAI<<XIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E996968603CHN0205089M32081840K1U4WCPWK4E7L42",
+   "tier": "C",
+   "l2_tier": "B",
+   "l1_tier": "C",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 43
+  },
+  "2026-9-30-AJ.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-30-AJ.jpg",
+   "l1": "P<CHNDCNG<<HNNEYAN<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E818572393CHN6603171M2702157EBS91S800WHI6I88",
+   "tier": "C",
+   "l2_tier": "B",
+   "l1_tier": "C",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 43
+  },
+  "2026-9-30-B.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-30-B.jpg",
+   "l1": "P<CHNNU<<HAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E187424516CHN8706216M2406086LKPKOFLA<<<<A936",
+   "tier": "C",
+   "l2_tier": "B",
+   "l1_tier": "C",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 12
+  },
+  "2026-9-30-C.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-30-C.jpg",
+   "l1": "P<AUSRICHARDS<<KEIRA<JAYNE<<<<<<<<<<<<<<<<<<",
+   "l2": "N7368155<2AUS8703226F2306186<12078730W<<<<68",
+   "tier": "C",
+   "l2_tier": "B",
+   "l1_tier": "C",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 26
+  },
+  "2026-9-30-D.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-30-D.jpg",
+   "l1": "P<CHNZHOU<<QIANG<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "KE00345952CHN9207156M2912095A911<611158<<<14",
+   "tier": "C",
+   "l2_tier": "B",
+   "l1_tier": "C",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 40
+  },
+  "2026-9-30-E.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-30-E.jpg",
+   "l1": "P<CHNZHANG<<WANWEN<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "E662323994CHN9009121F2601113NFMFMNPBMOMEA976",
+   "tier": "C",
+   "l2_tier": "B",
+   "l1_tier": "C",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 44
+  },
+  "2026-9-30-F.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-30-F.jpg",
+   "l1": "P<CNNXAN<<ZHE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "A000000000CHN9801060M24061900DMGNFNM<<<<4998",
+   "tier": "C",
+   "l2_tier": "B",
+   "l1_tier": "C",
+   "l2_votes": 3,
+   "l2_families": [
+    "native"
+   ],
+   "l1_dispute_n": 37
+  },
+  "2026-9-30-G.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-30-G.jpg",
+   "l1": "P<CHHSUN<<HAI<HUA<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "H224724969CHN0907246M2808185<S3054553<<<<<90",
+   "tier": "C",
+   "l2_tier": "A",
+   "l1_tier": "C",
+   "l2_votes": 6,
+   "l2_families": [
+    "native",
+    "tess"
+   ],
+   "l1_dispute_n": 17
+  },
+  "2026-9-30-H.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-30-H.jpg",
+   "l1": "P<CHNYANG<<ZHEN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "KE90003518CHN9707014F2912268A911<121101<<<72",
+   "tier": "C",
+   "l2_tier": "A",
+   "l1_tier": "C",
+   "l2_votes": 4,
+   "l2_families": [
+    "native",
+    "tess"
+   ],
+   "l1_dispute_n": 40
+  },
+  "2026-9-30-I.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-30-I.jpg",
+   "l1": "",
+   "l2": "",
+   "tier": "no_record",
+   "l1_dispute_n": null
+  },
+  "2026-9-30-J.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-30-J.jpg",
+   "l1": "",
+   "l2": "",
+   "tier": "no_record",
+   "l1_dispute_n": null
+  },
+  "2026-9-30-K.jpg": {
+   "label": "tmp/PassPortPhoto/2026-9-30-K.jpg",
+   "l1": "",
+   "l2": "",
+   "tier": "no_record",
+   "l1_dispute_n": null
+  }
+ },
+ "meta": {
+  "split_from": "tests/photo_auto_gt.json",
+  "split_prefix": "tmp/PassPortPhoto",
+  "records": 44
+ }
+}

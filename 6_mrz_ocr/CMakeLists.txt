@@ -10,9 +10,21 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../3_face_recognition
                  ${CMAKE_CURRENT_BINARY_DIR}/face_build)
 
 find_library(M_LIB m)
-add_library(mrz_ocr STATIC src/template.c src/mrz_geom.c src/mrz_ocr.c src/mrz_ocr_cnn.c src/mrz_ocr_crnn.c src/crnn.c src/cnn.c)
+set(MRZ_SOURCES
+    src/template.c src/mrz_geom.c src/mrz_ocr.c src/mrz_ocr_cnn.c
+    src/mrz_ocr_crnn.c src/mrz_classify.c src/crnn.c src/cnn.c)
+add_library(mrz_ocr STATIC ${MRZ_SOURCES})
 target_include_directories(mrz_ocr PUBLIC include src)
 target_link_libraries(mrz_ocr PUBLIC face ${M_LIB})
+
+# Second weight set: assets/pic.  Same sources, different line heads.
+# Kept as a separate static library so the two sets cannot be mixed at
+# link time -- the arrays are `static const`, so both would otherwise be
+# eligible and the linker would pick one silently.
+add_library(mrz_ocr_pic STATIC ${MRZ_SOURCES})
+target_include_directories(mrz_ocr_pic PUBLIC include src)
+target_link_libraries(mrz_ocr_pic PUBLIC face ${M_LIB})
+target_compile_definitions(mrz_ocr_pic PRIVATE MRZ_WEIGHTS_SET_PIC=1)
 
 # The exported weights live in headers.  Without listing them as
 # dependencies, replacing cnn_weights.h / crnn_weights.h does NOT
@@ -27,11 +39,24 @@ set(MRZ_WEIGHT_HEADERS
 set_property(TARGET mrz_ocr APPEND PROPERTY
              OBJECT_DEPENDS ${MRZ_WEIGHT_HEADERS})
 
+set(MRZ_WEIGHT_HEADERS_PIC
+    src/cnn_weights.h
+    src/cnn_weights_line1_pic.h
+    src/cnn_weights_line2_pic.h
+    src/crnn_weights.h)
+set_property(TARGET mrz_ocr_pic APPEND PROPERTY
+             OBJECT_DEPENDS ${MRZ_WEIGHT_HEADERS_PIC})
+
 add_executable(mrz_ocr_tool src/main.c)
 target_link_libraries(mrz_ocr_tool PRIVATE mrz_ocr)
 
 add_executable(mrz_ocr_cnn_tool src/main_cnn.c)
 target_link_libraries(mrz_ocr_cnn_tool PRIVATE mrz_ocr)
+
+# Same recogniser, assets/pic weights.  The GUI's training-set CheckBox
+# switches between this binary and the one above.
+add_executable(mrz_ocr_cnn_tool_pic src/main_cnn.c)
+target_link_libraries(mrz_ocr_cnn_tool_pic PRIVATE mrz_ocr_pic)
 
 add_executable(gen_mrz_image tools/gen_mrz_image.c)
 target_link_libraries(gen_mrz_image PRIVATE mrz_ocr)

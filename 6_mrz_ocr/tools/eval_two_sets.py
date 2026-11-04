@@ -155,7 +155,23 @@ def main() -> int:
     ap.add_argument("--set", choices=("passport", "assets"), required=True)
     ap.add_argument("--pads", default="4,10,18")
     ap.add_argument("--out", default="")
+    # Which weight set to evaluate.  Both binaries are built from the same
+    # sources; only the line heads differ, so passing the tool is enough
+    # and nothing has to be re-linked between runs (re-installing weight
+    # headers to A/B two models is how the wrong weights get left behind).
+    ap.add_argument("--tool", default="",
+                    help="path to a recogniser binary; default build/"
+                         "mrz_ocr_cnn_tool (passport set).  Use build/"
+                         "mrz_ocr_cnn_tool_pic for the assets/pic set.")
     args = ap.parse_args()
+
+    global TOOL
+    if args.tool:
+        TOOL = Path(args.tool).resolve()
+        if not TOOL.exists():
+            print(f"tool not found: {TOOL}")
+            return 2
+    print(f"tool={TOOL}")
 
     spec = crops_passport() if args.set == "passport" else crops_assets()
     pads = [int(x) for x in args.pads.split(",")]

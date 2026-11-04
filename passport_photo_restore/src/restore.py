@@ -28,6 +28,28 @@ GLYPH_W, GLYPH_H = 14, 48
 TGT_W, TGT_H = 44 * GLYPH_W, 2 * GLYPH_H + 8
 
 
+def remove_guilloche(img):
+    """Remove guilloche security-printing background from CS/CD MRZ band.
+
+    Uses morphological black-hat transform (closing - image) with an
+    elliptical kernel sized between text strokes (1-2px) and character
+    width (8px). The black-hat extracts dark text while suppressing
+    the larger-scale guilloche pattern.
+
+    Accepts grayscale (H,W) or RGB (H,W,3) uint8. Returns same format.
+    """
+    if img.ndim == 3:
+        g = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    else:
+        g = img
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 3))
+    blackhat = cv2.morphologyEx(g, cv2.MORPH_BLACKHAT, kernel)
+    blackhat = np.clip(blackhat.astype(np.float32) * 1.8, 0, 255).astype(np.uint8)
+    if img.ndim == 3:
+        return cv2.cvtColor(blackhat, cv2.COLOR_GRAY2RGB)
+    return blackhat
+
+
 def load(rgb, max_side=1250):
     """保持纵横比缩放到 max_side 内（宽优先）。返回 (work, scale)。"""
     h, w = rgb.shape[:2]
@@ -98,12 +120,14 @@ def detect_structure(g, gap_thr=15):
             if int(H * 0.3) <= b[0] <= int(H * 0.9) and b[1] - b[0] >= 10]
     pair = find_mrz_pair(g)
     mrz = (pair[0][0], pair[1][1]) if pair else None
+    single = find_mrz_single(g) if not pair else None
     reflection = _reflection_segments(row_ink, W, pair)
     return {
         "solid": solid_b,
         "text": text_b,
         "mrz": mrz,
         "mrz_pair": pair,
+        "mrz_single": single,
         "reflection": reflection,
         "row_ink": row_ink,
     }
@@ -240,6 +264,58 @@ def find_mrz_pair(g):
     if not cands:
         return None
     return max(cands, key=lambda pair: pair[0][0])
+
+
+def find_mrz_single(g):
+    """定位单行 MRZ（CS/CD 港澳台通行证格式）。
+
+    CS/CD 通行证只有一行 MRZ，位于卡片底部。寻找特征：
+    - 位于图像底部 30% 区域
+    - 高水平梯度能量（字符边缘密集）
+    - 行墨量在 0.15W~0.95W 之间（文本行，非纯黑/纯白）
+    - 行高 >= 6 像素
+    返回 (y0, y1) 或 None。
+    """
+    H, W = g.shape
+    row_ink = (g < 180).sum(axis=1)
+    gx = np.abs(np.diff(g.astype(np.int16), axis=1))
+    gx = np.pad(gx, ((0, 0), (1, 0)))
+    E = gx.sum(axis=1)
+    # Adaptive gradient threshold: use percentile of bottom 35% rows
+    # to handle guilloche backgrounds where text has lower contrast.
+    bottom_start = int(H * 0.65)
+    e_bottom = E[bottom_start:]
+    if len(e_bottom) > 0:
+        e_thr_init = max(500, int(np.percentile(e_bottom, 60)))
+    else:
+        e_thr_init = 800
+    text = (row_ink > 0.15 * W) & (row_ink < 0.95 * W) & (E > e_thr_init)
+    text_b = _run_groups(text, min_len=4)
+    candidates = [b for b in text_b
+                  if b[0] >= bottom_start and b[1] - b[0] >= 6]
+    if not candidates:
+        return None
+    y0, y1 = max(candidates, key=lambda b: b[0])
+    e_thr = max(1200, int(np.percentile(e_bottom, 80)))
+    max_expand = max(6, (y1 - y0))
+    expanded = 0
+    while y0 > bottom_start and E[y0 - 1] > e_thr \
+            and 0.02 * W < row_ink[y0 - 1] < 0.95 * W \
+            and expanded < max_expand:
+        y0 -= 1
+        expanded += 1
+    expanded = 0
+    while y1 < H - 1 and E[y1 + 1] > e_thr \
+            and 0.02 * W < row_ink[y1 + 1] < 0.95 * W \
+            and expanded < max_expand:
+        y1 += 1
+        expanded += 1
+    for _ in range(10):
+        if y0 > bottom_start and row_ink[y0 - 1] < 0.90 * W:
+            y0 -= 1
+        if y1 < H - 1 and row_ink[y1 + 1] < 0.90 * W:
+            y1 += 1
+    return (y0, y1)
 
 
 def _mrzh_quad(g, y0, y1, min_ink_rows=2):

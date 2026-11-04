@@ -299,7 +299,7 @@ def main(argv=None):
             tmp_path = None
             if pair and work2 is not None and rgb is not None and scale > 0:
                 try:
-                    native_band = app._rst_native_mrz_band(
+                    native_band, _crop = app._rst_native_mrz_band(
                         rgb, pair, scale,
                         source_bottom=int(round(work2.shape[0] / scale)))
                     tmp = tempfile.NamedTemporaryFile(

@@ -30,7 +30,10 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from export_omtest_slices import adaptive_xpad, fast_pair, native_band
+from export_omtest_slices import (
+    adaptive_xpad, fast_pair, fast_single_row, native_band, native_band_single,
+)
+import mrz_band
 
 ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ<"
 GI = {c: i for i, c in enumerate(ALPHABET)}
@@ -38,7 +41,109 @@ CNN_FLAT = 96
 STEPS = 44
 
 
-def locate_band(rgb: Image.Image):
+def _locate_band_bottom(gray, scale, Wd, H):
+    """Fallback: scan the bottom 30% of the image for MRZ text.
+    Used when fast_pair/fast_single_row find the wrong text region
+    (e.g. document text above the MRZ)."""
+    h, w = gray.shape
+    y0 = int(h * 0.70)
+    y1 = int(h * 0.98)
+    if y1 <= y0 or w < 80:
+        return None
+    sx0 = int(w * 0.03)
+    sx1 = int(w * 0.97)
+    stride = 4
+    sample_w = (sx1 - sx0 + stride - 1) // stride
+    if sample_w < 40:
+        return None
+    rows = gray[y0:y1]
+    dark = ((rows[:, sx0:sx1:stride] < 170).sum(axis=1)).astype(int)
+    min_ink = max(3, int(sample_w * 0.15))
+    max_ink = int(sample_w * 0.88)
+    runs = []
+    start = -1
+    gap = 0
+    for i in range(len(dark)):
+        if min_ink <= dark[i] <= max_ink:
+            if start < 0:
+                start = i
+            gap = 0
+        elif start >= 0:
+            gap += 1
+            if gap > 3:
+                runs.append((start, i - gap))
+                start = -1
+                gap = 0
+    if start >= 0:
+        runs.append((start, len(dark) - 1))
+    if not runs:
+        return None
+    best_pair = None
+    for i in range(len(runs) - 1):
+        a = runs[i]
+        for j in range(i + 1, min(len(runs), i + 3)):
+            b = runs[j]
+            h1 = a[1] - a[0] + 1
+            h2 = b[1] - b[0] + 1
+            gap_rows = b[0] - a[1] - 1
+            if h1 < 5 or h2 < 5 or h1 > 120 or h2 > 120:
+                continue
+            if h2 > 0 and not (0.3 <= h1 / h2 <= 3.0):
+                continue
+            max_gap = max(15, int(min(h1, h2) * 3))
+            if gap_rows > max_gap:
+                continue
+            if best_pair is None or b[1] > best_pair[1][1]:
+                best_pair = (a, b)
+    if best_pair is not None:
+        a, b = best_pair
+        h1 = a[1] - a[0] + 1
+        h2 = b[1] - b[0] + 1
+        pad = max(8, min(25, int(min(h1, h2) * 0.70)))
+        top = max(0, y0 + a[0] - pad)
+        bot = min(h, y0 + b[1] + pad)
+        bh = int((bot - top) / scale)
+        if bh < 30:
+            return None
+        return (0, int(top / scale), int(Wd), bh)
+    best_single = None
+    for run in runs:
+        rh = run[1] - run[0] + 1
+        if rh < 5 or rh > 120:
+            continue
+        if best_single is None or rh > best_single[1] - best_single[0] + 1:
+            best_single = run
+    if best_single is not None:
+        rh = best_single[1] - best_single[0] + 1
+        pad = max(8, min(25, int(rh * 0.70)))
+        top = max(0, y0 + best_single[0] - pad)
+        bot = min(h, y0 + best_single[1] + pad)
+        bh = int((bot - top) / scale)
+        if bh < 20:
+            return None
+        return (0, int(top / scale), int(Wd), bh)
+    return None
+
+
+def _has_dark_separator(gray, y0, y1, thresh=100, min_rows=2):
+    """True when a dark band separates two text regions.
+
+    A passport lying on a glass table is mirrored below its own page edge,
+    so the "bottom band" found by _locate_band_bottom is a reflection, not a
+    second MRZ.  The page edge in between is a dark row run.
+    """
+    if y1 <= y0:
+        return False
+    rows = gray[int(y0):int(y1)].mean(axis=1)
+    run = 0
+    for v in rows:
+        run = run + 1 if v < thresh else 0
+        if run >= min_rows:
+            return True
+    return False
+
+
+def locate_band(rgb: Image.Image, pad_hint: list | None = None):
     Wd, H = rgb.size
     arr = np.asarray(rgb, dtype=np.uint32)
     gray = ((arr[:, :, 0] * 299 + arr[:, :, 1] * 587 +
@@ -51,17 +156,46 @@ def locate_band(rgb: Image.Image):
                 (int(Wd * scale), int(H * scale)), Image.BILINEAR),
             dtype=np.uint8)
     pair = fast_pair(gray)
-    if pair is None:
-        return None
-    xp = adaptive_xpad(gray, pair)
-    top, bot = native_band(gray, pair[0], pair[1], xp[0], xp[1])
-    bx = int(xp[0] / scale)
-    by = int(top / scale)
-    bw = int(Wd - xp[0] / scale - xp[1] / scale)
-    bh = int((bot - top) / scale)
-    if bw < 400 or bh < 30:
-        return None
-    return bx, by, bw, bh
+    if pair is not None:
+        xp = adaptive_xpad(gray, pair)
+        top, bot = native_band(gray, pair[0], pair[1], xp[0], xp[1])
+        bx = int(xp[0] / scale)
+        by = int(top / scale)
+        bw = int(Wd - xp[0] / scale - xp[1] / scale)
+        bh = int((bot - top) / scale)
+        if bw >= 400 and bh >= 30:
+            result = (bx, by, bw, bh)
+            bottom = _locate_band_bottom(gray, scale, Wd, H)
+            if bottom is not None and bottom[1] > result[1] + max(int(result[3] * 0.55), 30):
+                if _has_dark_separator(gray, (result[1] + result[3]) * scale,
+                                       bottom[1] * scale):
+                    # bottom band is the mirror reflection under the page edge
+                    if pad_hint is not None:
+                        pad_hint.append(max(int(result[3] * 0.25), 10))
+                    return result
+                return bottom
+            return result
+    single = fast_single_row(gray)
+    if single is not None:
+        xp = adaptive_xpad(gray, (single, single))
+        top, bot, tl, tr = native_band_single(gray, single, xp[0], xp[1])
+        bx = int(tl / scale)
+        by = int(top / scale)
+        bw = int((tr - tl) / scale)
+        bh = int((bot - top) / scale)
+        if bw >= 400 and bh >= 20:
+            result = (bx, by, bw, bh)
+            bottom = _locate_band_bottom(gray, scale, Wd, H)
+            if bottom is not None and bottom[1] > result[1] + max(int(result[3] * 0.55), 30):
+                if _has_dark_separator(gray, (result[1] + result[3]) * scale,
+                                       bottom[1] * scale):
+                    # bottom band is the mirror reflection under the page edge
+                    if pad_hint is not None:
+                        pad_hint.append(max(int(result[3] * 0.25), 10))
+                    return result
+                return bottom
+            return result
+    return _locate_band_bottom(gray, scale, Wd, H)
 
 
 def read_feat(path: Path) -> np.ndarray | None:
@@ -87,7 +221,14 @@ def main() -> int:
     ap.add_argument("--min-tier", default="A", choices=("A", "B"))
     ap.add_argument("--dispute-max", type=int, default=None,
                     help="max l1_dispute_n to accept a tier-C line1 (None = reject all C)")
+    ap.add_argument("--pad-map", default="",
+                    help="JSON file mapping image basename (or label) to crop padding")
     args = ap.parse_args()
+
+    pad_map = {}
+    if args.pad_map:
+        pm = json.loads((ROOT / args.pad_map).read_text())
+        pad_map = {k: int(v) for k, v in pm.items()}
 
     d = json.loads((ROOT / args.gt).read_text())
     gt = d["gt"] if isinstance(d, dict) and "gt" in d else d
@@ -96,7 +237,7 @@ def main() -> int:
 
     X, Y, META = [], [], []
     FX, FY, FID = [], [], []
-    located = skipped_band = skipped_line = skipped_tool = 0
+    located = skipped_band = skipped_line = skipped_tool = skipped_charset = 0
 
     for basename, rec in gt.items():
         label = rec.get("label")
@@ -134,17 +275,25 @@ def main() -> int:
         if not img_path.exists():
             continue
         rgb = Image.open(img_path).convert("RGB")
-        crop = locate_band(rgb)
-        if crop is None:
+        pm = pad_map.get(basename, pad_map.get(label))
+        cands = mrz_band.band_candidates(rgb, args.pad, pm)
+        if not cands:
             skipped_band += 1
             continue
         located += 1
-        bx, by, bw, bh = crop
-        pad = args.pad
-        band = rgb.crop((bx, max(0, by - pad), bx + bw, min(rgb.height, by + bh + pad)))
         stem = Path(basename).stem
         ppm = tmp / f"{stem}_band.ppm"
-        band.save(str(ppm), format="PPM")
+        # Score every candidate crop first (no glyph dump), then keep the one
+        # whose line2 passes the ICAO check digits.  The chosen crop is the
+        # one the evaluator scores, so training and scoring share a framing.
+        scored = []
+        for i, (_kind, rect) in enumerate(cands):
+            cand_ppm = tmp / f"{stem}_cand{i}.ppm"
+            rgb.crop(rect).save(str(cand_ppm), format="PPM")
+            scored.append(mrz_band.run_tool(ROOT / args.tool, cand_ppm))
+        pick = mrz_band.pick_candidate(scored, [k for k, _ in cands])
+        band_kind, rect = cands[pick]
+        rgb.crop(rect).save(str(ppm), format="PPM")
 
         for f in glob.glob(f"{args.dump_prefix}_{args.tag}_l*_c*_x*_r*_w*.ppm"):
             os.remove(f)
@@ -183,7 +332,10 @@ def main() -> int:
         # CRNN features (only when both lines frozen)
         if l1_ok and l2_ok:
             for f in glob.glob("/tmp/mrz_feat_crnn_*_l*.bin"):
-                os.remove(f)
+                try:
+                    os.remove(f)
+                except OSError:
+                    pass
             fe = dict(os.environ)
             tag = f"crnn_{os.getpid()}"
             fe["MRZ_OCR_FEAT_DUMP"] = tag
@@ -198,9 +350,12 @@ def main() -> int:
                 a = read_feat(f0)
                 b = read_feat(f1)
                 if a is not None and b is not None:
-                    FX.append(np.stack([a, b]))
-                    FY.append(np.stack([[GI[c] for c in l1], [GI[c] for c in l2]]))
-                    FID.append(basename)
+                    if all(c in GI for c in l1) and all(c in GI for c in l2):
+                        FX.append(np.stack([a, b]))
+                        FY.append(np.stack([[GI[c] for c in l1], [GI[c] for c in l2]]))
+                        FID.append(basename)
+                    else:
+                        skipped_charset += 1
 
     out_dir = ROOT / args.out_dir
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -223,7 +378,8 @@ def main() -> int:
         print(f"crnn: {len(FID)} samples shape={np.stack(FX).shape} -> "
               f"{out_dir/'crnn_feats.npz'}")
     print(f"located={located} skipped_band={skipped_band} "
-          f"skipped_tool={skipped_tool} skipped_line={skipped_line}")
+          f"skipped_tool={skipped_tool} skipped_line={skipped_line} "
+          f"skipped_charset={skipped_charset}")
     return 0 if wrote else 1
 
 

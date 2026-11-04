@@ -23,6 +23,9 @@ extern "C" {
 #define MRZ_TD2_LINE_COUNT  2
 #define MRZ_TD2_TOTAL       (MRZ_TD2_LINE_LEN * MRZ_TD2_LINE_COUNT)  /* 72 */
 
+/* CS/CD (港澳台通行证) single-line dimensions */
+#define MRZ_CSCD_LINE_LEN   30
+
 /* Status codes */
 typedef enum {
     MRZ_OK = 0,
@@ -53,6 +56,19 @@ typedef struct {
     int  ck_composite;
 } mrz_td3_t;
 
+/* Decoded CS/CD (港澳台通行证) fields -- single 30-char line */
+typedef struct {
+    char doc_type[3];          /* "CS" or "CD"; 2 chars + NUL */
+    char issuing_state[3];     /* 2 chars + NUL */
+    char doc_no[9];            /* 8 chars + NUL (positions 4-11) */
+    char birth_date_yymmdd[7]; /* 6 + NUL */
+    char expiry_date_yymmdd[7];
+    int  ck_doc_no;            /* check at position 11 (covers 2-10) */
+    int  ck_birth_date;
+    int  ck_expiry_date;
+    int  ck_composite;         /* check at position 29 */
+} mrz_cscd_t;
+
 /* Compute single check digit for a substring. weight cycle: 7,3,1. */
 int mrz_check_digit(const char *s, size_t n);
 
@@ -71,6 +87,11 @@ mrz_status_t mrz_td3_encode(const mrz_td3_t *f, char *out_lines);
  * Lines may be concatenated with or without '\n' between them.
  */
 mrz_status_t mrz_td3_decode(const char *lines, mrz_td3_t *out);
+
+/* Decode and verify a CS/CD single-line record (30 chars).
+ * Verifies doc-no, birth, expiry and composite check digits.
+ */
+mrz_status_t mrz_cscd_decode(const char *line, mrz_cscd_t *out);
 
 /* Helper: returns human-readable error string. */
 const char *mrz_strerror(mrz_status_t s);

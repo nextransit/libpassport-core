@@ -28,6 +28,8 @@ ap.add_argument("--out", default="src/cnn_weights.h")
 ap.add_argument("--epochs", type=int, default=60)
 ap.add_argument("--val-frac", type=float, default=0.15)
 ap.add_argument("--workdir", default="/tmp/mrz_real_glyphs")
+ap.add_argument("--skip-dump", action="store_true",
+                help="skip generate_dumps() — use pre-generated dumps in workdir")
 ap.add_argument("--mix-synthetic", type=int, default=0,
                 help="blend N synthetic v2-renderer samples per class")
 ap.add_argument("--mix-hard-slices", default="",
@@ -136,7 +138,10 @@ def generate_dumps():
         n+=1
     print(f"dumped {n} images to {ROOT}", flush=True)
 
-generate_dumps()
+if not a.skip_dump:
+    generate_dumps()
+else:
+    print(f"skipping dump generation, using pre-generated dumps in {ROOT}", flush=True)
 tr_imgs, val_imgs = split_images()
 print("gathering train...", flush=True)
 Xtr, Ytr = gather(tr_imgs)

@@ -52,6 +52,11 @@ ap = argparse.ArgumentParser()
 ap.add_argument("--epochs", type=int, default=40)
 ap.add_argument("--n-per-class", type=int, default=1500)
 ap.add_argument("--hard-extra", type=int, default=750)
+ap.add_argument("--synth-extra-npz", default="",
+                help="extra data for the SYNTHETIC half (npz with X/Y/meta),\n"
+                     "e.g. glyph slices exported from the rendered corpus.\n"
+                     "Joined to the synthetic half on purpose: the photo\n"
+                     "half keeps its --real-frac share of the training set.")
 ap.add_argument("--real-npz", default="data/omtest_slices.npz")
 ap.add_argument("--real-frac", type=float, default=0.30)
 ap.add_argument("--line", type=int, choices=[0, 1], required=True,
@@ -163,8 +168,28 @@ n_val = int(len(Ys) * 0.05)
 val_idx, tr_idx = perm[:n_val], perm[n_val:]
 Xtr_syn = torch.from_numpy(Xs[tr_idx])
 Ytr_syn = torch.from_numpy(Ys[tr_idx])
+Wtr_syn = torch.ones(len(Ytr_syn))
 Xval = torch.from_numpy(Xs[val_idx])
 Yval = torch.from_numpy(Ys[val_idx])
+
+if args.synth_extra_npz:
+    ex = np.load(args.synth_extra_npz, allow_pickle=True)
+    Xe = ex["X"].astype(np.float32).reshape(-1, 1, IN_H, IN_W)
+    Ye = ex["Y"].astype(np.int64)
+    if "meta" in ex.files:
+        em = [json.loads(s) for s in ex["meta"]]
+        sel = [i for i, m in enumerate(em)
+               if int(m.get("line", args.line)) == args.line]
+        Xe, Ye = Xe[sel], Ye[sel]
+    if "meta" in ex.files:
+        # meta['weak'] marks slices whose label the tool did not agree
+        # with; they stay in the training set but at a low weight.
+        _we = [0.25 if em[i].get("weak") else 1.0 for i in sel]
+        Wtr_syn = torch.cat([Wtr_syn, torch.tensor(_we, dtype=torch.float32)])
+    Xtr_syn = torch.cat([Xtr_syn, torch.from_numpy(Xe)])
+    Ytr_syn = torch.cat([Ytr_syn, torch.from_numpy(Ye)])
+    print(f"synth-extra: +{len(Ye)} rows from {args.synth_extra_npz}",
+          flush=True)
 
 # Class balance for the real half.
 #
@@ -330,7 +355,7 @@ if class_weighted:
 # hard targets for the synthetic half (those labels are rendered, not OCR)
 Cr_syn = torch.zeros(len(Ytr_syn), NUM_CLASSES)
 Cr_syn[torch.arange(len(Ytr_syn)), Ytr_syn] = 1.0
-Wsyn = torch.ones(len(Ytr_syn))
+Wsyn = Wtr_syn
 print(f"train syn={len(Ytr_syn)} real={len(Yr_r)} val(syn)={len(Xval)} "
       f"real_frac={len(Yr_r)/(len(Ytr_syn)+len(Yr_r)):.2f}", flush=True)
 

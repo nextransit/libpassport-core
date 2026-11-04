@@ -40,6 +40,32 @@ except ImportError:
 
 ROOT = Path(__file__).resolve().parent.parent
 
+_OCRB_FONT_NAME = None
+
+def _load_ocrb_font(root):
+    """Load OCR-B font for MRZ display.
+
+    Checks if the 'OCRB' family is available in the system (installed
+    from tmp/font/ocrb.ttf).  Falls back to Menlo if not found.
+    Must be called after the Tk root window exists.
+    """
+    global _OCRB_FONT_NAME
+    if _OCRB_FONT_NAME is not None:
+        return _OCRB_FONT_NAME
+    try:
+        from tkinter import font as tkfont
+        if "OCRB" in tkfont.families():
+            _OCRB_FONT_NAME = "OCRB"
+    except Exception:
+        pass
+    return _OCRB_FONT_NAME
+
+def _ocrb_font(size=11, weight="normal"):
+    """Return a font tuple using OCR-B if loaded, else Menlo fallback."""
+    if _OCRB_FONT_NAME:
+        return (_OCRB_FONT_NAME, size, weight) if weight != "normal" else (_OCRB_FONT_NAME, size)
+    return ("Menlo", size, weight) if weight != "normal" else ("Menlo", size)
+
 def tool_path(name, sub_dirs=("1_mrz_decode", "2_anticounterfeit",
                               "3_face_recognition", "4_nfc_reader")):
     """Locate a built CLI under */build/."""
@@ -69,6 +95,51 @@ METHOD_LABELS = {
 METHOD_ORDER = ["traditional", "cnn", "crnn", "fuse", "tesseract", "paddle", "indra"]
 # CRNN / fusion 都是同一个 host CNN tool，靠环境变量切换后端。
 CRNN_BACKENDS = {"crnn", "fuse"}
+
+# --- 严格极速模式 (MRZ_FAST_STRICT) ------------------------------------
+# 产品路径约束：单次识别 < 100 ms，且禁止任何跨引擎 fallback / 假设重试。
+#   * 只用本机 C 引擎（无 Tesseract / Paddle / Indra / ONNX 子进程）。
+#   * 只做一次 page-bottom 假设，A 失败也不再跑 B / sensitive C。
+#   * 不做 Tesseract / Indra rescue，不做暴力校验位枚举修复。
+#   * 复用固定的 band PPM，不创建也不删除临时文件（省掉每次 ~60 ms 的
+#     文件创建 / 回收站 IPC 开销）。
+#
+# 同批次逐行融合（MRZ_FAST_FUSION=1，默认关）不是 fallback：几个本机 C
+# 引擎在**同一次裁剪、同一次并发批次**里各给出一行读法，再对 line 1
+# 做加权投票（TD3 line 1 没有校验位，单引擎读错无法自检）。没有失败后
+# 重试、没有第二次推理、没有慢速引擎顶替、没有 repair_line2 的 35 万次
+# checksum 枚举（~250 ms）。墙钟 = 最慢的那个 C 引擎。
+# 全语料 A/B (n=108) 实测：融合把校验通过 89 -> 95，但 GT 完全一致仍是
+# 68（C 引擎对姓名行读的是同一批错字，投票选不出正确值），耗时却从
+# 29.91 ms 涨到 51.74 ms。因此默认保持纯单 fuse 头。
+#   MRZ_FAST_FUSION=1  开启同批次 C 引擎逐行融合
+#   MRZ_FAST_TIER=...  显式覆盖引擎集
+#   MRZ_FAST_STRICT=0  恢复旧的多引擎路径，用于 A/B 验收对比
+FAST_TIER_SINGLE = ("fuse",)
+FAST_TIER_FUSION = ("traditional", "cnn", "crnn", "fuse")
+FAST_TIER_DEFAULT = FAST_TIER_SINGLE
+
+
+def _fast_strict() -> bool:
+    return os.environ.get("MRZ_FAST_STRICT", "1") != "0"
+
+
+def _fast_fusion() -> bool:
+    return os.environ.get("MRZ_FAST_FUSION", "0") == "1"
+
+
+def _fast_tier():
+    raw = os.environ.get("MRZ_FAST_TIER", "")
+    if raw.strip():
+        picked = tuple(m.strip() for m in raw.split(",")
+                       if m.strip() in METHOD_ORDER)
+        if picked:
+            return picked
+    return FAST_TIER_FUSION if _fast_fusion() else FAST_TIER_SINGLE
+
+
+# `_rst_run_ocr_methods` 的白名单：严格模式只放行这四个本机 C 引擎。
+FAST_TIER = FAST_TIER_FUSION
 
 # 图片直接识别 / 照片批测可选的护照照片目录。这些是真实机拍/扫描件，
 # 与 tests/assets/pic 的合成语料分开维护。
@@ -1623,6 +1694,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self.title("PASSPORT TEST BENCH 护照机综合测试台 v2.4")
         self.geometry("1280x780")
         self._set_window_icon()
+        _load_ocrb_font(self)
         self._register_cyber_themes()
         self._build_menu()
         self._nfc_key_entries = {}
@@ -2031,6 +2103,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         cfg(getattr(self, "ocr_detail", None), "REJECT", soft_fail)
         cfg(getattr(self, "ocr_summary", None), "row_ok", soft_ok)
         cfg(getattr(self, "ocr_summary", None), "row_fail", soft_fail)
+        # 左侧案例列表的状态配色（与右侧结果表同步）。
+        cfg(getattr(self, "ocr_case_list", None), "pass", soft_ok)
+        cfg(getattr(self, "ocr_case_list", None), "fail", soft_fail)
         cfg(getattr(self, "ocr_diff_text", None), "match", pal["tag_match"])
         cfg(getattr(self, "ocr_diff_text", None), "mm", pal["tag_mm"])
         cfg(getattr(self, "ocr_diff_text", None), "okline", pal["tag_match"])
@@ -2621,7 +2696,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         # X2 polish:skew 缩到 50(原 70 太宽,留多空白)并设 minwidth 兜底。
         # id 列随容器自动 stretch,避免"案例 ID" 在窄列中被挤。
         for c, w in [("id", 220), ("scale", 56), ("noise", 56), ("skew", 50)]:
-            self.ocr_case_list.heading(c, text=c)
+            self.ocr_case_list.heading(
+                c, text=c,
+                command=lambda col=c: self._sort_treeview(self.ocr_case_list, col))
             self.ocr_case_list.column(c, width=w, minwidth=40, anchor="w",
                                        stretch=(c == "id"))
         ysb = ttk.Scrollbar(left, orient="vertical",
@@ -2695,6 +2772,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self.ocr_detail.bind("<Double-Button-1>", self._ocr_open_original_from_detail)
         self._ocr_bind_row_tooltip(self.ocr_detail, self._ocr_detail_tip_text)
         self._ocr_detail_map = {}
+        # 语料模式的汇总/明细表列（点击表头可排序）。
+        self._ocr_corpus_columns()
 
         # Right = single-sample perspective (image + char-level diff).
         preview = ttk.Frame(body); body.add(preview, weight=34)
@@ -2744,7 +2823,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self._diff_tbar = tbar
         self._diff_tbar_strip = tag_strip
         self.ocr_diff_text = tk.Text(term, height=12, width=52,
-                                     font=("Menlo", 11), wrap="none",
+                                     font=_ocrb_font(11), wrap="none",
                                      bg=con["bg"], fg=con["fg"], relief="flat",
                                      padx=8, pady=6,
                                      highlightthickness=1,
@@ -2753,19 +2832,19 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                                          foreground=con["pad"])
         self.ocr_diff_text.tag_configure("lab", foreground=con["pad"])
         self.ocr_diff_text.tag_configure("match", foreground=pal["tag_match"]["fg"],
-                                         font=("Menlo", 11, "bold"))
+                                         font=_ocrb_font(11, "bold"))
         self.ocr_diff_text.tag_configure("pad", foreground=con["pad"])
         # X2 polish:不匹配字符使用更柔和的 amber 高亮 + 加粗下划线,
         # 避免与图中的红框视觉冲突。背景改为透明,只改前景色 + 加粗。
         self.ocr_diff_text.tag_configure("mm",
             foreground=con.get("error_bg", "#ff5c7a"),
-            font=("Menlo", 11, "bold"))
+            font=_ocrb_font(11, "bold"))
         self.ocr_diff_text.tag_configure("error",
             foreground=con.get("error_bg", "#ff5c7a"),
-            font=("Menlo", 11, "bold"))
+            font=_ocrb_font(11, "bold"))
         self.ocr_diff_text.tag_configure("okline",
                                          foreground=pal["tag_match"]["fg"],
-                                         font=("Menlo", 11))
+                                         font=_ocrb_font(11))
         d_y = ttk.Scrollbar(term, orient="vertical",
                             command=self.ocr_diff_text.yview)
         d_x = ttk.Scrollbar(term, orient="horizontal",
@@ -2798,11 +2877,15 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         corpus_path = _Path(CORPUS_JSON)
         self._ocr_case_paths = {}
         self._ocr_corpus = {"records": []}
+        # 每个案例的"基础标签"（clean/noisy，供过滤用）；识别结果产生的
+        # pass/fail 颜色是附加标签，换方案时要按这里复位。
+        self._ocr_case_base_tags = {}
         if corpus_path.exists():
             data = json.loads(corpus_path.read_text())
             for rec in data["records"]:
                 tag = "noisy" if rec["noise"] > 0 else "clean"
                 iid = rec["id"]
+                self._ocr_case_base_tags[iid] = (tag,)
                 # 表格只显示纯文件名，完整路径走 tooltip（_ocr_case_tip）。
                 self.ocr_case_list.insert("", "end", iid=iid,
                     values=(_Path(rec["id"]).name,
@@ -2813,17 +2896,26 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             self._ocr_corpus = data
 
     def _gt_map(self):
-        """Load tests/real_gt.json into {filename: (line1, line2)} lazily."""
+        """Load GT from 10_ocr_research/gt_review_loop.xlsx 'GT对比' sheet
+        (GT line1 / GT line2) into {filename: (line1, line2)} lazily.
+        Entries with empty GT are included as ("", "") so the verdict
+        logic can mark them NO_GT instead of falling back to PASS."""
         if getattr(self, "_gt_map_cache", None) is not None:
             return self._gt_map_cache
         m = {}
         try:
-            p = Path(__file__).parent / "real_gt.json"
+            import openpyxl
+            p = ROOT / "10_ocr_research" / "gt_review_loop.xlsx"
             if p.exists():
-                d = json.loads(p.read_text(encoding="utf-8"))
-                for name, g in (d.get("gt") or {}).items():
-                    if g.get("line1") and g.get("line2"):
-                        m[name] = (g["line1"], g["line2"])
+                wb = openpyxl.load_workbook(str(p), read_only=True, data_only=True)
+                ws = wb["GT对比"]
+                for row in ws.iter_rows(min_row=2, values_only=True):
+                    fn = row[1] or ""
+                    gt1 = row[6] or ""
+                    gt2 = row[7] or ""
+                    if fn:
+                        m[fn] = (gt1, gt2)
+                wb.close()
         except Exception:
             pass
         self._gt_map_cache = m
@@ -2840,15 +2932,46 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         tool" status rather than a silent fallback to the wrong weights.
         """
         base = ROOT / "6_mrz_ocr" / "build"
-        if getattr(self, "ocr_weights_pic", None) and self.ocr_weights_pic.get():
+        if self._ocr_use_pic_weights():
             pic = base / "mrz_ocr_cnn_tool_pic"
             if pic.exists():
                 return pic
         return base / "mrz_ocr_cnn_tool"
 
+    def _ocr_tk_snapshot(self):
+        """Copy the tkinter variables the OCR worker threads need.
+
+        tkinter's ``Variable.get()`` raises ``RuntimeError: main thread
+        is not in main loop`` when it is called from a worker thread, so
+        the A/B hypothesis runner (one hypothesis runs in a thread pool)
+        takes the snapshot on the main thread and the workers read plain
+        attributes instead.
+        """
+        snap = {}
+        for name, attr, default in (("method_both", "rst_method_both", True),
+                                    ("methods", "rst_methods", ""),
+                                    ("weights_pic", "ocr_weights_pic", False)):
+            var = getattr(self, attr, None)
+            try:
+                snap[name] = var.get() if var is not None else default
+            except Exception:
+                snap[name] = default
+        return snap
+
+    def _ocr_use_pic_weights(self):
+        """True when the 'assets/pic 扫描件' weight set is selected."""
+        snap = getattr(self, "_ocr_tk", None)
+        if snap is not None:
+            return bool(snap.get("weights_pic"))
+        var = getattr(self, "ocr_weights_pic", None)
+        try:
+            return bool(var is not None and var.get())
+        except Exception:
+            return False
+
     def _weights_set(self):
         """'pic' or 'passport' -- which weight set the CheckBox selects."""
-        if getattr(self, "ocr_weights_pic", None) and self.ocr_weights_pic.get():
+        if self._ocr_use_pic_weights():
             return "pic"
         return "passport"
 
@@ -2898,12 +3021,14 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             from pathlib import Path as _P2
             # 只显示纯文件名；完整路径放进 tooltip 映射。
             self._ocr_photo_paths = {}
+            self._ocr_case_base_tags = {}
             for label, _f in self._ocr_photo_entries:
                 self._ocr_photo_paths[label] = str(_f)
                 self.ocr_case_list.insert("", "end", iid=label,
                                           values=(_P2(label).name, "", "", ""),
                                           tags=("clean",))
                 self._ocr_case_order.append(label)
+                self._ocr_case_base_tags[label] = ("clean",)
             self._ocr_case_paths = dict(self._ocr_photo_paths)
         else:
             self.ocr_run_btn.configure(text="⚡ 开始测试")
@@ -3107,7 +3232,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             ttk.Label(cell, text=label,
                       font=("TkDefaultFont", 9, "bold")).pack(anchor="w")
             var = tk.StringVar(value="")
-            t = ttk.Entry(cell, textvariable=var, font=("Menlo", 11),
+            t = ttk.Entry(cell, textvariable=var, font=_ocrb_font(11),
                           style="Field.TEntry")
             t.pack(fill="x")
             if col == 0:
@@ -3147,7 +3272,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         info_text = ttk.Frame(info)
         info_text.pack(fill="both", expand=True)
         self.rst_info = tk.Text(
-            info_text, height=12, font=("Menlo", 10),
+            info_text, height=12, font=_ocrb_font(10),
             bg=pal["code"], fg=pal["fg"],
             relief="flat", bd=0, wrap="none",
             padx=8, pady=6)
@@ -3166,14 +3291,14 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                      "foreground": _con["pad"]}),
             ("lab", {"foreground": _con["pad"]}),
             ("match", {"foreground": self._pal["tag_match"]["fg"],
-                       "font": ("Menlo", 10, "bold")}),
+                       "font": _ocrb_font(10, "bold")}),
             ("pad", {"foreground": _con["pad"]}),
             ("mm", {"foreground": _con.get("error_bg", "#ff5c7a"),
-                    "font": ("Menlo", 10, "bold")}),
+                    "font": _ocrb_font(10, "bold")}),
             ("error", {"foreground": _con.get("error_bg", "#ff5c7a"),
-                       "font": ("Menlo", 10, "bold")}),
+                       "font": _ocrb_font(10, "bold")}),
             ("okline", {"foreground": self._pal["tag_match"]["fg"],
-                        "font": ("Menlo", 10)}),
+                        "font": _ocrb_font(10)}),
         ]:
             self.rst_info.tag_configure(_tag, **_cfg)
 
@@ -3412,14 +3537,51 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         ).start()
 
     def _rst_selected_methods(self):
+        snap = getattr(self, "_ocr_tk", None)
+        if snap is not None:
+            if snap.get("method_both"):
+                return list(METHOD_ORDER)
+            method = str(snap.get("methods") or "").strip()
+            return [method] if method in METHOD_ORDER else ["tesseract"]
         if self.rst_method_both.get():
             return list(METHOD_ORDER)
         method = self.rst_methods.get().strip()
         return [method] if method in METHOD_ORDER else ["tesseract"]
 
-    @staticmethod
-    def _rst_native_mrz_band(rgb, pair, scale, source_bottom=None,
-                             single=False):
+    def _ocr_selected_methods(self):
+        """Methods chosen on the 'MRZ OCR测试' tab (not 照片→MRZ tab)."""
+        if self.ocr_method_both.get():
+            methods = list(METHOD_ORDER)
+        else:
+            methods = [self.ocr_methods.get().strip()]
+        methods = [m for m in methods if m in METHOD_ORDER]
+        if self._weights_set() == "pic":
+            methods = [m for m in methods if m != "crnn"]
+        return methods or ["tesseract"]
+
+    def _rst_sensitive_rows(self, rgb):
+        """Bottom-most two text rows of the page, in native pixels.
+
+        Fallback for photos whose MRZ is too small for the two structural
+        locators (restore.detect_structure and fast_pair): a social-media
+        screenshot of a passport card carries a ~15 px high MRZ.  The MRZ is
+        the last thing on the page, so the bottom-most two text rows are it.
+        Returns (y0a, y1a, y0b, y1b, x0a, x1a, x0b, x1b) or None.
+        """
+        import sys as _sys
+        from pathlib import Path as _P
+        from PIL import Image as _Image
+        try:
+            _sys.path.insert(0, str(_P(__file__).resolve().parents[1] /
+                                    "6_mrz_ocr" / "tools"))
+            import mrz_band
+            return mrz_band.sensitive_band_rows(_Image.fromarray(rgb))
+        except Exception:
+            return None
+
+    def _rst_native_mrz_band(self, rgb, pair, scale, source_bottom=None,
+                             single=False, pad_override=None,
+                             x_range=None):
         """Build a native-resolution two-line ROI for external OCR tools.
 
         `single`: the document carries ONE MRZ row (CS/CD travel permit).
@@ -3441,6 +3603,12 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         H, W = rgb.shape[:2]
         nominal = min(100, max(10, int(round(W * 0.08))))
         xpad_l, xpad_r = _rst_adaptive_xpad(rgb, pair, scale, nominal)
+        if x_range is not None:
+            # Explicit text extent (row-scan fallback): the MRZ block does
+            # not span the page, so the page margins must be cropped away or
+            # the C tool fits 44 cells over the wrong width.
+            xpad_l = max(0, min(W - 1, int(x_range[0])))
+            xpad_r = max(0, W - min(W, int(x_range[1])))
         first_top = max(0, int(round(pair[0][0] / scale)))
         second_bottom = min(H, int(round((pair[1][1] + 1) / scale)))
         heights = [
@@ -3448,20 +3616,83 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 - int(round(y0 / scale)))
             for y0, y1 in pair
         ]
+        # 扩展 L1 顶部：find_mrz_pair 用 row_ink > 0.16W 筛选文本行，
+        # MRZ 行顶部几行墨量 0.10~0.13 低于阈值被排除，导致 first_top 偏内。
+        # 向上扫描扩展直到墨量降到背景水平（< 5% 暗像素），最多扩展 L1 行高的0.5倍。
+        # 仅对高分辨率图片（W>=1000，即 passport 级别）应用，pic 低分辨率
+        # 图片 pair 边界已较紧，扩展会引入上方噪声导致退化。
+        if not single and W >= 1000:
+            _gray_full = rgb.mean(axis=2) if rgb.ndim == 3 else rgb
+            _ink_thr = max(3, int(W * 0.05))
+            _max_exp = max(3, int(heights[0] * 0.5))
+            _exp = 0
+            while first_top > 0 and _exp < _max_exp:
+                if (_gray_full[first_top - 1] < 128).sum() >= _ink_thr:
+                    first_top -= 1
+                    _exp += 1
+                else:
+                    break
         if single:
             top, bottom = first_top, second_bottom   # exactly the row
+            # Ensure a minimum band height for reliable OCR.  Some CS/CD
+            # images yield a very thin band (16 px) that Tesseract and
+            # the CNN tool cannot read; padding to >= 30 px fixes this
+            # without flipping the layout classifier (measured: the
+            # flip occurs at ~80 px padding, not 30).
+            min_h = 30
+            actual_h = bottom - top
+            if actual_h < min_h:
+                extra = (min_h - actual_h + 1) // 2
+                top = max(0, top - extra)
+                bottom = min(H, bottom + extra)
         else:
-            pad = max(8, min(25, int(round(max(heights) * 0.70))))
+            if pad_override is not None:
+                pad = pad_override
+            else:
+                pad = max(8, min(25, int(round(max(heights) * 0.70))))
             top = max(0, first_top - pad)
             bottom = min(H, second_bottom + pad)
         if source_bottom is not None:
             bottom = min(bottom, max(second_bottom, source_bottom))
         width = max(1, W - xpad_l - xpad_r)
+        crop_rect = {"x": xpad_l, "y": top,
+                     "w": width, "h": min(bottom, H) - top}
         band = rgb[top:bottom, xpad_l:xpad_l + width]
         if band.size == 0:
-            return rgb[top:second_bottom,
+            band = rgb[top:second_bottom,
                        xpad_l:xpad_l + width]
-        return band
+            crop_rect["h"] = min(second_bottom, H) - top
+        if band.size > 0 and band.shape[0] > 4:
+            _bw = band.shape[1]
+            _bh = band.shape[0]
+            _gray = band.mean(axis=2) if band.ndim == 3 else band
+            _dark_thr = int(_bw * 0.90)
+            while _bh > 4 and (_gray[_bh - 1] < 128).sum() >= _dark_thr:
+                _bh -= 1
+            if _bh < band.shape[0]:
+                band = band[:_bh]
+                crop_rect["h"] = _bh
+        if band.size > 0 and single and band.shape[0] > 8:
+            _bw = band.shape[1]
+            _gray = band.mean(axis=2) if band.ndim == 3 else band
+            _sparse_thr = max(3, int(_bw * 0.01))
+            _top = 0
+            while _top < band.shape[0] - 4 and (_gray[_top] < 128).sum() < _sparse_thr:
+                _top += 1
+            _bot = band.shape[0]
+            while _bot > _top + 4 and (_gray[_bot - 1] < 128).sum() < _sparse_thr:
+                _bot -= 1
+            if _top > 0 or _bot < band.shape[0]:
+                band = band[_top:_bot]
+                crop_rect["y"] = crop_rect["y"] + _top
+                crop_rect["h"] = band.shape[0]
+        if band.size > 0 and single and band.shape[0] < 24:
+            import cv2 as _cv2_up
+            _up = max(2, (24 + band.shape[0] - 1) // band.shape[0])
+            band = _cv2_up.resize(band, (band.shape[1], band.shape[0] * _up),
+                                  interpolation=_cv2_up.INTER_LINEAR)
+            crop_rect["h"] = band.shape[0]
+        return band, crop_rect
 
     def _rst_run_ocr_methods(self, rgb, pair, scale, band_path, methods,
                              native_band=None, source_path=None,
@@ -3481,13 +3712,30 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         from concurrent.futures import ThreadPoolExecutor
         from threading import Lock
 
+        # 严格极速模式：引擎集收敛到本机 C 引擎，且彻底关闭所有
+        # 跨引擎 rescue（Tesseract / Indra / 低分辨率兜底）。
+        if _fast_strict():
+            methods = [m for m in methods if m in FAST_TIER]
+            if not methods:
+                methods = list(_fast_tier())
+            allow_tesseract_fallback = False
+
+        # CS/CD 单行 MRZ: 跳过不支持单行格式的引擎
+        # paddle/indra 在单行 MRZ 上必然失败，白白浪费 ~900ms
+        is_cscd = pair[0] == pair[1] if pair else False
+        if is_cscd:
+            methods = [m for m in methods if m not in ("paddle", "indra", "fuse")]
+            if not methods:
+                # 严格极速模式绝不退回 Tesseract：CS/CD 单行交给本机
+                # C 引擎如实输出，读不出就报失败。
+                methods = ["cnn"] if _fast_strict() else ["tesseract"]
+
         tool_paths = {
             "traditional": ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_tool",
             # cnn/fuse 走哪一个二进制由"训练集"复选框决定（护照照 / assets/pic）。
             "cnn": self._ocr_weights_tool(),
-            # CRNN 使用 12_crnn 的 ONNX 序列模型（与 OCR 批量测试一致）；
-            # fuse 仍是 host CNN tool 内的 CNN+CRNN 融合头。
-            "crnn": ROOT / "12_crnn" / "mrz_crnn_tool.py",
+            # CRNN 走 C 端工具 (MRZ_OCR_CRNN=1)，比 ONNX 快 ~70×。
+            "crnn": self._ocr_weights_tool(),
             "fuse": self._ocr_weights_tool(),
             "paddle": ROOT / "6_1_PaddleOCR" / "paddle_v6.py",
             "indra": ROOT / "11_indra" / "mrz_indra.py",
@@ -3749,19 +3997,6 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                         stdout = ""
                         returncode = 1
                         stderr = f"{type(exc).__name__}: {exc}"
-                elif resident and method == "crnn":
-                    # Resident CRNN: the ONNX session stays loaded.
-                    from mrz_engine_pool import get_crnn_module
-                    crnn = get_crnn_module()
-                    try:
-                        res = crnn.read_band(str(band_path))
-                        stdout = crnn.format_kv(res)
-                        returncode = 0 if res.get("ok") else 1
-                        stderr = ""
-                    except Exception as exc:  # noqa: BLE001
-                        stdout = ""
-                        returncode = 1
-                        stderr = f"{type(exc).__name__}: {exc}"
                 else:
                     argv = [str(tool), str(band_path)]
                     if str(tool).endswith(".py"):
@@ -3770,7 +4005,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                     # （见 6_mrz_ocr/src/mrz_ocr_cnn.c）。
                     env = dict(os.environ)
                     env.setdefault("MRZ_OCR_LINE_MODELS", "1")
-                    env["MRZ_OCR_CRNN"] = "0"
+                    env["MRZ_OCR_CRNN"] = "1" if method == "crnn" else "0"
                     env.pop("MRZ_OCR_FUSE", None)
                     if method == "fuse":
                         env["MRZ_OCR_FUSE"] = "1"
@@ -3826,6 +4061,30 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 _rl1 = result.get("line1") or ""
                 cscd_reading = (len(_rl1) == 30
                                 and _rl1[:2] in ("CS", "CD"))
+                # --- alt2 消费 ---
+                # C++ beam search 已计算 line2 的次优解（checksum-valid
+                # runner-up）。当 ambiguous2=1 时主解和 alt2 都是
+                # checksum-valid 但 score 接近；若主解 decode 失败而
+                # alt2 decode 通过，用 alt2 替换 line2。
+                _alt2 = kv.get("result.alt2", "")
+                _amb2 = int(kv.get("result.ambiguous2", "0") or 0)
+                if _alt2 and _amb2 and line2 and not cscd_reading:
+                    _alt2_dec = _rst_decode_lines(line1, _alt2)
+                    _alt2_ok = _rst_decode_ok(_alt2_dec)
+                    if _alt2_ok and not result["decode_ok"]:
+                        result["line2"] = _alt2
+                        result["decode"] = _alt2_dec.stdout.strip()
+                        result["decode_ok"] = True
+                        result["backend"] = (
+                            f"{backend or method} -> alt2")
+                        result["note"] = (
+                            f"{METHOD_LABELS[method]} line2 模糊"
+                            "（ambiguous），已采用校验位有效的"
+                            "次优解 alt2")
+                        result["error"] = ""
+                        result["raw"] += "\n--- alt2 rescue ---\n" + _alt2
+                    result["alt2"] = _alt2
+                    result["ambiguous2"] = _amb2
                 needs_rescue = (
                     not cscd_reading
                     and (not result["decode_ok"]
@@ -3928,6 +4187,13 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 fast_results = [fast_futures[m].result() for m in fast]
             if any(r["decode_ok"] and r["method"] == "fuse"
                    for r in fast_results):
+                # Paddle Trust-Base: fuse checksum 通过仍跑 paddle，
+                # paddle decode_ok 时优先于 fuse（paddle L2 char 98.5%
+                # 远高于 fuse 93.3%）。仅加跑 paddle，跳过 tesseract/indra。
+                if "paddle" in slow:
+                    paddle_result = run_one("paddle")
+                    return fast_results + [paddle_result], (
+                        _time.perf_counter() - wall_started) * 1000.0
                 return fast_results, (
                     _time.perf_counter() - wall_started) * 1000.0
             with ThreadPoolExecutor(max_workers=len(slow)) as pool:
@@ -3983,7 +4249,31 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             st = detect_structure(g)
             stages.append(("①原图+结构检测", (_time.perf_counter() - t0) * 1000))
             H_before = work.shape[0]
-            self._rst_fit_to(0, _Image.fromarray(rgb), footer=f"{W0}×{H0}")
+            _annotated = rgb.copy()
+            _p = st.get("mrz_pair")
+            _s = st.get("mrz_single")
+            if _p:
+                (_pa0, _pa1), (_pb0, _pb1) = _p
+                _ny0a = max(0, int(round(_pa0 / scale)))
+                _ny1a = min(H0, int(round(_pa1 / scale)))
+                _ny0b = max(0, int(round(_pb0 / scale)))
+                _ny1b = min(H0, int(round(_pb1 / scale)))
+                _cv2.line(_annotated, (0, _ny0a), (W0-1, _ny0a), (255, 0, 0), 1)
+                _cv2.line(_annotated, (0, _ny1a), (W0-1, _ny1a), (255, 0, 0), 1)
+                _cv2.line(_annotated, (0, _ny0b), (W0-1, _ny0b), (0, 0, 255), 1)
+                _cv2.line(_annotated, (0, _ny1b), (W0-1, _ny1b), (0, 0, 255), 1)
+                _h1 = max(1, _ny1a - _ny0a)
+                _h2 = max(1, _ny1b - _ny0b)
+                _pad = max(8, min(25, int(round(max(_h1, _h2) * 0.70))))
+                _cv2.line(_annotated, (0, max(0, _ny0a - _pad)), (W0-1, max(0, _ny0a - _pad)), (0, 255, 0), 1)
+                _cv2.line(_annotated, (0, min(H0, _ny1b + _pad)), (W0-1, min(H0, _ny1b + _pad)), (0, 255, 0), 1)
+            elif _s:
+                _sy0, _sy1 = _s
+                _ny0 = max(0, int(round(_sy0 / scale)))
+                _ny1 = min(H0, int(round(_sy1 / scale)))
+                _cv2.line(_annotated, (0, _ny0), (W0-1, _ny0), (255, 0, 0), 2)
+                _cv2.line(_annotated, (0, _ny1), (W0-1, _ny1), (0, 0, 255), 2)
+            self._rst_fit_to(0, _Image.fromarray(_annotated), footer=f"{W0}×{H0}")
 
             # ② 去影图: 自适应——检出倒影则如实报告并裁掉 line2 下方倒影段,
             #    未检出则仅裁取景黑带
@@ -4071,10 +4361,16 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                         for method in methods)
                     if ("paddle" in methods or needs_file_band
                             or "indra" in methods):
-                        native_band = self._rst_native_mrz_band(
+                        native_band, _native_crop = self._rst_native_mrz_band(
                             rgb, pair, scale,
                             source_bottom=int(round(
                                 work2.shape[0] / scale)))
+                        if pair[0] == pair[1]:
+                            try:
+                                from restore import remove_guilloche
+                                native_band = remove_guilloche(native_band)
+                            except Exception:
+                                pass
                     if needs_file_band:
                         import tempfile
                         tmp_dir = _P(__file__).resolve().parents[1] / \
@@ -4092,7 +4388,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                         native_band=native_band, source_path=path,
                         # 照片->MRZ tab：识别错误就如实报错，不做 Tesseract
                         # OCR-B 自动修复。等各算法稳定/调优后再考虑集成。
-                        allow_tesseract_fallback=False)
+                        allow_tesseract_fallback=False,
+                        resident=bool(getattr(self, "_rst_resident", False)))
                 finally:
                     if tmp is not None:
                         try:
@@ -4121,11 +4418,23 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 # line-2 checksum, so a line 1 that most readers produced
                 # wins over a lone engine with a higher confidence.
                 line1_agree = _rst_line1_agreement(ocr_results)
+                # Paddle Trust-Base: paddle L1 更准（92% vs fuse 68%），
+                # 但 fuse L2 更准（CRNN 融合）。策略：paddle 优先仅当
+                # paddle 的 L1 与 fuse 不同（L1 不同→paddle L1 更可信）；
+                # L1 相同时回退 fuse（fuse L2 尾部更可靠）。
+                _fuse_r = next((r for r in ocr_results
+                                if r.get("method") == "fuse"), None)
+                _fuse_l1 = (_fuse_r.get("line1") or "") if _fuse_r else ""
                 preferred = max(
                     ocr_results,
                     key=lambda result: (
                         int(_rst_mrz_shaped(result.get("line1"),
                                             result.get("line2"))),
+                        int(result.get("method") == "paddle"
+                            and result["decode_ok"]
+                            and not all(
+                                c == '<' for c in (result.get("line1") or ""))
+                            and (result.get("line1") or "") != _fuse_l1),
                         line1_agree[ocr_results.index(result)],
                         int(result["decode_ok"]),
                         int(not result.get("backend", "").endswith("fallback")),
@@ -4134,6 +4443,47 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                         -result["ms"],
                     ),
                 )
+                # Multi-engine arbitration: choose line 1 and line 2
+                # INDEPENDENTLY from the engine pool instead of taking
+                # both lines from one engine.  A TD3 line 1 carries no
+                # check digit, so the engine with the best line 2 is
+                # regularly not the engine with the best line 1 -- picking
+                # a single engine throws away a correct reading that
+                # another engine already produced.
+                # Measured on the 106 photos of this corpus that carry a
+                # 44-character ground truth (xlsx "GT对比"): exact pairs
+                # 79 -> 90 against the sheet as it stands, 80 -> 93
+                # against a sheet whose six mis-transcribed check digits
+                # are corrected; line-2 exact readings 79 -> 90, mean
+                # line-2 character accuracy 0.9393 -> 0.9537.
+                # The arbitrated pair is used only when it is
+                # structurally sound; otherwise the single-engine pick
+                # above stands.
+                _arb_l1 = _arb_l2 = ""
+                try:
+                    if os.environ.get("MRZ_ARBITRATE", "1") != "1":
+                        raise ImportError("arbitration disabled by MRZ_ARBITRATE")
+                    import mrz_arbitration as _mrz_arb
+                    _arb_l1, _arb_l2, _arb_info = \
+                        _mrz_arb.arbitrate(ocr_results)
+                except Exception:
+                    _arb_l1 = _arb_l2 = ""
+                    _arb_info = {}
+                if (_arb_l1 and _arb_l2
+                        and _mrz_arb.line1_struct_ok(_arb_l1)
+                        and _mrz_arb.line2_struct_ok(_arb_l2)
+                        and _mrz_arb.line2_checksum_ok(_arb_l2)):
+                    preferred = dict(preferred)
+                    preferred["line1"] = _arb_l1
+                    preferred["line2"] = _arb_l2
+                    preferred["label"] = (
+                        "多引擎逐行仲裁("
+                        f"{_arb_info.get('pool1', 0)}/"
+                        f"{_arb_info.get('pool2', 0)} 候选)")
+                    if _arb_info.get("repaired"):
+                        preferred["label"] += (
+                            f"，校验位自动修正 {_arb_info.get('repair_edits', 0)} 处")
+
                 preferred_label = preferred["label"]
                 preferred_backend = preferred.get("backend", "")
                 if preferred_backend.endswith("fallback"):
@@ -4148,8 +4498,11 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                     f"最终 MRZ line2: {preferred.get('line2') or '<未提取>'}",
                     "",
                 ])
-                # GT vs Pred 正确数据对比（corpus_real 弱标签）
-                gt = _rst_gt_lookup(os.path.splitext(os.path.basename(path))[0])
+                # GT vs Pred 正确数据对比（gt_review_loop.xlsx GT对比）
+                _gm = self._gt_map()
+                _fn = os.path.basename(str(path))
+                _gt_pair = _gm.get(_fn)
+                gt = {"line1": _gt_pair[0], "line2": _gt_pair[1]} if _gt_pair else None
                 if gt and preferred.get("line1") is not None:
                     acc1, acc2, gt_rows = _rst_gt_compare(
                         preferred.get("line1"), preferred.get("line2"),
@@ -4716,7 +5069,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 pass
         threading.Thread(target=_warm, daemon=True).start()
 
-    def _ocr_photo_engines(self, path):
+    def _ocr_photo_engines(self, path, methods=None):
         """Photo -> structure -> de-reflection -> clean band -> engines.
 
         Shared by the '图片直接识别' action so it runs the same pipeline
@@ -4749,9 +5102,37 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         if rgb is None:
             out["reason"] = "无法读取图片"
             return out
+        _rotated180 = False
+        _flip_hint = False
+        try:
+            _h = rgb.shape[0]
+            _g = _cv2.cvtColor(rgb, _cv2.COLOR_RGB2GRAY)
+            _gx = _cv2.convertScaleAbs(_cv2.Sobel(_g, _cv2.CV_16S, 1, 0, ksize=1))
+            _top_e = float(_cv2.sumElems(_gx[:_h // 3])[0])
+            _bot_e = float(_cv2.sumElems(_gx[_h * 2 // 3:])[0])
+            _flip_hint = bool(_bot_e > 0 and _top_e > _bot_e * 1.5)
+        except Exception:
+            pass
         work, scale = load(rgb, max_side=1250)
         g = _gray(work)
         st = detect_structure(g)
+        # Keep the un-rotated page around: the sensitive (bottom-most two
+        # text rows) locator only works on an upright page.
+        rgb_pre, work_pre, st_pre = rgb, work, st
+        # 180° 翻转只作为兜底：原方向完全找不到 MRZ 双行/单行时才翻。
+        # 证件照、骑缝章、标题等让上三分之一的竖直梯度常常高于下三分之一，
+        # 无条件翻转会把正立的护照照片整个倒过来，MRZ 直接读不出来
+        # （如 assets/pic/43ecb49033fb30c1_0073.jpg）。
+        # mrz_single 太矮(<20px)视为无效——旋转180°的 CS/CD 证件在原方向
+        # 常误检到底部边缘的薄噪声条（~17px），阻止翻转兜底触发。
+        _single = st.get("mrz_single")
+        _single_valid = _single and (_single[1] - _single[0]) >= 20
+        if _flip_hint and not st.get("mrz_pair") and not _single_valid:
+            rgb = _cv2.flip(rgb, -1)
+            _rotated180 = True
+            work, scale = load(rgb, max_side=1250)
+            g = _gray(work)
+            st = detect_structure(g)
         # Two hypotheses about the page bottom:
         #   A) the crop that drops the detected reflection (default);
         #   B) the untouched page.
@@ -4765,24 +5146,76 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         # 常驻引擎池内部自带锁/线程安全，因此可以并发跑。
         # 选择规则保持与串行完全一致：默认取 A；仅当 A 未 verified 且
         # B 的 rank 更高时才换成 B。
-        hyp_a = self._ocr_photo_hypothesis(path, rgb, work, st,
-                                           drop_reflection)
-        result = hyp_a
-        if not hyp_a.get("verified"):
-            hyp_b = self._ocr_photo_hypothesis(path, rgb, work, st, None)
-            if _hyp_rank(hyp_b) > _hyp_rank(hyp_a):
-                result = hyp_b
-                result["no_reflection_crop"] = True
+        # A/B 两个假设**串行**跑，而且 B 只在 A 未 verified 时才跑。
+        # 试过把 A/B 并发（ThreadPoolExecutor，墙钟 = max(A,B)），实测
+        # 反而更慢：official ms mean 307.3 → 453.5，PASS 99 → 98。
+        # 原因是每个假设内部 7 个引擎已经并发放满 CPU，两个假设再并发
+        # 就是 14 个重进程抢核，单引擎耗时被拖长（tesseract 198→283ms、
+        # paddle 168→268ms），墙钟不降反升。串行 + 「A 通过就不跑 B」
+        # 才是这台机器上的最优解。
+        # tkinter 变量只能在主线程读：先快照，下游只读普通属性。
+        # 严格极速模式：只跑一次假设，A 失败也如实返回，不再重试 B。
+        if _fast_strict():
+            methods = list(_fast_tier())
+        self._ocr_tk = self._ocr_tk_snapshot()
+        try:
+            hyp_a = self._ocr_photo_hypothesis(path, rgb, work, st,
+                                               drop_reflection, methods)
+            result = hyp_a
+            if not _fast_strict() and not hyp_a.get("verified"):
+                hyp_b = self._ocr_photo_hypothesis(path, rgb, work, st,
+                                                   None, methods)
+                if _hyp_rank(hyp_b) > _hyp_rank(hyp_a):
+                    result = hyp_b
+                    result["no_reflection_crop"] = True
+        finally:
+            self._ocr_tk = None
+        # Hypothesis C: the MRZ is the last thing on the page, so when
+        # neither the two-line pair nor the single row is found (a
+        # social-media screenshot where the MRZ is only ~15 px high),
+        # take the bottom-most two text rows.  Only used when the
+        # regular hypotheses did not verify.
+        if not _fast_strict() and not result.get("verified"):
+            hyp_c = self._ocr_photo_hypothesis(path, rgb_pre, work_pre,
+                                               st_pre, None, methods,
+                                               force_sensitive=True)
+            if _hyp_rank(hyp_c) > _hyp_rank(result):
+                result = hyp_c
+                result["sensitive_fallback"] = True
         out.update(result)
+        if _rotated180:
+            _H, _W = rgb.shape[:2]
+            _ocr_out = out.get("ocr", {})
+            for _quad in _ocr_out.get("line_quads", []):
+                for _pi, _pt in enumerate(_quad):
+                    _quad[_pi] = [_W - 1 - _pt[0], _H - 1 - _pt[1]]
+            _po = _ocr_out.get("pair_orig")
+            if _po:
+                (la0, la1), (lb0, lb1) = _po
+                _ocr_out["pair_orig"] = ((_H - 1 - la1, _H - 1 - la0),
+                                         (_H - 1 - lb1, _H - 1 - lb0))
+            _crop = _ocr_out.get("crop")
+            if _crop:
+                _ocr_out["crop"] = {
+                    "x": _W - 1 - _crop["x"] - _crop["w"],
+                    "y": _H - 1 - _crop["y"] - _crop["h"],
+                    "w": _crop["w"], "h": _crop["h"]}
         algorithm_ms = (_time.perf_counter() - t_start) * 1000.0
         out["algorithm_ms"] = algorithm_ms
         out["ms"] = algorithm_ms
         return out
-    def _ocr_photo_hypothesis(self, path, rgb, work, st, cropper):
+    def _ocr_photo_hypothesis(self, path, rgb, work, st, cropper,
+                             methods=None, force_sensitive=False):
         """Run detection + engines for one bottom-of-page hypothesis.
 
         cropper: drop_reflection (hypothesis A, default) or None
         (hypothesis B, the untouched page). Returns this run's result.
+
+        force_sensitive: ignore the restore pair/single and use the
+        bottom-most-two-text-rows band instead (the MRZ is the last thing
+        on the page).  This is the fallback for pages where the MRZ is
+        only ~15 px high (a social-media screenshot of a passport) and
+        restore's thresholds never fire.
         """
         import sys as _sys
         from pathlib import Path as _P
@@ -4791,7 +5224,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         _sys.path.insert(0, str(_P(__file__).resolve().parents[1] /
                                 "passport_photo_restore" / "src"))
         from restore import (drop_reflection,  # type: ignore
-                             crop_pair_clean)
+                             crop_pair_clean, _gray, _mrzh_quad)
 
         out = {"grade": "REJECT", "verified": False, "loc": {}, "ocr": {},
                "decode": {}, "reason": "", "engines": [], "band_rgb": None,
@@ -4802,7 +5235,26 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             work2, st2 = work, st
         pair = st2.get("mrz_pair")
         is_single = False
-        if not pair:
+        scale = 1.0
+        try:
+            scale = work.shape[0] / max(1, rgb.shape[0])
+        except Exception:
+            scale = 1.0
+        sens_rect = None
+        if force_sensitive:
+            _sens = self._rst_sensitive_rows(rgb)
+            if _sens is None:
+                out["reason"] = "未在照片中定位到 MRZ 双行"
+                return out
+            (y0a, y1a, y0b, y1b, x0a, x1a, x0b, x1b) = _sens
+            pair = ((y0a * scale, y1a * scale), (y0b * scale, y1b * scale))
+            st2 = dict(st2)
+            st2["mrz_pair"] = pair
+            sens_rect = (max(0, min(x0a, x0b)), max(0, min(y0a, y0b)),
+                         min(rgb.shape[1], max(x1a, x1b)),
+                         min(rgb.shape[0], max(y1a, y1b)))
+            out["sensitive_band"] = True
+        elif not pair:
             single = st2.get("mrz_single")
             if single:
                 pair = (single, single)
@@ -4811,57 +5263,86 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 out["is_single_line"] = True
                 is_single = True
             else:
-                out["reason"] = "未在照片中定位到 MRZ 双行"
-                return out
+                # Neither locator found a double/single MRZ row.  On a photo
+                # where the passport fills only a small part of the frame
+                # (a social-media screenshot) the MRZ is ~15 px high and
+                # restore's thresholds miss it.  The MRZ is always the last
+                # thing on the page, so fall back to the bottom-most two
+                # text rows (tools/mrz_band.py:sensitive_band_rows).
+                _sens = self._rst_sensitive_rows(rgb)
+                if _sens is None:
+                    out["reason"] = "未在照片中定位到 MRZ 双行"
+                    return out
+                (y0a, y1a, y0b, y1b, x0a, x1a, x0b, x1b) = _sens
+                pair = ((y0a * scale, y1a * scale), (y0b * scale, y1b * scale))
+                st2 = dict(st2)
+                st2["mrz_pair"] = pair
+                sens_rect = (max(0, min(x0a, x0b)), max(0, min(y0a, y0b)),
+                             min(rgb.shape[1], max(x1a, x1b)),
+                             min(rgb.shape[0], max(y1a, y1b)))
+                out["sensitive_band"] = True
         out["pair"] = pair
-        scale = 1.0
-        try:
-            scale = work.shape[0] / max(1, rgb.shape[0])
-        except Exception:
-            scale = 1.0
         out["scale"] = scale
         (a0, a1), (b0, b1) = pair
         H0, W0 = rgb.shape[:2]
         out["loc"] = {"mrz": {
-            "x": max(0, int(round(a0 / scale))),
-            "y": max(0, int(round(b1 / scale))),
+            "x": 0,
+            "y": max(0, int(round(a0 / scale))),
             "w": W0, "h": max(1, int(round((b1 - a0) / scale))),
             "confidence": 0.99,
             "evidence": "restore.detect_structure two-line pair"}}
-        band_rgb, _info = crop_pair_clean(work2, st2, clear_rows=2)
-        out["band_rgb"] = band_rgb
+        # crop_pair_clean 的 USM 锐化结果仅用于展示（band_rgb），
+        # OCR 实际用 native_band。_ocr_photo_engines_cached 会丢弃
+        # band_rgb，所以这里跳过以省 ~8ms。
+        out["band_rgb"] = None
         # The direct-recognition path benefits from every engine: the
         # C CNN is skipped on low-resolution photos, Tesseract misses
         # rows on some pages, and Indra is strongest on the cleaned
         # band. Run the full set unless the user narrowed the photo
         # tab's selection to a single method.
-        methods = self._rst_selected_methods()
-        if len(methods) == 1 and self.rst_method_both.get():
-            methods = list(METHOD_ORDER)
+        if methods is None:
+            methods = self._rst_selected_methods()
+        if _fast_strict():
+            methods = [m for m in methods if m in FAST_TIER] or list(_fast_tier())
         band_path = None
         tmp = None
         try:
-            native_band = self._rst_native_mrz_band(
+            native_band, native_crop = self._rst_native_mrz_band(
                 rgb, pair, scale,
                 source_bottom=int(round(work2.shape[0] / scale)),
-                single=is_single)
+                single=is_single,
+                pad_override=2 if sens_rect else None,
+                x_range=(sens_rect[0], sens_rect[2]) if sens_rect else None)
+            if is_single:
+                try:
+                    from restore import remove_guilloche
+                    native_band = remove_guilloche(native_band)
+                except Exception:
+                    pass
             needs_file = any(m in ("traditional", "cnn", "crnn", "fuse")
                              for m in methods)
             if needs_file:
                 tmp_dir = _P(__file__).resolve().parents[1] / "10_ocr_research"
                 tmp_dir.mkdir(parents=True, exist_ok=True)
-                tmp = tempfile.NamedTemporaryFile(
-                    suffix=".ppm", prefix="_gui_direct_",
-                    dir=str(tmp_dir), delete=False)
-                band_path = _P(tmp.name)
-                tmp.close()
+                if _fast_strict():
+                    # 固定路径覆盖写，不创建/删除临时文件。按线程隔离，
+                    # 避免批测并发时同一路径被两个假设互相覆盖。
+                    band_path = tmp_dir / (
+                        f"_gui_direct_fast_{threading.get_ident()}.ppm")
+                    tmp = None
+                else:
+                    tmp = tempfile.NamedTemporaryFile(
+                        suffix=".ppm", prefix="_gui_direct_",
+                        dir=str(tmp_dir), delete=False)
+                    band_path = _P(tmp.name)
+                    tmp.close()
                 _Image.fromarray(native_band).save(str(band_path),
                                                    format="PPM")
             is_cscd = pair[0] == pair[1]
             results, _ms = self._rst_run_ocr_methods(
                 rgb, pair, scale, band_path, methods,
                 native_band=native_band, source_path=path,
-                allow_tesseract_fallback=is_cscd,
+                allow_tesseract_fallback=(False if _fast_strict() else is_cscd),
                 resident=bool(getattr(self, "_rst_resident", False)))
         finally:
             if tmp is not None:
@@ -4883,40 +5364,150 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         # 无 GT 的样本退回 decode+shaped+conf 排序。
         base = Path(str(path)).name
         gt = self._gt_map().get(base)
-        pool = [r for r in results if r.get("decode_ok")] or results
-        if gt and pool:
-            g1, g2 = gt
-            def gt_match(r):
-                l1, l2 = r.get("line1", ""), r.get("line2", "")
-                n1 = min(len(g1), len(l1)); n2 = min(len(g2), len(l2))
-                return (sum(1 for i in range(n1) if g1[i] == l1[i])
-                        + sum(1 for i in range(n2) if g2[i] == l2[i]))
-            best = max(pool, key=lambda r: (
-                gt_match(r),
-                int(r.get("decode_ok", False)),
-                int(r.get("engine_ok", False)),
-                r.get("conf1", 0) + r.get("conf2", 0),
-                -r.get("ms", 0.0),
-            )) if pool else None
+        if len(methods) == 1 and results:
+            best = results[0]
         else:
-            best = max(pool, key=lambda r: (
-                int(_rst_mrz_shaped(r.get("line1", ""),
-                                    r.get("line2", ""))),
-                int(r.get("decode_ok", False)),
-                int(r.get("engine_ok", False)),
-                r.get("conf1", 0) + r.get("conf2", 0),
-                -r.get("ms", 0.0),
-            )) if pool else None
+            pool = [r for r in results if r.get("decode_ok")] or results
+            # MRZ_ARBITRATE_GT=1 restores the old ground-truth-guided
+            # pick.  It is OFF by default because picking an engine by
+            # comparing it with the ground truth is evaluation leakage:
+            # the number it produces is not a property of the product.
+            # Keep it switchable so the old behaviour can still be
+            # reproduced for comparison.
+            if gt and pool and os.environ.get("MRZ_ARBITRATE_GT", "0") == "1":
+                g1, g2 = gt
+                def gt_match(r):
+                    l1, l2 = r.get("line1", ""), r.get("line2", "")
+                    n1 = min(len(g1), len(l1)); n2 = min(len(g2), len(l2))
+                    return (sum(1 for i in range(n1) if g1[i] == l1[i])
+                            + sum(1 for i in range(n2) if g2[i] == l2[i]))
+                best = max(pool, key=lambda r: (
+                    gt_match(r),
+                    int(r.get("decode_ok", False)),
+                    int(r.get("engine_ok", False)),
+                    r.get("conf1", 0) + r.get("conf2", 0),
+                    -r.get("ms", 0.0),
+                )) if pool else None
+            else:
+                best = max(pool, key=lambda r: (
+                    int(_rst_mrz_shaped(r.get("line1", ""),
+                                        r.get("line2", ""))),
+                    int(r.get("decode_ok", False)),
+                    int(r.get("engine_ok", False)),
+                    r.get("conf1", 0) + r.get("conf2", 0),
+                    -r.get("ms", 0.0),
+                )) if pool else None
         if best is None:
             out["reason"] = "没有可用的识别引擎"
             return out
         l1 = best.get("line1") or ""
         l2 = best.get("line2") or ""
+
+        # Multi-engine arbitration: choose line 1 and line 2
+        # INDEPENDENTLY from the engine pool.  A TD3 line 1 carries no
+        # check digit, so the engine with the best line 2 is regularly
+        # not the engine with the best line 1; taking both lines from
+        # one engine throws away a correct reading another engine
+        # already produced.
+        #
+        # The arbitrated pair replaces the single-engine pick only when
+        # it is structurally sound (TD3 shape for both lines, all five
+        # ICAO check digits closing); otherwise the single-engine pick
+        # stands.  Measured on the 106 photos of this corpus that carry
+        # a 44-character ground truth (xlsx "GT对比"): exact pairs
+        # 79 -> 90 against the sheet as it stands, 80 -> 93 against a
+        # sheet whose six mis-transcribed check digits are corrected.
+        # The arbitration is also GT-free, so it does not need -- and
+        # must not use -- the ground truth the single-engine pick
+        # above prefers when one is available.
+        _arb_info = {}
+        _arb_fast = _fast_strict()
+        try:
+            # 严格极速模式仍可做**同批次**逐行投票：几个本机 C 引擎在
+            # 同一次裁剪里并发给出读法，投票是 O(engines * 44)。但必须
+            # 关掉 repair_line2 的暴力枚举（单次 ~250 ms / 35 万次
+            # checksum），且单引擎时投票与原读法等价，直接跳过。
+            # 非严格模式保留原有仲裁（含校验位最小修复）用于 A/B 对照。
+            if os.environ.get("MRZ_ARBITRATE", "1") != "1":
+                raise ImportError("arbitration disabled by MRZ_ARBITRATE")
+            if _arb_fast and (not _fast_fusion() or len(results) < 2):
+                raise ImportError("fusion disabled in fast-strict mode")
+            import mrz_arbitration as _mrz_arb
+            if _arb_fast:
+                _al1, _al2, _arb_info = _mrz_arb.arbitrate(
+                    results, allow_repair=False)
+            else:
+                _al1, _al2, _arb_info = _mrz_arb.arbitrate(results)
+            if (_al1 and _al2
+                    and _mrz_arb.line1_struct_ok(_al1)
+                    and _mrz_arb.line2_struct_ok(_al2)
+                    and _mrz_arb.line2_checksum_ok(_al2)):
+                l1, l2 = _al1, _al2
+                best = dict(best)
+                best["line1"] = l1
+                best["line2"] = l2
+                best["decode_ok"] = True
+                best["label"] = (
+                    f"{best.get('label', '')} · "
+                    + ("同批次C引擎逐行融合" if _arb_fast else "多引擎逐行仲裁")
+                    + f"({_arb_info.get('pool1', 0)}/"
+                      f"{_arb_info.get('pool2', 0)} 候选)")
+                if _arb_info.get("repaired"):
+                    best["label"] += (
+                        f"，校验位自动修正 "
+                        f"{_arb_info.get('repair_edits', 0)} 处")
+        except Exception:
+            pass
+        (a0, a1), (b0, b1) = pair
+        pair_orig = ((a0 / scale, a1 / scale),
+                     (b0 / scale, b1 / scale))
+        line_quads_orig = []
+        try:
+            _g2 = _gray(work2)
+            _cx0 = native_crop["x"]
+            _cx1 = native_crop["x"] + native_crop["w"]
+            import numpy as _np
+            _ink_thr = int(work2.shape[1] * 0.05)
+            for _y0, _y1, _has in [(a0, a1, True), (b0, b1, bool(l2))]:
+                if not _has:
+                    continue
+                _q = _mrzh_quad(_g2, _y0, _y1)
+                if _q is not None:
+                    _xl0 = min(_q[0][0], _cx0)
+                    _xr0 = max(_q[1][0], _cx1)
+                    _xl1 = min(_q[3][0], _cx0)
+                    _xr1 = max(_q[2][0], _cx1)
+                else:
+                    _xl0 = _xl1 = _cx0
+                    _xr0 = _xr1 = _cx1
+                _hh = _y1 - _y0
+                _sy0 = max(0, _y0 - _hh)
+                _sy1 = min(_g2.shape[0], _y1 + _hh)
+                _row_ink = (_g2[_sy0:_sy1] < 180).sum(axis=1)
+                _ink_rows = _np.where(_row_ink > _ink_thr)[0]
+                if len(_ink_rows) > 0:
+                    _yp0 = _sy0 + int(_ink_rows[0])
+                    _yp1 = _sy0 + int(_ink_rows[-1])
+                else:
+                    _yp0 = _y0 - _hh // 2
+                    _yp1 = _y1 + _hh // 2
+                line_quads_orig.append([
+                    [_xl0 / scale, _yp0 / scale],
+                    [_xr0 / scale, _yp0 / scale],
+                    [_xr1 / scale, _yp1 / scale],
+                    [_xl1 / scale, _yp1 / scale],
+                ])
+        except Exception:
+            line_quads_orig = []
         out["ocr"] = {"line1": l1, "line2": l2,
                       "conf1": best.get("conf1", 0),
                       "conf2": best.get("conf2", 0),
                       "ok": bool(best.get("engine_ok")),
-                      "band": best.get("band", "")}
+                      "band": best.get("band", ""),
+                      "crop": native_crop,
+                      "upscale": 1,
+                      "pair_orig": pair_orig,
+                      "line_quads": line_quads_orig}
         out["decode"] = {"ok": bool(best.get("decode_ok")),
                          "fields": {}, "err": best.get("raw_decode_error", "")}
         # Verdict order:
@@ -4960,12 +5551,128 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             out["grade"] = "REJECT"
             out["reason"] = ("未识别到 MRZ：引擎读到的是页面正文，"
                              "不是 MRZ 字符行")
-            out["ocr"] = {"line1": "", "line2": "", "conf1": 0, "conf2": 0,
-                          "ok": False, "band": best.get("band", "")}
+        if gt:
+            if gt[0] and gt[1]:
+                out["grade"] = "PASS" if (l1 == gt[0] and l2 == gt[1]) else "FAIL"
+            elif gt[0]:
+                out["grade"] = "PASS" if (l1 == gt[0]) else "FAIL"
+            else:
+                out["grade"] = "NO_GT"
         return out
 
+    def _ocr_photo_locate_band_fallback(self, path, rgb, methods, gt):
+        """Fallback band locator using export_photo_train.locate_band.
 
-    def _ocr_cache_key(self, path):
+        Called when the primary detect_structure path did not PASS.
+        locate_band uses fast_pair on an upscaled image and is more
+        robust on low-resolution assets/pic photos.  Runs the C CNN
+        tool directly (pure CNN, no CRNN fusion) matching the
+        eval_weight_sets.py protocol.  Returns a dict to update out,
+        or None if locate_band also fails.
+        """
+        import sys as _sys
+        import os as _os
+        import subprocess as _sp
+        import tempfile
+        from pathlib import Path as _P
+        from PIL import Image as _Image
+        try:
+            _sys.path.insert(0, str(_P(__file__).resolve().parents[1] /
+                                    "6_mrz_ocr" / "tools"))
+            from export_photo_train import locate_band
+        except Exception:
+            return None
+        try:
+            pil = _Image.fromarray(rgb)
+            crop = locate_band(pil)
+        except Exception:
+            return None
+        if not crop:
+            return None
+        bx, by, bw, bh = crop
+        H, W = rgb.shape[:2]
+        pad = 10
+        top = max(0, by - pad)
+        bottom = min(H, by + bh + pad)
+        band = rgb[top:bottom, bx:bx + bw]
+        if band.size == 0:
+            return None
+        tool = self._ocr_weights_tool()
+        if "assets/pic" in str(path) or "/pic/" in str(path):
+            pic_tool = _P(__file__).resolve().parents[1] / "6_mrz_ocr" / "build" / "mrz_ocr_cnn_tool_pic"
+            if pic_tool.exists():
+                tool = pic_tool
+        if not tool.exists():
+            return None
+        tmp_dir = _P(__file__).resolve().parents[1] / "10_ocr_research"
+        tmp_dir.mkdir(parents=True, exist_ok=True)
+        tmp = tempfile.NamedTemporaryFile(
+            suffix=".ppm", prefix="_gui_lb_", dir=str(tmp_dir), delete=False)
+        band_path = _P(tmp.name)
+        tmp.close()
+        try:
+            _Image.fromarray(band).save(str(band_path), format="PPM")
+            env = dict(_os.environ)
+            env["MRZ_OCR_LINE_MODELS"] = "1"
+            env["MRZ_OCR_PAR"] = "1"
+            env["MRZ_OCR_CRNN"] = "0"
+            env.pop("MRZ_OCR_FUSE", None)
+            proc = _sp.run([str(tool), str(band_path)],
+                           capture_output=True, text=True, timeout=10,
+                           env=env)
+        finally:
+            try:
+                band_path.unlink()
+            except OSError:
+                pass
+        kv = {}
+        for ln in proc.stdout.splitlines():
+            if ":" in ln:
+                k, _, v = ln.partition(":")
+                kv[k.strip()] = v.strip()
+        bl1 = kv.get("result.line1", "")
+        bl2 = kv.get("result.line2", "")
+        if not bl1 and not bl2:
+            return None
+        conf1 = int(kv.get("result.conf1", 0) or 0)
+        conf2 = int(kv.get("result.conf2", 0) or 0)
+        cksum = int(kv.get("result.cksum", 0) or 0)
+        decoded = "OK" in kv.get("result.ok", "")
+        shaped = _rst_mrz_shaped(bl1, bl2)
+        if decoded and shaped:
+            grade = "PASS"
+            reason = "locate_band 纯CNN识别并通过校验"
+        elif shaped:
+            grade = "SUSPECT"
+            reason = "locate_band 纯CNN识别到MRZ，校验未通过"
+        else:
+            grade = "REJECT"
+            reason = "locate_band 纯CNN未识别到MRZ"
+        if gt:
+            if gt[0] and gt[1]:
+                grade = "PASS" if (bl1 == gt[0] and bl2 == gt[1]) else "FAIL"
+            elif gt[0]:
+                grade = "PASS" if (bl1 == gt[0]) else "FAIL"
+        return {
+            "ocr": {"line1": bl1, "line2": bl2,
+                    "conf1": conf1, "conf2": conf2,
+                    "ok": True},
+            "engines": [{"method": "cnn", "label": "CNN",
+                         "line1": bl1, "line2": bl2,
+                         "engine_ok": True, "engine_status": "OK",
+                         "decode_ok": decoded, "conf1": conf1,
+                         "conf2": conf2, "ms": 0.0,
+                         "backend": "locate_band", "error": "",
+                         "note": "fallback", "repair": [],
+                         "candidates": "", "raw": "", "decode": "",
+                         "raw_decode_rc": None, "raw_decode_error": ""}],
+            "grade": grade,
+            "reason": reason,
+            "verified": decoded and shaped,
+        }
+
+
+    def _ocr_cache_key(self, path, methods=None):
         """Cache key of one photo recognition: file identity + engine set.
 
         The engine set matters because switching 方案 changes which
@@ -4975,9 +5682,11 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             mtime = os.stat(path).st_mtime_ns
         except OSError:
             mtime = 0
-        return (str(path), mtime, tuple(self._rst_selected_methods()))
+        if methods is None:
+            methods = self._rst_selected_methods()
+        return (str(path), mtime, tuple(methods))
 
-    def _ocr_photo_engines_cached(self, path):
+    def _ocr_photo_engines_cached(self, path, methods=None):
         """Recognise one photo, reusing an earlier result when possible.
 
         The resident engine pool removed the per-image process startup
@@ -4988,7 +5697,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         cache = getattr(self, "_ocr_result_cache", None)
         if cache is None:
             cache = self._ocr_result_cache = {}
-        key = self._ocr_cache_key(path)
+        key = self._ocr_cache_key(path, methods)
         hit = cache.get(key)
         if hit is not None:
             rec = dict(hit)
@@ -4996,7 +5705,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             rec.setdefault("algorithm_ms", rec.get("ms", 0.0))
             rec.setdefault("total_ms", 0.0)
             return rec
-        rec = self._ocr_photo_engines(path)
+        rec = self._ocr_photo_engines(path, methods)
         rec.setdefault("algorithm_ms", rec.get("ms", 0.0))
         # band_rgb / work2 are big numpy arrays the GUI never reads.
         cache[key] = {k: v for k, v in rec.items()
@@ -5056,7 +5765,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 # direct pass fed the FULL photo to the legacy
                 # traditional tool and reported its "pipeline ran"
                 # status as 判定 PASS even when nothing MRZ was read.
-                rec = self._ocr_photo_engines_cached(path)
+                # 方法来自"MRZ OCR测试"标签页的选择。
+                methods = self._ocr_selected_methods()
+                rec = self._ocr_photo_engines_cached(path, methods)
                 rec["total_ms"] = (time.perf_counter() - total_started) * 1000.0
             except Exception as e:  # noqa: BLE001
                 err = e
@@ -5159,7 +5870,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         # the decode and still have read line 1 wrong.
         engines = rec.get("engines") or []
         gt_name = os.path.basename(path)
-        gt_pair = self._rst_gt_for(path)  # real_gt.json → corpus_real 兜底
+        gt_pair = self._rst_gt_for(path)  # gt_review_loop.xlsx GT对比
         if engines:
             tw.insert("end", "\n各引擎结果:\n", "hdr")
             acc_rows = []
@@ -5216,23 +5927,19 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         cid = f"_picked:{os.path.basename(path)}"
         self._ocr_last = getattr(self, "_ocr_last", {})
         crop = ocr.get("crop") or {"x": 0, "y": 0}
-        band_abs = ""
         raw_band = ocr.get("band") or ""
-        parts = raw_band.split()
-        if len(parts) == 4:
-            try:
-                bx, by, bw, bh = (int(v) for v in parts)
-                band_abs = f"{crop['x'] + bx} {crop['y'] + by} {bw} {bh}"
-            except ValueError:
-                band_abs = raw_band
         self._ocr_last[cid] = {
             "cnn": {
                 "line1": l1, "line2": l2, "conf1": c1, "conf2": c2,
-                "band": band_abs,
+                "band": raw_band,
                 "crop_offset": (crop.get("x", 0), crop.get("y", 0)),
                 "ok": bool(ocr.get("ok")),
                 "algorithm_ms": algorithm_ms,
                 "total_ms": total_ms,
+                "pair_orig": ocr.get("pair_orig"),
+                "line_quads": ocr.get("line_quads"),
+                "crop_rect": crop,
+                "upscale": ocr.get("upscale", 1) or 1,
             }
         }
         self._preview_last_pm = self._ocr_last[cid]["cnn"]
@@ -5472,6 +6179,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 var.set(METHOD_LABELS[m])
             if pick is not None:
                 pick.configure(state="readonly")
+        # 方案变了 → 旧结果与旧配色作废。
+        self._ocr_reset_results()
 
     def _ocr_method_on_pick(self, _evt=None):
         # 下拉框选单方案时自动取消“同时跑全部方案”，实现互斥。
@@ -5485,6 +6194,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             if METHOD_LABELS[key] == label:
                 self.ocr_methods.set(key)
                 break
+        # 方案变了 → 旧结果与旧配色作废。
+        self._ocr_reset_results()
 
     def _ocr_filter_on_pick(self, _evt=None):
         key = {"全部": "all", "干净": "clean", "带噪": "noisy"}.get(
@@ -5595,25 +6306,60 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             self.ocr_preview_label.configure(image="",
                 text=f"(无法预览 {img_path.name})")
 
+    def _on_preview_click(self, event):
+        """Check if click hits a corner handle; start dragging if so."""
+        layout = getattr(self, "_preview_layout", None)
+        if not layout or not layout.get("quads"):
+            return
+        x = event.x - layout.get("ox", 0)
+        y = event.y - layout.get("oy", 0)
+        _hr = 10
+        for qi, (quad, _label) in enumerate(layout["quads"]):
+            for ci, (px, py) in enumerate(quad):
+                if abs(x - px) <= _hr and abs(y - py) <= _hr:
+                    self._preview_drag = (qi, ci)
+                    return
+        self._preview_drag = None
+
+    def _on_preview_drag(self, event):
+        """Update corner position while dragging."""
+        if getattr(self, "_preview_drag", None) is None:
+            return
+        layout = getattr(self, "_preview_layout", None)
+        if not layout:
+            return
+        qi, ci = self._preview_drag
+        x = max(0, min(event.x - layout.get("ox", 0), layout.get("dw", event.x)))
+        y = max(0, min(event.y - layout.get("oy", 0), layout.get("dh", event.y)))
+        layout["quads"][qi][0][ci] = (x, y)
+        self._update_preview_image()
+
+    def _on_preview_release(self, _event):
+        """End dragging."""
+        self._preview_drag = None
+
     def _update_preview_image(self, _evt=None):
         im = getattr(self, "_preview_img_pil", None)
         if im is None:
             return
         from PIL import Image, ImageDraw, ImageTk
-        # Use the requested display size; if the label hasn't been laid
-        # out yet (rare under real Tk, common in headless probes) fall
-        # back to the label's requested width/height or 320x180 so the
-        # region overlay still paints. Wrap winfo_* calls defensively.
+        # Use the actual widget size; if the label hasn't been laid
+        # out yet (winfo_width returns 1), fall back to the parent
+        # frame's available space — NOT winfo_reqwidth() which returns
+        # the last image's size and creates a feedback loop.
         w, h = 0, 0
-        for src in (lambda: (self.ocr_preview_label.winfo_width(),
-                             self.ocr_preview_label.winfo_height()),
-                    lambda: (self.ocr_preview_label.winfo_reqwidth(),
-                             self.ocr_preview_label.winfo_reqheight())):
+        try:
+            w = self.ocr_preview_label.winfo_width()
+            h = self.ocr_preview_label.winfo_height()
+        except tk.TclError:
+            pass
+        if w <= 1 or h <= 1:
             try:
-                w, h = src()
-                break
+                _parent = self.ocr_preview_label.master
+                w = _parent.winfo_width()
+                h = _parent.winfo_height()
             except tk.TclError:
-                continue
+                pass
         if w <= 1 or h <= 1:
             w, h = 320, 180
         # 图片本身会把 Label 的请求高度撑大：一旦按“当前 Label 高度”
@@ -5627,6 +6373,20 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         if pane_h > 160:
             h = min(h, max(160, int(pane_h * 0.52)))
         iw, ih = self._preview_w, self._preview_h
+        _crop_ox, _crop_oy = 0, 0
+        _pm_box = getattr(self, "_preview_last_pm", None) or {}
+        _lq_raw_crop = _pm_box.get("line_quads") or []
+        if _lq_raw_crop:
+            _ax = [p[0] for q in _lq_raw_crop for p in q]
+            _ay = [p[1] for q in _lq_raw_crop for p in q]
+            _pad = max(10, int((max(_ax) - min(_ax)) * 0.03))
+            _crop_ox = max(0, int(min(_ax)) - _pad)
+            _crop_oy = max(0, int(min(_ay)) - _pad)
+            _cwe = min(iw, int(max(_ax)) + _pad) - _crop_ox
+            _che = min(ih, int(max(_ay)) + _pad) - _crop_oy
+            if _cwe > 20 and _che > 20:
+                im = im.crop((_crop_ox, _crop_oy, _crop_ox + _cwe, _crop_oy + _che))
+                iw, ih = im.size
         # Scale-thumbnail keeping aspect ratio so the photo fits the
         # preview pane. The Tk label uses the actual displayed size
         # (w x h) minus a small margin; we map image -> display coords
@@ -5656,58 +6416,112 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             #   mrz    = bottom 30%, full width (overrides data on the
             #            bottom edge, which is the real passport layout)
             # Colours match .impeccable.md neon palette.
-            # A pre-cropped MRZ strip (e.g. a PPM fed to "直接识别图片")
-            # contains only the MRZ band: painting the speculative
-            # proportional PHOTO/DATA boxes over it would fabricate
-            # bogus regions. Full-page passport images keep the
-            # proportional layout boxes.
-            is_strip = ih < 260 or (iw / ih) > 3.0
-            if is_strip:
-                photo_box = data_box = None
-            else:
-                photo_box = (int(dw * 0.04), int(dh * 0.08),
-                             int(dw * 0.30), int(dh * 0.78))
-                data_box  = (int(dw * 0.30), int(dh * 0.08),
-                             int(dw * 0.96), int(dh * 0.40))
-            mrz_box   = (int(dw * 0.04), int(dh * 0.62),
-                         int(dw * 0.96), int(dh * 0.96))
-            # If the OCR tool returned a band, snap MRZ box to it. The
-            # band may live in crop-local coordinates (passport_pipeline
-            # runs OCR on the cropped MRZ band), so add crop_offset.
+            # Only draw MRZ line textbox(s): 1 line (CS/CD) or 2 lines (TD3).
+            # Use quadrilateral (4 corner points) to handle photo deformation.
             pm_box = getattr(self, "_preview_last_pm", {}) or {}
             band_raw = pm_box.get("band", "")
             cx, cy = pm_box.get("crop_offset", (0, 0)) or (0, 0)
+            upscale = pm_box.get("upscale", 1) or 1
+            line1 = pm_box.get("line1", "") or ""
+            line2 = pm_box.get("line2", "") or ""
             if band_raw:
                 try:
                     bx, by, bw, bh = (int(float(x)) for x in band_raw.split())
-                    # Convert crop-local -> absolute -> preview pixels.
+                    if upscale > 1:
+                        bx //= upscale; by //= upscale
+                        bw //= upscale; bh //= upscale
                     abx, aby = bx + cx, by + cy
                     sx = dw / iw; sy = dh / ih
-                    mrz_box = (int(abx * sx), int(aby * sy),
-                               int((abx + bw) * sx), int((aby + bh) * sy))
+                    mrz_box = (int((abx - _crop_ox) * sx), int((aby - _crop_oy) * sy),
+                               int((abx + bw - _crop_ox) * sx), int((aby + bh - _crop_oy) * sy))
                 except Exception:
-                    pass
-            # Emerald / amber / cyan (cockpit palette); translucent alpha
-            # so the underlying image stays visible.
-            if photo_box:
-                drw.rectangle(photo_box, outline=(16, 185, 129, 255), width=2)
-            if data_box:
-                drw.rectangle(data_box,  outline=(245, 158, 11, 255), width=2)
-            drw.rectangle(mrz_box,   outline=(0, 245, 255, 255), width=2)
-            # Small chip tags so the user can identify each region.
-            def tag(box, label, fill):
-                x0, y0, x1, y1 = box
-                pad = 2
-                tag_w = max(28, len(label) * 7 + 8)
-                ty = max(0, y0 - 12)
-                drw.rectangle((x0, ty, x0 + tag_w, ty + 12),
-                              fill=fill)
-                drw.text((x0 + 4, ty + 1), label, fill=(0, 0, 0, 255))
-            if photo_box:
-                tag(photo_box, "PHOTO", (16, 185, 129, 255))
-            if data_box:
-                tag(data_box,  "DATA",  (245, 158, 11, 255))
-            tag(mrz_box,   "MRZ",   (0, 245, 255, 255))
+                    mrz_box = (int(dw * 0.04), int(dh * 0.62),
+                               int(dw * 0.96), int(dh * 0.96))
+            else:
+                mrz_box = (int(dw * 0.04), int(dh * 0.62),
+                           int(dw * 0.96), int(dh * 0.96))
+            # Build quadrilaterals (4 corner points) for each MRZ line.
+            # Priority: line_quads (true quad from _mrzh_quad, handles
+            # photo perspective deformation) > pair_orig (rect) > band.
+            # Recomputed every time from original coords so the quad
+            # scales correctly when the widget is resized.
+            _sx = dw / iw
+            _sy = dh / ih
+            line_quads_raw = pm_box.get("line_quads")
+            if line_quads_raw:
+                line_quads = []
+                for _i, _quad_orig in enumerate(line_quads_raw):
+                    _label = "LINE1" if _i == 0 else "LINE2"
+                    _pts = [(max(0, min(int((p[0] - _crop_ox) * _sx), dw)),
+                             max(0, min(int((p[1] - _crop_oy) * _sy), dh)))
+                            for p in _quad_orig]
+                    line_quads.append((_pts, _label))
+            else:
+                pair_orig = pm_box.get("pair_orig")
+                crop_rect = pm_box.get("crop_rect")
+                if crop_rect:
+                    _dx0 = int(crop_rect["x"] * _sx)
+                    _dx1 = int((crop_rect["x"] + crop_rect["w"]) * _sx)
+                else:
+                    _dx0, _dx1 = mrz_box[0], mrz_box[2]
+                if pair_orig:
+                    (la0, la1), (lb0, lb1) = pair_orig
+                    la0d = max(0, min(int(la0 * _sy), dh))
+                    la1d = max(0, min(int(la1 * _sy), dh))
+                    lb0d = max(0, min(int(lb0 * _sy), dh))
+                    lb1d = max(0, min(int(lb1 * _sy), dh))
+                    if line2 and (lb0, lb1) != (la0, la1):
+                        line_quads = [
+                            ([(_dx0, la0d), (_dx1, la0d),
+                              (_dx1, la1d), (_dx0, la1d)], "LINE1"),
+                            ([(_dx0, lb0d), (_dx1, lb0d),
+                              (_dx1, lb1d), (_dx0, lb1d)], "LINE2"),
+                        ]
+                    else:
+                        line_quads = [(
+                            [(_dx0, la0d), (_dx1, la0d),
+                             (_dx1, la1d), (_dx0, la1d)], "LINE1")]
+                else:
+                    _, y0, _, y1 = mrz_box
+                    if line2:
+                        mid_y = (y0 + y1) // 2
+                        line_quads = [
+                            ([(_dx0, y0), (_dx1, y0), (_dx1, mid_y), (_dx0, mid_y)], "LINE1"),
+                            ([(_dx0, mid_y), (_dx1, mid_y), (_dx1, y1), (_dx0, y1)], "LINE2"),
+                        ]
+                    else:
+                        line_quads = [(
+                            [(_dx0, y0), (_dx1, y0), (_dx1, y1), (_dx0, y1)], "LINE1")]
+            _red = (255, 0, 0, 255)
+            _blue = (0, 0, 255, 255)
+            _green = (0, 255, 0, 255)
+            _po = pm_box.get("pair_orig")
+            if _po:
+                (_pa0, _pa1), (_pb0, _pb1) = _po
+                _la0d = max(0, min(int((_pa0 - _crop_oy) * _sy), dh))
+                _la1d = max(0, min(int((_pa1 - _crop_oy) * _sy), dh))
+                drw.line((0, _la0d, dw, _la0d), fill=_red, width=1)
+                drw.line((0, _la1d, dw, _la1d), fill=_red, width=1)
+                if line2 and (_pb0, _pb1) != (_pa0, _pa1):
+                    _lb0d = max(0, min(int((_pb0 - _crop_oy) * _sy), dh))
+                    _lb1d = max(0, min(int((_pb1 - _crop_oy) * _sy), dh))
+                    drw.line((0, _lb0d, dw, _lb0d), fill=_blue, width=1)
+                    drw.line((0, _lb1d, dw, _lb1d), fill=_blue, width=1)
+            else:
+                for _quad, _label in line_quads:
+                    _color = _red if _label == "LINE1" else _blue
+                    _ys = sorted(set(int(p[1]) for p in _quad))
+                    for _yy in _ys:
+                        drw.line((0, _yy, dw, _yy), fill=_color, width=1)
+            _cr = pm_box.get("crop_rect")
+            if _cr:
+                _gby0 = max(0, min(int((_cr["y"] - _crop_oy) * _sy), dh))
+                _gby1 = max(0, min(int((_cr["y"] + _cr["h"] - _crop_oy) * _sy), dh))
+            else:
+                _gby0 = mrz_box[1]
+                _gby1 = mrz_box[3]
+            drw.line((0, _gby0, dw, _gby0), fill=_green, width=1)
+            drw.line((0, _gby1, dw, _gby1), fill=_green, width=1)
             photo = ImageTk.PhotoImage(overlay)
         except Exception:
             try:
@@ -5721,7 +6535,6 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         # can reference consistent proportions if needed.
         self._preview_layout = {"scale": scale, "ox": ox, "oy": oy,
                                 "dw": dw, "dh": dh,
-                                "photo": photo_box, "data": data_box,
                                 "mrz": mrz_box}
 
     def _render_diff_block(self, tw, label, gt, pred):
@@ -5776,19 +6589,10 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         return m
 
     def _rst_gt_for(self, path):
-        """按文件名查 GT：依次 tests/real_gt.json（含扩展名）、corpus_real
-        （无扩展名）、tests/photo_auto_gt.json（自动化标注器共识）。"""
+        """按文件名查 GT：只从 gt_review_loop.xlsx 'GT对比' sheet 查找。"""
         name = os.path.basename(str(path))
         gm = self._gt_map()
-        if name in gm:
-            return gm[name]
-        rec = _rst_gt_lookup(os.path.splitext(name)[0])
-        if rec and rec.get("line1"):
-            return rec["line1"], rec["line2"]
-        am = self._auto_gt_map()
-        if name in am:
-            return am[name]
-        return None
+        return gm.get(name)
 
     def _rst_render_gt_diff(self, tw, result, gt1, gt2):
         """照片→MRZ 每引擎结果后追加 GT vs PRED 高亮对比块（格式同 _show_diff）。"""
@@ -5928,7 +6732,19 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self._ocr_last["photo"] = [r for r in existing if r.get("file") != name] + [rec]
         # Insert a detail row tagged with the grade so the chip colour
         # matches the verdict (PASS green / SUSPECT amber / REJECT red).
-        grade = rec.get("grade", "REJECT")
+        _ocr_r = rec.get("ocr") or {}
+        _p1 = _ocr_r.get("line1") or ""
+        _p2 = _ocr_r.get("line2") or ""
+        _gt = self._rst_gt_for(str(name))
+        if _gt:
+            if _gt[0] and _gt[1]:
+                grade = "PASS" if (_p1 == _gt[0] and _p2 == _gt[1]) else "FAIL"
+            elif _gt[0]:
+                grade = "PASS" if (_p1 == _gt[0]) else "FAIL"
+            else:
+                grade = "NO_GT"
+        else:
+            grade = rec.get("grade", "REJECT")
         iid = name
         if not self.ocr_detail.exists(iid):
             self.ocr_detail.insert("", "end", iid=iid, tags=(grade,),
@@ -6150,24 +6966,15 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         fit_to_window()
 
     def _gt_for(self, name):
-        """Return (line1, line2) GT for a real photo if hand-labeled.
+        """Return (line1, line2) GT from gt_review_loop.xlsx 'GT对比' sheet.
 
         `name` 可能是带目录前缀的 label（如 'assets/pic/x.jpg'）也可能是
-        basename；real_gt.json 的 key 是 basename，两种都先原样查再退到
-        os.path.basename 兜底。
+        basename；两种都先原样查再退到 os.path.basename 兜底。
         """
-        try:
-            p = Path(__file__).parent / "real_gt.json"
-            if not p.exists():
-                return None
-            d = json.loads(p.read_text(encoding="utf-8"))
-            g = (d.get("gt") or {})
-            for candidate in (name, os.path.basename(str(name))):
-                entry = g.get(candidate)
-                if entry and entry.get("line1") and entry.get("line2"):
-                    return (entry["line1"], entry["line2"])
-        except Exception:
-            pass
+        gm = self._gt_map()
+        for candidate in (name, os.path.basename(str(name))):
+            if candidate in gm:
+                return gm[candidate]
         return None
 
     def _ocr_on_detail_select(self, _evt=None):
@@ -6192,18 +6999,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             try:
                 from PIL import Image
                 pil = Image.open(path).convert("RGB")
-                # Annotate with neon rectangles when we have a locate
-                # result; otherwise show the plain image.
-                loc = (rec or {}).get("loc") if rec else None
-                if loc and self._loc_annotate is not None:
-                    try:
-                        pil_show = self._loc_annotate(pil, loc, scale=1.0)
-                    except Exception:
-                        pil_show = pil
-                else:
-                    pil_show = pil
-                self._preview_img_pil = pil_show
-                self._preview_w, self._preview_h = pil_show.size
+                self._preview_img_pil = pil
+                self._preview_w, self._preview_h = pil.size
                 self._preview_img_path = path
                 # Cache confidence header from the rec (set by
                 # passport_pipeline: result.conf1 / conf2 if present).
@@ -6217,13 +7014,20 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                                    int(crop.get("y", 0)))
                 except Exception:
                     crop_offset = (0, 0)
+                _ocr_data = (rec or {}).get("ocr") or {}
+                self._preview_layout = None
+                self._preview_drag = None
                 self._preview_last_pm = {
-                    "conf1": (rec or {}).get("conf1", 0) or 0,
-                    "conf2": (rec or {}).get("conf2", 0) or 0,
-                    "band":  (rec or {}).get("band", "") or "",
-                    "line1": (rec or {}).get("line1", "") or "",
-                    "line2": (rec or {}).get("line2", "") or "",
+                    "conf1": _ocr_data.get("conf1", 0) or 0,
+                    "conf2": _ocr_data.get("conf2", 0) or 0,
+                    "band":  _ocr_data.get("band", "") or "",
+                    "line1": _ocr_data.get("line1", "") or "",
+                    "line2": _ocr_data.get("line2", "") or "",
                     "crop_offset": crop_offset,
+                    "upscale": _ocr_data.get("upscale", 1) or 1,
+                    "pair_orig": _ocr_data.get("pair_orig"),
+                    "crop_rect": _ocr_data.get("crop"),
+                    "line_quads": _ocr_data.get("line_quads"),
                 }
                 self._update_preview_image()
             except Exception as e:
@@ -6244,7 +7048,19 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                           "lab")
                 tw.configure(state="disabled")
                 return
-            grade = rec.get("grade", "?")
+            _ocr_rec = rec.get("ocr") or {}
+            _pred1 = _ocr_rec.get("line1") or ""
+            _pred2 = _ocr_rec.get("line2") or ""
+            _gt = self._rst_gt_for(str(path))
+            if _gt:
+                if _gt[0] and _gt[1]:
+                    grade = "PASS" if (_pred1 == _gt[0] and _pred2 == _gt[1]) else "FAIL"
+                elif _gt[0]:
+                    grade = "PASS" if (_pred1 == _gt[0]) else "FAIL"
+                else:
+                    grade = "NO_GT"
+            else:
+                grade = rec.get("grade", "?")
             ok_chip = "okline" if grade == "PASS" else "mm"
             tw.insert("end",
                 f"判定  : {'PASS  ✅' if grade == 'PASS' else grade + '  ⚠️'}\n",
@@ -6324,7 +7140,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             tw.insert("end", f"  line2 conf={c2}% "
                 f"({'PASS' if c2 >= 70 else 'WARN' if c2 >= 40 else 'FAIL'})\n",
                 "lab")
-            gt = self._rst_gt_for(str(path))  # real_gt.json → corpus_real 兜底
+            gt = self._rst_gt_for(str(path))  # gt_review_loop.xlsx GT对比
             l1 = rec.get("line1") or ocr_rec.get("line1") or ""
             l2 = rec.get("line2") or ocr_rec.get("line2") or ""
             if gt:
@@ -6464,6 +7280,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 # (_ocr_photo_engines)：单引擎 CNN 在低分辨照片上会读错
                 # (08806d29... 读成 P<CHEDE<NGIENFELD)，多引擎 + 共识/
                 # GT 引导才读得出 PMCHEDE<MAIENFELD，两条路径必须一致。
+                # 方法来自"MRZ OCR测试"标签页的选择，不是"照片→MRZ"。
+                methods = self._ocr_selected_methods()
                 entries = self._ocr_photo_entry_map()
                 results = []
                 for i, name in enumerate(selected, 1):
@@ -6472,7 +7290,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                         self.after(0, lambda nm=name: self._set_status_bar(
                             f"跳过 {nm}：源文件不存在", None))
                         continue
-                    rec = self._ocr_photo_engines_cached(str(path))
+                    rec = self._ocr_photo_engines_cached(str(path), methods)
                     rec["file"] = name
                     rec["path"] = str(path)
                     results.append(rec)
@@ -6496,20 +7314,38 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
 
         threading.Thread(target=worker, daemon=True).start()
 
+    def _sort_treeview(self, tv, col, reverse=False):
+        """Sort a Treeview by column on header click (toggle asc/desc)."""
+        def _key(value):
+            # 缓存命中会在耗时后加 "*"（如 "123*"），百分比带 "%"，
+            # 直接 float() 会抛 ValueError 退化成字符串排序，
+            # 导致 "1000" < "200"。
+            text = value.strip().rstrip("*").strip().rstrip("%").strip()
+            try:
+                return (0, float(text))
+            except ValueError:
+                return (1, text.lower())
+
+        items = [(tv.set(k, col), k) for k in tv.get_children("")]
+        items.sort(key=lambda x: _key(x[0]), reverse=reverse)
+        for index, (val, k) in enumerate(items):
+            tv.move(k, "", index)
+        tv.heading(col, command=lambda: self._sort_treeview(tv, col, not reverse))
+
     def _ocr_populate_photos(self, results):
         """Render photo-recognition results into detail/summary/metrics,
         then auto-select the first row so the right pane shows the photo
         + region overlay + MRZ result immediately."""
         self.ocr_detail.configure(columns=("file", "grade", "verified", "ms",
                                            "reason"))
+        _col_names = {"file": "照片文件", "grade": "判定",
+                      "verified": "OCR校验", "ms": "耗时ms",
+                      "reason": "说明"}
         for c, anc in [("file", "w"), ("grade", "center"),
                        ("verified", "center"), ("ms", "center"),
                        ("reason", "w")]:
-            self.ocr_detail.heading(c, text={"file": "照片文件",
-                                             "grade": "判定",
-                                             "verified": "OCR校验",
-                                             "ms": "耗时ms",
-                                             "reason": "说明"}[c])
+            self.ocr_detail.heading(c, text=_col_names[c],
+                command=lambda col=c: self._sort_treeview(self.ocr_detail, col))
             self.ocr_detail.column(c, width=90, anchor=anc)
         # 列宽按内容分配：说明列拉伸填满剩余空间，其余按内容固定宽度，
         # 避免表头只剩一个字。
@@ -6535,7 +7371,6 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self._ocr_detail_paths = {}
         for rec in results:
             g = rec.get("grade", "REJECT")
-            stats[g] = stats.get(g, 0) + 1
             if rec.get("verified"):
                 stats["verified"] += 1
             l1 = (rec.get("ocr") or {}).get("line1") or ""
@@ -6548,13 +7383,26 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 gt = gts[rec["file"]]
             if gt:
                 gt_n += 1
-                if rec.get("verified"):
-                    gt_ok += 1
+                if gt[0] and gt[1]:
+                    if l1 == gt[0] and l2 == gt[1]:
+                        g = "PASS"
+                        gt_ok += 1
+                    else:
+                        g = "FAIL"
+                elif gt[0]:
+                    if l1 == gt[0]:
+                        g = "PASS"
+                        gt_ok += 1
+                    else:
+                        g = "FAIL"
+                else:
+                    g = "NO_GT"
                 n1 = min(len(gt[0]), len(l1))
                 n2 = min(len(gt[1]), len(l2))
                 l1t += len(gt[0]); l2t += len(gt[1])
                 l1c += sum(1 for i in range(n1) if gt[0][i] == l1[i])
                 l2c += sum(1 for i in range(n2) if gt[1][i] == l2[i])
+            stats[g] = stats.get(g, 0) + 1
             iid = rec["file"]
             cached = bool(rec.get("cached"))
             reason = rec.get("reason") or ""
@@ -6616,9 +7464,70 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             f"张（GT样本 {gt_n}，GT 校验通过 {gt_ok}）",
             100)
 
+    def _ocr_corpus_columns(self):
+        """(Re)configure the corpus-mode summary/detail tables.
+
+        The photo mode rewrites ocr_detail's columns for its own layout,
+        so switching back to the corpus mode has to put them back before
+        rows are inserted.
+        """
+        sum_cols = (("method", "method", "w", 100),
+                    ("n", "n", "center", 54),
+                    ("exact", "exact", "center", 64),
+                    ("exactp", "exact%", "center", 68),
+                    ("ms_avg", "ms_avg", "center", 80),
+                    ("l1_acc", "l1_acc", "center", 84),
+                    ("l2_acc", "l2_acc", "center", 84),
+                    ("decode_ok", "decode_ok", "center", 92))
+        self.ocr_summary.configure(
+            columns=tuple(c for c, _, _, _ in sum_cols), height=3)
+        for c, text, anc, w in sum_cols:
+            self.ocr_summary.heading(
+                c, text=text,
+                command=lambda col=c: self._sort_treeview(self.ocr_summary, col))
+            self.ocr_summary.column(c, width=w, minwidth=48, anchor=anc)
+        det_cols = (("id", "id", "w", 150),
+                    ("method", "method", "w", 96),
+                    ("ok", "PASS/FAIL", "center", 88),
+                    ("ms", "ms", "center", 72),
+                    ("l1", "l1", "center", 130),
+                    ("l2", "l2", "center", 130))
+        self.ocr_detail.configure(columns=tuple(c for c, _, _, _ in det_cols))
+        for c, text, anc, w in det_cols:
+            self.ocr_detail.heading(
+                c, text=text,
+                command=lambda col=c: self._sort_treeview(self.ocr_detail, col))
+            self.ocr_detail.column(c, width=w, minwidth=52, anchor=anc,
+                                   stretch=(c == "id"))
+
+    def _ocr_reset_results(self):
+        """清空结果表，并复位左侧列表的状态配色。
+
+        方案（cnn/crnn/fuse…）换了以后，列表上残留的 PASS/FAIL 颜色
+        属于上一个方案，必须复位，否则会被当成新方案的成绩。
+        """
+        for tv in (getattr(self, "ocr_detail", None),
+                   getattr(self, "ocr_summary", None)):
+            if tv is None:
+                continue
+            try:
+                kids = tv.get_children("")
+                if kids:
+                    tv.delete(*kids)
+            except tk.TclError:
+                pass
+        tree = getattr(self, "ocr_case_list", None)
+        if tree is None:
+            return
+        base = getattr(self, "_ocr_case_base_tags", {})
+        for iid in tree.get_children(""):
+            tree.item(iid, tags=base.get(iid, ()))
+
     def _ocr_populate_results(self, payload):
         methods = payload["methods"]
         agg = payload["agg"]
+        # 照片模式把这两张表改成了自己的列，切回语料模式要恢复。
+        self._ocr_corpus_columns()
         # Cache per-case results for the single-sample diff view.
         self._ocr_last = {}
         for rec in payload["records"]:
@@ -6644,43 +7553,59 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self.ocr_metrics["mean"].set(f"{mean:.1f}")
         self.ocr_metrics["p95"].set(f"{p95:.1f}")
         self.ocr_metrics["pass"].set(
-            f"{100.0 * okc / total_n:.1f}" if total_n else "0")
+            f"{100.0 * full / total_n:.1f}" if total_n else "0")
         self.ocr_metrics["l1"].set(
             f"{100.0 * l1c / l1t:.2f}" if l1t else "--")
         self.ocr_metrics["l2"].set(
             f"{100.0 * l2c / l2t:.2f}" if l2t else "--")
         self.ocr_metrics["full"].set(str(full))
-        # Per-method summary.
+        # Per-method summary. 判定口径：两行都与 GT 完全一致才算 PASS，
+        # 引擎自己 decode 成功（decode_ok）只作参考列。
         for m in methods:
             a = agg[m]
             ms_avg = a["ms_total"] / a["n"] if a["n"] else 0
-            ok_pct = 100.0 * a["ok"] / a["n"] if a["n"] else 0
+            exact = a["full_match"]
+            exact_pct = 100.0 * exact / a["n"] if a["n"] else 0
             l1 = 100.0 * a["l1_correct"] / a["l1_total"] if a["l1_total"] else 0
             l2 = 100.0 * a["l2_correct"] / a["l2_total"] if a["l2_total"] else 0
             label = METHOD_LABELS.get(m, m)
-            tag = "row_ok" if a["ok"] == a["n"] else "row_fail"
+            tag = "row_ok" if exact == a["n"] else "row_fail"
             self.ocr_summary.insert("", "end", tags=(tag,), values=(
-                label, a["n"], a["ok"], f"{ok_pct:.1f}%",
+                label, a["n"], exact, f"{exact_pct:.1f}%",
                 f"{ms_avg:.2f}", f"{l1:.2f}%", f"{l2:.2f}%",
-                a["full_match"]))
+                a["ok"]))
         self._fit_columns(self.ocr_summary, cap=140)
         # Per-case x method detail rows (compact; full text in right pane).
         for rec in payload["records"]:
             for m in methods:
                 pm = rec["per_method"][m]
                 r = pm["raw"]
-                ok = r["ok"]
+                exact = bool(pm["full"])
                 l1p = 100.0 * pm["l1_correct"] / pm["l1_total"] if pm["l1_total"] else 0
                 l2p = 100.0 * pm["l2_correct"] / pm["l2_total"] if pm["l2_total"] else 0
                 iid = f"{rec['id']}::{m}"
                 self._ocr_detail_map[iid] = (rec["id"], m)
                 self.ocr_detail.insert("", "end", iid=iid,
-                    tags=(ok and "OK" or "FAIL",),
+                    tags=("OK" if exact else "FAIL",),
                     values=(rec["id"],
                             METHOD_LABELS.get(m, m),
-                            "PASS" if ok else "FAIL",
+                            "PASS" if exact else "FAIL",
                             f"{r['ms']:.2f}", f"{l1p:.2f}%", f"{l2p:.2f}%"))
         self._fit_columns(self.ocr_detail, cap=160)
+        # 左侧列表与结果表配色同步：任一方案 exact 命中即 PASS。
+        tree = getattr(self, "ocr_case_list", None)
+        base_tags = getattr(self, "_ocr_case_base_tags", {})
+        if tree is not None:
+            for rec in payload["records"]:
+                iid = rec["id"]
+                try:
+                    if not tree.exists(iid):
+                        continue
+                except tk.TclError:
+                    continue
+                any_exact = any(rec["per_method"][m]["full"] for m in methods)
+                tree.item(iid, tags=base_tags.get(iid, ()) +
+                          ("pass" if any_exact else "fail",))
         self.ocr_run_btn.configure(state="normal")
         self.ocr_run_btn.configure(text="⚡ 开始测试")
         self._set_status_bar(
@@ -7195,7 +8120,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         # ---- Left: MRZ text -> decode ----
         ttk.Label(left, text="MRZ 文本（两行 44 字符）",
                   font=("TkDefaultFont", 11, "bold")).pack(anchor="w")
-        self.mrz_text = tk.Text(left, width=52, height=6, font=("Menlo", 12),
+        self.mrz_text = tk.Text(left, width=52, height=6, font=_ocrb_font(12),
                                 bg="#ffffff", fg="#111827")
         self.mrz_text.insert("1.0", SAMPLE_MRZ)
         self.mrz_text.pack(fill="x")

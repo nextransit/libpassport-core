@@ -39,6 +39,37 @@
 - CRNN（ONNX 进程内常驻）：137 ms → 18 ms
 - Paddle（ONNX 进程内常驻）：258 ms → 219 ms（官方路径口径）
 
+### 多引擎逐行仲裁（2026-11-04，见 `docs/MRZ_ARBITRATION.md`）
+
+把"从多个引擎挑一个"改成"**逐行独立仲裁**"，并给 line 2 加**校验位门**、
+给无解时加**最小编辑自动修正**。端到端 A/B（同一 bench、只切 `MRZ_ARBITRATE`
+开关、双方都不用真值）：
+
+| 口径 | 双行全对 | line1 精确 | line2 精确 | 官方 PASS |
+|---|---|---|---|---|
+| 旧规则（单引擎选优） | 73/106 | 93 | 75 | 76 |
+| **新仲裁** | **83/106** | **98** | **83** | **86** |
+
+**改善 20 张、恶化 0 张**，双行全对 +13%，官方 PASS 76 → 86，耗时无回归
+（262 → 267 ms）。产物：`tests/mrz_arbitration.py`、`tests/test_mrz_arbitration.py`
+（42/42 通过）、`10_ocr_research/tools/score_mrz_arb.py`。
+
+> **GT 一致性**：`10_ocr_research/tools/check_gt_consistency.py` 核对仓库里
+> 全部 GT JSON 与 xlsx「GT对比」。AGENTS.md 指定用于验收的
+> `tests/gt_assets_pic_official.json` / `tests/gt_photo_passport_official.json`
+> 已与 xlsx **完全一致**（64/64、44/44，2026-11-04 09:38 重新导出）；
+> 但所有 `*_from_xlsx*.json` 都是**快照**，xlsx 人工订正后不会自动同步
+> （落后 2~20 条）。**验收一律直接读 xlsx。** 详见 `docs/MRZ_ARBITRATION.md` §4.5。
+
+> **口径提醒**：GUI「图片直接识别」表格里 `cnn`/`fuse` 的 both-exact 是
+> **逐引擎**读数，不是最终结果。tmp/PassPortPhoto(44)+Photo(6) 这 50 张上：
+> cnn 31/50、fuse 29/47（fuse 有 3 张没跑出结果），而 50 张里只有 **41 张**
+> 是 44 字 TD3 真值（3 张是 CS/CD 单行 30 字）。**生产路径的最终判定是
+> 37/50 PASS**，比 cnn 单独跑高 6 张。详见 `docs/MRZ_ARBITRATION.md` §4.2。
+
+> ⚠️ 旧路径存在**真值泄漏**（用真值挑引擎），已隔离到 `MRZ_ARBITRATE_GT=1`
+> 并默认关闭。泄漏存在时旧规则能刷到 91/106 —— 那不是产品能力。
+
 ### 全算法验收（8 个引擎全部评估，见 xlsx「全算法验收」sheet）
 | engine | decode 率 | GT 精确率 | 平均耗时 | 速率(张/秒) |
 |---|---|---|---|---|

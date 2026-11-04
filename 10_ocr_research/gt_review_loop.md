@@ -179,19 +179,19 @@ PRED: CONSTITUT2ONFORTBEU7ITEDSTA1ESOFAMERI<<<<<04
 
 ## 16c07a99a0fb81e4_0013.jpg
 - 官方判定: PASS  verified=True  chosen=fuse  ms=139
-- 官方 line1: P<CZEWPECIMEN<<NGOH<<<<<<<<<<<<<<<<<<<<<<<<<
-- 官方 line2: R900R054<4CZL6906229F16072996956220612<KKK74
+- 官方 line1: P<CZESPECIMEN<<VZOR<<<<<<<<<<<<<<<<<<<<<<<<<
+- 官方 line2: 99009054<4CZE6906229F16072996956220612<<<<74
 - 理由: 融合CNN+CRNN 识别并通过校验
 
-- GT line1: `P<CZEWPECIMEN<<NGOH<<<<<<<<<<<<<<<<<<<<<<<<<`
-- GT line2: `R900R054<4CZL6906229F16072996956220612<KKK74`
+- GT line1: `P<CZESPECIMEN<<VZOR<<<<<<<<<<<<<<<<<<<<<<<<<`
+- GT line2: `99009054<4CZE6906229F16072996956220612<<<<74`
 
 ### traditional  [decoded] conf1=75% conf2=69%
 - error: decode failed: check digit mismatch
-GT  : P<CZEWPECIMEN<<NGOH<<<<<<<<<<<<<<<<<<<<<<<<<
+GT  : P<CZESPECIMEN<<VZOR<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<C2E9PEC1YEW<<V73M<<<<<<<<<<<<<<<<<<<<<<<<<
          ^ ^   ^^ ^  ^^^^                            [9 mismatch]
-GT  : R900R054<4CZL6906229F16072996956220612<KKK74
+GT  : 99009054<4CZE6906229F16072996956220612<<<<74
 PRED: VGCEG35A<AC2LK9E422GP3EE729G4V542234M2<<<<7A
       ^^^^^^ ^ ^ ^ ^ ^^  ^^^^^   ^^^ ^  ^^^  ^^^ ^   [28 mismatch]
 
@@ -200,55 +200,55 @@ PRED: VGCEG35A<AC2LK9E422GP3EE729G4V542234M2<<<<7A
 ### crnn  [decoded] conf1=95% conf2=85%
 - backend: crnn  (12 ms)
 - error: decode failed: bad MRZ length
-GT  : P<CZEWPECIMEN<<NGOH<<<<<<<<<<<<<<<<<<<<<<<<<
+GT  : P<CZESPECIMEN<<VZOR<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CZESPECIMEN<<VZOR<<<<<<<<<<<<<<<<<<<<<<<<<
            ^         ^^ ^                            [4 mismatch]
-GT  : R900R054<4CZL6906229F16072996956220612<KKK74
+GT  : 99009054<4CZE6906229F16072996956220612<<<<74
 PRED: 99009054<4Q2E8906229F16072996950220612<<<<7 
       ^   ^     ^^^^                 ^       ^^^ ^   [11 mismatch]
 
 ### fuse  [DECODE-OK] conf1=99% conf2=99%
-GT  : P<CZEWPECIMEN<<NGOH<<<<<<<<<<<<<<<<<<<<<<<<<
-PRED: P<CZEWPECIMEN<<NGOH<<<<<<<<<<<<<<<<<<<<<<<<<
+GT  : P<CZESPECIMEN<<VZOR<<<<<<<<<<<<<<<<<<<<<<<<<
+PRED: P<CZESPECIMEN<<VZOR<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
-GT  : R900R054<4CZL6906229F16072996956220612<KKK74
-PRED: R900R054<4CZL6906229F16072996956220612<KKK74
+GT  : 99009054<4CZE6906229F16072996956220612<<<<74
+PRED: 99009054<4CZE6906229F16072996956220612<<<<74
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
 - backend: tesseract  (71 ms)
-GT  : P<CZEWPECIMEN<<NGOH<<<<<<<<<<<<<<<<<<<<<<<<<
+GT  : P<CZESPECIMEN<<VZOR<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CZESPECIMEN<<VZOR<<<<<<<<<<<<<<<<<<<<<<<<<
            ^         ^^ ^                            [4 mismatch]
-GT  : R900R054<4CZL6906229F16072996956220612<KKK74
+GT  : 99009054<4CZE6906229F16072996956220612<<<<74
 PRED: 99009054<4CZE6906229F16072996956220612<<<<74
       ^   ^       ^                          ^^^     [6 mismatch]
 
 ### paddle  [DECODE-OK] conf1=96% conf2=99%
 - backend: paddle-onnxruntime  (79 ms)
-GT  : P<CZEWPECIMEN<<NGOH<<<<<<<<<<<<<<<<<<<<<<<<<
+GT  : P<CZESPECIMEN<<VZOR<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CZESPECIMEN<<VZOR<<<<<<<<<<<<<<<<<<<<<<<<<
            ^         ^^ ^                            [4 mismatch]
-GT  : R900R054<4CZL6906229F16072996956220612<KKK74
+GT  : 99009054<4CZE6906229F16072996956220612<<<<74
 PRED: 99009054<4CZE6906229F16072996956220612<<<<74
       ^   ^       ^                          ^^^     [6 mismatch]
 
 ### indra  [DECODE-OK] conf1=94% conf2=98%
 - backend: indra  (49 ms)
-GT  : P<CZEWPECIMEN<<NGOH<<<<<<<<<<<<<<<<<<<<<<<<<
+GT  : P<CZESPECIMEN<<VZOR<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CZESPECIMEN<<VZOR<<<<<<<<<<<<<<<<<<<<<<<<<
            ^         ^^ ^                            [4 mismatch]
-GT  : R900R054<4CZL6906229F16072996956220612<KKK74
+GT  : 99009054<4CZE6906229F16072996956220612<<<<74
 PRED: 99009054<4CZE6906229F16072996956220612<<<<74
       ^   ^       ^                          ^^^     [6 mismatch]
 
 ### indra_fullpage  [decoded] conf1=85% conf2=92%
 - backend: indra  (201 ms)
 - error: lines=34 edits=4 composite_edits=1 country=SSO
-GT  : P<CZEWPECIMEN<<NGOH<<<<<<<<<<<<<<<<<<<<<<<<<
+GT  : P<CZESPECIMEN<<VZOR<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: CESSOVNIPASPASSPORTPASEPORTESKREPUBLIKACZECH
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   [44 mismatch]
-GT  : R900R054<4CZL6906229F16072996956220612<KKK74
+GT  : 99009054<4CZE6906229F16072996956220612<<<<74
 PRED: ISIOPASUP2SSOORTNOP6SSEFORT1<<<<<<<<<<<<<<06
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^^^   [43 mismatch]
 
@@ -1023,18 +1023,18 @@ PRED: PASPORTUN3MBASIPASS7ORT<<<<6<<<<<<<<<<<<<<02
 ## 43ecb49033fb30c1_0073.jpg
 - 官方判定: PASS  verified=True  chosen=cnn  ms=167
 - 官方 line1: P<UIKYAUNZO<<ONDINA<MA<HSLLE<<<<<<<<<<<<<<<<
-- 官方 line2: 0418276532USA3309209F9707014<<<<<<<<<<<<<<06
+- 官方 line2: 0418276532USA3309209F9707014<<<<<<<<<<<<<<6
 - 理由: 融合CNN+CRNN 识别并通过校验
 
 - GT line1: `P<UIKYAUNZO<<ONDINA<MA<HSLLE<<<<<<<<<<<<<<<<`
-- GT line2: `0418276532USA3309209F9707014<<<<<<<<<<<<<<06`
+- GT line2: `0418276532USA3309209F9707014<<<<<<<<<<<<<<6`
 
 ### traditional  [decoded] conf1=76% conf2=72%
 - error: decode failed: check digit mismatch
 GT  : P<UIKYAUNZO<<ONDINA<MA<HSLLE<<<<<<<<<<<<<<<<
 PRED: P<CG41MCH2M<<CHDINA<N1CHELLL<<<<<<<<<<<<<<<<
         ^^^^^^^^^  ^^     ^^^ ^  ^                   [16 mismatch]
-GT  : 0418276532USA3309209F9707014<<<<<<<<<<<<<<06
+GT  : 0418276532USA3309209F9707014<<<<<<<<<<<<<<6
 PRED: CA4827A932L9A33C92CDG47M7M4A<<<<<<<<<<<<<<<A
       ^^^   ^^  ^^   ^  ^^^^ ^ ^^^              ^^   [18 mismatch]
 
@@ -1042,8 +1042,8 @@ PRED: CA4827A932L9A33C92CDG47M7M4A<<<<<<<<<<<<<<<A
 GT  : P<UIKYAUNZO<<ONDINA<MA<HSLLE<<<<<<<<<<<<<<<<
 PRED: P<UIKYAUNZO<<ONDINA<MA<HSLLE<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
-GT  : 0418276532USA3309209F9707014<<<<<<<<<<<<<<06
-PRED: 0418276532USA3309209F9707014<<<<<<<<<<<<<<06
+GT  : 0418276532USA3309209F9707014<<<<<<<<<<<<<<6
+PRED: 0418276532USA3309209F9707014<<<<<<<<<<<<<<6
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=96% conf2=96%
@@ -1052,7 +1052,7 @@ PRED: 0418276532USA3309209F9707014<<<<<<<<<<<<<<06
 GT  : P<UIKYAUNZO<<ONDINA<MA<HSLLE<<<<<<<<<<<<<<<<
 PRED: P<USATRUNZO<<ONDINA<MICHELLE<<<<<<<<<<<<<<<<
          ^^^^              ^^ ^                      [7 mismatch]
-GT  : 0418276532USA3309209F9707014<<<<<<<<<<<<<<06
+GT  : 0418276532USA3309209F9707014<<<<<<<<<<<<<<6
 PRED: 0418276532USA3309209F9707014<<<<<<<<<<<<<<<6
                                                 ^    [1 mismatch]
 
@@ -1060,8 +1060,8 @@ PRED: 0418276532USA3309209F9707014<<<<<<<<<<<<<<<6
 GT  : P<UIKYAUNZO<<ONDINA<MA<HSLLE<<<<<<<<<<<<<<<<
 PRED: P<UIKYAUNZO<<ONDINA<MA<HSLLE<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
-GT  : 0418276532USA3309209F9707014<<<<<<<<<<<<<<06
-PRED: 0418276532USA3309209F9707014<<<<<<<<<<<<<<06
+GT  : 0418276532USA3309209F9707014<<<<<<<<<<<<<<6
+PRED: 0418276532USA3309209F9707014<<<<<<<<<<<<<<6
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
@@ -1069,8 +1069,8 @@ PRED: 0418276532USA3309209F9707014<<<<<<<<<<<<<<06
 GT  : P<UIKYAUNZO<<ONDINA<MA<HSLLE<<<<<<<<<<<<<<<<
 PRED: P<USATRUNZO<<ONDINA<MICHELLE<<<<<<<<<<<<<<<<
          ^^^^              ^^ ^                      [7 mismatch]
-GT  : 0418276532USA3309209F9707014<<<<<<<<<<<<<<06
-PRED: 0418276532USA3309209F9707014<<<<<<<<<<<<<<06
+GT  : 0418276532USA3309209F9707014<<<<<<<<<<<<<<6
+PRED: 0418276532USA3309209F9707014<<<<<<<<<<<<<<6
                                                      [0 mismatch]
 
 ### paddle  [DECODE-OK] conf1=97% conf2=97%
@@ -1078,7 +1078,7 @@ PRED: 0418276532USA3309209F9707014<<<<<<<<<<<<<<06
 GT  : P<UIKYAUNZO<<ONDINA<MA<HSLLE<<<<<<<<<<<<<<<<
 PRED: P<USATRUNZO<<ONDINA<MICHELLE<<<<<<<<<<<<<<<<
          ^^^^              ^^ ^                      [7 mismatch]
-GT  : 0418276532USA3309209F9707014<<<<<<<<<<<<<<06
+GT  : 0418276532USA3309209F9707014<<<<<<<<<<<<<<6
 PRED: 0418276532USA3309209F9707014<<<<<<<<<<<<<682
                                                ^^^   [3 mismatch]
 
@@ -1087,8 +1087,8 @@ PRED: 0418276532USA3309209F9707014<<<<<<<<<<<<<682
 GT  : P<UIKYAUNZO<<ONDINA<MA<HSLLE<<<<<<<<<<<<<<<<
 PRED: P<USATRUNZO<<ONDINA<MICHELLE<<<<<<<<<<<<<<<<
          ^^^^              ^^ ^                      [7 mismatch]
-GT  : 0418276532USA3309209F9707014<<<<<<<<<<<<<<06
-PRED: 0418276532USA3309209F9707014<<<<<<<<<<<<<<06
+GT  : 0418276532USA3309209F9707014<<<<<<<<<<<<<<6
+PRED: 0418276532USA3309209F9707014<<<<<<<<<<<<<<6
                                                      [0 mismatch]
 
 ### indra_fullpage  [DECODE-OK] conf1=87% conf2=95%
@@ -1096,7 +1096,7 @@ PRED: 0418276532USA3309209F9707014<<<<<<<<<<<<<<06
 GT  : P<UIKYAUNZO<<ONDINA<MA<HSLLE<<<<<<<<<<<<<<<<
 PRED: MICHALLEKKKKKKKKKKKKKKKK<<<<<<<<<<<<<<<<<<<<
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^                   [28 mismatch]
-GT  : 0418276532USA3309209F9707014<<<<<<<<<<<<<<06
+GT  : 0418276532USA3309209F9707014<<<<<<<<<<<<<<6
 PRED: 0418276532CHA3309209F9707014<<<<<<<<<<<<<<06
                 ^^                                   [2 mismatch]
 
@@ -1136,14 +1136,14 @@ PRED: 0418276532CHA3309209F9707014<<<<<<<<<<<<<<06
 - 理由: IndraOCR 识别并通过校验
 
 - GT line1: `P<DSYNUSYERNANN<<ENIKA<<<<<<<<<<<<<<<<<<<<<<`
-- GT line2: `C01X00T478D<<6408125F2702283<<<<<<<<<<<<<<04`
+- GT line2: `C01X00T478D<<6408125F2702283<<<<<<<<<<<<<<4`
 
 ### traditional  [decoded] conf1=66% conf2=57%
 - error: decode failed: check digit mismatch
 GT  : P<DSYNUSYERNANN<<ENIKA<<<<<<<<<<<<<<<<<<<<<<
 PRED: M<M<<MURTEMMANN<<MMXXA<<<<<<<<<<<<<<<<<<4<<<
       ^ ^^^^ ^^ ^^     ^^^^                   ^      [14 mismatch]
-GT  : C01X00T478D<<6408125F2702283<<<<<<<<<<<<<<04
+GT  : C01X00T478D<<6408125F2702283<<<<<<<<<<<<<<4
 PRED: LA<ATAATX7AG<<XXHAT4TJAFL7TAEIAA<<<<<<<<T<<<
       ^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^        ^ ^^   [34 mismatch]
 
@@ -1151,7 +1151,7 @@ PRED: LA<ATAATX7AG<<XXHAT4TJAFL7TAEIAA<<<<<<<<T<<<
 GT  : P<DSYNUSYERNANN<<ENIKA<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<DSYNUSYERNANN<<ERIKA<<<<<<<<<<<<<<<<<<<<<<
                         ^                            [1 mismatch]
-GT  : C01X00T478D<<6408125F2702283<<<<<<<<<<<<<<04
+GT  : C01X00T478D<<6408125F2702283<<<<<<<<<<<<<<4
 PRED: C01300T478D<<6408125F2702283<<<<<<<<<<<<<554
          ^                                     ^^    [3 mismatch]
 
@@ -1161,7 +1161,7 @@ PRED: C01300T478D<<6408125F2702283<<<<<<<<<<<<<554
 GT  : P<DSYNUSYERNANN<<ENIKA<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<D<<MUSTERMANN<<ERIKA<<<<<<<<<<<<<<<<<<<<<<
          ^^^  ^  ^      ^                            [6 mismatch]
-GT  : C01X00T478D<<6408125F2702283<<<<<<<<<<<<<<04
+GT  : C01X00T478D<<6408125F2702283<<<<<<<<<<<<<<4
 PRED: 001X00T4780<<6408125F2702283<<<<<<<<<<<<<<<4
       ^         ^                               ^    [3 mismatch]
 
@@ -1169,7 +1169,7 @@ PRED: 001X00T4780<<6408125F2702283<<<<<<<<<<<<<<<4
 GT  : P<DSYNUSYERNANN<<ENIKA<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<DSYNUSYERNANN<<ERIKA<<<<<<<<<<<<<<<<<<<<<<
                         ^                            [1 mismatch]
-GT  : C01X00T478D<<6408125F2702283<<<<<<<<<<<<<<04
+GT  : C01X00T478D<<6408125F2702283<<<<<<<<<<<<<<4
 PRED: C01300T478D<<6408125F2702283<<<<<<<<<<<<<554
          ^                                     ^^    [3 mismatch]
 
@@ -1184,8 +1184,8 @@ PRED: C01300T478D<<6408125F2702283<<<<<<<<<<<<<554
 GT  : P<DSYNUSYERNANN<<ENIKA<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<D<<MUSTERMANN<<ERIKA<<<<<<<<<<<<<<<<<<<<<<
          ^^^  ^  ^      ^                            [6 mismatch]
-GT  : C01X00T478D<<6408125F2702283<<<<<<<<<<<<<<04
-PRED: C01X00T478D<<6408125F2702283<<<<<<<<<<<<<<04
+GT  : C01X00T478D<<6408125F2702283<<<<<<<<<<<<<<4
+PRED: C01X00T478D<<6408125F2702283<<<<<<<<<<<<<<4
                                                      [0 mismatch]
 
 ### indra  [DECODE-OK] conf1=96% conf2=97%
@@ -1193,7 +1193,7 @@ PRED: C01X00T478D<<6408125F2702283<<<<<<<<<<<<<<04
 GT  : P<DSYNUSYERNANN<<ENIKA<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<DAAMUSTERMANN<<ERIKA<<<<<<<<<<<<<<<<<<<<<<
          ^^^  ^  ^      ^                            [6 mismatch]
-GT  : C01X00T478D<<6408125F2702283<<<<<<<<<<<<<<04
+GT  : C01X00T478D<<6408125F2702283<<<<<<<<<<<<<<4
 PRED: C01X00T478DAA6408125F2702283<<<<<<<<<<<<<<04
                  ^^                                  [2 mismatch]
 
@@ -1202,7 +1202,7 @@ PRED: C01X00T478DAA6408125F2702283<<<<<<<<<<<<<<04
 GT  : P<DSYNUSYERNANN<<ENIKA<<<<<<<<<<<<<<<<<<<<<<
 PRED: 10SNIERSCHVIFTDERINHABERIN<<<<<<<<<<<<<<<<<<
       ^^^^^^^ ^^^^^^^^^^ ^^^^^^^                     [24 mismatch]
-GT  : C01X00T478D<<6408125F2702283<<<<<<<<<<<<<<04
+GT  : C01X00T478D<<6408125F2702283<<<<<<<<<<<<<<4
 PRED: DESINHABE0SNIGNATUR1OFBEAR<3<<<<<<<<<<<<<<06
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^                ^   [28 mismatch]
 
@@ -1290,12 +1290,12 @@ PRED: TPTYPATYP0CNDULFRIC3UNTRYCO3ECODEDUPAYSNUM08
 - 官方 line2: KCG01505B6U<O9105045F2509013N999990001<<5<82
 - 理由: 融合CNN+CRNN 识别并通过校验
 
-- GT line1: `P<AUBCITIZEN<<JANK<<<<<<<<<<<<<<<<<<<<<<<<<<`
+- GT line1: `P<AUSCITIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<`
 - GT line2: `KCG01505B6U<O9105045F2509013N999990001<<5<82`
 
 ### traditional  [decoded] conf1=75% conf2=66%
 - error: decode failed: check digit mismatch
-GT  : P<AUBCITIZEN<<JANK<<<<<<<<<<<<<<<<<<<<<<<<<<
+GT  : P<AUSCITIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: JP<AL5CITI2EN<<3ANE<<<<<<<<<<<<<<<<<<<<<<<<<
       ^^^^^^^^^^^^^ ^^^^^                            [18 mismatch]
 GT  : KCG01505B6U<O9105045F2509013N999990001<<5<82
@@ -1303,7 +1303,7 @@ PRED: MHCCC35C586L1C9MC5CA5P25CVC43<99V99CCC1<<<<8
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  ^ ^^^^^ ^ ^^   [39 mismatch]
 
 ### cnn  [DECODE-OK] conf1=99% conf2=99%
-GT  : P<AUBCITIZEN<<JANK<<<<<<<<<<<<<<<<<<<<<<<<<<
+GT  : P<AUSCITIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<AUSCITIZEN<<JANK<<<<<<<<<<<<<<<<<<<<<<<<<<
           ^                                          [1 mismatch]
 GT  : KCG01505B6U<O9105045F2509013N999990001<<5<82
@@ -1312,7 +1312,7 @@ PRED: KCG01505B6U<O9105045F2509013N999990001<<5<82
 
 ### crnn  [DECODE-OK] conf1=96% conf2=97%
 - backend: crnn  (13 ms)
-GT  : P<AUBCITIZEN<<JANK<<<<<<<<<<<<<<<<<<<<<<<<<<
+GT  : P<AUSCITIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<AUSCITI2EN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<
           ^    ^       ^                             [3 mismatch]
 GT  : KCG01505B6U<O9105045F2509013N999990001<<5<82
@@ -1320,7 +1320,7 @@ PRED: RC00150586UTO9105045F2509013<99999000T<<<<82
       ^ ^     ^  ^                ^        ^  ^      [7 mismatch]
 
 ### fuse  [DECODE-OK] conf1=99% conf2=99%
-GT  : P<AUBCITIZEN<<JANK<<<<<<<<<<<<<<<<<<<<<<<<<<
+GT  : P<AUSCITIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CUBCITIZEN<<JANK<<<<<<<<<<<<<<<<<<<<<<<<<<
         ^                                            [1 mismatch]
 GT  : KCG01505B6U<O9105045F2509013N999990001<<5<82
@@ -1329,7 +1329,7 @@ PRED: KCG01505B6U<O9105045F2509013N999990001<<5<82
 
 ### tesseract  [DECODE-OK]
 - backend: tesseract  (74 ms)
-GT  : P<AUBCITIZEN<<JANK<<<<<<<<<<<<<<<<<<<<<<<<<<
+GT  : P<AUSCITIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<AUSCITIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<
           ^            ^                             [2 mismatch]
 GT  : KCG01505B6U<O9105045F2509013N999990001<<5<82
@@ -1338,7 +1338,7 @@ PRED: RC00150586UTO9105045F2509013<99999000T<<<<82
 
 ### paddle  [DECODE-OK] conf1=99% conf2=99%
 - backend: paddle-onnxruntime  (77 ms)
-GT  : P<AUBCITIZEN<<JANK<<<<<<<<<<<<<<<<<<<<<<<<<<
+GT  : P<AUSCITIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<AUSCITIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<
           ^            ^                             [2 mismatch]
 GT  : KCG01505B6U<O9105045F2509013N999990001<<5<82
@@ -1347,7 +1347,7 @@ PRED: RC00150586UTO9105045F2509013<99999000T<<<<82
 
 ### indra  [DECODE-OK] conf1=97% conf2=99%
 - backend: indra  (50 ms)
-GT  : P<AUBCITIZEN<<JANK<<<<<<<<<<<<<<<<<<<<<<<<<<
+GT  : P<AUSCITIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<ATSCITIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<
          ^^            ^                             [3 mismatch]
 GT  : KCG01505B6U<O9105045F2509013N999990001<<5<82
@@ -1356,7 +1356,7 @@ PRED: RC00150586ATS9105045F2509013<99999000T<<<<82
 
 ### indra_fullpage  [DECODE-OK] conf1=93% conf2=99%
 - backend: indra  (145 ms)
-GT  : P<AUBCITIZEN<<JANK<<<<<<<<<<<<<<<<<<<<<<<<<<
+GT  : P<AUSCITIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<ATSCITIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<
          ^^            ^                             [3 mismatch]
 GT  : KCG01505B6U<O9105045F2509013N999990001<<5<82
@@ -1578,7 +1578,7 @@ PRED: JG20705515OMN7803048M241118530003614<<<<<<50
 ## 6dafa3b35c792d06_0039.png
 - 官方判定: PASS  verified=True  chosen=indra  ms=276
 - 官方 line1: P<MMRABDELLAHI<MAHFOUDH<<MOHAMMED<<<<<<<<<<<
-- 官方 line2: ABI2345678MMRT7511217M15111331234567B9<<<<14
+- 官方 line2: ABI234567<5MRT7511287M1511143123456789<<<<14
 - 理由: IndraOCR 识别并通过校验
 
 ### traditional  [decoded] conf1=67% conf2=67%
@@ -3395,16 +3395,16 @@ PRED: 5200360198RUS5608087M2002156<<<<<<<<<<<<<<08
 
 ## cb64e780ab32f735_0004.jpg
 - 官方判定: PASS  verified=True  chosen=cnn  ms=163
-- 官方 line1: P<SVKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
+- 官方 line1: P<SVKSPECIMEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: 7B12318830SVK1111112F34091871111111111<<<<06
 - 理由: 轻量CNN 识别并通过校验
 
-- GT line1: `P<SNKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<`
+- GT line1: `P<SNKSPECIMEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<`
 - GT line2: `7B12318830SVK1111112F34091871111111111<<<<06`
 
 ### traditional  [decoded] conf1=75% conf2=69%
 - error: decode failed: check digit mismatch
-GT  : P<SNKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
+GT  : P<SNKSPECIMEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PP9V<9PLCIHLN<<V2CW<A<<<<<<<<<<<<<<<<<<<<<<<
        ^^^^^ ^   ^   ^^^^^                           [12 mismatch]
 GT  : 7B12318830SVK1111112F34091871111111111<<<<06
@@ -3412,8 +3412,8 @@ PRED: XH3234883C3V<3433442P34CV4874444444444<<<<CK
       ^^^  ^   ^^ ^^^^^^^ ^  ^^^  ^^^^^^^^^^    ^^   [29 mismatch]
 
 ### cnn  [DECODE-OK] conf1=99% conf2=100%
-GT  : P<SNKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
-PRED: P<SVKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
+GT  : P<SNKSPECIMEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
+PRED: P<SVKSPECIMEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
          ^                                           [1 mismatch]
 GT  : 7B12318830SVK1111112F34091871111111111<<<<06
 PRED: 7B12318830SVK1111112F34091871111111111<<<<06
@@ -3422,7 +3422,7 @@ PRED: 7B12318830SVK1111112F34091871111111111<<<<06
 ### crnn  [decoded] conf1=98% conf2=88%
 - backend: crnn  (13 ms)
 - error: decode failed: check digit mismatch
-GT  : P<SNKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
+GT  : P<SNKSPECIMEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PPSVKSPECIMEN<<VZORKA<<<<<<<<<<<<<<<<<<<<<<<
        ^ ^      ^    ^^                              [5 mismatch]
 GT  : 7B12318830SVK1111112F34091871111111111<<<<06
@@ -3430,8 +3430,8 @@ PRED: XA123188308VK1111112F34091871111111111<<<<06
       ^^        ^                                    [3 mismatch]
 
 ### fuse  [DECODE-OK] conf1=99% conf2=99%
-GT  : P<SNKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
-PRED: P<SVKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
+GT  : P<SNKSPECIMEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
+PRED: P<SVKSPECIMEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
          ^                                           [1 mismatch]
 GT  : 7B12318830SVK1111112F34091871111111111<<<<06
 PRED: 7B12318830SVK1111112F34091871111111111<<<<06
@@ -3439,7 +3439,7 @@ PRED: 7B12318830SVK1111112F34091871111111111<<<<06
 
 ### tesseract  [DECODE-OK]
 - backend: tesseract  (76 ms)
-GT  : P<SNKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
+GT  : P<SNKSPECIMEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PPSVKSPECIMEN<<VZORKA<<<<<<<<<<<<<<<<<<<<<<<
        ^ ^      ^    ^^                              [5 mismatch]
 GT  : 7B12318830SVK1111112F34091871111111111<<<<06
@@ -3449,7 +3449,7 @@ PRED: XR12318830SVK1111112F34091871111111111<<<<06
 ### paddle  [decoded] conf1=98% conf2=93%
 - backend: paddle-onnxruntime  (171 ms)
 - error: decode failed: check digit mismatch
-GT  : P<SNKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
+GT  : P<SNKSPECIMEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PPSVKSPECIMEN<<VZORKA<<<<<<<<<<<<<<<<<<<<<<<
        ^ ^      ^    ^^                              [5 mismatch]
 GT  : 7B12318830SVK1111112F34091871111111111<<<<06
@@ -3458,7 +3458,7 @@ PRED: XR12318830SVK111112F234091871111111<<06<<<<<
 
 ### indra  [DECODE-OK] conf1=94% conf2=99%
 - backend: indra  (48 ms)
-GT  : P<SNKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
+GT  : P<SNKSPECIMEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PPSVKSPECIMENK<VZORKAK<<<<<<<<<<<<<<<<<<<<<<
        ^ ^      ^  ^ ^^    ^                         [7 mismatch]
 GT  : 7B12318830SVK1111112F34091871111111111<<<<06
@@ -3468,7 +3468,7 @@ PRED: XR12318830SVK1111112F34091871111111111<<<<06
 ### indra_fullpage  [decoded] conf1=92% conf2=98%
 - backend: indra  (211 ms)
 - error: lines=61 edits=4 composite_edits=1 country=PAU
-GT  : P<SNKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
+GT  : P<SNKSPECIMEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<
 PRED: 13PAUNZZNAMYPAGERESERVEDFORSSUINGAURHEITIESP
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   [44 mismatch]
 GT  : 7B12318830SVK1111112F34091871111111111<<<<06
@@ -4314,18 +4314,18 @@ PRED: PASSA1D045OMIALOPOR1HOPASSI1ORT<<<<<<<<<<<84
 ## 2026-9-29-A.jpg
 - 官方判定: PASS  verified=True  chosen=cnn  ms=394
 - 官方 line1: P<CHNYUN<<YAOYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-- 官方 line2: E0132B7855CHN0110141M3105179GB682050708G0B88
+- 官方 line2: E0132B7855CHN0110141M3105179GB682O5O108G0B88
 - 理由: 融合CNN+CRNN 识别并通过校验
 
 - GT line1: `P<CHNYUN<<YAOYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
-- GT line2: `E0132B7855CHN0110141M3105179GB682050708G0B88`
+- GT line2: `E0132B7855CHN0110141M3105179GB682O5O108G0B88`
 
 ### traditional  [decoded] conf1=69% conf2=65%
 - error: decode failed: check digit mismatch
 GT  : P<CHNYUN<<YAOYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: F<<<AAFLA<<F<D<D4SS7<<<<<<<<TSSF4<<<<<<<<<<<
       ^ ^^^^^^^ ^^^^^^^^^^        ^^^^^              [23 mismatch]
-GT  : E0132B7855CHN0110141M3105179GB682050708G0B88
+GT  : E0132B7855CHN0110141M3105179GB682O5O108G0B88
 PRED: 2<JSSL<Z<<L<<A<44343NT3VS37V4AFASLLL<LLLLLLK
       ^^^^^^^^^^^^^^^^^^ ^^^^^^^ ^^^^^^^^^^^^^^^^^   [42 mismatch]
 
@@ -4333,8 +4333,8 @@ PRED: 2<JSSL<Z<<L<<A<44343NT3VS37V4AFASLLL<LLLLLLK
 GT  : P<CHNYUN<<YAOYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNYUN<<YAOYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
-GT  : E0132B7855CHN0110141M3105179GB682050708G0B88
-PRED: E0132B7855CHN0110141M3105179GB682050708G0B88
+GT  : E0132B7855CHN0110141M3105179GB682O5O108G0B88
+PRED: E0132B7855CHN0110141M3105179GB682O5O108G0B88
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=89% conf2=84%
@@ -4343,7 +4343,7 @@ PRED: E0132B7855CHN0110141M3105179GB682050708G0B88
 GT  : P<CHNYUN<<YAOYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<< 
 PRED: PP<C<AYOA<<YAOYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^^^^^^^^ ^^^^^^                            ^   [15 mismatch]
-GT  : E0132B7855CHN0110141M3105179GB682050708G0B88
+GT  : E0132B7855CHN0110141M3105179GB682O5O108G0B88
 PRED: E0132B7655CAN0110141M3105179GB682O5O108GQ880
              ^   ^                     ^ ^^   ^^ ^   [8 mismatch]
 
@@ -4351,8 +4351,8 @@ PRED: E0132B7655CAN0110141M3105179GB682O5O108GQ880
 GT  : P<CHNYUN<<YAOYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNYUN<<YAOYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
-GT  : E0132B7855CHN0110141M3105179GB682050708G0B88
-PRED: E0132B7855CHN0110141M3105179GB682050708G0B88
+GT  : E0132B7855CHN0110141M3105179GB682O5O108G0B88
+PRED: E0132B7855CHN0110141M3105179GB682O5O108G0B88
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
@@ -4360,7 +4360,7 @@ PRED: E0132B7855CHN0110141M3105179GB682050708G0B88
 GT  : P<CHNYUN<<YAOYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHMNYUN<<YAOYU<<<<S<S<<<S<<<<<<<<<<<<<<<<<
           ^^^^^ ^^^^^^    ^ ^   ^                    [14 mismatch]
-GT  : E0132B7855CHN0110141M3105179GB682050708G0B88
+GT  : E0132B7855CHN0110141M3105179GB682O5O108G0B88
 PRED: E0Z3Z87855CHN0110141M3105179G6B682050108G014
         ^ ^^                       ^^^^^^^^^^^^^^^   [18 mismatch]
 
@@ -4369,7 +4369,7 @@ PRED: E0Z3Z87855CHN0110141M3105179G6B682050108G014
 GT  : P<CHNYUN<<YAOYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNYUN<<YAOYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
-GT  : E0132B7855CHN0110141M3105179GB682050708G0B88
+GT  : E0132B7855CHN0110141M3105179GB682O5O108G0B88
 PRED: E0132B7855CHN0110141M3105179GB682O5O108G0B88
                                        ^ ^^          [3 mismatch]
 
@@ -4378,7 +4378,7 @@ PRED: E0132B7855CHN0110141M3105179GB682O5O108G0B88
 GT  : P<CHNYUN<<YAOYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: PRCHNUNYADYUKKKKKKKKKKKKKKKKK<<<<<<<<<<<<<<<
        ^   ^^^^^ ^^^^^^^^^^^^^^^^^^                  [24 mismatch]
-GT  : E0132B7855CHN0110141M3105179GB682050708G0B88
+GT  : E0132B7855CHN0110141M3105179GB682O5O108G0B88
 PRED: E043287855CHN0110141M3105179686820501086O088
         ^  ^                      ^^      ^  ^^^     [8 mismatch]
 
@@ -4387,7 +4387,7 @@ PRED: E043287855CHN0110141M3105179686820501086O088
 GT  : P<CHNYUN<<YAOYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: <CCHNUNYADYUKKKKKKSSSSSSKKKKKKK<<<<<<<<<<<<<
       ^^   ^^^^^ ^^^^^^^^^^^^^^^^^^^^                [27 mismatch]
-GT  : E0132B7855CHN0110141M3105179GB682050708G0B88
+GT  : E0132B7855CHN0110141M3105179GB682O5O108G0B88
 PRED: EO43267855CHN0110141M31051796868205010860002
        ^^  ^                      ^^      ^  ^ ^^^   [10 mismatch]
 
@@ -4634,18 +4634,18 @@ PRED: E797044113CHN9004300F3405226GE06601R06RA1310
 ## 2026-9-29-E.jpg
 - 官方判定: PASS  verified=True  chosen=cnn  ms=405
 - 官方 line1: P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-- 官方 line2: E454243381CHN0703013F4211172S6310BB626637626
+- 官方 line2: E454243381CHN0703013F4211172S63108B626637626
 - 理由: 融合CNN+CRNN 识别并通过校验
 
 - GT line1: `P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
-- GT line2: `E454243381CHN0703013F4211172S6310BB626637626`
+- GT line2: `E454243381CHN0703013F4211172S63108B626637626`
 
 ### traditional  [decoded] conf1=70% conf2=67%
 - error: decode failed: check digit mismatch
 GT  : P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: A<CAACAD<<YCUYCU<44444444444444444444444<4<<
       ^  ^^ ^^   ^  ^  ^^^^^^^^^^^^^^^^^^^^^^^ ^     [31 mismatch]
-GT  : E454243381CHN0703013F4211172S6310BB626637626
+GT  : E454243381CHN0703013F4211172S63108B626637626
 PRED: <<J<2<33AJCANCZC3O43P42343728634QDA61KK13G1L
       ^^^^ ^  ^^ ^ ^^^ ^^ ^  ^^^  ^  ^^^^ ^^^^^^^^   [30 mismatch]
 
@@ -4653,8 +4653,8 @@ PRED: <<J<2<33AJCANCZC3O43P42343728634QDA61KK13G1L
 GT  : P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
-GT  : E454243381CHN0703013F4211172S6310BB626637626
-PRED: E454243381CHN0703013F4211172S6310BB626637626
+GT  : E454243381CHN0703013F4211172S63108B626637626
+PRED: E454243381CHN0703013F4211172S63108B626637626
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=96% conf2=86%
@@ -4663,7 +4663,7 @@ PRED: E454243381CHN0703013F4211172S6310BB626637626
 GT  : P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CAC0<<YO0YOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<  
          ^^^^^^^^^^^^^                          ^^   [15 mismatch]
-GT  : E454243381CHN0703013F4211172S6310BB626637626
+GT  : E454243381CHN0703013F4211172S63108B626637626
 PRED: E454243387CHM0703013F4211172S631O8B6Z6G37S26
                ^  ^                   ^^  ^ ^  ^     [7 mismatch]
 
@@ -4671,8 +4671,8 @@ PRED: E454243387CHM0703013F4211172S631O8B6Z6G37S26
 GT  : P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
-GT  : E454243381CHN0703013F4211172S6310BB626637626
-PRED: E454243381CHN0703013F4211172S6310BB626637626
+GT  : E454243381CHN0703013F4211172S63108B626637626
+PRED: E454243381CHN0703013F4211172S63108B626637626
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
@@ -4680,7 +4680,7 @@ PRED: E454243381CHN0703013F4211172S6310BB626637626
 GT  : P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
-GT  : E454243381CHN0703013F4211172S6310BB626637626
+GT  : E454243381CHN0703013F4211172S63108B626637626
 PRED: 4542433812HNO0703013F4211172S63I08B671663762
       ^^^^^^ ^^^^^^                  ^ ^  ^^ ^^^^^   [21 mismatch]
 
@@ -4689,7 +4689,7 @@ PRED: 4542433812HNO0703013F4211172S63I08B671663762
 GT  : P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
-GT  : E454243381CHN0703013F4211172S6310BB626637626
+GT  : E454243381CHN0703013F4211172S63108B626637626
 PRED: E454243381CHN0703013F4211172S63108B6Z6637626
                                        ^  ^          [2 mismatch]
 
@@ -4698,7 +4698,7 @@ PRED: E454243381CHN0703013F4211172S63108B6Z6637626
 GT  : P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
-GT  : E454243381CHN0703013F4211172S6310BB626637626
+GT  : E454243381CHN0703013F4211172S63108B626637626
 PRED: E454243381CHN0703013F4211172S63108862663T626
                                        ^^     ^      [3 mismatch]
 
@@ -4707,25 +4707,25 @@ PRED: E454243381CHN0703013F4211172S63108862663T626
 GT  : P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
-GT  : E454243381CHN0703013F4211172S6310BB626637626
+GT  : E454243381CHN0703013F4211172S63108B626637626
 PRED: E454243381CHN0703013F4211172S63I088676637626
                                      ^ ^^ ^          [4 mismatch]
 
 ## 2026-9-29-F.jpg
 - 官方判定: PASS  verified=True  chosen=cnn  ms=250
 - 官方 line1: P<CHNDENG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
-- 官方 line2: E410968B47CHN9311103F311203262G49S6626Z92252
+- 官方 line2: E410968B47CHN9311103F311203262G49S6626292Z52
 - 理由: 融合CNN+CRNN 识别并通过校验
 
 - GT line1: `P<CHNDENG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<<`
-- GT line2: `E410968B47CHN9311103F311203262G49S6626Z92252`
+- GT line2: `E410968B47CHN9311103F311203262G49S6626292Z52`
 
 ### traditional  [decoded] conf1=70% conf2=64%
 - error: decode failed: check digit mismatch
 GT  : P<CHNDENG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: A<CAADEAG<<PENGWEN<<4444444444444<<<<<<<<<<<
       ^  ^^  ^            ^^^^^^^^^^^^^              [17 mismatch]
-GT  : E410968B47CHN9311103F311203262G49S6626Z92252
+GT  : E410968B47CHN9311103F311203262G49S6626292Z52
 PRED: Z<7DA<DA<ZCHNV3444DJPJ33PLQ3242444AAA1G14114
       ^^^^^^^^^^   ^ ^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^   [39 mismatch]
 
@@ -4733,8 +4733,8 @@ PRED: Z<7DA<DA<ZCHNV3444DJPJ33PLQ3242444AAA1G14114
 GT  : P<CHNDENG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNDENG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
-GT  : E410968B47CHN9311103F311203262G49S6626Z92252
-PRED: E410968B47CHN9311103F311203262G49S6626Z92252
+GT  : E410968B47CHN9311103F311203262G49S6626292Z52
+PRED: E410968B47CHN9311103F311203262G49S6626292Z52
                                                      [0 mismatch]
 
 ### crnn  [decoded] conf1=94% conf2=90%
@@ -4743,7 +4743,7 @@ PRED: E410968B47CHN9311103F311203262G49S6626Z92252
 GT  : P<CHNDENG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CADEMG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<< 
          ^^^^^^ ^^^^^^^^                         ^   [15 mismatch]
-GT  : E410968B47CHN9311103F311203262G49S6626Z92252
+GT  : E410968B47CHN9311103F311203262G49S6626292Z52
 PRED: E<70968B47CHN9311103F311203262G49S662G292Z52
        ^^                                  ^^  ^     [5 mismatch]
 
@@ -4751,8 +4751,8 @@ PRED: E<70968B47CHN9311103F311203262G49S662G292Z52
 GT  : P<CHNDENG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNDENG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
-GT  : E410968B47CHN9311103F311203262G49S6626Z92252
-PRED: E410968B47CHN9311103F311203262G49S6626Z92252
+GT  : E410968B47CHN9311103F311203262G49S6626292Z52
+PRED: E410968B47CHN9311103F311203262G49S6626292Z52
                                                      [0 mismatch]
 
 ### tesseract  [DECODE-OK]
@@ -4760,7 +4760,7 @@ PRED: E410968B47CHN9311103F311203262G49S6626Z92252
 GT  : P<CHNDENG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNDENG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
-GT  : E410968B47CHN9311103F311203262G49S6626Z92252
+GT  : E410968B47CHN9311103F311203262G49S6626292Z52
 PRED: EW70968B47CHN9311103F31120326ZG49S66Z6292152
        ^^                          ^      ^ ^  ^     [6 mismatch]
 
@@ -4769,7 +4769,7 @@ PRED: EW70968B47CHN9311103F31120326ZG49S66Z6292152
 GT  : P<CHNDENG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNDENG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
-GT  : E410968B47CHN9311103F311203262G49S6626Z92252
+GT  : E410968B47CHN9311103F311203262G49S6626292Z52
 PRED: E410968B47CHN9311103F31120326ZG49S6626292252
                                    ^        ^        [2 mismatch]
 
@@ -4778,7 +4778,7 @@ PRED: E410968B47CHN9311103F31120326ZG49S6626292252
 GT  : P<CHNDENG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNDENG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
-GT  : E410968B47CHN9311103F311203262G49S6626Z92252
+GT  : E410968B47CHN9311103F311203262G49S6626292Z52
 PRED: E410968B47CHN9311103F311203262649966Z6292752
                                     ^  ^  ^ ^  ^     [5 mismatch]
 
@@ -4787,7 +4787,7 @@ PRED: E410968B47CHN9311103F311203262649966Z6292752
 GT  : P<CHNDENG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNDENG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
-GT  : E410968B47CHN9311103F311203262G49S6626Z92252
+GT  : E410968B47CHN9311103F311203262G49S6626292Z52
 PRED: E410968B47CHN9311103F31120326264996628292<52
                                     ^  ^   ^^  ^     [5 mismatch]
 
@@ -7621,12 +7621,12 @@ PRED: KTOBEASCA2ASOSOLVES6TSSESV<3<<<<<<<<<<<<<<06
 - 官方 line2: EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 - 理由: 轻量CNN 识别并通过校验
 
-- GT line1: `P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<`
+- GT line1: `POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
 - GT line2: `EE20426536CHN7410024M2808303LMNGMBKCMDPBA970`
 
 ### traditional  [decoded] conf1=76% conf2=64%
 - error: decode failed: check digit mismatch
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: MPMC9A3IX<<L1N1H<<<<<<<<<<<<<<<<<<<<<<<<<<<<
       ^^^^^^^^^ ^^^^^^  ^^^^^^^^        ^            [24 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -7634,7 +7634,7 @@ PRED: MFFZQ<2<S36CHHZ4JQQP4NP8C8<C<LAHGAA<LA6LAF43
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^   [43 mismatch]
 
 ### cnn  [DECODE-OK] conf1=76% conf2=99%
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<ITASJJ<<LINEN<<C<DDD<PP<<<<<<<<<<<<<<<<<<<
         ^^^  ^  ^      ^^^^^^  ^        ^            [13 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -7644,7 +7644,7 @@ PRED: EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 ### crnn  [decoded] conf1=88% conf2=81%
 - backend: crnn  (19 ms)
 - error: decode failed: bad MRZ length
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POCA1A<<E7MIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  
        ^^^^^^^^^^  ^^   ^^^^^^^^        ^       ^^   [23 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -7652,7 +7652,7 @@ PRED: EC0426536CAN7410024M2808303LMNGW8KCND88RS1S
        ^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^   [42 mismatch]
 
 ### fuse  [DECODE-OK] conf1=75% conf2=99%
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<STASJJ<<LINEN<<C<DDDAAA<<A<<<<<<<<<<<<<<<<
          ^^  ^  ^      ^^^^^^^^^ ^      ^            [15 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -7661,7 +7661,7 @@ PRED: EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 
 ### tesseract  [DECODE-OK]
 - backend: tesseract  (217 ms)
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         ^^ ^^^  ^ ^^    ^^^^^^^^        ^            [17 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -7670,7 +7670,7 @@ PRED: EE20426536CHN7410024M2808303LMNGMBKCWDPBA970
 
 ### paddle  [DECODE-OK] conf1=93% conf2=99%
 - backend: paddle-onnxruntime  (113 ms)
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^^^ ^^^  ^ ^^    ^^^^^^^^        ^            [18 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -7685,7 +7685,7 @@ PRED: EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 
 ### indra_fullpage  [DECODE-OK] conf1=97% conf2=87%
 - backend: indra  (259 ms)
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^^^ ^^^  ^ ^^    ^^^^^^^^        ^            [18 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -7698,12 +7698,12 @@ PRED: EE20426536CHN7410024M2808303LMNGMBKCNPSB9<70
 - 官方 line2: EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 - 理由: 轻量CNN 识别并通过校验
 
-- GT line1: `P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<`
+- GT line1: `POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
 - GT line2: `EE20426536CHN7410024M2808303LMNGMBKCMDPBA970`
 
 ### traditional  [decoded] conf1=76% conf2=64%
 - error: decode failed: check digit mismatch
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: MPMC9A3IX<<L1N1H<<<<<<<<<<<<<<<<<<<<<<<<<<<<
       ^^^^^^^^^ ^^^^^^  ^^^^^^^^        ^            [24 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -7711,7 +7711,7 @@ PRED: MFFZQ<2<S36CHHZ4JQQP4NP8C8<C<LAHGAA<LA6LAF43
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^   [43 mismatch]
 
 ### cnn  [DECODE-OK] conf1=76% conf2=99%
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<ITASJJ<<LINEN<<C<DDD<PP<<<<<<<<<<<<<<<<<<<
         ^^^  ^  ^      ^^^^^^  ^        ^            [13 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -7721,7 +7721,7 @@ PRED: EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 ### crnn  [decoded] conf1=88% conf2=81%
 - backend: crnn  (18 ms)
 - error: decode failed: bad MRZ length
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POCA1A<<E7MIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  
        ^^^^^^^^^^  ^^   ^^^^^^^^        ^       ^^   [23 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -7729,7 +7729,7 @@ PRED: EC0426536CAN7410024M2808303LMNGW8KCND88RS1S
        ^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^   [42 mismatch]
 
 ### fuse  [DECODE-OK] conf1=75% conf2=99%
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<STASJJ<<LINEN<<C<DDDAAA<<A<<<<<<<<<<<<<<<<
          ^^  ^  ^      ^^^^^^^^^ ^      ^            [15 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -7738,7 +7738,7 @@ PRED: EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 
 ### tesseract  [DECODE-OK]
 - backend: tesseract  (206 ms)
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         ^^ ^^^  ^ ^^    ^^^^^^^^        ^            [17 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -7747,7 +7747,7 @@ PRED: EE20426536CHN7410024M2808303LMNGMBKCWDPBA970
 
 ### paddle  [DECODE-OK] conf1=93% conf2=99%
 - backend: paddle-onnxruntime  (103 ms)
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^^^ ^^^  ^ ^^    ^^^^^^^^        ^            [18 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -7762,7 +7762,7 @@ PRED: EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 
 ### indra_fullpage  [DECODE-OK] conf1=97% conf2=87%
 - backend: indra  (244 ms)
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^^^ ^^^  ^ ^^    ^^^^^^^^        ^            [18 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -7775,12 +7775,12 @@ PRED: EE20426536CHN7410024M2808303LMNGMBKCNPSB9<70
 - 官方 line2: EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 - 理由: 轻量CNN 识别并通过校验
 
-- GT line1: `P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<`
+- GT line1: `POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
 - GT line2: `EE20426536CHN7410024M2808303LMNGMBKCMDPBA970`
 
 ### traditional  [decoded] conf1=76% conf2=64%
 - error: decode failed: check digit mismatch
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: MPMC9A3IX<<L1N1H<<<<<<<<<<<<<<<<<<<<<<<<<<<<
       ^^^^^^^^^ ^^^^^^  ^^^^^^^^        ^            [24 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -7788,7 +7788,7 @@ PRED: MFFZQ<2<S36CHHZ4JQQP4NP8C8<C<LAHGAA<LA6LAF43
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^   [43 mismatch]
 
 ### cnn  [DECODE-OK] conf1=76% conf2=99%
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<ITASJJ<<LINEN<<C<DDD<PP<<<<<<<<<<<<<<<<<<<
         ^^^  ^  ^      ^^^^^^  ^        ^            [13 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -7798,7 +7798,7 @@ PRED: EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 ### crnn  [decoded] conf1=88% conf2=81%
 - backend: crnn  (18 ms)
 - error: decode failed: bad MRZ length
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POCA1A<<E7MIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  
        ^^^^^^^^^^  ^^   ^^^^^^^^        ^       ^^   [23 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -7806,7 +7806,7 @@ PRED: EC0426536CAN7410024M2808303LMNGW8KCND88RS1S
        ^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^   [42 mismatch]
 
 ### fuse  [DECODE-OK] conf1=75% conf2=99%
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<STASJJ<<LINEN<<C<DDDAAA<<A<<<<<<<<<<<<<<<<
          ^^  ^  ^      ^^^^^^^^^ ^      ^            [15 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -7815,7 +7815,7 @@ PRED: EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 
 ### tesseract  [DECODE-OK]
 - backend: tesseract  (207 ms)
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         ^^ ^^^  ^ ^^    ^^^^^^^^        ^            [17 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -7824,7 +7824,7 @@ PRED: EE20426536CHN7410024M2808303LMNGMBKCWDPBA970
 
 ### paddle  [DECODE-OK] conf1=93% conf2=99%
 - backend: paddle-onnxruntime  (108 ms)
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^^^ ^^^  ^ ^^    ^^^^^^^^        ^            [18 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -7839,7 +7839,7 @@ PRED: EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 
 ### indra_fullpage  [DECODE-OK] conf1=97% conf2=87%
 - backend: indra  (246 ms)
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^^^ ^^^  ^ ^^    ^^^^^^^^        ^            [18 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -7852,12 +7852,12 @@ PRED: EE20426536CHN7410024M2808303LMNGMBKCNPSB9<70
 - 官方 line2: EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 - 理由: 轻量CNN 识别并通过校验
 
-- GT line1: `P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<`
+- GT line1: `POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
 - GT line2: `EE20426536CHN7410024M2808303LMNGMBKCMDPBA970`
 
 ### traditional  [decoded] conf1=76% conf2=64%
 - error: decode failed: check digit mismatch
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: MPMC9A3IX<<L1N1H<<<<<<<<<<<<<<<<<<<<<<<<<<<<
       ^^^^^^^^^ ^^^^^^  ^^^^^^^^        ^            [24 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -7865,7 +7865,7 @@ PRED: MFFZQ<2<S36CHHZ4JQQP4NP8C8<C<LAHGAA<LA6LAF43
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^   [43 mismatch]
 
 ### cnn  [DECODE-OK] conf1=76% conf2=99%
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<ITASJJ<<LINEN<<C<DDD<PP<<<<<<<<<<<<<<<<<<<
         ^^^  ^  ^      ^^^^^^  ^        ^            [13 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -7875,7 +7875,7 @@ PRED: EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 ### crnn  [decoded] conf1=88% conf2=81%
 - backend: crnn  (21 ms)
 - error: decode failed: bad MRZ length
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POCA1A<<E7MIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  
        ^^^^^^^^^^  ^^   ^^^^^^^^        ^       ^^   [23 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -7883,7 +7883,7 @@ PRED: EC0426536CAN7410024M2808303LMNGW8KCND88RS1S
        ^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^   [42 mismatch]
 
 ### fuse  [DECODE-OK] conf1=75% conf2=99%
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<STASJJ<<LINEN<<C<DDDAAA<<A<<<<<<<<<<<<<<<<
          ^^  ^  ^      ^^^^^^^^^ ^      ^            [15 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -7892,7 +7892,7 @@ PRED: EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 
 ### tesseract  [DECODE-OK]
 - backend: tesseract  (209 ms)
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         ^^ ^^^  ^ ^^    ^^^^^^^^        ^            [17 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -7901,7 +7901,7 @@ PRED: EE20426536CHN7410024M2808303LMNGMBKCWDPBA970
 
 ### paddle  [DECODE-OK] conf1=93% conf2=99%
 - backend: paddle-onnxruntime  (105 ms)
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^^^ ^^^  ^ ^^    ^^^^^^^^        ^            [18 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -7916,7 +7916,7 @@ PRED: EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 
 ### indra_fullpage  [DECODE-OK] conf1=97% conf2=87%
 - backend: indra  (249 ms)
-GT  : P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^^^ ^^^  ^ ^^    ^^^^^^^^        ^            [18 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -7930,14 +7930,14 @@ PRED: EE20426536CHN7410024M2808303LMNGMBKCNPSB9<70
 - 理由: Tesseract 识别并通过校验
 
 - GT line1: `POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
-- GT line2: `EE20426536CHN7410024M28083034MNGMNKFH6BB8994`
+- GT line2: `EE20426536CHN7410024M2808303LMNGMBKCMDPBA970`
 
 ### traditional  [decoded] conf1=72% conf2=65%
 - error: decode failed: check digit mismatch
 GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: <<<A<L7<<<<J1A1N<<<<<<<<<<<<<<<<<<<<<<2I2IJI
       ^^^^^^^^  ^^^^^^                      ^^^^^^   [20 mismatch]
-GT  : EE20426536CHN7410024M28083034MNGMNKFH6BB8994
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 PRED: <<2K<2<S3<LA4Z43FVPAPPHCH3D3LPWGPA<LA566<<<L
       ^^ ^^ ^^ ^^^^^ ^^^^^^^^^^ ^ ^^^ ^^^^^^^^^^^^   [37 mismatch]
 
@@ -7949,7 +7949,7 @@ PRED: <<2K<2<S3<LA4Z43FVPAPPHCH3D3LPWGPA<LA566<<<L
 GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<<4<<LIIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<     
        ^^^^^^^^^^^^^^                        ^^^^^   [19 mismatch]
-GT  : EE20426536CHN7410024M28083034MNGMNKFH6BB8994
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 PRED: <<<<5<CA400QM2COA9OSLMNCMB<QMP9K976         
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   [44 mismatch]
 
@@ -7958,7 +7958,7 @@ PRED: <<<<5<CA400QM2COA9OSLMNCMB<QMP9K976
 GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNJIA<<LININ<<<<<<<<<<<<<<<Y<<<<<<<<<<<<<
        ^          ^                 ^                [3 mismatch]
-GT  : EE20426536CHN7410024M28083034MNGMNKFH6BB8994
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 PRED: EK20426536CHN7410024M2808303LMN0MBKKMN64J910
        ^                          ^  ^ ^ ^^^^^^ ^^   [12 mismatch]
 
@@ -7967,7 +7967,7 @@ PRED: EK20426536CHN7410024M2808303LMN0MBKKMN64J910
 GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^                                             [1 mismatch]
-GT  : EE20426536CHN7410024M28083034MNGMNKFH6BB8994
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 PRED: EE20426536CHN7410024M2808303LMNGMBKCMDPSA944
                                   ^    ^ ^^^^^^ ^    [9 mismatch]
 
@@ -7976,7 +7976,7 @@ PRED: EE20426536CHN7410024M2808303LMNGMBKCMDPSA944
 GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
-GT  : EE20426536CHN7410024M28083034MNGMNKFH6BB8994
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 PRED: EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
                                   ^    ^ ^^^^ ^ ^^   [9 mismatch]
 
@@ -7985,7 +7985,7 @@ PRED: EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<CACEA<
                                             ^^^^^    [5 mismatch]
-GT  : EE20426536CHN7410024M28083034MNGMNKFH6BB8994
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 PRED: EE20426536CHN7410024M2808303LMNGMBKCNS3<<<94
                                   ^    ^ ^^^^^^^     [9 mismatch]
 
@@ -7994,22 +7994,22 @@ PRED: EE20426536CHN7410024M2808303LMNGMBKCNS3<<<94
 GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POCHNJIAKLIMINKKKKK<<<<<<<<<<<<<<<<CCACEAE<<
               ^^^^^^^^^^^                ^^^^^^^     [18 mismatch]
-GT  : EE20426536CHN7410024M28083034MNGMNKFH6BB8994
+GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 PRED: EE20426536CHN7410024M2808303LMNGMBKCM5PSR970
                                   ^    ^ ^^^^^^ ^^   [10 mismatch]
 
 ## IMG_1792133682_008.jpg
 - 官方判定: PASS  verified=True  chosen=cnn  ms=219
-- 官方 line1: P<QSN<<<<<SIYJN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+- 官方 line1: POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 - 官方 line2: EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 - 理由: 轻量CNN 识别并通过校验
 
-- GT line1: `P<QSN<<<<<SIYJN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
+- GT line1: `POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
 - GT line2: `EE20426536CHN7410024M2808303LMNGMBKCMDPBA970`
 
 ### traditional  [decoded] conf1=71% conf2=60%
 - error: decode failed: check digit mismatch
-GT  : P<QSN<<<<<SIYJN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: AFALAAJ7<<<L7NJN<<<<<<<<<<<<<<<<<<<<<<<<<<<<
       ^^^^^^^^  ^^^^^^                               [14 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -8017,8 +8017,8 @@ PRED: PFP24<ZNSJ<CHNZ4YQOZ4NZ0Q8JC3LHHLAA<LA6A6F4<
       ^^^^ ^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^   [42 mismatch]
 
 ### cnn  [DECODE-OK] conf1=99% conf2=99%
-GT  : P<QSN<<<<<SIYJN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-PRED: P<QSN<<<<<SIYJN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+PRED: POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 PRED: EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -8027,7 +8027,7 @@ PRED: EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 ### crnn  [decoded] conf1=86% conf2=83%
 - backend: crnn  (21 ms)
 - error: decode failed: bad MRZ length
-GT  : P<QSN<<<<<SIYJN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POC74<<EIM7N<<<<<<<<<<<<<<<<<<<<<<<<<<<<<   
        ^^^^  ^^^^^^^^                          ^^^   [15 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -8035,8 +8035,8 @@ PRED: 7<E426536CAA7470024M2808303LMNGMBKCNDP8R97Q
       ^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^   [43 mismatch]
 
 ### fuse  [DECODE-OK] conf1=99% conf2=99%
-GT  : P<QSN<<<<<SIYJN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-PRED: P<QSN<<<<<SIYJN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+PRED: POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                                                      [0 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 PRED: EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -8044,7 +8044,7 @@ PRED: EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 
 ### tesseract  [DECODE-OK]
 - backend: tesseract  (101 ms)
-GT  : P<QSN<<<<<SIYJN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: P<CHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         ^^ ^^^  ^ ^^                                 [8 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -8053,7 +8053,7 @@ PRED: EE20426536CHN7410024M2808303LMNGMBKCNDPBR970
 
 ### paddle  [DECODE-OK] conf1=96% conf2=99%
 - backend: paddle-onnxruntime  (98 ms)
-GT  : P<QSN<<<<<SIYJN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^^^ ^^^  ^ ^^                                 [9 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -8062,7 +8062,7 @@ PRED: EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
 
 ### indra  [DECODE-OK] conf1=99% conf2=84%
 - backend: indra  (62 ms)
-GT  : P<QSN<<<<<SIYJN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
        ^^^ ^^^  ^ ^^                                 [9 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -8071,7 +8071,7 @@ PRED: EE20426536CHN741002428083038MNGMBKCMOP<<<<58
 
 ### indra_fullpage  [DECODE-OK] conf1=86% conf2=58%
 - backend: indra  (399 ms)
-GT  : P<QSN<<<<<SIYJN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+GT  : POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 PRED: EEUSE26536CHN7410024M2808303LMNGMBKCMOPAG79<
       ^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^    [42 mismatch]
 GT  : EE20426536CHN7410024M2808303LMNGMBKCMDPBA970
@@ -8100,8 +8100,8 @@ PRED: SCHASEIOO9USEOSSOET9MENEKEN6ARVA<<<<<<<<<<28
     l1=`P<USATRAVELER<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<<`
     l2=`3400072370USA6707046F1608078910000193<113538`
 - [16c07a99a0fb81e4_0013.jpg] (1)
-    l1=`P<CZEWPECIMEN<<NGOH<<<<<<<<<<<<<<<<<<<<<<<<<`
-    l2=`R900R054<4CZL6906229F16072996956220612<KKK74`
+    l1=`P<CZESPECIMEN<<VZOR<<<<<<<<<<<<<<<<<<<<<<<<<`
+    l2=`99009054<4CZE6906229F16072996956220612<<<<74`
 - [1cce0f3fc387c893_0001.jpg] (1)
     l1=`P<POLKOWALSKI<<JAN<<<<<<<<<<<<<<<<<<<<<<<<<<`
     l2=`5C39917886POL8101028M2909185<<<<<<<<<<<<<<04`
@@ -8131,15 +8131,15 @@ PRED: SCHASEIOO9USEOSSOET9MENEKEN6ARVA<<<<<<<<<<28
     l2=`3110003442AZE7503153M230801030KJU52555<<<<86`
 - [43ecb49033fb30c1_0073.jpg] (2)
     l1=`P<UIKYAUNZO<<ONDINA<MA<HSLLE<<<<<<<<<<<<<<<<`
-    l2=`0418276532USA3309209F9707014<<<<<<<<<<<<<<06`
+    l2=`0418276532USA3309209F9707014<<<<<<<<<<<<<<6`
 - [4dbd1b9e24b069f4_0023.png] (无引擎完全匹配)
     l1=`P<DSYNUSYERNANN<<ENIKA<<<<<<<<<<<<<<<<<<<<<<`
-    l2=`C01X00T478D<<6408125F2702283<<<<<<<<<<<<<<04`
+    l2=`C01X00T478D<<6408125F2702283<<<<<<<<<<<<<<4`
 - [526d2e38b6b977bc_0014.jpg] (2)
     l1=`PEROUPOPESCU<<MIHAELA<STEFANIA<<<<<<<<<<<<<<`
     l2=`0400210397ROU8001014F34090284800101017005<70`
 - [52f421c92ccf6ba4_0136.jpg] (无引擎完全匹配)
-    l1=`P<AUBCITIZEN<<JANK<<<<<<<<<<<<<<<<<<<<<<<<<<`
+    l1=`P<AUSCITIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<`
     l2=`KCG01505B6U<O9105045F2509013N999990001<<5<82`
 - [6b0e5919dd6f3ac8_0006.jpg] (2)
     l1=`P<SSPRSPANOLA<ESPANDLK<<EKNNEN<<<<<<<<<<<<<<`
@@ -8211,7 +8211,7 @@ PRED: SCHASEIOO9USEOSSOET9MENEKEN6ARVA<<<<<<<<<<28
     l1=`P<NUSOBRAZEYS<<YKSYKR<<<<<<<<<<<<<<<<<<<<<<<`
     l2=`D2DM1601M8KBS5608087M2002156<<<<<<<<<<<<<<08`
 - [cb64e780ab32f735_0004.jpg] (无引擎完全匹配)
-    l1=`P<SNKSPECIHEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<`
+    l1=`P<SNKSPECIMEN<<NIORKA<<<<<<<<<<<<<<<<<<<<<<<`
     l2=`7B12318830SVK1111112F34091871111111111<<<<06`
 - [cd83b43756aff32d_0013.jpg] (无引擎完全匹配)
     l1=`P<HAQSPGCINNN<<SPNCINGN<<<<<<<<<<<<<<<<<<<<<`
@@ -8248,7 +8248,7 @@ PRED: SCHASEIOO9USEOSSOET9MENEKEN6ARVA<<<<<<<<<<28
     l2=`FX12345672FIN7112214F2201018211271<426U<<<00`
 - [2026-9-29-A.jpg] (2)
     l1=`P<CHNYUN<<YAOYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
-    l2=`E0132B7855CHN0110141M3105179GB682050708G0B88`
+    l2=`E0132B7855CHN0110141M3105179GB682O5O108G0B88`
 - [2026-9-29-B.jpg] (3)
     l1=`P<CHNZHAO<<YONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
     l2=`E216923764CHN6703222M3510203H01JE6IP966FG406`
@@ -8260,10 +8260,10 @@ PRED: SCHASEIOO9USEOSSOET9MENEKEN6ARVA<<<<<<<<<<28
     l2=`E797044113CHN9004300F3405226GE0660IR06BAI310`
 - [2026-9-29-E.jpg] (2)
     l1=`P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
-    l2=`E454243381CHN0703013F4211172S6310BB626637626`
+    l2=`E454243381CHN0703013F4211172S63108B626637626`
 - [2026-9-29-F.jpg] (2)
     l1=`P<CHNDENG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<<`
-    l2=`E410968B47CHN9311103F311203262G49S6626Z92252`
+    l2=`E410968B47CHN9311103F311203262G49S6626292Z52`
 - [2026-9-29-G.jpg] (无引擎完全匹配)
     l1=`P<CHNDING<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<<`
     l2=`E505029416CHN6806178M2604114L2YBF2201K4IF010`
@@ -8370,20 +8370,20 @@ PRED: SCHASEIOO9USEOSSOET9MENEKEN6ARVA<<<<<<<<<<28
     l1=`P<CHNYANG<<ZHEN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
     l2=`KE90003518CHN9707014F2912268A911<121101<<<72`
 - [IMG_1792133000_003.jpg] (无引擎完全匹配)
-    l1=`P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<`
+    l1=`POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
     l2=`EE20426536CHN7410024M2808303LMNGMBKCMDPBA970`
 - [IMG_1792133002_004.jpg] (无引擎完全匹配)
-    l1=`P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<`
+    l1=`POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
     l2=`EE20426536CHN7410024M2808303LMNGMBKCMDPBA970`
 - [IMG_1792133232_005.jpg] (无引擎完全匹配)
-    l1=`P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<`
+    l1=`POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
     l2=`EE20426536CHN7410024M2808303LMNGMBKCMDPBA970`
 - [IMG_1792133581_006.jpg] (无引擎完全匹配)
-    l1=`P<SNNSJN<<EINEN<<<PPHPPPPP<<<<<<<<Z<<<<<<<<<`
+    l1=`POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
     l2=`EE20426536CHN7410024M2808303LMNGMBKCMDPBA970`
 - [IMG_1792133649_007.jpg] (无引擎完全匹配)
     l1=`POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
-    l2=`EE20426536CHN7410024M28083034MNGMNKFH6BB8994`
+    l2=`EE20426536CHN7410024M2808303LMNGMBKCMDPBA970`
 - [IMG_1792133682_008.jpg] (2)
-    l1=`P<QSN<<<<<SIYJN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
+    l1=`POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<`
     l2=`EE20426536CHN7410024M2808303LMNGMBKCMDPBA970`

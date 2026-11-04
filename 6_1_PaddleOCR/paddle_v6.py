@@ -468,7 +468,10 @@ def _decode_one(rec, img_path, init_error=""):
         return False, "", "", 0, 0, "", f"cannot load image: {e}", ms
 
     H, W = gray.shape
-    y0, y1 = _find_mrz_band(gray)
+    if os.environ.get("MRZ_BAND_ALREADY_CROPPED"):
+        y0, y1 = 0, H
+    else:
+        y0, y1 = _find_mrz_band(gray)
     r1, r2 = _split_rows(gray, y0, y1)
 
     # Direct rows are already resized to the model's fixed 48px height in
