@@ -67,3 +67,38 @@ review 定位为**基准设计问题而非模型问题**：
 3. 用 corpus_train_v2 切片重训 CNN/CRNN（新语料已生成，`data/corpus_train_v2`），
    以 eval_v2 + 真实照片双 gate 验收（AGENTS.md 红线不变）。
 4. 之前两次实测翻车的方案不要重复：`--balance-real`（37/41→28/41）、`--class-weight`（40/41→32/41）。
+
+---
+
+## 重训闭环（2026-11-05 凌晨，commit 40951c5）
+
+训练: CNN line1/line2 = corpus_train_v2 切片 248k(weak 3.0%) + photo_train_passport，real-frac 0.5，40ep；
+CRNN = **新 CNN 前端重导特征**（特征一致性红线: 旧前端特征配新前端 → l1 95.5%→44.6% 崩溃实测），
+train = corpus_v2 + corpus_v1 特征合并 (6000) + 41 照片×20，60ep，wd 1e-4。
+（中间尝试: wd 0.3 → 真实 both 31/41；40ep → 34/41；60ep+合并 → 37/41。）
+
+### 真实照片 gate（44 张 PassPortPhoto，TD3 子集 n=41，产品路径 band）
+
+| engine | 重训前 both | 重训后 both | l1 char |
+|---|---|---|---|
+| cnn | 33/41 | **36/41** | 95.95 → **97.51%** |
+| crnn | 37/41 | **37/41**（零退化） | 99.89 → 99.9x% |
+| fuse | 33/41 | **37/41** | 98.50 → **99.94%** |
+
+### 语料 gate（corpus_eval_v2，1440 张）
+
+| engine | 重训前 full | 重训后 full |
+|---|---|---|
+| cnn | 63.19% | **73.47%** |
+| crnn | 62.36% | **74.93%** |
+| fuse | 64.10% | **75.21%** |
+
+单元测试: test_postproc 147/147、test_mrz 89/89；FAST_NATIVE_MAX_WIDTH=1600 完好。
+
+### 环境发现（重要）
+
+- 仓库存在第二个克隆 `/Users/zhouyong/gitlab/passport`；主树 `6_mrz_ocr/build/` 的 CMake 缓存绑定在那个克隆上
+  → 主树里 `cmake --build build` 会编译另一棵树的源码。已为主树配置 `6_mrz_ocr/build_v2`（验证可用）。
+- 2026-11-05 01:21 起有并行会话在改 `src/mrz_ocr_cnn.c`（amb_margin/decode_row 未完成的编辑，当前编译不过）；
+  本轮全部构建/验收在隔离 worktree（6c9f8ab + 新权重）完成，未触碰这些编辑。
+- 验收用 gate 二进制: `/tmp/passport_gate/6_mrz_ocr/build_gate/`（worktree 保留至重启）。
