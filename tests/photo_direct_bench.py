@@ -188,6 +188,13 @@ def main(argv=None):
                          "不含进程/模型启动开销")
     ap.add_argument("--no-preload", action="store_true",
                     help="与 --resident 相反：每张照片重新起进程（历史口径）")
+    ap.add_argument("--weights", choices=("passport", "pic"),
+                    default="passport",
+                    help="weight set (and therefore binary) the engines run "
+                         "with: passport = tmp/PassPortPhoto line heads, "
+                         "pic = assets/pic line heads.  Measuring the pic "
+                         "photos with the passport weights measures the "
+                         "distribution gap, not the model.")
     ap.add_argument("--json", type=Path,
                     default=ROOT / "10_ocr_research" / "photo_direct_bench.json")
     args = ap.parse_args(argv)
@@ -200,6 +207,9 @@ def main(argv=None):
     app = gui.PassportGUI()
     app.update()
     app.withdraw()
+    if args.weights == "pic":
+        app.ocr_weights_pic.set(True)
+        app._ocr_result_cache = {}
     resident = bool(args.resident) and not args.no_preload
     preload_ms = 0.0
     if resident:

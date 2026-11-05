@@ -3888,9 +3888,35 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 tool = tool_paths[method]
                 if not tool.exists():
                     return failed(method, started, f"工具不存在: {tool}")
-                if method == "cnn":
+                # The head that will ACTUALLY run.  assets/pic ships no
+                # CRNN head, so "CRNN序列"/"融合CNN+CRNN" run the light
+                # CNN head there (the tool reports result.head =
+                # cnn(no-crnn)).  The low-resolution guard must follow the
+                # head, not the requested method name: keying it on the
+                # name made ONE head behave differently under two names
+                # (skipped as "cnn", run as "crnn"), which is exactly the
+                # kind of silent substitution this guard must not hide.
+                eff_head = method
+                if method in ("crnn", "fuse") and self._weights_set() == "pic":
+                    eff_head = "cnn(no-crnn)"
+                if eff_head in ("cnn", "cnn(no-crnn)"):
                     low_res_reason = _rst_cnn_low_res_reason(pair, scale)
-                    if low_res_reason:
+                    # The guard is OFF by default: it used to refuse to
+                    # run the selected algorithm on rows below 12 px, and
+                    # the CNN has improved since then.  Measured with the
+                    # same weights and the same bands:
+                    #   assets/pic   guard ON  both-exact 33/61, PASS 34
+                    #                guard OFF both-exact 43/61, PASS 45
+                    #   44 photos    guard ON  both-exact 36/47
+                    #                guard OFF both-exact 37/47
+                    # The photos the guard skipped were read CORRECTLY
+                    # when the same head was allowed to run; a reading
+                    # that does not verify is reported as a failure by
+                    # the decoder, which is the honest outcome -- the
+                    # guard only turned readable photos into no result.
+                    # MRZ_CNN_LOW_RES_GUARD=1 restores the old behaviour.
+                    if low_res_reason and os.environ.get(
+                            "MRZ_CNN_LOW_RES_GUARD", "0") == "1":
                         if not allow_tesseract_fallback:
                             return {
                                 "method": method,
@@ -3912,7 +3938,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                                 "decode": "",
                                 "raw_decode_rc": None,
                                 "raw_decode_error": "",
-                                "backend": "cnn (low-res skip)",
+                                "backend": f"{eff_head} (low-res skip)",
                                 # fallback 被显式禁用：识别错误就如实报错，
                                 # 不再用 Tesseract OCR-B 顶替。
                                 "note": f"轻量CNN已跳过：{low_res_reason}；"
@@ -3941,7 +3967,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                             "decode": "",
                             "raw_decode_rc": None,
                             "raw_decode_error": "",
-                            "backend": "cnn (low-res skip)",
+                            "backend": f"{eff_head} (low-res skip)",
                             "note": "",
                             "error": "",
                             "ms": (_time.perf_counter() - started) * 1000.0,
@@ -4084,6 +4110,17 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 head_mismatch = bool(
                     strict and method in ("cnn", "crnn", "fuse")
                     and head and head != method)
+                if (not head_mismatch and head
+                        and method in ("cnn", "crnn", "fuse")
+                        and head != method):
+                    # Not strict: the run is allowed to continue, but the
+                    # label must name the head that produced it.  A pic
+                    # weight set running the plain CNN head under the
+                    # label "融合CNN+CRNN" is how a wrong engine gets
+                    # reported as a right one.
+                    backend = backend or f"{method} -> {head}"
+                    note = note or (f"该权重集没有 {method} 头，"
+                                    f"实际由 {head} 完成")
                 if head_mismatch:
                     line1 = line2 = ""
                     raw_line1 = raw_line2 = ""
