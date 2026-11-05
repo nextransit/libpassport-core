@@ -2637,6 +2637,20 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             command=self._ocr_weights_toggle).pack(side="left", padx=2)
         ttk.Separator(row1, orient="vertical").pack(side="left",
                                                     fill="y", padx=8)
+        # 照片集（真实照片模式）：命名集合，定义在 tests/photo_sets.json。
+        # 集合自带目录归属与权重集归属，并按**证件**分组（同一证件的多个
+        # 机位不得在训练/测试切分中横跨两侧）。选集合 = 选一份清单，
+        # 不是把文件搬来搬去。
+        ttk.Label(row1, text="照片集:").pack(side="left")
+        self.ocr_set_var = tk.StringVar(value="默认（当前训练集）")
+        self.ocr_set_pick = ttk.Combobox(
+            row1, textvariable=self.ocr_set_var, state="readonly",
+            width=16, style="Field.TCombobox",
+            values=self._ocr_set_choices())
+        self.ocr_set_pick.pack(side="left", padx=2)
+        self.ocr_set_pick.bind("<<ComboboxSelected>>", self._ocr_set_on_pick)
+        ttk.Separator(row1, orient="vertical").pack(side="left",
+                                                    fill="y", padx=8)
         ttk.Label(row1, text="过滤:").pack(side="left")
         self.ocr_filter_var = tk.StringVar(value="all")
         self.ocr_filter_pick_var = tk.StringVar(value="全部")
@@ -3006,8 +3020,72 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         else:
             self._set_status_bar(f"训练集已切换：{name}（结果缓存已清空）")
 
+    # ---- photo sets (tests/photo_sets.json) ----
+    def _ocr_set_defs(self):
+        """The named photo sets, or an empty dict when the file is absent."""
+        try:
+            sys.path.insert(0, str(Path(__file__).resolve().parent))
+            import photo_sets
+            return photo_sets.load_sets().get("sets", {})
+        except Exception:
+            return {}
+
+    def _ocr_set_choices(self):
+        # The first entry is the DEFAULT list (the current weight set's
+        # photos), not "every photo on disk" -- the named set 'all' is
+        # that one.  Labelling it 全部照片 would promise 114 rows and
+        # deliver 50.
+        defs = self._ocr_set_defs()
+        return ["默认（当前训练集）"] + sorted(defs)
+
+    def _ocr_current_set(self):
+        """The selected set's key, or '' for '全部照片'."""
+        pick = str(self.ocr_set_var.get() if hasattr(self, "ocr_set_var")
+                   else "").strip()
+        if pick in ("", "默认（当前训练集）"):
+            return ""
+        return pick if pick in self._ocr_set_defs() else ""
+
+    def _ocr_set_entries(self):
+        """(label, path) for the selected set, or [] to use the default list."""
+        name = self._ocr_current_set()
+        if not name:
+            return []
+        try:
+            sys.path.insert(0, str(Path(__file__).resolve().parent))
+            import photo_sets
+            return photo_sets.resolve(name)
+        except Exception:
+            return []
+
+    def _ocr_set_on_pick(self, _evt=None):
+        """Switch the photo list to a named set.
+
+        A set declares which weight set it belongs to, so picking the
+        'pic' set also switches the weights: measuring the pic photos
+        with the passport weights measures the distribution gap, not
+        the model.
+        """
+        name = self._ocr_current_set()
+        defs = self._ocr_set_defs()
+        if name and defs.get(name, {}).get("weights") in ("pic", "passport"):
+            want_pic = defs[name]["weights"] == "pic"
+            if bool(self.ocr_weights_pic.get()) != want_pic:
+                self.ocr_weights_pic.set(want_pic)
+                if getattr(self, "_ocr_result_cache", None):
+                    self._ocr_result_cache.clear()
+        self._ocr_reset_results()
+        if self.ocr_photo_mode.get():
+            self._ocr_mode_switch()
+
     def _ocr_mode_switch(self):
         """Toggle between corpus batch-test and passport-photo recognition."""
+        # The set selector only applies to the real-photo list.
+        try:
+            self.ocr_set_pick.configure(
+                state="readonly" if self.ocr_photo_mode.get() else "disabled")
+        except tk.TclError:
+            pass
         if self.ocr_photo_mode.get():
             # 切换模式不表示正在识别。按钮文案只在真正跑起来时改成
             # "⏳ 识别中…"，跑完必须恢复，否则它会一直停在"识别中"。
@@ -3017,8 +3095,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             self._ocr_case_order = []
             # 真实护照照片来源：assets/pic + tmp/PassPortPhoto + Photo。
             # Photo/ 是子目录结构(机位照)，其余两个目录是顶层平铺。
-            self._ocr_photo_entries = list(
-                iter_passport_photos(self._weights_set()))
+            self._ocr_photo_entries = (self._ocr_set_entries()
+                                       or list(iter_passport_photos(
+                                           self._weights_set())))
             from pathlib import Path as _P2
             # 只显示纯文件名；完整路径放进 tooltip 映射。
             self._ocr_photo_paths = {}
@@ -5360,6 +5439,10 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         import os as _os
         if _os.environ.get("MRZ_BAND_PICK", "1") != "1":
             return band, crop
+        # MRZ_BAND_PICK_ALL=1: score every candidate, not just the
+        # alternatives, and let the confidence decide.  Costs one more
+        # candidate set build per photo (~15 ms).
+        _all = _os.environ.get("MRZ_BAND_PICK_ALL", "0") == "1"
         try:
             import sys as _sys
             from pathlib import Path as _P
@@ -5424,7 +5507,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             return band, crop
 
         _scored = []
-        _prio = {"clamped": 0}
+        _prio = {"primary": 0, "clamped": 1}
         try:
             # The historical crop is checked FIRST, on its own.  When it
             # reads a checksum-valid line 2 -- the common case -- the
@@ -5446,12 +5529,25 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                     except (TypeError, ValueError):
                         _conf = 0.0
                     _log("primary", _ck, _line2, _conf)
-                    if _ck == 0:
+                    if _ck == 0 and not _all:
                         # The historical crop reads a checksum-valid
                         # line 2: keep it.  This is the common case and
                         # costs exactly one extra C run.
+                        #
+                        # MRZ_BAND_PICK_ALL=1 compares the historical crop
+                        # against every alternative instead of stopping at
+                        # the first checksum-valid reading.  The check
+                        # digit cannot tell a good reading from a lucky
+                        # one (the composite rescue rewrites the last two
+                        # digits), so the historical crop can be
+                        # checksum-valid and still wrong.
                         return band, crop
             cands = []
+            if _all and crop is not None:
+                cands.append(("primary",
+                              (crop["x"], crop["y"],
+                               crop["x"] + crop["w"], crop["y"] + crop["h"]),
+                              band))
             if source_bottom is not None:
                 try:
                     _b2, _c2 = self._rst_native_mrz_band(
@@ -5463,6 +5559,23 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                         cands.append(("clamped",
                                        (_c2["x"], _c2["y"], _c2["x"] + _c2["w"],
                                         _c2["y"] + _c2["h"]), _b2))
+                except Exception:
+                    pass
+            # The glass-table photos (Photo/3..8) need a much larger
+            # vertical margin than the shared candidate set carries: the
+            # MRZ sits in the lower half of the page and the row
+            # splitter needs the whitespace above and below it.  The
+            # shared set only offers paddings up to 10 px.
+            for _pad in (20, 30, 40):
+                try:
+                    _b3, _c3 = self._rst_native_mrz_band(
+                        rgb, pair, scale, source_bottom=None,
+                        single=is_single, pad_override=_pad,
+                        x_range=(sens_rect[0], sens_rect[2]) if sens_rect else None)
+                    if _c3:
+                        cands.append((f"pad{_pad}",
+                                      (_c3["x"], _c3["y"], _c3["x"] + _c3["w"],
+                                       _c3["y"] + _c3["h"]), _b3))
                 except Exception:
                     pass
             try:
@@ -5481,7 +5594,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             # training-data locator's paddings.  The search stops at the
             # first checksum-valid candidate, so the order decides how
             # many candidates get read at all.
-            _rank = {"cla": 0, "res": 1, "sen": 2, "fas": 3}
+            _rank = {"pri": 0, "cla": 1, "pad": 2, "res": 3, "sen": 4,
+                     "fas": 5}
             cands.sort(key=lambda c: _rank.get(c[0][:3], 4))
             if not cands:
                 return band, crop
@@ -5524,7 +5638,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         if not _alts:
             return band, crop
         _kind, _rect, _arr, _ck, _conf = max(
-            _alts, key=lambda s: (s[4], -_prio.get(s[0], 1)))
+            _alts, key=lambda s: (s[4], -_prio.get(s[0], 2)))
         if _rect is None:
             return band, crop
         return _arr, {"x": _rect[0], "y": _rect[1],
