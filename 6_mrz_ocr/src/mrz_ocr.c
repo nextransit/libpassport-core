@@ -56,6 +56,16 @@ int mrz_ocr_deadline_expired(void) {
     return mrz_now_ns() >= deadline;
 }
 
+void mrz_ocr_deadline_get(struct timespec *ts, int *enabled) {
+    if (ts) *ts = g_mrz_deadline;
+    if (enabled) *enabled = g_mrz_deadline_enabled;
+}
+
+void mrz_ocr_deadline_apply(const struct timespec *ts, int enabled) {
+    if (ts) g_mrz_deadline = *ts;
+    g_mrz_deadline_enabled = enabled ? 1 : 0;
+}
+
 mrz_ocr_status_t mrz_ocr_init(void) { return MRZ_OCR_OK; }
 
 void mrz_ocr_result_free(mrz_ocr_result_t *r) { (void)r; }

@@ -1070,6 +1070,42 @@ static int segment_line_cnn(const uint8_t *bin, int W, int H,
 static int g_last_seg_score = -1;
 int mrz_ocr_last_seg_score(void) { return g_last_seg_score; }
 
+/* TD3 two-line grid sharing.
+ *
+ * A TD3 MRZ is 2 x 44 monospaced cells rendered from the SAME font at
+ * the SAME scale, so both rows necessarily share one pitch L and (up to
+ * the row's own x origin) one phase c0.  segment_line_grid() used to fit
+ * L and c0 independently on each row from that row's ink runs.  On real
+ * photos the second row has a different mix of glyphs (digits plus the
+ * personal-number letters), so its run endpoints and median run spacing
+ * differ: measured on Photo/003 the two fits were L=44.50/c0=292.5 vs
+ * L=46.25/c0=255.75, a 75 px drift by cell 43; on Photo/008 it was
+ * L=45.0 vs L=52.0, a 300 px drift that destroyed line 2 completely
+ * while line 1 read 43/44.  The first row's fit is the reliable one
+ * because it is mostly a long run of uniform '<' fillers.
+ *
+ * Both call sites (sequential and MRZ_OCR_PAR=1) serialise the two
+ * segment_line_grid() calls before starting any worker thread, so a
+ * file-static hand-off from line 0 to line 1 is race-free.  The values
+ * are reset on every line-0 call, so a failed line-0 fit can never leak
+ * a stale grid from the previous image into line 1.
+ *
+ * MEASURED RESULT (2026-11-05, 50-photo corpus): this hypothesis is WRONG
+ * for photographs.  The two rows really do have different pitches -- a
+ * page photographed at an angle is trapezoidally distorted, so the lower
+ * row is wider.  Forcing line 1's grid onto line 2 cut Photo/003 line-2
+ * character accuracy from 37/44 to 16/44.  The independent per-row fit is
+ * therefore kept as the default; the switch remains OFF for diagnosis.
+ *
+ * MRZ_OCR_SHARED_GRID=1 enables full sharing, "pitch" shares only the
+ * pitch and keeps the row's own phase; 0 / unset keeps the shipped
+ * independent fit. */
+static double g_grid_shared_c0 = -1.0;
+static double g_grid_shared_L  = 0.0;
+static int    g_grid_shared_W  = 0;
+static int    g_grid_shared_ok = 0;
+static int    g_grid_shared_mode = -1;   /* 0 off, 1 pitch+phase, 2 pitch only */
+
 /* ---- pitch-grid segmenter (primary) ----
  * TD3 lines are exactly 44 monospaced cells. Instead of trusting each
  * ink run to be one character (fragile: one noise run shifts every
@@ -1095,6 +1131,16 @@ static int segment_line_grid(const uint8_t *bin, int W, int H,
         dg->nchars = 0;
         dg->seg_score = -1;
     }
+    if (g_grid_shared_mode < 0) {
+        const char *e = getenv("MRZ_OCR_SHARED_GRID");
+        g_grid_shared_mode = 0;                       /* default: independent */
+        if (e && e[0]) {
+            if (strcmp(e, "pitch") == 0) g_grid_shared_mode = 2;
+            else if (!(e[0] == '0' && e[1] == 0)) g_grid_shared_mode = 1;
+        }
+    }
+    /* Every image starts with a clean hand-off from its own line 0. */
+    if (line_idx == 0) g_grid_shared_ok = 0;
     runs_t runs;
     if (find_runs(bin, W, H, &runs) < 0) return -1;
     int nrun = runs.n;
@@ -1169,18 +1215,60 @@ static int segment_line_grid(const uint8_t *bin, int W, int H,
     if (dg) { dg->L0 = L0; dg->Lfit = Lfit; }
 
 
-    double Lcand[12]; int nL = 0;
-    double lstart = floor((Lfit - 1.0) * 4.0) / 4.0;
-    double lend = ceil((Lfit + 1.0) * 4.0) / 4.0;
+    /* MRZ_OCR_GRID_L0=0 restores the legacy pitch search; the default is ON.
+     *
+     * Lfit is derived from the two EXTREME runs only, so a single dark
+     * border / reflection run at the right edge inflates it by ~10%
+     * (measured 47 -> 52.07 on a photo whose real pitch is ~47).  The
+     * legacy search window (Lfit +- 1) then never contains the correct
+     * pitch, and window centre 43 drifts four whole cells into the
+     * margin.  L0 is a median over all run gaps and is immune to one
+     * outlier.
+     *
+     * Gated on 2026-11-05: 114-photo corpus, TD3 exact 38/108 unchanged,
+     * character accuracy 86.57% -> 87.51%, no photo regressed. */
+    static int grid_l0 = -1;
+    if (grid_l0 < 0) {
+        const char *e = getenv("MRZ_OCR_GRID_L0");
+        grid_l0 = (e && e[0] && strcmp(e, "0") == 0) ? 0 : 1;
+    }
+    /* Only engage when the endpoint fit is pulled HIGH by a border run.
+     * A small Lfit/L0 gap means both estimates agree and the endpoints
+     * are trustworthy; offering L0 there merely lets a lower edge-ink
+     * cost win with a wrong phase (measured on 2026-9-30-H line 1:
+     * L0=29 Lfit=30.05 -> c0 17.5 became 0.0 and the name field
+     * garbled).  The polluted cases are 1.08x and 1.11x. */
+    int lfit_suspect = (L0 >= Lmin && L0 <= Lmax && L0 > 0 &&
+                        Lfit > (double)L0 * 1.05);
+    int use_l0 = grid_l0 && lfit_suspect;
+    double Lcand[32]; int nL = 0;
     /* When Lfit falls outside [Lmin,Lmax] the text doesn't fill the band
      * (e.g. CS/CD with border/shadow at the edges).  Use Lfit-centred
      * candidates instead of L0, which was derived from autocorrelation
      * of the full band including borders and is wrong. */
     double lo = (Lfit >= Lmin && Lfit <= Lmax) ? (double)Lmin : Lfit * 0.7;
     double hi = (Lfit >= Lmin && Lfit <= Lmax) ? (double)Lmax : Lfit * 1.3;
-    for (double L = lstart; L <= lend + 0.001 && nL < 12; L += 0.25) {
-        if (L >= lo && L <= hi)
-            Lcand[nL++] = L;
+    if (!use_l0) {
+        double lstart = floor((Lfit - 1.0) * 4.0) / 4.0;
+        double lend = ceil((Lfit + 1.0) * 4.0) / 4.0;
+        for (double L = lstart; L <= lend + 0.001 && nL < 32; L += 0.25)
+            if (L >= lo && L <= hi) Lcand[nL++] = L;
+    } else {
+        /* Two compact neighbourhoods rather than a single wide sweep:
+         * fewer pitch candidates keeps the phase scan inside the budget. */
+        for (int pass = 0; pass < 2 && nL < 32; ++pass) {
+            double centre = pass == 0 ? (double)L0 : Lfit;
+            if (pass == 0 && (L0 < Lmin || L0 > Lmax)) continue;
+            double lstart = floor((centre - 1.0) * 4.0) / 4.0;
+            double lend = ceil((centre + 1.0) * 4.0) / 4.0;
+            for (double L = lstart; L <= lend + 0.001 && nL < 32; L += 0.25) {
+                if (L < lo || L > hi) continue;
+                int dup = 0;
+                for (int q = 0; q < nL; ++q)
+                    if (fabs(Lcand[q] - L) < 1e-9) { dup = 1; break; }
+                if (!dup) Lcand[nL++] = L;
+            }
+        }
     }
     if (nL == 0) {
         Lcand[nL++] = (Lfit >= Lmin && Lfit <= Lmax) ? (double)L0 : Lfit;
@@ -1239,8 +1327,16 @@ static int segment_line_grid(const uint8_t *bin, int W, int H,
         for (int si = 0; si < nsteps; ++si) {
             double c0d = c0_min + si * PSTEP;
             double last = c0d + (double)(n_cells - 1) * L;
-            if (last < last_center - cell || last > last_center + cell)
+            if (use_l0) {
+                /* last_center can BE the polluted edge run, so using it as
+                 * a hard window would reject every L0 candidate.  Keep only
+                 * a bound that the grid stays inside the band; the edge-ink
+                 * cost then decides which pitch really aligns 44 windows. */
+                if (last > W - (double)cell / 2.0) continue;
+            } else if (last < last_center - cell ||
+                       last > last_center + cell) {
                 continue;
+            }
             int cost = 0;
             for (int k = 0; k < n_cells; ++k) {
                 double cx = c0d + (double)k * L;
@@ -1286,16 +1382,40 @@ static int segment_line_grid(const uint8_t *bin, int W, int H,
     }
     free(col);
     if (best_c0 < 0) return -1;
+
+    /* Hand-off from line 0 to line 1.  Only apply when both rows were
+     * measured in the same width coordinate space; otherwise the phase
+     * is not comparable. */
+    if (line_idx == 0) {
+        g_grid_shared_c0 = best_c0;
+        g_grid_shared_L  = best_L;
+        g_grid_shared_W  = W;
+        g_grid_shared_ok = 1;
+    } else if (g_grid_shared_mode && g_grid_shared_ok &&
+               W == g_grid_shared_W) {
+        double fitted_L = best_L, fitted_c0 = best_c0;
+        best_L = g_grid_shared_L;
+        if (g_grid_shared_mode == 1) best_c0 = g_grid_shared_c0;
+        if (getenv("MRZ_OCR_GRID"))
+            fprintf(stderr, "GRID SHARED li=1 fitted L=%.3f c0=%.3f "
+                            "-> L=%.3f c0=%.3f mode=%d\n",
+                    fitted_L, fitted_c0, best_L, best_c0, g_grid_shared_mode);
+        if (dg) { dg->pitch = best_L; dg->phase = best_c0; }
+    }
+
     {   /* MRZ_OCR_GRID=1: report the fitted grid for offline diagnosis. */
         static int griddbg = -1;
         if (griddbg < 0) { const char *e = getenv("MRZ_OCR_GRID"); griddbg = (e && e[0] && strcmp(e,"0") != 0) ? 1 : 0; }
         if (griddbg)
             fprintf(stderr, "GRID W=%d H=%d nrun=%d medw=%d cell=%d Lmin=%d Lmax=%d "
-                            "L0=%d Lfit=%.3f -> c0=%.3f L=%.3f span43=%.1f "
-                            "intL=%.2f/%d frL=%.2f/%d guard=%.2f\n",
-                    W, H, nrun, medw, cell, Lmin, Lmax, L0, Lfit, best_c0, best_L,
-                    43.0 * best_L, int_L, int_c0 >= 0 ? int_cost : -1,
-                    fr_L, fr_c0 >= 0 ? fr_cost : -1, guard);
+                            "L0=%d Lfit=%.3f lr=%d rr=%d fc=%.1f lc=%.1f "
+                            "-> c0=%.3f L=%.3f span43=%.1f "
+                            "intL=%.2f/%.0f frL=%.2f/%.0f guard=%.2f nL=%d\n",
+                    W, H, nrun, medw, cell, Lmin, Lmax, L0, Lfit,
+                    left_run, right_run, first_center, last_center,
+                    best_c0, best_L, 43.0 * best_L,
+                    int_L, int_c0 >= 0 ? int_cost : -1,
+                    fr_L, fr_c0 >= 0 ? fr_cost : -1, guard, nL);
     }
 
     int n = 0;
@@ -1410,6 +1530,33 @@ static double mrz_candidate_logprob(const char *line, const top3_t *t3) {
 #define MRZ_BEAM_COLS  14
 #define MRZ_BEAM_DEPTH 4
 
+/* Runtime A/B knobs for the checksum beam.  The shipped constants are the
+ * defaults; MRZ_BEAM_DEPTH / MRZ_BEAM_COLS override them so the search
+ * space can be measured on a corpus without rebuilding.  A reading whose
+ * GT needs five or six simultaneous corrections (e.g. a passport-number
+ * confusion that also drags the following optional-field letters) is
+ * mathematically unreachable at depth 4 no matter how good the top-5
+ * candidates are. */
+static int mrz_beam_depth(void) {
+    static int d = -1;
+    if (d < 0) {
+        const char *e = getenv("MRZ_BEAM_DEPTH");
+        d = MRZ_BEAM_DEPTH;
+        if (e && e[0]) { int v = atoi(e); if (v >= 1 && v <= 10) d = v; }
+    }
+    return d;
+}
+
+static int mrz_beam_cols(void) {
+    static int c = -1;
+    if (c < 0) {
+        const char *e = getenv("MRZ_BEAM_COLS");
+        c = MRZ_BEAM_COLS;
+        if (e && e[0]) { int v = atoi(e); if (v >= 4 && v <= 44) c = v; }
+    }
+    return c;
+}
+
 /* Log-probability gap below which two checksum-valid readings are
  * considered indistinguishable.
  *
@@ -1427,6 +1574,15 @@ static double mrz_candidate_logprob(const char *line, const top3_t *t3) {
  * protected field can flip under a one-level pixel change (the device
  * read 'L' where the host read 'V' in the document-type column). */
 #define MRZ_AMBIGUITY_MIN_DIFF 1
+
+/* Skip the relaxed-bound runner-up beam walk when every candidate column's
+ * top-2 probability margin is at least this.  With margin m, any
+ * single-column flip costs >= log((1+m)/(1-m)) log-prob (the two-class
+ * worst case), i.e. 0.62 at m=0.3 -- already above MRZ_AMBIGUITY_MARGIN
+ * (0.5), so a reportable runner-up is unreachable and the second walk
+ * can only burn time.  Outputs are bit-identical with and without the
+ * skip; this is a pure tail-latency cut. */
+#define MRZ_RUNNERUP_SKIP_MARGIN 0.3
 
 /* Does the difference between two readings fall on a field that
  * matters to the caller?
@@ -1596,7 +1752,7 @@ static void mrz_beam_search(const char *base, const top3_t *t3,
     ctx.t3 = t3;
     ctx.cols = cols;
     ctx.ncols = ncols;
-    ctx.depth = MRZ_BEAM_DEPTH;
+    ctx.depth = mrz_beam_depth();
     ctx.best = best;
     ctx.best_score = *best_score;
     ctx.alt = alt;
@@ -1702,7 +1858,9 @@ static void mrz_fuse_probs(float *cnn_probs, const float *crnn_probs,
 
 static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
                        int n, int line_idx, char *dest, int *conf_avg,
-                       const float *probs, mrz_decode_amb_t *amb) {
+                       const float *probs, mrz_decode_amb_t *amb,
+                       const float *seq_probs,
+                       float arb_gap, float arb_margin, float arb_conf) {
     int total = n < 44 ? n : 44;
     if (amb) { amb->ambiguous = 0; amb->margin = 0; amb->alt[0] = 0; }
     mrz_diag_line_t *dg = mrz_diag_line(line_idx);
@@ -1949,7 +2107,7 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
              * between the best and the second-best class is the best
              * available proxy for "this cell might be wrong": a cell
              * the network is sure about does not need to be searched. */
-            if (picks > MRZ_BEAM_COLS) picks = MRZ_BEAM_COLS;
+            if (picks > mrz_beam_cols()) picks = mrz_beam_cols();
 
             /* Deep beam.
              *
@@ -1985,11 +2143,30 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
             /* Second pass: the runner-up.  The bound is relaxed by the
              * ambiguity margin so that a candidate within the margin of
              * the winner survives the pruning and can be reported.
-             * This pass never changes the winner. */
+             * This pass never changes the winner.
+             *
+             * Skip it entirely when every candidate column is confident
+             * (MRZ_RUNNERUP_SKIP_MARGIN): a reportable runner-up is then
+             * mathematically unreachable, and this walk is the beam's
+             * main worst-case cost.
+             *
+             * With CRNN arbitration active (seq_probs != NULL), the
+             * relaxation window can be widened via arb_gap so a runner-up
+             * beyond the strict ambiguity margin exists for the tie-break
+             * to consider. */
+            static float amb_margin_cfg = -1.0f;
+            if (amb_margin_cfg < 0.0f) {
+                const char *e = getenv("MRZ_OCR_AMB_MARGIN");
+                amb_margin_cfg = (e && e[0]) ? (float)atof(e) : MRZ_AMBIGUITY_MARGIN;
+            }
+            float relax = amb_margin_cfg;
+            if (seq_probs && arb_gap > amb_margin_cfg) relax = arb_gap;
             char alt[45];
             double alt_score = -1e300;
             alt[0] = 0;
-            if (best_score > -1e299) {
+            if (best_score > -1e299 && picks > 0 && marg[0] >= MRZ_RUNNERUP_SKIP_MARGIN) {
+                /* all candidate columns confident -> no alt possible */
+            } else if (best_score > -1e299) {
                 /* The runner-up pass starts with the WINNER already in
                  * the incumbent slot, so what it records is the best
                  * reading that is WORSE than the winner -- which is
@@ -1999,13 +2176,8 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
                 char best_copy[45];
                 memcpy(best_copy, best, 45);
                 double best_score_copy = best_score;
-                static float amb_margin = -1.0f;
-                if (amb_margin < 0.0f) {
-                    const char *e = getenv("MRZ_OCR_AMB_MARGIN");
-                    amb_margin = (e && e[0]) ? (float)atof(e) : MRZ_AMBIGUITY_MARGIN;
-                }
                 mrz_beam_search(dest, t3, idxs, picks, best_copy, &best_score_copy,
-                                alt, &alt_score, amb_margin);
+                                alt, &alt_score, relax);
             }
 
             /* The search only replaces the decode when it actually
@@ -2027,17 +2199,56 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
                 if (amb && alt_score > -1e299) {
                     double gap = best_score - alt_score;
                     int ndiff = mrz_alt_diff_count(best, alt);
-                    static float amb_margin2 = -1.0f;
-                    if (amb_margin2 < 0.0f) {
-                        const char *e = getenv("MRZ_OCR_AMB_MARGIN");
-                        amb_margin2 = (e && e[0]) ? (float)atof(e) : MRZ_AMBIGUITY_MARGIN;
-                    }
-                    if (gap < amb_margin2 &&
+                    if (gap < amb_margin_cfg &&
                         ndiff >= MRZ_AMBIGUITY_MIN_DIFF &&
                         mrz_alt_is_material(best, alt)) {
                         amb->ambiguous = 1;
                         amb->margin = (int)(gap * 1000.0);
                         memcpy(amb->alt, alt, 45);
+                    }
+                }
+                /* CRNN arbitration (MRZ_OCR_FUSE_MODE=arb, the default):
+                 * the beam above ran on the PURE CNN probabilities, so the
+                 * fused engine can no longer overwrite the checksum-beam
+                 * repairs (the measured 10-25 failure on E/G/K/Q/T/AJ).
+                 * When a runner-up exists within the relaxation window,
+                 * the sequence head votes ONLY on the columns where the
+                 * two readings differ: if its log-prob mass clearly
+                 * favours the alt, take it.  Ties stay with the CNN, so
+                 * the fused engine can only differ from the CNN where the
+                 * CNN itself saw a near-tie -- the "fuse must not cost"
+                 * contract.  On real photos the CRNN was right on 78 of
+                 * the 105 disagreement cells vs 27 for the CNN (assets),
+                 * so the vote is worth having exactly there. */
+                if (seq_probs && alt[0] && alt_score > -1e299 &&
+                    (best_score - alt_score) < relax) {
+                    double s_best = 0.0, s_alt = 0.0;
+                    int arbdiff = 0, low_conf = 0;
+                    for (int c = 0; c < total; ++c) {
+                        if (best[c] == alt[c]) continue;
+                        int ib = mrz_ocr_glyph_index(best[c]);
+                        int ia = mrz_ocr_glyph_index(alt[c]);
+                        if (ib < 0 || ia < 0) continue;
+                        float pb = seq_probs[c * CNN_OUT + ib];
+                        float pa = seq_probs[c * CNN_OUT + ia];
+                        /* Per-column guard: the sequence head must be
+                         * CONFIDENT about the character it favours on
+                         * every differing column.  The measured real-photo
+                         * profile is 0.66-0.81 mean confidence when the
+                         * CRNN is right vs 0.55 when it is wrong; a noisy
+                         * or domain-collapsed head must not get a vote.
+                         * MRZ_OCR_FUSE_ARB_CONF, 0 disables the guard. */
+                        if (arb_conf > 0.0f && pa < arb_conf) { low_conf = 1; break; }
+                        s_best += (pb > 1e-9f) ? logf(pb) : -20.7f;
+                        s_alt  += (pa > 1e-9f) ? logf(pa) : -20.7f;
+                        arbdiff++;
+                    }
+                    if (arbdiff > 0 && !low_conf && s_alt - s_best >= arb_margin) {
+                        memcpy(dest, alt, (size_t)total);
+                        dest[total] = '\0';
+                        if (dg)
+                            for (int c = 0; c < total; ++c)
+                                if (dest[c] != pre_beam[c]) dg->gate[c] |= 8;
                     }
                 }
             }
@@ -2253,9 +2464,21 @@ typedef struct {
      * are still independent work. */
     int            use_seq;
     int            use_fuse;
+    /* MRZ_OCR_FUSE_MODE: 1 = "arb" (default, CNN decode + CRNN
+     * arbitration via decode_row), 0 = legacy in-place probability
+     * fusion (mrz_fuse_probs). */
+    int            fuse_arb;
+    float          arb_gap;
+    float          arb_margin;
+    float          arb_conf;
     float          fuse_alpha;
     float          fuse_gate;
     float          fuse_ratio;
+    /* Snapshot of the submitting thread's deadline.  The deadline is
+     * thread-local, and this job runs on the worker whose TLS is empty
+     * without it -- see mrz_line1_run. */
+    struct timespec deadline;
+    int             deadline_enabled;
     /* outputs */
     char          *line_out;
     int           *conf_avg;
@@ -2292,7 +2515,19 @@ static void mrz_pin_to_cpu(unsigned int cpu) { (void)cpu; }
  * paths produce byte-identical probabilities. */
 static void mrz_row_classify(mrz_line1_job_t *j) {
     cnn_row_features_batch(j->net, j->glyphs, j->nchars, j->feats);
-    if (j->use_fuse) {
+    if (j->use_fuse && j->fuse_arb) {
+        /* ARBITRATION mode (default): the decode (grammar mask, ink gate,
+         * checksum beam) runs on the PURE CNN probabilities, so the
+         * checksum-beam repairs survive; the sequence head's verdict goes
+         * to seq_probs and decode_row consults it only on the columns
+         * where its runner-up disagrees. */
+        cnn_fc_batch(j->net, j->feats, j->nchars, j->probs);
+        if (j->seq_probs)
+            crnn_forward_line(&g_mrz_scratch_crnn, j->line_idx, j->feats,
+                              j->nchars, j->seq_probs);
+    } else if (j->use_fuse) {
+        /* Legacy in-place probability fusion (MRZ_OCR_FUSE_MODE=probs),
+         * kept as the A/B comparison path. */
         cnn_fc_batch(j->net, j->feats, j->nchars, j->probs);
         float *seq = j->seq_probs;
         if (seq) {
@@ -2310,8 +2545,22 @@ static void mrz_row_classify(mrz_line1_job_t *j) {
 }
 
 static void mrz_line1_run(mrz_line1_job_t *j) {
+    /* Inherit the submitting (main) thread's deadline: this TLS is empty
+     * on the resident worker, so without the snapshot the deadline checks
+     * would never fire here and a slow line-1 (TTA + decode) could extend
+     * the frame past its budget while mrz_resident_wait blocks.  The wait
+     * itself stays unbounded ON PURPOSE: abandoning it would let the
+     * worker write into the caller's line2 buffer after the frame has
+     * already been returned to the JNI layer -- the exact use-after-return
+     * the `pending` counter was introduced to prevent.  Bounding the
+     * WORKER instead is the safe half of that trade. */
+    mrz_ocr_deadline_apply(&j->deadline, j->deadline_enabled);
     mrz_row_classify(j);
-    if (j->tta) {
+    /* TTA is 3 forwards; it is the first thing to drop when the frame is
+     * running out of budget.  decode_row still runs so line_out is always
+     * written -- an unwritten caller buffer is the one failure mode this
+     * path must never produce. */
+    if (j->tta && !mrz_ocr_deadline_expired()) {
         /* +-1px horizontal shift TTA averaged into j->probs. */
         for (int c = 0; c < j->nchars; ++c)
             for (int o = 0; o < CNN_OUT; ++o)
@@ -2324,7 +2573,14 @@ static void mrz_line1_run(mrz_line1_job_t *j) {
                                    j->chars[c].w, j->chars[c].h,
                                    NULL, 0, j->tta_glyphs[c]);
             cnn_row_features_batch(j->net, j->tta_glyphs, j->nchars, j->feats);
-            if (j->use_fuse) {
+            if (j->use_fuse && j->fuse_arb) {
+                /* Arbitration mode: only the CNN probs are TTA-averaged;
+                 * the CRNN verdict stays the BASE one from
+                 * mrz_row_classify -- a +-1px shift rarely moves the
+                 * sequence head and this avoids a second accumulation
+                 * buffer. */
+                cnn_fc_batch(j->net, j->feats, j->nchars, j->probs);
+            } else if (j->use_fuse) {
                 cnn_fc_batch(j->net, j->feats, j->nchars, j->probs);
                 float *seq = j->seq_probs;
                 if (seq) {
@@ -2348,7 +2604,9 @@ static void mrz_line1_run(mrz_line1_job_t *j) {
                 j->probs[c * CNN_OUT + o] = j->tta_probs[c * CNN_OUT + o] / 3.0f;
     }
     decode_row((const float (*)[CNN_IN_H][CNN_IN_W])j->glyphs,
-               j->nchars, 1, j->line_out, j->conf_avg, j->probs, j->amb);
+               j->nchars, 1, j->line_out, j->conf_avg, j->probs, j->amb,
+               (j->use_fuse && j->fuse_arb) ? j->seq_probs : NULL,
+               j->arb_gap, j->arb_margin, j->arb_conf);
 }
 
 /* Thin pthread entry used on non-Linux hosts (MAC) or as a fallback
@@ -2794,15 +3052,11 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
             if (ke && ke[0]) { float v = (float)atof(ke); if (v > 0.0f && v < 1.0f) sk = v; }
         }
         mrz_sauvola(band_gray, bw, bh, layout_bin, sw, sk);
-        /* A second Sauvola with lower k for glyph extraction: keeps more
-         * of the character strokes (the CNN expects thicker strokes than
-         * k=0.2 produces).  Used only for CS/CD (guilloche background). */
-        float gk = 0.1f;
-        {   /* MRZ_OCR_GLYPH_SAUVOLA_K overrides the glyph Sauvola k. */
-            const char *gke = getenv("MRZ_OCR_GLYPH_SAUVOLA_K");
-            if (gke && gke[0]) { float v = (float)atof(gke); if (v > 0.0f && v < 1.0f) gk = v; }
-        }
-        mrz_sauvola(band_gray, bw, bh, glyph_sauvola, sw, gk);
+        /* The second Sauvola (lower k, glyph extraction) is computed
+         * lazily at the glyph-bin selection below: it is consumed only
+         * on the CS/CD single-row path (MRZ_OCR_GLYPH_BIN=s + SINGLE_
+         * LINE_30), so the TD3 product path must not pay a full-band
+         * Sauvola (two integral images + per-pixel sqrtf) per frame. */
         {   /* MRZ_OCR_SAUVOLA=1: dump row profile for debugging. */
             static int sdbg = -1;
             if (sdbg < 0) { const char *e = getenv("MRZ_OCR_SAUVOLA"); sdbg = (e && e[0] && strcmp(e,"0") != 0) ? 1 : 0; }
@@ -2971,6 +3225,131 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
             }
         }
     }
+    /* MRZ_OCR_TIGHTEN_LINES=1 enables the line-box tightening; the
+     * default is OFF.
+     *
+     * On low-resolution upscaled bands split_lines can return boxes 2-3x
+     * taller than the glyph rows (measured 1144x122: l0=(y0 h52),
+     * l1=(y62 h60) while the ink is only ~22 px per row).  Normalising a
+     * 60 px box into 16 CNN rows squashes each glyph into a few faint
+     * stripes and both lines decode to garbage.  Tight bands such as
+     * 2398x171 l0=(y51 h35) l1=(y130 h38) are left untouched: their box is
+     * shorter than one character cell, so the trigger below never fires.
+     *
+     * Gated on 2026-11-05: 114-photo corpus, TD3 exact unchanged, no photo
+     * regressed; on Photo/007 it took line 1 from "PPSTPP<<<" to
+     * "POCHNJIC<<LIMIM<<<".
+     *
+     * DEFAULT OFF (2026-11-05, measured): on the official assets/pic GT
+     * set the tightening costs 3 exact photos (both 49/59 -> 46/59):
+     *   61d671ec161f22e3_0042.png  line2 'POL' -> 'PQL'
+     *   b7a97ca0edede07b_0164.jpg  line2 drops the sex field 'M'
+     *   c0cbf7c176328f3d_0006.jpg  line1 'GEORGIOS' -> 'GEOKGIOS' and
+     *                               the personal-number field shifts
+     * i.e. the 114-photo gate corpus did not cover the assets domain, and
+     * the acceptance truth (AGENTS.md: assets >= 95%) regresses.
+     *
+     * Re-measured on 2026-11-05 with the tightened trigger (the legacy box
+     * must be >= 1.45x the measured ink height, and the replacement must
+     * still contain the whole ink run): the assets regression shrinks to
+     * the same 46/59 while Photo/007 still needs it, so the feature stays
+     * opt-in:
+     *   MRZ_OCR_TIGHTEN_LINES=1  enables it.
+     */
+    static int tighten = -1;
+    if (tighten < 0) {
+        const char *e = getenv("MRZ_OCR_TIGHTEN_LINES");
+        tighten = (e && e[0] && strcmp(e, "0") != 0) ? 1 : 0;
+    }
+    if (tighten && split_n == 2) {
+        /* The expected row height must come from the ROW's own ink, not
+         * from the band width: a low-resolution band is upscaled, so
+         * bw/44 overestimates the pitch (measured 598x64 upscaled to
+         * 1144x122: bw/44 = 26 while the real pitch is 21, and the
+         * resulting threshold never fired).
+         *
+         * The ink run must also be located INSIDE the row's own box.
+         * Picking the two globally densest runs is wrong: on an upscaled
+         * low-resolution band the top of the crop carries a noise band
+         * (measured 1144x122: rows 0-25 hold 73-104 ink px, rows 26-41
+         * hold 266-372) and the global pick can latch onto it, while the
+         * real line-1 glyphs (rows 26-41, 16 px) are only 52/16 = 3.3x
+         * smaller than the legacy box (y0 h52).  Normalising that box
+         * into 16 CNN rows squashes every glyph into a few faint stripes
+         * and the whole line decodes to garbage.  So: for each row, look
+         * only inside its own (slightly padded) box and take the densest
+         * ink run there. */
+        int *rd = (int *)calloc((size_t)bh, sizeof(int));
+        if (rd) {
+            int pk = 0;
+            for (int y = 0; y < bh; ++y) {
+                int c = 0;
+                for (int x = 0; x < bw; ++x)
+                    if (band_bin[(size_t)y * bw + x]) c++;
+                rd[y] = c;
+                if (c > pk) pk = c;
+            }
+            int thr = pk / 8;
+            if (thr < 2) thr = 2;
+            {
+                static int tdbg = -1;
+                if (tdbg < 0) { const char *e = getenv("MRZ_OCR_TIGHTEN_LINES"); tdbg = (e && e[0] && strcmp(e,"0") != 0) ? 1 : 0; }
+                if (tdbg) {
+                    fprintf(stderr, "TIGHTEN band=%dx%d pk=%d thr=%d rows:",
+                            bw, bh, pk, thr);
+                    for (int q = 0; q < bh; ++q)
+                        if (q % 4 == 0) fprintf(stderr, " %d:%d", q, rd[q]);
+                    fprintf(stderr, "\n");
+                }
+            }
+            for (int li = 0; li < 2; ++li) {
+                /* Search window: the row's own box, padded by 15% so a
+                 * slightly off splitter box still sees its glyphs. */
+                int sy = lines[li].y - lines[li].h / 6;
+                int ey = lines[li].y + lines[li].h + lines[li].h / 6;
+                if (sy < 0) sy = 0;
+                if (ey > bh - 1) ey = bh - 1;
+                /* Densest ink run inside the window. */
+                int best_t = -1, best_b = -1;
+                long best_ink = 0;
+                int y = sy;
+                while (y <= ey) {
+                    if (rd[y] < thr) { y++; continue; }
+                    int t = y, last = y;
+                    long ink = 0;
+                    while (y <= ey && rd[y] >= thr) { ink += rd[y]; last = y; y++; }
+                    /* Runs shorter than 3 px are noise, not glyph rows. */
+                    if (last - t + 1 >= 3 && ink > best_ink) {
+                        best_ink = ink; best_t = t; best_b = last;
+                    }
+                }
+                if (best_t < 0) continue;
+                int ink_h = best_b - best_t + 1;
+                int old_h = lines[li].h;
+                /* Replace the legacy box only when it is CLEARLY too
+                 * loose: the legacy height must be at least 1.45x the
+                 * measured ink height.  A mildly loose box is left
+                 * alone -- cropping it risks cutting strokes, which
+                 * is what cost exact photos on the official assets set. */
+                int too_loose = (old_h * 100 >= ink_h * 145);
+                int pad = ink_h / 8;
+                if (pad < 1) pad = 1;
+                int nt = best_t - pad; if (nt < 0) nt = 0;
+                int nb = best_b + pad; if (nb >= bh) nb = bh - 1;
+                int nh = nb - nt + 1;
+                if (too_loose && nh >= 6 && nh < old_h) {
+                    lines[li].y = nt;
+                    lines[li].h = nh;
+                }
+                if (tdbg_on())
+                    fprintf(stderr, "TIGHTEN row%d box=(y%d h%d) ink=(y%d h%d) "
+                            "-> (y%d h%d)%s\n", li, lines[li].y - (nt - best_t + pad),
+                            old_h, best_t, ink_h, nt, nh,
+                            too_loose ? " TIGHTENED" : "");
+            }
+            free(rd);
+        }
+    }
     if (diag_on) {
         g_diag.line[0].y = lines[0].y; g_diag.line[0].h = lines[0].h;
         if (split_n > 1) {
@@ -3024,8 +3403,19 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
     const uint8_t *glyph_bin = band_bin;
     {
         const char *ge = getenv("MRZ_OCR_GLYPH_BIN");
-        if (ge && ge[0] == 's' && g_doc_layout == MRZ_LAYOUT_SINGLE_LINE_30)
+        if (ge && ge[0] == 's' && g_doc_layout == MRZ_LAYOUT_SINGLE_LINE_30) {
+            /* Lazily run the glyph Sauvola here (lower k keeps more of the
+             * character strokes for the CS/CD guilloche background), with
+             * the same window rule as the layout pass above. */
+            int gsw = bw / 40;
+            if (gsw < 7) gsw = 7;
+            if (gsw > 31) gsw = 31;
+            float gk = 0.1f;
+            const char *gke = getenv("MRZ_OCR_GLYPH_SAUVOLA_K");
+            if (gke && gke[0]) { float v = (float)atof(gke); if (v > 0.0f && v < 1.0f) gk = v; }
+            mrz_sauvola(band_gray, bw, bh, glyph_sauvola, gsw, gk);
             glyph_bin = glyph_sauvola;
+        }
     }
 
     glyphs     = (float (*)[CNN_IN_H][CNN_IN_W])mrz_scratch_glyphs(44 * (CNN_IN_H * CNN_IN_W));
@@ -3054,7 +3444,6 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
         const int use_crnn =
             crnn_env && crnn_env[0] && strcmp(crnn_env, "0") != 0 &&
             crnn_weights_available();
-        crnn_pair_init(&g_mrz_scratch_crnn);
 
         /* Fused mode: run the per-character CNN head AND the CRNN
          * sequence head, then combine them in log space.
@@ -3114,6 +3503,52 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
             if (r && r[0]) {
                 float v = (float)atof(r);
                 if (v >= 0.0f && v <= 8.0f) fuse_ratio = v;
+            }
+        }
+        /* Weight copy (~200 KB per head) only when the sequence head is
+         * actually in play -- CRNN-off frames must not pay it. */
+        if (use_crnn || use_fuse)
+            crnn_pair_init(&g_mrz_scratch_crnn);
+
+        /* Fusion mode.  "arb" (default): decode on pure CNN probs, the
+         * CRNN only arbitrates between the beam winner and its runner-up
+         * on the differing columns (fuse can no longer overwrite the
+         * checksum-beam repairs -- the measured 10-25 regression).
+         * "probs": legacy in-place log-space fusion, kept for A/B. */
+        int fuse_arb = 1;
+        {
+            const char *m = getenv("MRZ_OCR_FUSE_MODE");
+            if (m && m[0] && strcmp(m, "probs") == 0) fuse_arb = 0;
+        }
+        /* Relaxation window for the runner-up walk when arbitration is
+         * active (MRZ_OCR_FUSE_ARB_GAP).  0.5 = the ambiguity margin
+         * itself; widening it lets the CRNN consider runner-ups further
+         * behind the winner, at extra beam cost. */
+        float fuse_arb_gap = 0.5f;
+        {
+            const char *g = getenv("MRZ_OCR_FUSE_ARB_GAP");
+            if (g && g[0]) {
+                float v = (float)atof(g);
+                if (v >= 0.0f && v <= 8.0f) fuse_arb_gap = v;
+            }
+        }
+        /* Total log-prob by which the CRNN must favour the runner-up over
+         * the winner, summed over the differing columns
+         * (MRZ_OCR_FUSE_ARB_MARGIN).  Ties stay with the CNN. */
+        float fuse_arb_margin = 0.5f;
+        {
+            const char *g = getenv("MRZ_OCR_FUSE_ARB_MARGIN");
+            if (g && g[0]) {
+                float v = (float)atof(g);
+                if (v >= 0.0f && v <= 8.0f) fuse_arb_margin = v;
+            }
+        }
+        float fuse_arb_conf = 0.7f;
+        {
+            const char *g = getenv("MRZ_OCR_FUSE_ARB_CONF");
+            if (g && g[0]) {
+                float v = (float)atof(g);
+                if (v >= 0.0f && v <= 1.0f) fuse_arb_conf = v;
             }
         }
 
@@ -3267,11 +3702,19 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                 job.conf_avg  = &out->line2_avg_conf;
                 job.use_seq   = use_crnn;
                 job.use_fuse  = use_fuse;
+                job.fuse_arb  = fuse_arb;
+                job.arb_gap   = fuse_arb_gap;
+                job.arb_margin = fuse_arb_margin;
+                job.arb_conf  = fuse_arb_conf;
                 job.fuse_alpha = fuse_alpha;
                 job.fuse_gate  = fuse_gate;
                 job.fuse_ratio = fuse_ratio;
                 job.line_idx   = 1;
                 job.seq_probs  = (float *)mrz_scratch_probs(44 * CNN_OUT);
+                /* Hand the main thread's remaining budget to the worker
+                 * (the deadline is TLS; the worker's own is empty). */
+                job.deadline_enabled = 0;
+                mrz_ocr_deadline_get(&job.deadline, &job.deadline_enabled);
 #ifdef __linux__
                 if (mrz_resident_submit(&job) == 0) {
                     worker_spawned = 1;   /* resident worker owns it */
@@ -3291,16 +3734,23 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
 
             /* Line 0 forward (and TTA) on the main thread. */
             if (nchars_l[0] >= 30) {
+                float *seq0 = NULL;
                 {
                     mrz_line1_job_t j0;
                     memset(&j0, 0, sizeof(j0));
                     j0.net = net0; j0.glyphs = glyphs0_keep; j0.feats = feats0;
                     j0.probs = probs0; j0.nchars = nchars_l[0];
                     j0.use_seq = use_crnn; j0.use_fuse = use_fuse;
+                    j0.fuse_arb = fuse_arb;
+                    j0.arb_gap = fuse_arb_gap; j0.arb_margin = fuse_arb_margin;
+                    j0.arb_conf = fuse_arb_conf;
                     j0.fuse_alpha = fuse_alpha; j0.fuse_gate = fuse_gate;
                     j0.fuse_ratio = fuse_ratio; j0.line_idx = 0;
                     j0.seq_probs = (float *)mrz_scratch_probs(44 * CNN_OUT);
                     mrz_row_classify(&j0);
+                    /* Line 0 has no checksum beam, so arbitration never
+                     * fires there; kept uniform with the worker path. */
+                    seq0 = (use_fuse && fuse_arb) ? j0.seq_probs : NULL;
                 }
                 if (tta) {
                     for (int c = 0; c < nchars_l[0]; ++c)
@@ -3325,7 +3775,7 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                 }
                 decode_row((const float (*)[CNN_IN_H][CNN_IN_W])glyphs0_keep,
                            nchars_l[0], 0, out->line1, &out->line1_avg_conf, probs0,
-                           NULL);
+                           NULL, seq0, fuse_arb_gap, fuse_arb_margin, fuse_arb_conf);
                 out->line1_len = nchars_l[0];
                 mrz_ocr_dump_glyphs("img", 0, glyphs0_keep, nchars_l[0], chars_l[0]);
             }
@@ -3408,16 +3858,20 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                 const cnn_t *line_net = (li == 0) ? net0 : net1;
                 cnn_row_features_batch(line_net, glyphs, nchars, feats);
                 mrz_ocr_dump_line_features("img", li, feats, nchars);
+                float *seq_arb = NULL;
                 if (use_fuse) {
-                    /* Both heads, then a confidence-gated log-space
-                     * combination.  See the block that parses
-                     * MRZ_OCR_FUSE for the measurements behind the
-                     * thresholds. */
                     cnn_fc_batch(line_net, feats, nchars, probs);
                     float *seq = (float *)mrz_scratch_probs(44 * CNN_OUT);
                     if (!seq) { status = MRZ_OCR_ERR_LOAD; goto cleanup; }
                     crnn_forward_line(&g_mrz_scratch_crnn, li, feats, nchars, seq);
-                    mrz_fuse_probs(probs, seq, nchars, fuse_alpha, fuse_gate, fuse_ratio);
+                    if (fuse_arb) {
+                        /* Arbitration mode: keep the CNN probs pure for
+                         * the decode; the sequence verdict is handed to
+                         * decode_row for the runner-up tie-break. */
+                        seq_arb = seq;
+                    } else {
+                        mrz_fuse_probs(probs, seq, nchars, fuse_alpha, fuse_gate, fuse_ratio);
+                    }
                 } else if (use_crnn) {
                     /* Sequence head replaces the per-character FC with a
                      * GRU over the row, keeping the same 37-class output
@@ -3444,10 +3898,16 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                         cnn_row_features_batch(line_net, glyphs_tta, nchars, feats);
                         if (use_fuse) {
                             cnn_fc_batch(line_net, feats, nchars, probs);
-                            float *seq = (float *)mrz_scratch_probs(44 * CNN_OUT);
-                            if (!seq) { status = MRZ_OCR_ERR_LOAD; goto cleanup; }
-                            crnn_forward_line(&g_mrz_scratch_crnn, li, feats, nchars, seq);
-                            mrz_fuse_probs(probs, seq, nchars, fuse_alpha, fuse_gate, fuse_ratio);
+                            if (!fuse_arb) {
+                                /* legacy probs mode: fuse per shift */
+                                float *seq = (float *)mrz_scratch_probs(44 * CNN_OUT);
+                                if (!seq) { status = MRZ_OCR_ERR_LOAD; goto cleanup; }
+                                crnn_forward_line(&g_mrz_scratch_crnn, li, feats, nchars, seq);
+                                mrz_fuse_probs(probs, seq, nchars, fuse_alpha, fuse_gate, fuse_ratio);
+                            }
+                            /* arb mode: TTA-averages the CNN probs only;
+                             * seq_arb keeps the BASE CRNN verdict (same
+                             * policy as the worker TTA path). */
                         } else if (use_crnn) crnn_forward_line(&g_mrz_scratch_crnn, li, feats, nchars, probs);
                         else cnn_fc_batch(line_net, feats, nchars, probs);
                         for (int c = 0; c < nchars; ++c)
@@ -3463,7 +3923,8 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                 int *conf = (li == 0) ? &out->line1_avg_conf : &out->line2_avg_conf;
                 mrz_decode_amb_t amb;
                 decode_row((const float (*)[CNN_IN_H][CNN_IN_W])glyphs, nchars, li,
-                           dest, conf, probs, &amb);
+                           dest, conf, probs, &amb,
+                           seq_arb, fuse_arb_gap, fuse_arb_margin, fuse_arb_conf);
                 if (li == 0) {
                     out->line1_len = nchars;
                 } else {

@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <time.h>   /* struct timespec (deadline snapshot API) */
 
 #include "face.h"   /* for face_image_t (PPM/BMP I/O already in 3_face_recognition) */
 
@@ -199,6 +200,15 @@ int mrz_ocr_line1_issuer_suspect(const char *line1);
  * A non-positive value disables the deadline. */
 void mrz_ocr_deadline_set_ms(int timeout_ms);
 int  mrz_ocr_deadline_expired(void);
+
+/* Snapshot / restore the calling thread's deadline.  The deadline lives
+ * in thread-local storage, so the parallel line-1 worker would otherwise
+ * run with an empty one: its TTA and beam could extend the frame past
+ * the caller's budget while the main thread waits without a timeout.
+ * Snapshot the deadline before submitting the job and apply it at the
+ * top of the worker routine. */
+void mrz_ocr_deadline_get(struct timespec *ts, int *enabled);
+void mrz_ocr_deadline_apply(const struct timespec *ts, int enabled);
 
 /* Full pipeline: load the image, locate the MRZ band, segment the
  * characters, recognise them, return the two reconstructed lines.

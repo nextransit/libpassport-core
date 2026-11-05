@@ -35,28 +35,28 @@
  * 70.94% full match / 97.32% checksum, 100% pipeline OK):
  *   1. Pre-compute a 9+11=20-entry sin/cos LUT at module init
  *      (40 libm calls), instead of bw*bh*38 libm calls per image.
- *   2. COARSE sweep runs on a 2x2 max-pool of band_bin
- *      (bw/2 x bh/2 pixels) over -4..+4 deg at 1.0 deg steps
- *      (9 angles).  Max-pool preserves ink so the dark-pixel
- *      projection energy is invariant to sub-pixel content.
+ *   2. An ink-pixel index (row-major, x ascending) is built once per
+ *      band; ALL 20 angle scans iterate the index instead of the full
+ *      image.  Each ink pixel sees the identical FP expression in the
+ *      identical order, so scores are bit-exact against the direct
+ *      walk.  (An earlier revision documented a 2x2 max-pool for the
+ *      coarse sweep; it was never wired into the scan and the pool
+ *      path would NOT be bit-exact, so the index replaces it.)
  *   3. FINE sweep runs on the full image within +-0.5 deg of the
  *      coarse winner at 0.1 deg steps (11 angles).
  *
- * Total inner-pixel work per image:
- *   prev: 17 + 5 = 22 full-image scans  -> 22 * bw * bh
- *   now :  9 * (bw/2)*(bh/2) + 11 * bw * bh
- *       = 2.25 * bw * bh + 11 * bw * bh
- *       = 13.25 * bw * bh  (~40% reduction)
+ * Total inner-pixel work per image (ink density d):
+ *   prev: 20 full-image scans            -> 20 * bw * bh
+ *   now :  1 build + 20 ink scans        -> bw * bh + 20 * d * bw * bh
+ *       = ~3-5 * bw * bh at d = 10-20%  (~75-85% reduction)
  *
  * Output angle is bit-equivalent to the original at the 0.1-deg
  * fine-grid resolution (down from 0.05 deg in the legacy version);
  * the regression gate (0.3pp on any accuracy metric) still passes.*/
 
-/* Coarse grid (run on 1/2 max-pool image): -4..+4 at 1.0 deg.
- * 9 angles -> 9 small-image projections.
+/* Coarse grid: -4..+4 at 1.0 deg.  9 angles -> 9 ink-index projections.
  *
- * Fine grid (run on full image): -0.5..+0.5 at 0.1 deg.
- * 11 angles -> 11 full-image projections. */
+ * Fine grid: -0.5..+0.5 at 0.1 deg.  11 angles -> 11 ink-index projections. */
 /* The grid sizes are macros, not `static const int` variables: a
  * file-scope array dimension must be an integer constant expression in
  * C.  gcc-13 rejects the variable form outright, which blocks the
@@ -125,22 +125,88 @@ static double mrz_skew_score_at(const uint8_t *bin, int W, int H,
     return score;
 }
 
+/* Same arithmetic as mrz_skew_score_at(), but iterating a pre-built ink
+ * pixel index (row-major, x ascending) instead of the full image.  Each
+ * ink pixel sees the identical FP expression in the identical order, so
+ * the score is bit-exact against the direct scan; only the ~85% empty
+ * pixel reads disappear.  Ink is typically 10-20% of a band, and the 20
+ * angle scans dominate the estimator cost, so this cuts the whole sweep
+ * from 20 full-image walks to 1 index build + 20 ink walks. */
+static double mrz_skew_score_idx(const int *ink_x, const int *row_start,
+                                 int H, double cx, double cy,
+                                 double s, double c, int *proj) {
+    (void)cx;
+    memset(proj, 0, sizeof(int) * (size_t)H);
+    const double bias = cy - c * cy + s * cx;
+    for (int y = 0; y < H; ++y) {
+        const double cy_term = c * (double)y;
+        const int e = row_start[y + 1];
+        for (int k = row_start[y]; k < e; ++k) {
+            double yr = bias - s * (double)ink_x[k] + cy_term;
+            int yi = (int)(yr + 0.5);
+            if (yi >= 0 && yi < H) proj[yi]++;
+        }
+    }
+    double score = 0;
+    for (int y = 0; y < H; ++y) score += (double)proj[y] * proj[y];
+    return score;
+}
+
 double mrz_estimate_band_skew(const uint8_t *bin, int W, int H) {
     if (W < 32 || H < 16) return 0.0;
     if (!g_skew_lut_inited) mrz_skew_init_lut();
     const double cx = (W - 1) / 2.0, cy = (H - 1) / 2.0;
     int *proj = (int *)malloc(sizeof(int) * (size_t)H);
     if (!proj) return 0.0;
-    /* Coarse: 17 angles, pick winner. */
+    /* Ink index: one pass over the band, x-ascending within each row, so
+     * every scan below sees the pixels in the same order as the direct
+     * walk (bit-exact scores).  Falls back to the direct scan when the
+     * index allocation fails.  The ink array is allocated EXACTLY
+     * (count first): allocating W*H up front would push every frame over
+     * the malloc mmap threshold (~128KB) and pay page-fault jitter on the
+     * tail. */
+    int have_idx = 0;
+    int *ink_x = NULL;
+    int *row_start = (int *)malloc(sizeof(int) * ((size_t)H + 1));
+    int n_ink = 0;
+    if (row_start) {
+        for (int y = 0; y < H; ++y) {
+            row_start[y] = n_ink;
+            const uint8_t *row = bin + (size_t)y * W;
+            for (int x = 0; x < W; ++x)
+                if (row[x]) n_ink++;
+        }
+        row_start[H] = n_ink;
+        ink_x = (int *)malloc(sizeof(int) * (size_t)(n_ink > 0 ? n_ink : 1));
+        if (ink_x) {
+            int n = 0;
+            for (int y = 0; y < H; ++y) {
+                const uint8_t *row = bin + (size_t)y * W;
+                for (int x = 0; x < W; ++x)
+                    if (row[x]) ink_x[n++] = x;
+            }
+            have_idx = 1;
+        }
+    }
+    /* Coarse: 9 angles (-4..+4 at 1 deg), pick winner. */
     double best_coarse = -1.0, score0 = -1.0;
     int coarse_winner_idx = 8;   /* 0.0 deg index */
-    for (int i = 0; i < MRZ_SKEW_COARSE_N; ++i) {
-        double sc = mrz_skew_score_at(bin, W, H, cx, cy,
-                                      g_skew_coarse_sin[i], g_skew_coarse_cos[i], proj);
-        if (i == 8) score0 = sc;
-        if (sc > best_coarse) { best_coarse = sc; coarse_winner_idx = i; }
+    if (have_idx) {
+        for (int i = 0; i < MRZ_SKEW_COARSE_N; ++i) {
+            double sc = mrz_skew_score_idx(ink_x, row_start, H, cx, cy,
+                                           g_skew_coarse_sin[i], g_skew_coarse_cos[i], proj);
+            if (i == 8) score0 = sc;
+            if (sc > best_coarse) { best_coarse = sc; coarse_winner_idx = i; }
+        }
+    } else {
+        for (int i = 0; i < MRZ_SKEW_COARSE_N; ++i) {
+            double sc = mrz_skew_score_at(bin, W, H, cx, cy,
+                                          g_skew_coarse_sin[i], g_skew_coarse_cos[i], proj);
+            if (i == 8) score0 = sc;
+            if (sc > best_coarse) { best_coarse = sc; coarse_winner_idx = i; }
+        }
     }
-    /* Fine: 21 offsets around coarse_winner, at 0.05 deg.  Use the
+    /* Fine: 11 offsets around coarse_winner, at 0.1 deg.  Use the
      * angle-addition formula so we never call sin/cos in the inner
      * loop: sin(a+b)=sin(a)cos(b)+cos(a)sin(b).  Bit-exact because
      * the result is computed in the same double precision. */
@@ -153,12 +219,16 @@ double mrz_estimate_band_skew(const uint8_t *bin, int W, int H) {
         double cb = g_skew_fine_cos[fi];
         double s = ca * cb + cc * sb;
         double c = cc * cb - ca * sb;
-        double sc = mrz_skew_score_at(bin, W, H, cx, cy, s, c, proj);
+        double sc = have_idx
+            ? mrz_skew_score_idx(ink_x, row_start, H, cx, cy, s, c, proj)
+            : mrz_skew_score_at(bin, W, H, cx, cy, s, c, proj);
         if (sc > best_score) {
             best_score = sc;
             best_deg = coarse_deg + MRZ_SKEW_FINE_DEG[fi];
         }
     }
+    free(row_start);
+    free(ink_x);
     free(proj);
     if (best_deg == 0.0) return 0.0;
     /* require a clear win over no-rotation before touching the band */
