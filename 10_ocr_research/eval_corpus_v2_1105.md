@@ -312,3 +312,16 @@ bench 集成：`photo_direct_bench.py --set passport_union --holdout-docs 8`
 `tests/test_photo_sets.py` 固化这些不变量：集合张数、证件数、
 多机位证件（PassPortPhoto 3 份、Photo/ 1 份、assets 5 份）不横跨切分、
 无 GT 的照片自成一组。
+
+### GUI 集成（commit 68bcde6）
+
+「MRZ OCR测试」页新增**照片集**下拉框，读的是同一份 `tests/photo_sets.json`
+（GUI / bench / 测试共用一份定义，没有第二份清单）：
+`默认（当前训练集）` / `all` / `camshots` / `passport` / `passport_union` / `pic`。
+- 默认项 = 原来��行为（当前权重集的目录 + Photo/），**不是**"磁盘上所有照片"；
+  真正的那一个是命名集合 `all`，把默认项叫「全部照片」会承诺 114 行却只给 50 行。
+- 选集合会按集合声明切换权重集（`pic` → assets/pic 权重）：用护照权衡量
+  assets/pic 量到的是分布差，不是模型好坏。
+- 切集合会清空结果缓存与上一轮的 PASS/FAIL 配色。
+- 语料批测模式下该选择器置灰（无意义）。
+实测：默认 50 张、passport_union 50、camshots 6、pic 64（自动切权重）、语料模式置灰。
