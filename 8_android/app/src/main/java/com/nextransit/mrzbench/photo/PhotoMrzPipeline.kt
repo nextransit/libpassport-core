@@ -435,6 +435,40 @@ object PhotoMrzPipeline {
             }
             var rec = postProcessOf(primary)
             var res = primary
+            val frameSeq = System.nanoTime() and 0xFFFFFF
+            android.util.Log.i(
+                "MrzOcr",
+                "segScore=${MrzNative.lastSegScore()} " +
+                    "raw2len=${rec.rawLine2.length} raw2='${rec.rawLine2.take(24)}'",
+            )
+            // Diagnostic: keep the band of a frame that did not decode,
+            // so the slow path can be reproduced on the host (the device
+            // timing and the host timing differ, and only the device
+            // shows the real budget).  Written to the app's own files
+            // directory; the file name carries the index so the frames
+            // can be lined up with the log.
+            if (!rec.rawLine2.isEmpty() || rec.rawLine1.length != 44) {
+                try {
+                    val dir = java.io.File(context.filesDir, "failedbands").apply { mkdirs() }
+                    val out = java.io.File(dir, "band_${System.currentTimeMillis()}_$frameSeq.ppm")
+                    out.outputStream().use { fos ->
+                        val w = bandBitmap.width
+                        val h = bandBitmap.height
+                        val px = IntArray(w * h)
+                        bandBitmap.getPixels(px, 0, w, 0, 0, w, h)
+                        fos.write("P6\n$w $h\n255\n".toByteArray())
+                        val buf = ByteArray(w * h * 3)
+                        var o = 0
+                        for (p2 in px) {
+                            buf[o++] = ((p2 shr 16) and 0xFF).toByte()
+                            buf[o++] = ((p2 shr 8) and 0xFF).toByte()
+                            buf[o++] = (p2 and 0xFF).toByte()
+                        }
+                        fos.write(buf)
+                    }
+                } catch (_: Throwable) {
+                }
+            }
             // Only try the alternates when the band DID contain two
             // readable rows but the reading is wrong.  When the primary
             // framing produced no 44-character row at all ("could not

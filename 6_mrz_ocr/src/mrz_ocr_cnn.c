@@ -385,8 +385,13 @@ static void fill_allow(int allow[37], int line_idx, int col) {
             allow[mrz_ocr_glyph_index('S')] = 1;
             allow[mrz_ocr_glyph_index('D')] = 1;
         } else if (col == 2) {
+            /* Country / region code letter of the CS/CD row.  Real rows
+             * are "CSC..." (CHN) but also "CDL..." (assets/pic/
+             * 1c6acd092dee7031_0222.png), so restricting this slot to
+             * 'C' made the model emit a 'C' where the document has an
+             * 'L' -- the row could never be read back exactly. */
             for (int i = 0; i < 37; ++i) allow[i] = 0;
-            allow[mrz_ocr_glyph_index('C')] = 1;
+            for (int i = 0; i < 26; ++i) allow[a0 + i] = 1;
             allow[lt] = 1;
         } else if (col == 3) {
             /* A-Z excluding I,O + 0-9 */
@@ -1061,7 +1066,8 @@ static int find_runs(const uint8_t *bin, int W, int H, runs_t *r) {
  * Enabled by MRZ_OCR_DUMP=<tag>. Writes ppm to /tmp/mrz_dump_<tag>_<l><c>.ppm */
 static void mrz_ocr_dump_glyphs(const char *tag, int line_idx,
                                 const float (*glyphs)[CNN_IN_H][CNN_IN_W],
-                                int nchars, const mrz_ocr_rect_t *chars) {
+                                int nchars, const mrz_ocr_rect_t *chars,
+                                int base_y) {
     const char *env = getenv("MRZ_OCR_DUMP");
     if (!env || env[0] == 0 || strcmp(env, "0") == 0) return;
     /* The env value is the dump TAG: it lets several producers write
@@ -1073,8 +1079,16 @@ static void mrz_ocr_dump_glyphs(const char *tag, int line_idx,
     const char *dir = (dir_env && dir_env[0]) ? dir_env : "/tmp";
     char name[256];
     for (int c = 0; c < nchars; ++c) {
-        snprintf(name, sizeof(name), "%s/mrz_dump_%s_l%d_c%02d_x%d_r%d_w%d.ppm",
-                 dir, use_tag, line_idx, c, chars[c].x, chars[c].y, chars[c].w);
+        /* The cell height and the row's base offset are part of the
+         * sampling window (resample_char_gray takes ry = base + y and
+         * rh = h), so a consumer that wants to re-derive the glyph from
+         * the ORIGINAL band pixels -- e.g. to build geometric
+         * augmentations from real photographs -- needs them.  The
+         * segmenter always sets y = 0 and h = the row height, but the
+         * row's base offset inside the band is only known here. */
+        snprintf(name, sizeof(name), "%s/mrz_dump_%s_l%d_c%02d_x%d_r%d_w%d_h%d_b%d.ppm",
+                 dir, use_tag, line_idx, c, chars[c].x, chars[c].y, chars[c].w,
+                 chars[c].h, base_y);
         FILE *f = fopen(name, "wb");
         if (!f) continue;
         fprintf(f, "P6\n16 12\n255\n");
@@ -1143,6 +1157,68 @@ static int segment_line_cnn(const uint8_t *bin, int W, int H,
  * failure mode for the sequence head on real photos. */
 static int g_last_seg_score = -1;
 int mrz_ocr_last_seg_score(void) { return g_last_seg_score; }
+
+/* Forward declaration: the lazy helper below calls it. */
+static void mrz_sauvola(const uint8_t *gray, int w, int h, uint8_t *bin,
+                        int window, float k);
+
+/* Whether the Sauvola binary (layout_bin) has been produced yet.  The
+ * product path computes it lazily: only when the Otsu binary cannot
+ * separate the rows. */
+static int g_layout_sauvola_ready = 0;
+/* The Sauvola window and k, captured where they are computed so the
+ * lazy producer can use the same values. */
+static int   g_sauvola_sw = 7;
+static float g_sauvola_sk = 0.2f;
+
+/* Produce the Sauvola binary on demand and return it.  The window
+ * (bw/40, clamped to 7..31) and k are the same ones the eager version
+ * used, so the binary is identical whenever it IS computed. */
+static const uint8_t *mrz_ensure_sauvola(const uint8_t *band_gray, int bw, int bh,
+                                          uint8_t *layout_bin) {
+    if (!g_layout_sauvola_ready) {
+        mrz_sauvola(band_gray, bw, bh, layout_bin, g_sauvola_sw, g_sauvola_sk);
+        g_layout_sauvola_ready = 1;
+    }
+    return layout_bin;
+}
+
+/* Reset per frame: the score belongs to the CURRENT image's grid, and
+ * a stale value from the previous frame would mis-gate the beam. */
+static void mrz_reset_seg_score(void) { g_last_seg_score = -1; }
+
+/* Minimum grid-alignment score for the checksum beam to be worth
+ * running.  The score is the mean distance of the ink run centres from
+ * their cell centres (0..100).
+ *
+ * MEASURED on the device (192.168.26.131, 62 images): every frame that
+ * decoded cleanly scored 85..95, while the frames that produced
+ * garbage scored 0 -- their grid did not match the ink at all.  On such
+ * a frame the beam cannot repair anything (it searches over CELL
+ * ALTERNATIVES, and the cells themselves are misplaced), yet it is
+ * exactly there that the walk is most expensive: the greedy decode is
+ * invalid, so no valid incumbent exists and the probability bound
+ * prunes nothing -- 2026-9-30-K spent 241 ms in the OCR stage.
+ *
+ * So: below the threshold the beam is skipped and the greedy reading
+ * is returned.  MRZ_OCR_BEAM_MIN_SEG tunes it (0 disables the gate). */
+/* Threshold 30: measured on corpus_eval_v2 it is FREE (checksum rate
+ * 96.04% with and without the gate, the clean frames score 85..95), and
+ * it still catches the garbage frames, which score 0.  A threshold of 50
+ * starts to cost checksum validity (-0.6pp), so 30 is the safe pick. */
+#define MRZ_BEAM_MIN_SEG_DEFAULT 30
+static int mrz_beam_min_seg(void) {
+    static int v = -1;
+    if (v < 0) {
+        const char *e = getenv("MRZ_OCR_BEAM_MIN_SEG");
+        v = MRZ_BEAM_MIN_SEG_DEFAULT;
+        if (e && e[0]) {
+            int x = atoi(e);
+            if (x >= 0) v = x;
+        }
+    }
+    return v;
+}
 
 /* TD3 two-line grid sharing.
  *
@@ -2257,7 +2333,20 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
         const char *e = getenv("MRZ_OCR_NOBEAM");
         beam_enabled = !(e && e[0] == '1' && e[1] == 0);
     }
-    if (line_idx == 1 && total == 44 && beam_enabled) {
+    /* Grid-alignment gate: the beam searches over CELL ALTERNATIVES, so
+     * it can only help when the cells themselves are aligned with the
+     * ink.  On a frame whose grid score is low the beam cannot repair
+     * the reading -- but that is exactly where it is most expensive (no
+     * valid incumbent, so the probability bound prunes nothing).
+     * Measured on the device: clean frames score 85..95, garbage frames
+     * score 0 and cost 241 ms in the OCR stage. */
+    int beam_allowed = beam_enabled;
+    {
+        int min_seg = mrz_beam_min_seg();
+        if (min_seg > 0 && g_last_seg_score >= 0 && g_last_seg_score < min_seg)
+            beam_allowed = 0;
+    }
+    if (line_idx == 1 && total == 44 && beam_allowed) {
         char best[45];
         memcpy(best, dest, 44); best[44] = 0;
         /* The beam runs whether or not the greedy decode already
@@ -3006,6 +3095,7 @@ static float   *mrz_scratch_probs   (size_t n_floats)       { return (float *)mr
 mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                                        mrz_ocr_result_t *out) {
     mrz_scratch_reset();   /* O(1) reset before any alloc */
+    mrz_reset_seg_score(); /* the grid score belongs to THIS image */
     if (!img || !out) return MRZ_OCR_ERR_LOAD;
     if (mrz_ocr_deadline_expired()) return MRZ_OCR_ERR_TIMEOUT;
     memset(out, 0, sizeof(*out));
@@ -3264,11 +3354,45 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
         if (sw < 7) sw = 7;
         if (sw > 31) sw = 31;
         float sk = 0.2f;
+        g_sauvola_sw = sw;
+        g_sauvola_sk = sk;
         {   /* MRZ_OCR_SAUVOLA_K=0.2 overrides the Sauvola k parameter. */
             const char *ke = getenv("MRZ_OCR_SAUVOLA_K");
             if (ke && ke[0]) { float v = (float)atof(ke); if (v > 0.0f && v < 1.0f) sk = v; }
         }
-        mrz_sauvola(band_gray, bw, bh, layout_bin, sw, sk);
+        /* The Sauvola pass is ONE integral-image pair plus one sqrtf per
+         * pixel over the whole band.  Measured on the device
+         * (192.168.26.131, 1600x73 band): 20.7 ms of the 49 ms
+         * band+deskew stage -- the single largest cost of the product
+         * path.
+         *
+         * Making it LAZY (compute it only when the Otsu binary cannot
+         * separate the rows) was implemented and MEASURED, and it
+         * REGRESSED the corpus: corpus_eval_v2 full-match fell to 0.00%
+         * (l1 95.55% -> 72.14%).  The Otsu and Sauvola binaries are not
+         * interchangeable for the split either -- on 2026-9-30-H the
+         * Otsu rows are 19 px tall where the Sauvola rows are 24 px, and
+         * the Otsu grid lands half a cell off.  Re-splitting on the
+         * Sauvola binary when the rows look short was also tried and
+         * rejected (the row height is not a reliable signal: both 40/41
+         * -> 36/41).
+         *
+         * So the pass stays unconditional for now.  Making it cheap
+         * needs a different approach (a cheaper local threshold, or
+         * computing it only on the row band once the rows are known),
+         * not a reordering of the existing steps.
+         */
+        /* The Sauvola pass is ONE integral-image pair plus one sqrtf per
+         * pixel over the whole band: 20.7 ms of the 49 ms band+deskew
+         * stage on the device (192.168.26.131, 1600x73 band) -- the
+         * single largest cost of the product path.
+         *
+         * It is produced ON DEMAND: the split and the layout
+         * classification try the Otsu binary first (the two-row
+         * splitter already preferred it) and the Sauvola binary is only
+         * computed when that combination does not yield a clean TD3.
+         * MRZ_OCR_NO_SAUVOLA=1 forces the Otsu-only behaviour (A/B). */
+        g_layout_sauvola_ready = 0;
         /* The second Sauvola (lower k, glyph extraction) is computed
          * lazily at the glyph-bin selection below: it is consumed only
          * on the CS/CD single-row path (MRZ_OCR_GLYPH_BIN=s + SINGLE_
@@ -3290,6 +3414,28 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                         fprintf(stderr, "  y=%2d dark=%4d %c\n", y, rd[y], rd[y] >= th ? '*' : ' ');
                     free(rd);
                 }
+            }
+        }
+    }
+    /* MRZ_OCR_BAND_DUMP=<path>: write the PROCESSED band grayscale -- the
+     * exact array `resample_char_gray` reads from -- as a binary PGM.
+     *
+     * The band the caller hands in is NOT the band the glyph sampler sees:
+     * the pipeline crops it, may upscale it, deskews it and may dewarp it
+     * before sampling.  A tool that wants to reproduce or perturb the
+     * real pixels (e.g. to build geometric augmentations from real
+     * photographs) therefore has to read the pixels from HERE, not from
+     * the input file. */
+    {
+        static int bdbg = -1;
+        if (bdbg < 0) { const char *e = getenv("MRZ_OCR_BAND_DUMP"); bdbg = (e && e[0] && strcmp(e,"0") != 0) ? 1 : 0; }
+        if (bdbg) {
+            const char *path = getenv("MRZ_OCR_BAND_DUMP");
+            FILE *bf = fopen(path, "wb");
+            if (bf) {
+                fprintf(bf, "P5\n%d %d\n255\n", bw, bh);
+                fwrite(band_gray, 1, (size_t)bw * bh, bf);
+                fclose(bf);
             }
         }
     }
@@ -3316,7 +3462,12 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
 
     /* 4. Split the band into MRZ rows: two for a TD3 passport, one for a
      *    CS/CD travel permit (1 x 30).  The two-row splitter is tried
-     *    first so TD3 behaviour is untouched. */
+     *    first so TD3 behaviour is untouched.
+     *
+     *    The Sauvola binary is produced ON DEMAND here: it is needed
+     *    only when Otsu cannot separate the rows (CS/CD permits with a
+     *    guilloche background).  Computing it unconditionally cost 20.7 ms
+     *    of the 49 ms band+deskew stage on the device. */
     mrz_ocr_rect_t lines[2];
     int split_n = 2;
     /* TD3 (two-row) uses Otsu — unchanged.  CS/CD (one-row) uses Sauvola
@@ -3324,9 +3475,32 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
      * band-height line rectangle that classify_layout rejects. */
     if (mrz_ocr_split_lines(band_bin, bw, bh, lines) == 0) {
         split_n = 2;
-    } else if (mrz_ocr_split_lines(layout_bin, bw, bh, lines) == 0) {
+        /* The layout classification needs a binary too: use the Otsu one
+         * (what the split just used) and fall back to Sauvola only if
+         * that classification is not a clean TD3. */
+        memcpy(layout_bin, band_bin, (size_t)bw * bh);
+        /* NOTE: the Otsu split can be slightly misaligned -- on
+         * 2026-9-30-H the Otsu rows came out 19 px tall where the
+         * Sauvola rows are 24 px (a character cell of this band is
+         * ~33 px), so the grid landed half a cell off and the reading
+         * became "AKCHNYANY<<<ZWEN..." instead of "AKCHNYANG<<ZHEN...".
+         * That costs 10 characters of line-1 accuracy on that photo.
+         *
+         * Re-splitting on the Sauvola binary when the rows look too short
+         * was tried (MRZ_OCR_SPLIT_MIN_CELL) and REJECTED: the row
+         * height is not a reliable signal (many clean photos have
+         * shorter rows) and it cost 4 photos on the official set
+         * (both 40/41 -> 36/41).  The proper fix is to re-split after
+         * the grid stage, when the alignment score is known -- the grid
+         * score of the H photo is 71 (Otsu) vs 89 (Sauvola). */
+        (void)0;
+    } else if (mrz_ocr_split_lines(
+                   mrz_ensure_sauvola(band_gray, bw, bh, layout_bin),
+                   bw, bh, lines) == 0) {
         split_n = 2;
-    } else if (mrz_ocr_split_lines_single(layout_bin, bw, bh, &lines[0]) == 0) {
+    } else if (mrz_ocr_split_lines_single(
+                   mrz_ensure_sauvola(band_gray, bw, bh, layout_bin),
+                   bw, bh, &lines[0]) == 0) {
         split_n = 1;
     } else if (mrz_ocr_split_lines_single(band_bin, bw, bh, &lines[0]) == 0) {
         split_n = 1;
@@ -3342,7 +3516,9 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
         int hmin = lines[0].h < lines[1].h ? lines[0].h : lines[1].h;
         if (hmin < 8) {
             mrz_ocr_rect_t single;
-            if (mrz_ocr_split_lines_single(layout_bin, bw, bh, &single) == 0 ||
+            if (mrz_ocr_split_lines_single(
+                    mrz_ensure_sauvola(band_gray, bw, bh, layout_bin),
+                    bw, bh, &single) == 0 ||
                 mrz_ocr_split_lines_single(band_bin, bw, bh, &single) == 0) {
                 lines[0] = single;
                 split_n = 1;
@@ -3689,9 +3865,25 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
     int line_map[2] = { 0, 1 };
     {
         int bi = split_n - 1;                       /* bottom row */
+        /* The layout classifier reads the bottom row's binary.  Try the
+         * Otsu binary first (it is what the split just used) and only
+         * produce the Sauvola binary when that classification is not a
+         * clean TD3 -- the CS/CD permits with a guilloche background are
+         * exactly the ones where Otsu merges text with the pattern.
+         * Without this the Sauvola pass (20.7 ms of the 49 ms
+         * band+deskew stage on the device) ran on every frame. */
         const uint8_t *bot = layout_bin + (size_t)lines[bi].y * bw;
         g_doc_layout = mrz_classify_layout(bot, bw, lines[bi].h, bw,
                                            lines, split_n);
+        if (g_doc_layout != MRZ_LAYOUT_TD3_DOUBLE_44) {
+            /* Not a clean TD3 on the Otsu binary: produce the Sauvola
+             * one (it separates text from the guilloche pattern) and
+             * classify on that. */
+            const uint8_t *sbot = mrz_ensure_sauvola(band_gray, bw, bh, layout_bin)
+                                + (size_t)lines[bi].y * bw;
+            g_doc_layout = mrz_classify_layout(sbot, bw, lines[bi].h, bw,
+                                               lines, split_n);
+        }
         if (g_doc_layout == MRZ_LAYOUT_SINGLE_LINE_30) {
             n_lines = 1;
             n_cells = 30;
@@ -4086,7 +4278,8 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                            nchars_l[0], 0, out->line1, &out->line1_avg_conf, probs0,
                            NULL, seq0, fuse_arb_gap, fuse_arb_margin, fuse_arb_conf);
                 out->line1_len = nchars_l[0];
-                mrz_ocr_dump_glyphs("img", 0, glyphs0_keep, nchars_l[0], chars_l[0]);
+                mrz_ocr_dump_glyphs("img", 0, glyphs0_keep, nchars_l[0], chars_l[0],
+                                    base_l[0]);
             }
             if (timing_on) {
                 clock_gettime(CLOCK_MONOTONIC, &_t1);
@@ -4106,7 +4299,8 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
             }
             if (nchars_l[1] >= 30) {
                 out->line2_len = nchars_l[1];
-                mrz_ocr_dump_glyphs("img", 1, glyphs1_keep, nchars_l[1], chars_l[1]);
+                mrz_ocr_dump_glyphs("img", 1, glyphs1_keep, nchars_l[1], chars_l[1],
+                                    base_l[1]);
                 /* Line 2 was decoded on the worker thread; carry its
                  * ambiguity report back to the caller. */
                 out->line2_ambiguous = worker_amb.ambiguous;
@@ -4243,7 +4437,7 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                     memcpy(out->line2_alt, amb.alt, 45);
                     out->line2_alt[44] = 0;
                 }
-                mrz_ocr_dump_glyphs("img", li, glyphs, nchars, chars);
+                mrz_ocr_dump_glyphs("img", li, glyphs, nchars, chars, base);
                 line_pixels = NULL;
                 if (timing_on) {
                     clock_gettime(CLOCK_MONOTONIC, &_t1);
