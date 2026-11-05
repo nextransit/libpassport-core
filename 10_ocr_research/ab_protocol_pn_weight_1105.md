@@ -57,3 +57,20 @@
 
 配置 / 数值 / 结论（含翻车）→ `10_ocr_research/` 报告 +
 `.workbuddy-ai/memory/2026-11-05.md` + 本文「评审修订」条款。
+
+---
+
+## 基线裁决（2026-11-05，人工签字，§8.5 step 0 出口条件）
+
+| 项 | 裁决 |
+|---|---|
+| 验收真值 | `10_ocr_research/gt_review_loop.xlsx` 的 `GT line1`/`GT line2`（**唯一真值**，AGENTS.md）|
+| 口径 | **逐字符**（AGENTS.md 硬门槛 passport ≥98% / pic ≥95%），非「Exact 95%」——该门槛不存在 |
+| 分母 | 官方集 `tests/gt_photo_passport_official.json`（tier A/B 子集）+ 真实照片集（passport_union 50 张 / pic 64 张，按**证件**分组）|
+| 权重基准 | **40951c5**（2026-11-05 语料 v2 重训，commit `40951c5`）为当前生产基准；并行会话 13:44 的 CRNN 重训与其 perf 前端改动为**待验收的下一候选** |
+| 被取代的读数 | `gt_review_loop.xlsx` 2026-10-29 批次（各引擎逐字符 40.66%~74.24%，全部低于门槛）**不再作为基线**——它与今日批次口径/权��不同；`AGENTS.md` 中的 `0ab2131` 同样由 40951c5 取代 |
+| 今日基线读数 | passport：l1 41/41 = **100.00%**、l2 40/41 = 99.78%、both 40/41；pic：l1 57/63 = 97.15%、l2 52/59 = 97.96%、both 49/59（**未达标**）；速率 17.9 张/秒（≥2.0 达标）；真实照片 50 张 PASS 37/verified 49、pic 64 张 PASS 45/verified 58 |
+
+**由此得到的本轮结论边界**：passport 侧逐字符已达标；**pic 侧 both exact 49/59 与真实照片
+24/114 未达标**（"C 类：校验通过但读错" 20 张为最大缺口）。本轮 A/B 只针对
+line2 位置加权，且只以 pic/真实照片的 both exact 与 false accept 为判定依据。
