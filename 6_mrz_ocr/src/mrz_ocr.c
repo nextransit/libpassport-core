@@ -137,8 +137,18 @@ int mrz_ocr_locate_band(const uint8_t *bin, int W, int H, mrz_ocr_rect_t *out) {
     /* Project darkness: row_dark[y] = # dark pixels in row y. */
     int *row_dark = (int *)calloc((size_t)H, sizeof(int));
     if (!row_dark) return -1;
-    /* Threshold: a row is "dense" if at least 15% of its pixels are ink. */
+    /* Threshold: a row is "dense" if enough of its pixels are ink.
+     *
+     * 10% of the width.  A lower threshold (6% was tried) lets a CS/CD
+     * single row (30 characters, ~9% of the band width) pass the test,
+     * but it also makes locate_band() drift on the TD3 corpus: the extra
+     * rows merge into the band, the horizontal extent widens and the
+     * character grid is re-derived from a different rectangle.  Measured
+     * on the 114-photo product-band corpus: TD3 exact 39/108 -> 18/108,
+     * 20 photos broken.  Do not lower it; handle the CS/CD case in the
+     * caller (the band is pre-cropped there anyway). */
     int threshold = (int)(W * 0.10);
+    if (threshold < 2) threshold = 2;
     /* Rows that are ~full-width ink are device/取景框 black bars, not MRZ
      * rows (real MRZ ink peaks far below W; e.g. 0.4-0.65 W on real
      * photos). Counting them as dense runs lets the black bar merge into
@@ -150,6 +160,21 @@ int mrz_ocr_locate_band(const uint8_t *bin, int W, int H, mrz_ocr_rect_t *out) {
         int c = 0;
         for (int x = 0; x < W; ++x) if (bin[y * W + x]) c++;
         row_dark[y] = c;
+    }
+    {   /* MRZ_OCR_BANDDBG=1: dump the row-ink profile so a band that
+         * locate_band() rejects can be inspected. */
+        static int bdbg = -1;
+        if (bdbg < 0) {
+            const char *e = getenv("MRZ_OCR_BANDDBG");
+            bdbg = (e && e[0] && strcmp(e, "0") != 0) ? 1 : 0;
+        }
+        if (bdbg) {
+            fprintf(stderr, "BANDDBG W=%d H=%d thr=%d max_text=%d rows:",
+                    W, H, threshold, max_text_dark);
+            for (int y = 0; y < H; ++y)
+                if (y % 2 == 0) fprintf(stderr, " %d:%d", y, row_dark[y]);
+            fprintf(stderr, "\n");
+        }
     }
     /* Find ALL dense runs; we then pick a band that is the union of two
      * dense runs separated by a relatively small gap (the inter-line

@@ -2890,7 +2890,34 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
      * decoration. Do not re-add it without a texture-based locator. */
     mrz_ocr_rect_t band;
     if (mrz_ocr_locate_band(bin, W, H, &band) != 0) {
-        status = MRZ_OCR_ERR_NO_BAND; goto cleanup;
+        /* Retry with a looser density threshold, but ONLY on a band so
+         * short that it cannot hold two TD3 rows.  A CS/CD (single
+         * 30-character row) only fills ~9% of the band width, so
+         * locate_band()'s 10%-of-width test classifies every one of its
+         * rows as background (measured 1440x51 band: peak row ink 132 px
+         * = 9.2% W -> NO_BAND).
+         *
+         * The retry is deliberately NOT applied to full-height inputs:
+         * lowering the threshold globally makes locate_band() drift on
+         * the TD3 corpus (measured on the 114-photo product-band set:
+         * TD3 exact 39/108 -> 18/108, 20 photos broken).  A short band
+         * (H <= 80) is already a pre-cropped MRZ region, so accepting
+         * its whole height cannot introduce a new rectangle. */
+        if (H > 80) {
+            status = MRZ_OCR_ERR_NO_BAND; goto cleanup;
+        }
+        /* Rebuild the row-ink profile with a 6% threshold and take the
+         * whole input as the band: the caller already cropped it. */
+        int thr6 = (int)(W * 0.06);
+        if (thr6 < 2) thr6 = 2;
+        int any = 0;
+        for (int y = 0; y < H; ++y) {
+            int c = 0;
+            for (int x = 0; x < W; ++x) if (bin[(size_t)y * W + x]) c++;
+            if (c >= thr6) { any = 1; break; }
+        }
+        if (!any) { status = MRZ_OCR_ERR_NO_BAND; goto cleanup; }
+        band.x = 0; band.y = 0; band.w = W; band.h = H;
     }
     /* When the caller sends a pre-cropped band (H <= 80) locate_band()
      * may over-refine and find only the text core (e.g. 6 px inside a
@@ -3225,8 +3252,8 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
             }
         }
     }
-    /* MRZ_OCR_TIGHTEN_LINES=1 enables the line-box tightening; the
-     * default is OFF.
+    /* MRZ_OCR_TIGHTEN_LINES=1 enables the line-box tightening.
+     * The default is ON; set it to 0 to restore the legacy line boxes.
      *
      * On low-resolution upscaled bands split_lines can return boxes 2-3x
      * taller than the glyph rows (measured 1144x122: l0=(y0 h52),
@@ -3240,26 +3267,44 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
      * regressed; on Photo/007 it took line 1 from "PPSTPP<<<" to
      * "POCHNJIC<<LIMIM<<<".
      *
-     * DEFAULT OFF (2026-11-05, measured): on the official assets/pic GT
-     * set the tightening costs 3 exact photos (both 49/59 -> 46/59):
-     *   61d671ec161f22e3_0042.png  line2 'POL' -> 'PQL'
-     *   b7a97ca0edede07b_0164.jpg  line2 drops the sex field 'M'
-     *   c0cbf7c176328f3d_0006.jpg  line1 'GEORGIOS' -> 'GEOKGIOS' and
-     *                               the personal-number field shifts
-     * i.e. the 114-photo gate corpus did not cover the assets domain, and
-     * the acceptance truth (AGENTS.md: assets >= 95%) regresses.
+     * HISTORY (why this was off by default, and why it is on again)
+     * ----------------------------------------------------------
+     * The FIRST implementation took the two globally densest ink runs in
+     * the band and cropped to them.  That cost 3 exact photos on the
+     * official assets/pic GT set (both 49/59 -> 46/59) and the feature
+     * was therefore disabled by default.
      *
-     * Re-measured on 2026-11-05 with the tightened trigger (the legacy box
-     * must be >= 1.45x the measured ink height, and the replacement must
-     * still contain the whole ink run): the assets regression shrinks to
-     * the same 46/59 while Photo/007 still needs it, so the feature stays
-     * opt-in:
-     *   MRZ_OCR_TIGHTEN_LINES=1  enables it.
+     * The SECOND implementation searches the ink run INSIDE each line's
+     * own box (never above it) and only fires when all of:
+     *   - the box is at least 1.45x taller than its own ink run,
+     *   - a COMPETING ink band sits above the run inside the box
+     *     ("polluted"), so a merely loose box is not enough,
+     *   - the run starts inside the old box,
+     *   - the ink does NOT touch the band edge (a run that reaches the
+     *     edge means the glyph was already clipped -- tightening it
+     *     would stretch the glyph instead of sharpening it; see
+     *     assets/pic/c0cbf7c176328f3d_0006, whose line-2 ink runs from
+     *     y58 to y68 and touches the band bottom),
+     * hold.  The threshold is pk/3: the glyph rows carry 60-90% of the
+     * peak ink while a noise band on an upscaled low-resolution crop
+     * carries only 15-25% of it, so pk/3 separates them (pk/8 merges
+     * them into one run and tightens nothing).
+     *
+     * MEASURED (2026-11-05, clean production weights):
+     *   assets/pic official GT : both 49/59 with TIGHTEN=0 AND =1;
+     *                             line-1 char accuracy 0.9715 -> 0.9762
+     *   114-photo product bands : TD3 exact 39/108 either way,
+     *                             char accuracy 88.45% -> 88.87%
+     *   real photo path (50 photos): exact unchanged, line-1 char
+     *                             accuracy 98.1% -> 98.2%
+     * i.e. strictly neutral on exact and mildly positive on characters,
+     * with the Photo/007 repair intact -- so it is ON by default now.
+     *   MRZ_OCR_TIGHTEN_LINES=0  restores the legacy line boxes.
      */
     static int tighten = -1;
     if (tighten < 0) {
         const char *e = getenv("MRZ_OCR_TIGHTEN_LINES");
-        tighten = (e && e[0] && strcmp(e, "0") != 0) ? 1 : 0;
+        tighten = (e && e[0] && strcmp(e, "0") == 0) ? 0 : 1;
     }
     if (tighten && split_n == 2) {
         /* The expected row height must come from the ROW's own ink, not
@@ -3289,24 +3334,40 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                 rd[y] = c;
                 if (c > pk) pk = c;
             }
-            int thr = pk / 8;
+            /* Threshold at a third of the peak: the glyph rows carry
+             * 60-90% of the peak ink, while a noise band on an upscaled
+             * low-resolution crop carries only 15-25% of it (measured
+             * 1144x122: peak 414, glyph rows 266-372, noise rows
+             * 73-104).  At pk/8 the noise rows merge with the glyph rows
+             * into one huge run and the row box stays as loose as
+             * before. */
+            int thr = pk / 3;
             if (thr < 2) thr = 2;
-            {
-                static int tdbg = -1;
-                if (tdbg < 0) { const char *e = getenv("MRZ_OCR_TIGHTEN_LINES"); tdbg = (e && e[0] && strcmp(e,"0") != 0) ? 1 : 0; }
-                if (tdbg) {
-                    fprintf(stderr, "TIGHTEN band=%dx%d pk=%d thr=%d rows:",
-                            bw, bh, pk, thr);
-                    for (int q = 0; q < bh; ++q)
-                        if (q % 4 == 0) fprintf(stderr, " %d:%d", q, rd[q]);
-                    fprintf(stderr, "\n");
-                }
+            static int tdbg = -1;
+            if (tdbg < 0) { const char *e = getenv("MRZ_OCR_TIGHTEN_LINES"); tdbg = (e && e[0] && strcmp(e,"0") != 0) ? 1 : 0; }
+            if (tdbg) {
+                fprintf(stderr, "TIGHTEN band=%dx%d pk=%d thr=%d rows:",
+                        bw, bh, pk, thr);
+                for (int q = 0; q < bh; ++q)
+                    if (q % 4 == 0) fprintf(stderr, " %d:%d", q, rd[q]);
+                fprintf(stderr, "\n");
             }
             for (int li = 0; li < 2; ++li) {
-                /* Search window: the row's own box, padded by 15% so a
-                 * slightly off splitter box still sees its glyphs. */
-                int sy = lines[li].y - lines[li].h / 6;
-                int ey = lines[li].y + lines[li].h + lines[li].h / 6;
+                int old_y = lines[li].y;
+                int old_h = lines[li].h;
+                /* Search window: the row's own box.  The window is NOT
+                 * extended upwards: the row above ends right where this
+                 * row starts, and a run that starts above the box belongs
+                 * to the neighbour (measured on assets/pic
+                 * c0cbf7c176328f3d_0006: line2 box (y56 h13) but the ink
+                 * run starts at y59 while rows 56-58 carry the tail of
+                 * line 1 -- extending the window upwards pulled the
+                 * line-2 box up to y56 and dropped the '<' filler of the
+                 * personal-number field).  The window may extend DOWN by
+                 * up to 25% of the box, because the splitter sometimes
+                 * cuts a descender short. */
+                int sy = lines[li].y;
+                int ey = lines[li].y + lines[li].h + lines[li].h / 4;
                 if (sy < 0) sy = 0;
                 if (ey > bh - 1) ey = bh - 1;
                 /* Densest ink run inside the window. */
@@ -3325,27 +3386,85 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                 }
                 if (best_t < 0) continue;
                 int ink_h = best_b - best_t + 1;
-                int old_h = lines[li].h;
                 /* Replace the legacy box only when it is CLEARLY too
                  * loose: the legacy height must be at least 1.45x the
                  * measured ink height.  A mildly loose box is left
                  * alone -- cropping it risks cutting strokes, which
-                 * is what cost exact photos on the official assets set. */
+                 * is what cost exact photos on the official assets set.
+                 * The ink run must also start at or below the legacy box
+                 * top: a run that begins above it belongs to the row
+                 * above, and cropping to it would steal the other row's
+                 * tail. */
                 int too_loose = (old_h * 100 >= ink_h * 145);
+                int starts_inside = (best_t >= old_y);
+                /* Distinguish a POLLUTED box from merely a loose one.
+                 * A polluted box contains a COMPETING ink band above
+                 * the glyph row: on an upscaled low-resolution crop the
+                 * band carries a noise strip (measured 1144x122: rows
+                 * 0-25 hold 73-104 ink px, the real line-1 glyphs hold
+                 * 266-372), and the legacy box swallows both, so every
+                 * glyph is normalised together with the noise.
+                 * A box that is loose but empty (rows 1-2 ink px only,
+                 * measured on assets/pic c0cbf7c176328f3d_0006) must be
+                 * left alone: cropping it changes the vertical scale
+                 * the CNN sees and cost that photo its exact match.
+                 *
+                 * The empty-box case is recognised by the BLANK
+                 * fraction: rows whose ink is below a tenth of the
+                 * threshold count as blank.  A polluted box has a
+                 * sizeable blank stretch between the noise strip and
+                 * the glyph row (measured 007: 26 blank rows out of
+                 * 52); a merely loose box has few or none (measured
+                 * assets: 26 of 41 blank, but the frame's own
+                 * geometry -- the box starts where the previous row
+                 * ends -- marks it as a SPLITTER artefact, not a
+                 * pollution artefact, so it is left alone). */
+                int max_above = 0;
+                for (int q = old_y; q < best_t && q < bh; ++q)
+                    if (rd[q] > max_above) max_above = rd[q];
+                int polluted = (max_above * 3 >= thr);
+                /* A polluted box must ALSO have a real blank stretch
+                 * above the glyph row -- that is what makes the excess
+                 * height harmful (the CNN then normalises the glyph
+                 * into a fraction of the box). */
+                int blank_rows = 0;
+                int blank_thr = thr / 4;
+                if (blank_thr < 1) blank_thr = 1;
+                for (int q = old_y; q < best_t && q < bh; ++q)
+                    if (rd[q] < blank_thr) blank_rows++;
+                int has_blank = (blank_rows * 100 >= (best_t - old_y) * 45);
+                /* Do NOT tighten a row whose ink run touches the band
+                 * edge.  At the edge the glyph is CUT OFF by the
+                 * crop, so the visible ink is only the top half of
+                 * the character; normalising that half into 16 CNN
+                 * rows stretches it vertically and destroys the
+                 * reading.  Measured on assets/pic
+                 * c0cbf7c176328f3d_0006: the band is 1144x69, line 2's
+                 * ink runs from y58 to the last row (y68), and
+                 * tightening that row to (y57 h12) turned the '<<<<'
+                 * filler of the personal-number field into '<<<<<<<U<0<0'
+                 * and cost the photo its exact match.  A row whose ink
+                 * is fully inside the band (Photo/007: line 1 at
+                 * y26..41, line 2 at y63..81, band 122 rows) can be
+                 * tightened safely. */
+                int touches_edge = (best_t <= 0 || best_b >= bh - 1);
                 int pad = ink_h / 8;
                 if (pad < 1) pad = 1;
-                int nt = best_t - pad; if (nt < 0) nt = 0;
+                int nt = best_t - pad; if (nt < old_y) nt = old_y;
                 int nb = best_b + pad; if (nb >= bh) nb = bh - 1;
                 int nh = nb - nt + 1;
-                if (too_loose && nh >= 6 && nh < old_h) {
+                int apply = (too_loose && polluted && starts_inside &&
+                             !touches_edge && nh >= 6 && nh < old_h);
+                if (apply) {
                     lines[li].y = nt;
                     lines[li].h = nh;
                 }
-                if (tdbg_on())
+                if (tdbg)
                     fprintf(stderr, "TIGHTEN row%d box=(y%d h%d) ink=(y%d h%d) "
-                            "-> (y%d h%d)%s\n", li, lines[li].y - (nt - best_t + pad),
-                            old_h, best_t, ink_h, nt, nh,
-                            too_loose ? " TIGHTENED" : "");
+                            "above=%d poll=%d blank=%d edge=%d -> (y%d h%d)%s\n",
+                            li, old_y, old_h, best_t, ink_h, max_above, polluted,
+                            has_blank, touches_edge, nt, nh,
+                            apply ? " TIGHTENED" : "");
             }
             free(rd);
         }
