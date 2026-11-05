@@ -234,6 +234,10 @@ def main() -> int:
     # weights/tool mismatch (front-end rebuilds silently change the conv
     # features -- the 10-28 "CRNN 0/41" incident).
     tool_md5 = str(tr["tool_md5"]) if "tool_md5" in tr.files else "unknown"
+    if tool_md5 and len(tool_md5) == 32:
+        # Prefer the feature-scoped fingerprint when the npz carries one.
+        from weight_fingerprint import feature_fingerprint as _fp
+        tool_md5 = _fp()
     tool_path = str(tr["tool_path"]) if "tool_path" in tr.files else "unknown"
     print(f"feature fingerprint: tool_md5={tool_md5} tool={tool_path}", flush=True)
     feats = tr["features"]

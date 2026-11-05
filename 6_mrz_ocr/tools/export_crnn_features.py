@@ -105,6 +105,20 @@ def main() -> int:
     env["MRZ_OCR_CRNN"] = "1" if args.crnn else "0"
     env["MRZ_OCR_PAR"] = "1" if args.parallel else "0"
 
+    # Fingerprint BEFORE the loop: the tool binary must not change while
+    # the features are exported, otherwise the npz mixes features from two
+    # builds (measured: the stamp taken at the END of the export reported
+    # the final binary while the per-image runs had used another one).
+    tool_path = Path(args.tool)
+    # The fingerprint must cover what the FEATURES depend on (the conv
+    # weights + the band/segmentation/resample sources), not the whole
+    # binary: rebuilding the CRNN head alone does not change the features.
+    from weight_fingerprint import feature_fingerprint
+    tool_md5 = feature_fingerprint()
+    print(f"feature fingerprint: tool={tool_path.name} fp={tool_md5[:12]} "
+          f"env=line_models={args.line_models} crnn={args.crnn} par={args.parallel}",
+          flush=True)
+
     feats, labels, ids = [], [], []
     skipped = 0
     for i, rec in enumerate(records):
@@ -153,14 +167,14 @@ def main() -> int:
         return 1
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
-    # Feature fingerprint: the features ARE the line-head conv output of
-    # this exact tool binary.  Any rebuild of the conv/geometry front-end
-    # changes them and silently invalidates every weight trained on this
-    # npz (the 10-28 "CRNN 0/41" incident).  The md5 travels with the
-    # data so train_crnn_seq.py can stamp it into the emitted header and
-    # eval scripts can refuse a weights/tool mismatch.
-    tool_path = Path(args.tool)
-    tool_md5 = hashlib.md5(tool_path.read_bytes()).hexdigest() if tool_path.exists() else "unknown"
+    # The tool binary must not have changed during the export.
+    from weight_fingerprint import feature_fingerprint as _fp
+    tool_md5_end = _fp()
+    if tool_md5_end != tool_md5:
+        print(f"ERROR: the tool binary changed during the export "
+              f"({tool_md5[:12]} -> {tool_md5_end[:12]}); the npz would mix "
+              f"two builds.  Re-run the export.", file=sys.stderr)
+        return 2
     np.savez_compressed(out, features=np.stack(feats), labels=np.stack(labels),
                         ids=np.array(ids),
                         tool_md5=np.array(tool_md5),

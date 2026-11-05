@@ -28,7 +28,7 @@ def crnn_header_md5(header_path: Path) -> str | None:
         text = Path(header_path).read_text()
     except OSError:
         return None
-    m = re.search(r"MRZ_CRNN_FEATURE_MD5=([0-9a-f]{32}|unknown)", text)
+    m = re.search(r"MRZ_CRNN_FEATURE_MD5=([0-9a-f]{32,64}|unknown)", text)
     return m.group(1) if m else None
 
 
@@ -39,8 +39,44 @@ def tool_md5(tool_path) -> str | None:
         return None
 
 
+# The files that determine the CONV FEATURES the sequence head consumes:
+# the two line-head weight headers (they ARE the conv weights) and the
+# sources that drive band location, segmentation and resampling.  The
+# CRNN's own header is deliberately NOT in the list: retraining the
+# sequence head does not change the features it reads.
+FEATURE_SOURCES = [
+    "src/cnn_weights_line1.h",
+    "src/cnn_weights_line2.h",
+    "src/cnn.c",
+    "src/mrz_ocr_cnn.c",
+    "src/mrz_geom.c",
+    "src/mrz_ocr.c",
+]
+
+
+def feature_fingerprint(root=None) -> str:
+    """sha256 over the files that determine the conv features.
+
+    Stable across a CRNN-head-only rebuild (the weights that matter are
+    the conv ones), and sensitive to every change that would silently
+    invalidate an exported feature set.
+    """
+    root = Path(root) if root else ROOT
+    h = hashlib.sha256()
+    for rel in FEATURE_SOURCES:
+        p = root / rel
+        h.update(rel.encode())
+        h.update(p.read_bytes() if p.exists() else b"<missing>")
+    return h.hexdigest()
+
+
 def verify_crnn_fingerprint(tool_path, header_path=None, fatal: bool = False) -> bool:
-    """True when the header fingerprint matches the tool (or is unknown)."""
+    """True when the header's feature fingerprint matches the tree.
+
+    The fingerprint covers the conv weights + the band/segmentation/resample
+    sources, i.e. exactly the inputs the sequence head consumes.  A
+    CRNN-head-only rebuild does not change it; any front-end change does.
+    """
     header_path = Path(header_path) if header_path else DEFAULT_HEADER
     stamped = crnn_header_md5(header_path)
     if stamped is None:
@@ -48,18 +84,14 @@ def verify_crnn_fingerprint(tool_path, header_path=None, fatal: bool = False) ->
               f"(pre-fingerprint header) -- cannot verify feature provenance",
               file=__import__("sys").stderr)
         return True
-    actual = tool_md5(tool_path)
-    if actual is None:
-        print(f"[crnn-fingerprint] tool {tool_path} not found -- cannot verify",
-              file=__import__("sys").stderr)
-        return True
+    actual = feature_fingerprint()
     if stamped == "unknown":
-        print(f"[crnn-fingerprint] header stamped 'unknown' vs tool md5={actual[:12]}",
+        print(f"[crnn-fingerprint] header stamped 'unknown' vs feature fp={actual[:12]}",
               file=__import__("sys").stderr)
         return True
     if stamped != actual:
         msg = (f"[crnn-fingerprint] MISMATCH: crnn_weights.h was trained on features "
-               f"from md5={stamped[:12]} but the tool under test is md5={actual[:12]}.\n"
+               f"from fp={stamped[:12]} but the tree now produces fp={actual[:12]}.\n"
                f"  The conv front-end moved; CRNN/fuse numbers are meaningless until "
                f"features are re-exported and the head retrained "
                f"(tools/export_crnn_features.py + tools/train_crnn_seq.py).")
@@ -77,7 +109,8 @@ def main(argv) -> int:
     ok = verify_crnn_fingerprint(tool, header, fatal=False)
     print(f"tool={tool}")
     print(f"header={header}")
-    print(f"stamped={crnn_header_md5(header)} actual={tool_md5(tool)}")
+    print(f"stamped={crnn_header_md5(header)}")
+    print(f"feature_fp={feature_fingerprint()}")
     print("MATCH" if ok else "MISMATCH")
     return 0 if ok else 1
 
