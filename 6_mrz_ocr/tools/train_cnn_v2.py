@@ -194,6 +194,36 @@ def skew_box(box, skew):
     return new
 
 
+def italic_box(box, shear_px):
+    """Shear a glyph box like the italic OCR-B font used on passports.
+
+    The real MRZ lines are rendered in an italic face and photographed
+    at an angle, so every glyph leans to the right: the bottom of the
+    glyph sits `shear_px` pixels to the right of the top.  Measured on
+    the real photos the lean is 4-6 px over a ~32 px tall glyph box
+    (SKEWdeg=0.10 on Photo/3), i.e. about 12-18 % of the box height.
+
+    The training corpus had NO such augmentation (the legacy `skew_box`
+    whole-band shift moves a glyph by at most 1 px in the sampled box),
+    which is why the classifier confuses the leaning shapes:
+    M->8, C->E, D->0, P->E.
+
+    `shear_px` is the total horizontal offset from the top row to the
+    bottom row, in pixels of the incoming box.
+    """
+    if shear_px == 0:
+        return box
+    h, w = box.shape
+    sp = int(shear_px)
+    if sp <= 0:
+        return box
+    new = np.zeros((h, w + sp), dtype=np.float32)
+    for y in range(h):
+        off = (y * sp) // max(h - 1, 1)
+        new[y, off:off + w] = box[y]
+    return new
+
+
 def area_resample(box, oh=IN_H, ow=IN_W):
     """Area-average downsample a binary (or noisy) ink box to (oh, ow).
     Same shape as the C-side resample_char_gray.  NOTE: callers must
@@ -315,9 +345,19 @@ def render_realistic(ch, seed):
     return glyph
 
 
-def _vec_render_batch(chars, scales, pad_ls, pad_rs, skews, noises):
-    """Vectorised batch renderer. Returns (N, 12, 16) float32."""
+def _vec_render_batch(chars, scales, pad_ls, pad_rs, skews, noises, italics=None):
+    """Vectorised batch renderer. Returns (N, 12, 16) float32.
+
+    `italics` (optional): per-sample italic shear, in pixels of the
+    incoming ink box -- the horizontal offset between the glyph's top
+    and bottom row.  Real MRZ lines are set in an italic face and
+    photographed at an angle, so every glyph leans; the legacy corpus
+    had NO such augmentation, which is why the classifier confuses the
+    leaning shapes (M->8, C->E, D->0, P->E).
+    """
     N = len(chars)
+    if italics is None:
+        italics = np.zeros(N, dtype=np.int64)
     labels = np.array([GLYPH_INDEX[c] for c in chars], dtype=np.int64)
     bits_all = GLYPH_BITS[labels]  # (N, 12, 8)
 
@@ -328,8 +368,15 @@ def _vec_render_batch(chars, scales, pad_ls, pad_rs, skews, noises):
     # ink is cropped to its real template span, then centred in the
     # (12s) x (6s+8) window with pad_l = 3..5 px (pad_r = 8-pad_l).
     max_h = max(12 * s for s in scales)
-    max_w = max(6 * s + 8 + (s * abs(sk) // max(s, 1)) if sk else 6 * s + 8
-                for s, sk in zip(scales, skews))
+    # The box must hold: margin (pad_l + centering) + the ink width + the
+    # per-row offset (band skew shift + italic lean).
+    max_w = 0
+    for s_i, sk_i, it_i, pl_i in zip(scales, skews, italics, pad_ls):
+        s_i = int(s_i); sk_i = int(sk_i); it_i = int(it_i); pl_i = int(pl_i)
+        win_w = 6 * s_i + 8
+        max_off = (12 * s_i * abs(sk_i)) // max(win_w, 1) if sk_i else 0
+        max_off += (12 * s_i - 1) * abs(it_i) // max(12 * s_i - 1, 1)
+        max_w = max(max_w, win_w + max_off + 8)
     boxes = np.zeros((N, max_h, max_w), dtype=np.float32)
 
     # Group by scale to batch the np.repeat expansion.
@@ -355,12 +402,24 @@ def _vec_render_batch(chars, scales, pad_ls, pad_rs, skews, noises):
             # centre the ink in the (6s+8) window (left margin varies
             # with pad_l so the net sees float placement).
             margin = pl + (win_w - 8 - iw) // 2
+            if margin < 0:
+                margin = 0
+            it = int(italics[ii])
             for y in range(h):
                 off = (y * abs(sk) * iw // max(h * iw, 1)) if sk != 0 else 0
                 if sk < 0:
                     off = shift - off
+                # italic lean: the bottom of the glyph sits further right
+                off += (y * it) // max(h - 1, 1)
+                if off < 0:
+                    off = 0
+                x = margin + off
                 row = ink[y]
-                boxes[ii, y, margin + off:margin + off + iw] = row
+                if x + iw > max_w:
+                    # clip the tail instead of overflowing the buffer
+                    boxes[ii, y, x:max_w] = row[:max_w - x]
+                else:
+                    boxes[ii, y, x:x + iw] = row
 
     # Apply per-sample noise.
     for i in range(N):
@@ -390,6 +449,25 @@ def _vec_render_batch(chars, scales, pad_ls, pad_rs, skews, noises):
         if not (box != 0).any():
             out[i] = 0
             continue
+        # The italic lean pushes the glyph's lower rows to the right; the
+        # C-side window is a FIXED 6s+8 cell, so the sheared glyph would
+        # be clipped.  Extend the window by the lean and shift the whole
+        # window left by half of it, so the glyph stays centred in the
+        # 16x12 cell exactly as the C pipeline centres it.
+        it = int(italics[i])
+        if it:
+            w_extra = abs(it)
+            box = np.pad(box, ((0, 0), (0, w_extra)))
+            # re-centre: shift the sampled window so the glyph's mean
+            # horizontal position stays at the cell centre
+            shift = -it // 2
+            if shift != 0:
+                box = np.roll(box, shift, axis=1)
+                if shift > 0:
+                    box[:, :shift] = 0
+                else:
+                    box[:, shift:] = 0
+            w = w + w_extra
         oh, ow = IN_H, IN_W
         cell = np.zeros((oh, ow), dtype=np.float32)
         for oy in range(oh):
@@ -455,49 +533,83 @@ def _vec_render_batch(chars, scales, pad_ls, pad_rs, skews, noises):
 # CLASSES that the pair list does not cover.
 MEASURED_HARD_CLASSES = "GDKMLR7"
 
+# MEASURED 2026-11-05: class_boost=750 REGRESSED the official passport
+# photos (line2 exact 40/41 -> 39/41, char 99.89% -> 99.56%).  The
+# per-character CNN shares one softmax over 37 classes, so oversampling
+# six classes starves the rest -- the same failure mode as the earlier
+# --balance-real (37/41 -> 28/41) and --class-weight (40/41 -> 32/41)
+# experiments.  Keep the knob (default 0 = off) but treat any class
+# oversampling as a measured-against-the-official-GT decision, not a
+# free win.  The measured-hard-class problem is better addressed by the
+# POSITION prior (train_cnn_omtest.py --pn-weight), which does not
+# disturb the class balance.
+
 
 def build_dataset(n_per_class=1500, hard_extra=750, class_boost=0,
-                  hard_classes=MEASURED_HARD_CLASSES):
+                  hard_classes=MEASURED_HARD_CLASSES, italic_prob=0.0,
+                  italic_max_frac=0.0):
     """Build a large batch dataset using the vectorised renderer.
 
     class_boost: extra samples for every character in `hard_classes`
     (the measured-hard GT classes).  The renderer is per-GLYPH, so this
     is the carrier that works: the corpus-slice route (synth-extra npz)
     dilutes the real half instead of enriching the hard classes.
+
+    italic_prob: probability that a sample is rendered with the italic
+    lean the real MRZ photos show.  `italic_max_frac` is the maximum
+    lean as a fraction of the glyph box height (the real photos measure
+    4-6 px on a ~32 px box, i.e. 0.12-0.18).
     """
     import random as _r
-    chars, scales, pad_ls, pad_rs, skews, noises = [], [], [], [], [], []
+    chars, scales, pad_ls, pad_rs, skews, noises, italics = [], [], [], [], [], [], []
+
+    def _italic(r, s):
+        """Shear in pixels of the ink box (12*scale rows tall)."""
+        if italic_prob <= 0.0 or r.random() >= italic_prob:
+            return 0
+        frac = r.uniform(0.0, italic_max_frac)
+        px = int(round(12 * s * frac))
+        if px <= 0:
+            return 0
+        return px if r.random() < 0.75 else -px
+
     for idx, (ch, _) in enumerate(GLYPHS):
         for s in range(n_per_class):
             seed = idx * 1_000_000 + s
             r = _r.Random(seed)
             chars.append(ch)
-            scales.append(r.choice([3, 4, 4, 4, 5, 6]))
+            sc = r.choice([3, 4, 4, 4, 5, 6])
+            scales.append(sc)
             pad_ls.append(r.randint(3, 5))
             pad_rs.append(8 - pad_ls[-1])
             skews.append(r.choice([0, 0, 0, 0, 1, -1, 2, -2]))
             noises.append(r.choice([0.0, 0.0, 0.0, 0.0, 0.005, 0.01, 0.02, 0.03, 0.05]))
+            italics.append(_italic(r, sc))
         if class_boost and ch in hard_classes:
             for s in range(class_boost):
                 seed = 700_000 + idx * 1000 + s
                 r = _r.Random(seed)
                 chars.append(ch)
-                scales.append(r.choice([3, 4, 4, 4, 5, 6]))
+                sc = r.choice([3, 4, 4, 4, 5, 6])
+                scales.append(sc)
                 pad_ls.append(r.randint(3, 5))
                 pad_rs.append(8 - pad_ls[-1])
                 skews.append(r.choice([0, 0, 0, 0, 1, -1, 2, -2]))
                 noises.append(r.choice([0.0, 0.0, 0.0, 0.0, 0.005, 0.01, 0.02, 0.03, 0.05]))
+                italics.append(_italic(r, sc))
         for a, b in HARD_PAIRS:
             if a == ch or b == ch:
                 for s in range(hard_extra):
                     seed = 900_000 + idx * 1000 + s
                     r = _r.Random(seed)
                     chars.append(ch)
-                    scales.append(r.choice([3, 4, 4, 4, 5, 6]))
+                    sc = r.choice([3, 4, 4, 4, 5, 6])
+                    scales.append(sc)
                     pad_ls.append(r.randint(3, 5))
                     pad_rs.append(8 - pad_ls[-1])
                     skews.append(r.choice([0, 0, 0, 0, 1, -1, 2, -2]))
                     noises.append(r.choice([0.0, 0.0, 0.0, 0.0, 0.005, 0.01, 0.02, 0.03, 0.05]))
+                    italics.append(_italic(r, sc))
 
     chars = np.array(chars)
     scales = np.array(scales)
@@ -505,6 +617,7 @@ def build_dataset(n_per_class=1500, hard_extra=750, class_boost=0,
     pad_rs = np.array(pad_rs)
     skews = np.array(skews)
     noises = np.array(noises)
+    italics = np.array(italics)
 
     N = len(chars)
     out = np.zeros((N, IN_H, IN_W), dtype=np.float32)
@@ -513,7 +626,7 @@ def build_dataset(n_per_class=1500, hard_extra=750, class_boost=0,
         e = min(s + bs, N)
         out[s:e] = _vec_render_batch(
             chars[s:e].tolist(), scales[s:e], pad_ls[s:e], pad_rs[s:e],
-            skews[s:e], noises[s:e])
+            skews[s:e], noises[s:e], italics[s:e])
     Y = np.array([GLYPH_INDEX[c] for c in chars], dtype=np.int64)
     return out, Y
 

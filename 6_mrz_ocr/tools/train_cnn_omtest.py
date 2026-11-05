@@ -70,7 +70,11 @@ ap.add_argument("--pn-weight", type=float, default=1.0,
                 help="loss weight multiplier for line-2 personal-number "
                      "zone cells (cols 28..41) with hard labels; 1.0 = off. "
                      "The measured residual-error surface concentrates "
-                     "there (letter cells 14.2%% err vs 5.6%% digits).")
+                     "there (letter cells 14.2%% err vs 5.6%% digits). "
+                     "NOTE: the class-oversampling alternative "
+                     "(--class-boost) was measured NEGATIVE (40/41 -> "
+                     "39/41); a position prior does not disturb the class "
+                     "balance, so it is the carrier to try first.")
 ap.add_argument("--weak-real-weight", type=float, default=0.25,
                 help="loss weight for rescue slices whose board label is "
                      "not checksum-pinned")
@@ -112,6 +116,16 @@ ap.add_argument("--jitter", type=float, default=0.0,
                      "--augment this touches brightness only, no geometry, so it\n"
                      "should not disturb the 40/41 baseline.")
 ap.add_argument("--seed", type=int, default=1)
+ap.add_argument("--italic-prob", type=float, default=0.0,
+                help="probability that a SYNTHETIC glyph is rendered with the\n"
+                     "italic lean the real MRZ photos show.  The real photos are\n"
+                     "set in an italic face and photographed at an angle, so every\n"
+                     "glyph leans: the measured lean is 4-6 px over a ~32 px glyph\n"
+                     "box (0.12-0.18 of the box height).  The legacy corpus had NO\n"
+                     "such augmentation, which is why the classifier confuses the\n"
+                     "leaning shapes (M->8, C->E, D->0, P->E).")
+ap.add_argument("--italic-max-frac", type=float, default=0.18,
+                help="maximum italic lean as a fraction of the glyph box height")
 args = ap.parse_args()
 
 torch.manual_seed(args.seed)
@@ -174,7 +188,9 @@ print(f"real slices for line {args.line}: {len(Yr)} "
 
 Xs, Ys = v2.build_dataset(n_per_class=args.n_per_class,
                          hard_extra=args.hard_extra,
-                         class_boost=args.class_boost)
+                         class_boost=args.class_boost,
+                         italic_prob=args.italic_prob,
+                         italic_max_frac=args.italic_max_frac)
 Xs = Xs.reshape(-1, 1, IN_H, IN_W).astype(np.float32)
 Ys = Ys.astype(np.int64)
 print(f"synthetic: {Xs.shape[0]}", flush=True)
