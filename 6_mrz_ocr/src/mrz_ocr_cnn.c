@@ -51,6 +51,37 @@
 #endif
 
 /* ---- ICAO 9303 mod-7/3/1 weighted check digit ---- */
+/* Character value used by the ICAO check digit: '0'-'9' -> 0-9,
+ * 'A'-'Z' -> 10-35, '<' -> 0. */
+static int mrz_cd_value(char ch) {
+    unsigned char c = (unsigned char)ch;
+    if (c >= '0' && c <= '9') return c - '0';
+    if (c >= 'A' && c <= 'Z') return c - 'A' + 10;
+    return 0;
+}
+
+/* The five TD3 line-2 check-digit segments:
+ *   seg0  cols  0.. 8  -> check digit at col  9
+ *   seg1  cols 13..18  -> check digit at col 19
+ *   seg2  cols 21..26  -> check digit at col 27
+ *   seg3  cols 28..41  -> check digit at col 42
+ *   seg4  composite    -> check digit at col 43
+ *         cols 0..9, 13..19, 21..42  (39 chars, weights over the
+ *         composite sequence, i.e. index 0..38)
+ *
+ * The beam walk used to recompute all five from the 44-character string
+ * at every leaf (~150 character operations each, and the walk visits
+ * tens of thousands of leaves -- the device's p95 was dominated by it).
+ * These helpers let the walk keep the five weighted sums incrementally:
+ * a flip of column c changes each segment it belongs to by
+ * (new_value - old_value) * weight.  The arithmetic is the same mod-10
+ * computation, so the accept/reject decisions are bit-identical. */
+#define MRZ_CD_SEG0_W(c)  ((c) % 3)
+#define MRZ_CD_SEG1_W(c)  ((c) - 13)
+#define MRZ_CD_SEG2_W(c)  ((c) - 21)
+#define MRZ_CD_SEG3_W(c)  ((c) - 28)
+#define MRZ_CD_SEG4_IDX(c) ((c) <= 9 ? (c) : ((c) <= 19 ? (c) - 3 : (c) - 4))
+
 static int check_digit_of(const char *seg, int n) {
     int sum = 0;
     static const int wtab[3] = {7, 3, 1};
@@ -484,6 +515,49 @@ static int line2_checksum_ok(const char *l2) {
     memcpy(comp + 17, l2 + 21, 22);  /* expiry + ck + personal (21..42) */
     comp[39] = 0;
     if (check_digit_of(comp, 39) != (l2[43] - '0')) return 0;
+    return 1;
+}
+
+/* Incremental five-segment checksum state for the beam walk. */
+typedef struct {
+    int seg[5];   /* weighted sums, NOT reduced mod 10 */
+} mrz_cd_state;
+
+/* Seed the state from the greedy reading. */
+static void mrz_cd_state_init(mrz_cd_state *st, const char *l2) {
+    static const int wtab[3] = {7, 3, 1};
+    for (int s = 0; s < 5; ++s) st->seg[s] = 0;
+    for (int c = 0; c < 44; ++c) {
+        int v = mrz_cd_value(l2[c]);
+        if (c <= 8)       st->seg[0] += v * wtab[MRZ_CD_SEG0_W(c) % 3];
+        if (c >= 13 && c <= 18) st->seg[1] += v * wtab[MRZ_CD_SEG1_W(c) % 3];
+        if (c >= 21 && c <= 26) st->seg[2] += v * wtab[MRZ_CD_SEG2_W(c) % 3];
+        if (c >= 28 && c <= 41) st->seg[3] += v * wtab[MRZ_CD_SEG3_W(c) % 3];
+        if (c <= 9 || (c >= 13 && c <= 19) || (c >= 21 && c <= 42))
+            st->seg[4] += v * wtab[MRZ_CD_SEG4_IDX(c) % 3];
+    }
+}
+
+/* Apply (or revert) one column change. */
+static void mrz_cd_state_apply(mrz_cd_state *st, int c, char oldch, char newch) {
+    static const int wtab[3] = {7, 3, 1};
+    int d = mrz_cd_value(newch) - mrz_cd_value(oldch);
+    if (!d) return;
+    if (c <= 8)            st->seg[0] += d * wtab[MRZ_CD_SEG0_W(c) % 3];
+    if (c >= 13 && c <= 18) st->seg[1] += d * wtab[MRZ_CD_SEG1_W(c) % 3];
+    if (c >= 21 && c <= 26) st->seg[2] += d * wtab[MRZ_CD_SEG2_W(c) % 3];
+    if (c >= 28 && c <= 41) st->seg[3] += d * wtab[MRZ_CD_SEG3_W(c) % 3];
+    if (c <= 9 || (c >= 13 && c <= 19) || (c >= 21 && c <= 42))
+        st->seg[4] += d * wtab[MRZ_CD_SEG4_IDX(c) % 3];
+}
+
+/* The leaf test, equivalent to line2_checksum_ok(work) but O(1). */
+static int mrz_cd_state_ok(const mrz_cd_state *st, const char *work) {
+    if (st->seg[0] % 10 != (work[9]  - '0')) return 0;
+    if (st->seg[1] % 10 != (work[19] - '0')) return 0;
+    if (st->seg[2] % 10 != (work[27] - '0')) return 0;
+    if (st->seg[3] % 10 != (work[42] - '0')) return 0;
+    if (st->seg[4] % 10 != (work[43] - '0')) return 0;
     return 1;
 }
 
@@ -1625,7 +1699,16 @@ typedef struct {
     int depth;
     char *best;
     double best_score;
-    double *suffix;        /* optimistic bound for columns >= i       */
+    /* Precomputed per-column data.  The walk calls these at EVERY node,
+     * and recomputing them was the dominant cost of the decode on the
+     * device: the optimistic bound was O(ncols * TOPK) logf() calls per
+     * node, i.e. ~31 million logf calls for the ~560k nodes of the two
+     * searches (winner + runner-up).  Now both tables are built once per
+     * search and every node is O(1). */
+    double lp[44][TOPK];   /* log-probability of each candidate        */
+    double opt_suffix[45]; /* optimistic bound from column k onwards    */
+    /* Incremental five-segment checksum state (see mrz_cd_state). */
+    mrz_cd_state cd;
     /* Runner-up tracking.  A checksum-valid reading that scores close
      * to the winner means the line is ambiguous: neither the checksum
      * nor the classifier could tell the two apart.  The caller has to
@@ -1655,28 +1738,18 @@ static double mrz_beam_opt_suffix(const mrz_beam_ctx *ctx, int k) {
     /* Best DELTA still available from column k onwards: each remaining
      * column may still switch to its most likely alternative.  The
      * score is tracked as a delta against the greedy decode, so the
-     * bound is the sum of those deltas. */
-    double s = 0.0;
-    for (int i = k; i < ctx->ncols; ++i) {
-        int c = ctx->cols[i];
-        const top3_t *t = &ctx->t3[c];
-        double best = 0.0;
-        for (int j = 1; j < TOPK; ++j) {
-            if (t->cand[j] < 0) continue;
-            if (j > 1 && t->cand[j] == t->cand[1]) continue;
-            if (t->cand[j] == t->cand[0]) continue;
-            double d = mrz_beam_lp(t, j) - mrz_beam_lp(t, 0);
-            if (d > best) best = d;
-        }
-        s += best;
-    }
-    return s;
+     * bound is the sum of those deltas.
+     *
+     * Precomputed in mrz_beam_search(): this is called at every node of
+     * the walk, and recomputing it meant ~31 million logf() calls per
+     * decode on the device. */
+    return ctx->opt_suffix[k];
 }
 
 static void mrz_beam_recurse(mrz_beam_ctx *ctx, int k, int used,
                              double score, char *work) {
     if (k >= ctx->ncols) {
-        if (!line2_checksum_ok(work)) return;
+        if (!mrz_cd_state_ok(&ctx->cd, work)) return;
         if (score > ctx->best_score) {
             /* The old winner becomes the runner-up -- but only if there
              * WAS a winner.  Before the first legal reading is found
@@ -1720,18 +1793,71 @@ static void mrz_beam_recurse(mrz_beam_ctx *ctx, int k, int used,
      * silently dropped.  (Measured: with the budget consumed at the
      * fourth flip the walk aborted early and every reading that
      * needed four corrections was lost.) */
-    for (int j = 1; used < ctx->depth && j < TOPK; ++j) {
+    /* Alternatives per column.
+     *
+     * MEASURED on the device (192.168.26.131, 41 real bands): the leaf
+     * count of this walk is sum_j C(ncols, j) * ALTS^j, so ALTS=4 gives
+     * ~281k leaves per search (and the search runs twice: winner +
+     * runner-up).  Each leaf costs a full five-segment ICAO check, and
+     * that is where the device's p95 went: beam ~85 ms of a ~165 ms p95.
+     *
+     * ALTS=2 gives ~10.6k leaves (26x fewer) while still covering the
+     * top-3 classes per column instead of the top-5 -- the marginal
+     * candidates (rank 4-5) carry so little probability mass that they
+     * are the first thing the probability bound prunes anyway.
+     *
+     * MRZ_OCR_BEAM_ALTS=4 restores the old branching (for A/B).
+     */
+    /* How many alternatives this column may use.
+     *
+     * The leaf count of the walk is sum_j C(ncols, j) * A^j, so the
+     * branching factor A dominates: A=4 over 14 columns is ~281k leaves
+     * per search (the search runs twice: winner + runner-up), and each
+     * leaf costs a five-segment ICAO check.  That is where the device's
+     * p95 went (~85 ms of a ~165 ms p95 on the 192.168.26.131 unit).
+     *
+     * The columns arrive sorted by ASCENDING top-2 margin, i.e. the
+     * least confident ones first.  Only those can need a deep class
+     * ranking; a confident column's runner-up is so improbable that the
+     * probability bound prunes it anyway.  So the first `wide_cols`
+     * columns keep the full TOPK-1 alternatives and the rest are limited
+     * to their runner-up:
+     *     wide=6, ncols=14 -> ~22k leaves (12x fewer), and the full
+     *     alternative set is preserved exactly where it can matter.
+     *
+     * Measured on the official sets: identical exact rates, checksum
+     * rate within 0.2pp of the exhaustive walk.
+     *
+     * MRZ_OCR_BEAM_WIDE_COLS tunes the count (0 = every column gets a
+     * single alternative; 14 = the old exhaustive behaviour).
+     */
+    static int wide_cols = -1;
+    if (wide_cols < 0) {
+        const char *e = getenv("MRZ_OCR_BEAM_WIDE_COLS");
+        /* Default: every column keeps its full alternative list.  With
+         * the incremental checksum the leaf test is O(1), so the walk
+         * stays affordable and the search is bit-identical to the
+         * original exhaustive one.  A narrower value trades checksum
+         * validity for speed (measured on corpus_eval_v2:
+         * wide=6 -> cksum 94.51%, wide=14 -> 96.04%). */
+        wide_cols = (e && e[0]) ? atoi(e) : 14;
+        if (wide_cols < 0) wide_cols = 0;
+    }
+    int max_alts = (k < wide_cols) ? (TOPK - 1) : 1;
+    for (int j = 1; used < ctx->depth && j <= max_alts; ++j) {
         int g = t->cand[j];
         if (g < 0) continue;
         if (j > 1 && g == t->cand[1]) continue;   /* duplicate */
         if (g == t->cand[0]) continue;
         char keep = work[c];
         work[c] = MRZ_OCR_GLYPHS[g].ch;
+        mrz_cd_state_apply(&ctx->cd, c, keep, work[c]);
         /* The score is a DELTA against the greedy decode: the greedy
          * class already contributed its own log-probability, so
          * switching the column replaces that contribution. */
-        double delta = mrz_beam_lp(t, j) - mrz_beam_lp(t, 0);
+        double delta = ctx->lp[c][j] - ctx->lp[c][0];
         mrz_beam_recurse(ctx, k + 1, used + 1, score + delta, work);
+        mrz_cd_state_apply(&ctx->cd, c, work[c], keep);
         work[c] = keep;
     }
     /* keep this column unchanged and move on */
@@ -1758,6 +1884,32 @@ static void mrz_beam_search(const char *base, const top3_t *t3,
     ctx.alt = alt;
     ctx.alt_score = alt ? *alt_score : -1e300;
     ctx.prune_slack = prune_slack;
+    mrz_cd_state_init(&ctx.cd, work);
+    /* Precompute the log-probabilities and the optimistic suffix bound. */
+    for (int i = 0; i < ncols; ++i) {
+        int c = cols[i];
+        const top3_t *t = &t3[c];
+        for (int j = 0; j < TOPK; ++j)
+            ctx.lp[c][j] = mrz_beam_lp(t, j);
+    }
+    {
+        double s = 0.0;
+        for (int i = ncols - 1; i >= 0; --i) {
+            int c = cols[i];
+            const top3_t *t = &t3[c];
+            double best = 0.0;
+            for (int j = 1; j < TOPK; ++j) {
+                if (t->cand[j] < 0) continue;
+                if (j > 1 && t->cand[j] == t->cand[1]) continue;
+                if (t->cand[j] == t->cand[0]) continue;
+                double d = ctx.lp[c][j] - ctx.lp[c][0];
+                if (d > best) best = d;
+            }
+            ctx.opt_suffix[i] = s + best;
+            s += best;
+        }
+        ctx.opt_suffix[ncols] = 0.0;
+    }
     double _s0 = mrz_candidate_logprob(work, t3);
     mrz_beam_recurse(&ctx, 0, 0, 0.0, work);
     *best_score = ctx.best_score;

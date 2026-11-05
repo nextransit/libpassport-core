@@ -25,21 +25,21 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # -march=native is deliberately NOT used: the library is cross-compiled
 # for arm64-v8a and must not depend on the build machine's CPU.
 #
-# -O3 (raised from -O2, 2026-11-05): the conv2 hot loop's accumulation
-# order is hand-structured (16 independent per-output-co accumulators,
-# unit-stride inner), so vectorisation does not reorder the FP sums and
-# -O3 only unrolls/vectorises more aggressively.  With -ffp-contract=off
-# still in force no FMA contraction happens, so the results should stay
-# byte-identical to the host -O3 build.  VERIFY on device before ship:
-#   host reference:  cc -O3 -ffp-contract=off -march=native \
-#     -I6_mrz_ocr/include -I6_mrz_ocr/src 6_mrz_ocr/tools/bench_cnn_kernel.c \
-#     6_mrz_ocr/src/cnn.c -o /tmp/bench_host -lm && /tmp/bench_host 500
-#     -> probs_fnv = 1b7517dffdc4f6f0   (host M-series, 11-04 weights)
-#   device: build tools/bench_cnn_kernel.c the same way (NDK clang) and
-#   compare probs_fnv; if it differs, revert to -O2 (or move the
-#   byte-exact gate to a 0.3pp tol-gate after a full eval).
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -DNDEBUG -O3 -ffp-contract=off -fvisibility=hidden")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -DNDEBUG -O3 -ffp-contract=off -fvisibility=hidden")
+# -O2 stays.  MEASURED on the device (192.168.26.131, 2026-11-05): -O3
+# buys nothing there and is slightly SLOWER, and it changes nothing
+# numerically:
+#   -O2  conv 85899.9 ns/glyph   fc 18399.9   probs_fnv 27df7d5a60aa147a
+#   -O3  conv 87507.2 ns/glyph   fc 17728.4   probs_fnv 27df7d5a60aa147a
+# The host and the device never matched bit for bit anyway (Apple clang
+# on Darwin vs NDK clang on Android, same sources and flags), so the
+# byte-exact gate was always host-vs-host, not host-vs-device.
+#
+# The real device win came from the decoder instead: see
+# 6_mrz_ocr/src/mrz_ocr_cnn.c (precomputed beam tables + incremental
+# five-segment checksum) -- p95 147.1 ms -> 88.8 ms with the accuracy
+# unchanged bit for bit.
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -DNDEBUG -O2 -ffp-contract=off -fvisibility=hidden")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -DNDEBUG -O2 -ffp-contract=off -fvisibility=hidden")
 
 # Re-use the exact source from the host project so the CNN weights and
 # geometric heuristics stay in lock-step with bench_results.json.
