@@ -229,3 +229,58 @@ decode + shape + 五个 ICAO 校验位的候选）+ 歧义解码时的 CRNN 仲�
 
 照片模式测完后，案例集行按判定着色：PASS 绿 / SUSPECT 黄 / FAIL·REJECT 红
 （此前照片模式完全不着色，测完仍是原色；语料模式本来就有）。
+
+---
+
+## 真实照片集逐引擎评测（2026-11-05 13:30-14:30）
+
+命令：`python3 tests/photo_direct_bench.py --dirs <集> --methods cnn,crnn,fuse --weights <权重集>`
+（新增 `--weights`：用护照权重量 assets/pic 量的是分布差，不是模型好坏）
+
+### Set A：tmp/PassPortPhoto(44) + Photo(6) = 50 张，护照权重
+
+| engine | decode | l1 逐字 | l2 逐字 | 两行 exact | ms p50 | ms p95 |
+|---|---|---|---|---|---|---|
+| cnn | 47/50 | **99.32%** | 97.00% | **37/47** | 19.9 | 25.1 |
+| crnn | 44/50 | 95.31% | 88.39% | 28/47 | 20.1 | 26.0 |
+| fuse | 47/50 | **99.32%** | 97.00% | **37/47** | 19.5 | 27.6 |
+
+官方仲裁（cnn+crnn+fuse）：**PASS 37 / FAIL 13，verified 49/50**。
+
+不符明细：cnn/fuse 各 10 张（2026-9-29-U(6)、-W(4)、2026-9-30-AJ(3)、-H(4)、
+以及 Photo/ 6 张全部）；crnn 19 张（额外含 2026-9-29-A(23)、2026-9-30-AD(36) 等）。
+
+### Set B：assets/pic（64 张有 GT），pic 权重
+
+| engine | decode | l1 逐字 | l2 逐字 | 两行 exact |
+|---|---|---|---|---|
+| cnn | 54/64 | 92.64% | 91.58% | 43/61 |
+| crnn | 54/64 | 92.64% | 91.58% | 43/61 |
+| fuse | 54/64 | 92.64% | 91.58% | 43/61 |
+
+官方仲裁：**PASS 45 / FAIL 19，verified 58/64**。
+
+**三个引擎数字完全相同不是巧合**：pic 权重集没有 CRNN 头
+（`crnn_weights_available()` 在 `MRZ_WEIGHTS_SET_PIC` 下返回 0），所以选
+「CRNN序列」/「融合CNN+CRNN」跑的都是轻量 CNN 头（工具上报
+`result.head = cnn(no-crnn)`）。修前 GUI 不标这件事，让"融合"读数盖过了
+低分辨率保护；修后三档一致且如实标注。
+
+### 评测过程中发现并修掉的三个问题
+
+1. **低分辨率保护按方案名判定**（`method == "cnn"`）而不是按实际头：
+   同一个 CNN 头在 pic 集上「以 cnn 之名被跳过、以 crnn 之名被运行」。
+   改为按实际头判定，并**默认关闭**（实测被跳过的照片本就读得对）：
+   assets/pic guard ON both 33/61、PASS 34 → OFF both 43/61、**PASS 45**；
+   44 张集 both 36/47 → 37/47。`MRZ_CNN_LOW_RES_GUARD=1` 可恢复旧行为。
+2. **backend/note 现在始终标注实际运行的头**（`cnn -> cnn(no-crnn)`）。
+3. **bench 新增 `--weights`**，避免用错权重集测出"分布差"。
+
+### 一条独立的回归（来自并行会话的重训）
+
+当前树里的 CRNN 权重是 13:44 按新前端重训的版本。它在 44 张护照集上
+both-exact **28/41**；而 11:00 的旧组合（旧前端 + 旧 CRNN）是 37/41。
+把旧 CRNN 权重装回当前二进制则是 **0/41**（特征完全不匹配）。
+即：并行会话的 perf 前端改动（dead Sauvola / ink-indexed skew / 单次 beam）
+改变了 CRNN 吃的特征，重训后的 CRNN 仍未追平旧组合（28 vs 37）。
+CNN 与 fuse 未受影响（36/41、37/41）。
