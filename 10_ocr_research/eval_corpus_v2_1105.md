@@ -186,3 +186,46 @@ decode + shape + 五个 ICAO 校验位的候选）+ 歧义解码时的 CRNN 仲�
 `/Users/zhouyong/Desktop/work/Decard/gitlab` 的**符号链接**，只有一棵树。
 `6_mrz_ocr/build/` 的 CMake 缓存仍指向旧路径（移动前生成），因此主树里
 `cmake --build build` 会报错 —— 用 `6_mrz_ocr/build_v2`（已配置并验证）。
+
+---
+
+## GUI：所选算法 == 实际运行算法（2026-11-05 13:00，commit 5971bba）
+
+用户报告：「MRZ OCR测试」选 CNN → 日志写「说明: 融合CNN+CRNN 识别并通过校验」。
+实测复现：选 CNN / CRNN / 传统模板，**实际跑的引擎全部是 fuse**。
+
+### 根因（三处 fast-tier 替换 + 一处 C 侧换头）
+
+1. `tests/gui.py` `_ocr_photo_engines`：`if _fast_strict(): methods = list(_fast_tier())`
+   —— 无条件把用户选择换成 `("fuse",)`。
+2. `_ocr_photo_hypothesis` / `_rst_run_ocr_methods`：同一套 tier 过滤。
+   `FAST_TIER_SINGLE = ("fuse",)`，所以**任何单选都被替换**（CNN/CRNN/traditional
+   都不在 tier 里 → 过滤成空 → `or list(_fast_tier())` 兜底成 fuse）。
+3. C 工具：`use_fuse` / `use_crnn` 都要求 `crnn_weights_available()`，
+   pic 权重集无 CRNN 头 → 选 CRNN/融合会**静默变成纯 CNN**。
+
+### 修法
+
+- C 工具上报实际使用的头：`result.head = cnn | crnn | fuse`（替换时为 `cnn(no-crnn)`）；
+  新增 `MRZ_OCR_REQUIRE_HEAD=cnn|crnn|fuse` → 头不可用时**硬失败**
+  （`result.ok = HEAD_UNAVAILABLE`）而不是替换。
+- GUI：显式选择时（`_ocr_selection_is_explicit()`）三处 tier 过滤全部跳过；
+  strict 模式同时关闭同批次 C 引擎融合、CS/CD 引擎替换、Tesseract 救援。
+- 引擎实际运行的头与请求的头不一致 → 判为失败，绝不当成 PASS 上报。
+- 判定说明改为显示真实算法（单引擎时「单引擎直出」而非「多引擎逐行仲裁」），
+  引擎无输出时直接引用引擎自己的错误原因。
+- assets/pic + 显式选 CRNN → 明确报错，不再静默从运行集合里删掉。
+
+### 验证（驱动真实 GUI 选择路径 + 真实照片）
+
+```
+选轻量CNN     -> engines=['cnn']        reason: 轻量CNN · 单引擎直出 识别并通过校验
+选CRNN序列    -> engines=['crnn']       reason: CRNN序列 ...
+选融合CNN+CRNN -> engines=['fuse']       reason: 融合CNN+CRNN · 单引擎直出 ...
+选传统模板    -> engines=['traditional'] reason: 传统模板 未产生可用结果：...
+```
+
+### 需求二：案例集列表颜色匹配测试结果
+
+照片模式测完后，案例集行按判定着色：PASS 绿 / SUSPECT 黄 / FAIL·REJECT 红
+（此前照片模式完全不着色，测完仍是原色；语料模式本来就有）。
