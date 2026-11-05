@@ -1,0 +1,87 @@
+====================================================================================================
+Android APK 算法测试 — 192.168.26.131, 产品路径(PhotoMrzPipeline, PAR=1)
+照片: passport=44 (官方 GT), camshots=Photo/ 6 张同一证件 (xlsx GT), pic=assets/pic (官方 GT)
+权重代际: HEAD 40951c5(gated);APK libmrz_jni.so 含 beam/seg/Sauvola 全部优化
+====================================================================================================
+
+### 引擎 CNN  (132 RESULT 行)
+  [passport] n=44
+    line1 exact 35/44 (79.5%)  char 1796/1804=99.56%
+    line2 exact 39/44 (88.6%)  char 1797/1804=99.61%
+    BOTH  exact 34/44 (77.3%)   cksum 41/44 (93.2%)
+    decode 40/44   verdict PASS 40/44
+    total ms: p50=224 p90=240 p95=260 max=271   ocr ms: p50=31 p90=45 p95=67 max=76
+  [camshots] n=6
+    line1 exact 0/6 (0.0%)  char 255/264=96.59%
+    line2 exact 0/6 (0.0%)  char 240/264=90.91%
+    BOTH  exact 0/6 (0.0%)   cksum 6/6 (100.0%)
+    decode 6/6   verdict PASS 6/6
+    total ms: p50=348 p90=354 p95=354 max=354   ocr ms: p50=37 p90=41 p95=41 max=41
+  [pic] n=64
+    line1 exact 3/64 (4.7%)  char 2279/2772=82.22%
+    line2 exact 13/64 (20.3%)  char 1994/2508=79.51%
+    BOTH  exact 3/64 (4.7%)   cksum 39/64 (60.9%)
+    decode 28/64   verdict PASS 21/64
+    total ms: p50=164 p90=279 p95=323 max=364   ocr ms: p50=47 p90=104 p95=118 max=142
+
+### 引擎 CRNN  (132 RESULT 行)
+  [passport] n=44
+    line1 exact 31/44 (70.5%)  char 1753/1804=97.17%
+    line2 exact 27/44 (61.4%)  char 1648/1804=91.35%
+    BOTH  exact 27/44 (61.4%)   cksum 38/44 (86.4%)
+    decode 38/44   verdict PASS 36/44
+    total ms: p50=226 p90=268 p95=278 max=285   ocr ms: p50=34 p90=74 p95=79 max=84
+  [camshots] n=6
+    line1 exact 0/6 (0.0%)  char 238/264=90.15%
+    line2 exact 0/6 (0.0%)  char 179/264=67.80%
+    BOTH  exact 0/6 (0.0%)   cksum 5/6 (83.3%)
+    decode 4/6   verdict PASS 0/6
+    total ms: p50=413 p90=414 p95=414 max=414   ocr ms: p50=95 p90=112 p95=112 max=112
+  [pic] n=64
+    line1 exact 0/64 (0.0%)  char 1920/2772=69.26%
+    line2 exact 0/64 (0.0%)  char 1573/2508=62.72%
+    BOTH  exact 0/64 (0.0%)   cksum 29/64 (45.3%)
+    decode 23/64   verdict PASS 8/64
+    total ms: p50=184 p90=293 p95=335 max=395   ocr ms: p50=78 p90=113 p95=122 max=128
+
+### 引擎 FUSE  (132 RESULT 行)
+  [passport] n=44
+    line1 exact 35/44 (79.5%)  char 1796/1804=99.56%
+    line2 exact 39/44 (88.6%)  char 1797/1804=99.61%
+    BOTH  exact 34/44 (77.3%)   cksum 41/44 (93.2%)
+    decode 40/44   verdict PASS 40/44
+    total ms: p50=226 p90=239 p95=249 max=255   ocr ms: p50=35 p90=45 p95=55 max=74
+  [camshots] n=6
+    line1 exact 0/6 (0.0%)  char 255/264=96.59%
+    line2 exact 0/6 (0.0%)  char 240/264=90.91%
+    BOTH  exact 0/6 (0.0%)   cksum 6/6 (100.0%)
+    decode 6/6   verdict PASS 6/6
+    total ms: p50=354 p90=377 p95=377 max=377   ocr ms: p50=43 p90=44 p95=44 max=44
+  [pic] n=64
+    line1 exact 3/64 (4.7%)  char 2279/2772=82.22%
+    line2 exact 13/64 (20.3%)  char 1994/2508=79.51%
+    BOTH  exact 3/64 (4.7%)   cksum 39/64 (60.9%)
+    decode 28/64   verdict PASS 21/64
+    total ms: p50=164 p90=287 p95=329 max=355   ocr ms: p50=50 p90=100 p95=108 max=124
+
+### 引擎 AUTO(产品路径)  (132 RESULT 行)
+  [passport] n=44
+    line1 exact 35/44 (79.5%)  char 1796/1804=99.56%
+    line2 exact 38/44 (86.4%)  char 1790/1804=99.22%
+    BOTH  exact 33/44 (75.0%)   cksum 41/44 (93.2%)
+    decode 41/44   verdict PASS 41/44
+    total ms: p50=58 p90=81 p95=138 max=159   ocr ms: p50=41 p90=63 p95=119 max=139
+  [camshots] n=6
+    line1 exact 0/6 (0.0%)  char 247/264=93.56%
+    line2 exact 0/6 (0.0%)  char 240/264=90.91%
+    BOTH  exact 0/6 (0.0%)   cksum 6/6 (100.0%)
+    decode 6/6   verdict PASS 6/6
+    total ms: p50=94 p90=100 p95=100 max=100   ocr ms: p50=43 p90=46 p95=46 max=46
+  [pic] n=64
+    line1 exact 3/64 (4.7%)  char 2265/2772=81.71%
+    line2 exact 16/64 (25.0%)  char 2075/2552=81.31%
+    BOTH  exact 3/64 (4.7%)   cksum 44/64 (68.8%)
+    decode 31/64   verdict PASS 24/64
+    total ms: p50=139 p90=218 p95=269 max=278   ocr ms: p50=126 p90=190 p95=254 max=264
+
+====================================================================================================
