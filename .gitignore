@@ -64,7 +64,14 @@ assets/
 
 # Pre-edit backups (kept as safety net during visual iteration)
 *.bak.pre-visual-pass-*
-skills/
+
+# Local scratch skills are not committed.  The vendored AI-Research-SKILLs
+# snapshot IS tracked: AGENTS.md makes it mandatory for all model training /
+# recognition work, so clones must receive it.  See skills/AI-Research-SKILLs/
+# VENDOR_PIN.md for the pin, the pruning scope and the upgrade procedure.
+skills/*
+!skills/AI-Research-SKILLs/
+!skills/AI-Research-SKILLs/**
 
 # PaddleOCR local tesseract scratch (band crops, tsv, batch lists)
 tests/.paddle_local_tmp/
