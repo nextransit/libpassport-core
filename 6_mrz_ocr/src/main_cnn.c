@@ -122,6 +122,15 @@ int main(int argc, char **argv) {
         fprintf(stderr, "usage: %s <image> | --serve\n", argv[0]);
         return 2;
     }
+    /* Optional frame budget, mirroring what the Android JNI passes
+     * (recogniseBitmap(bitmap, deadlineMs)).  MRZ_OCR_DEADLINE_MS=0
+     * disables it.  This makes the deadline behaviour testable from the
+     * command line -- the device measurements need it because the
+     * product path's budget is spent partly in Kotlin. */
+    {
+        const char *e = getenv("MRZ_OCR_DEADLINE_MS");
+        if (e && e[0]) mrz_ocr_deadline_set_ms(atoi(e));
+    }
     mrz_ocr_init();
     return run_one_cnn(argv[1]);
 }

@@ -79,6 +79,19 @@ target_include_directories(mrz_ocr PUBLIC
     ${MRZ_DIR}/src
     ${FACE_DIR}/include)
 target_link_libraries(mrz_ocr PUBLIC face m)
+
+# The weights live in headers, and the arrays are `static const`, so the
+# compiler cannot see a dependency on them: replacing a weight header
+# does NOT invalidate the object files and the APK silently keeps the
+# OLD weights.  The host build declares this dependency
+# (6_mrz_ocr/CMakeLists.txt, MRZ_WEIGHT_HEADERS); the app needs the same.
+set(MRZ_WEIGHT_HEADERS
+    ${MRZ_DIR}/src/cnn_weights_line1.h
+    ${MRZ_DIR}/src/cnn_weights_line2.h
+    ${MRZ_DIR}/src/crnn_weights.h
+    ${MRZ_DIR}/src/cnn_weights.h)
+set_property(TARGET mrz_ocr APPEND PROPERTY
+             OBJECT_DEPENDS ${MRZ_WEIGHT_HEADERS})
 # Needed when the recogniser emits per-stage TIMING to logcat
 # (mrz_ocr_cnn.c only references __android_log_print under
 # #ifdef __ANDROID__, but we always link on the Android target

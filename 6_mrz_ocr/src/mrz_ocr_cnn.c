@@ -1392,6 +1392,15 @@ static int segment_line_grid(const uint8_t *bin, int W, int H,
     double int_c0 = -1, int_L = 0, int_cost = 0;
     double fr_c0 = -1, fr_L = 0, fr_cost = 0;
     for (int li = 0; li < nL; ++li) {
+        /* The phase search is up to 32 pitch candidates x ~100 quarter-px
+         * phases x 44 cells, and on a mis-framed band it can run past the
+         * frame budget: measured on the device (192.168.26.131),
+         * 2026-9-30-K spent 241 ms in the OCR stage alone.  The stage
+         * level deadline checks sit OUTSIDE this loop, so nothing
+         * stopped it.  Check per pitch candidate -- coarse enough not to
+         * cost anything, fine enough to keep the frame inside its
+         * budget. */
+        if ((li & 3) == 0 && mrz_ocr_deadline_expired()) break;
         double L = Lcand[li];
         if (L <= 0) continue;
         int is_frac = fabs(L - round(L)) > 1e-9;
@@ -1699,6 +1708,30 @@ typedef struct {
     int depth;
     char *best;
     double best_score;
+    /* Deadline awareness.
+     *
+     * The walk is cheap when the greedy decode is already checksum-valid
+     * (the probability bound prunes almost everything) and expensive
+     * exactly when it is NOT -- i.e. on frames where the classifier read
+     * noise.  Such frames are hopeless for the beam, but they used to
+     * burn the whole frame budget: measured on the device
+     * (192.168.26.131), a mis-framed frame spent ~110 ms inside the OCR
+     * stage, which left 34-60 ms of the 190 ms budget and therefore
+     * skipped BOTH the band-candidate alternates and the fused fallback
+     * -- the two paths that could actually have rescued it.
+     *
+     * The recogniser already carries a deadline (mrz_ocr_deadline_*),
+     * but the checks sit between stages, so a long walk never saw it.
+     * The walk now checks it periodically and returns the best reading
+     * found so far: the frame stays inside its budget and the rescue
+     * paths get their share.
+     *
+     * A node-count cap was tried as the alternative and rejected: on
+     * corpus_eval_v2 it cost 2.6pp of checksum validity for a 7% p50
+     * gain.  (MRZ_OCR_BEAM_MAX_NODES=60000 / full=71.67% cksum=93.47%
+     * vs the uncapped 72.22% / 96.04%.)
+     */
+    long nodes;
     /* Precomputed per-column data.  The walk calls these at EVERY node,
      * and recomputing them was the dominant cost of the decode on the
      * device: the optimistic bound was O(ncols * TOPK) logf() calls per
@@ -1748,6 +1781,10 @@ static double mrz_beam_opt_suffix(const mrz_beam_ctx *ctx, int k) {
 
 static void mrz_beam_recurse(mrz_beam_ctx *ctx, int k, int used,
                              double score, char *work) {
+    /* Check the deadline every 4096 nodes (it is a clock read, so it must
+     * not run per node).  A walk that runs out of budget returns the best
+     * reading found so far, which is what the caller already handles. */
+    if ((ctx->nodes++ & 4095) == 0 && mrz_ocr_deadline_expired()) return;
     if (k >= ctx->ncols) {
         if (!mrz_cd_state_ok(&ctx->cd, work)) return;
         if (score > ctx->best_score) {
@@ -1884,6 +1921,7 @@ static void mrz_beam_search(const char *base, const top3_t *t3,
     ctx.alt = alt;
     ctx.alt_score = alt ? *alt_score : -1e300;
     ctx.prune_slack = prune_slack;
+    ctx.nodes = 0;
     mrz_cd_state_init(&ctx.cd, work);
     /* Precompute the log-probabilities and the optimistic suffix bound. */
     for (int i = 0; i < ncols; ++i) {

@@ -184,6 +184,14 @@ object PhotoMrzPipeline {
      */
     private val FRAME_PAD_ALTERNATES = doubleArrayOf(1.35, 0.45)
 
+    /**
+     * Minimum remaining budget (ms) for one framing candidate.  A
+     * candidate is a single CNN call (~40-50 ms on the device), so it
+     * needs less headroom than the fused fallback (which runs the CNN and
+     * the sequence head, ~85 ms).
+     */
+    private const val FRAMING_MIN_BUDGET_MS = 55
+
     private const val FAST_NATIVE_MAX_WIDTH = 1600
     private const val LOCATE_DOWNSCALE_THRESHOLD = 1600
     private const val LOCATE_TARGET_SIDE = 1280
@@ -418,6 +426,7 @@ object PhotoMrzPipeline {
         val first: OcrResult
         val firstRec: Recognition
         var framingUsed = 0
+        var framingTried = false
         run {
             val primary = try {
                 NativeEngine(app, NativeEngine.MODE_CNN).recognizeBitmap(ocrInput, remaining)
@@ -426,10 +435,40 @@ object PhotoMrzPipeline {
             }
             var rec = postProcessOf(primary)
             var res = primary
-            if (structure.pair != null && !strictAccept(rec)) {
+            // Only try the alternates when the band DID contain two
+            // readable rows but the reading is wrong.  When the primary
+            // framing produced no 44-character row at all ("could not
+            // split into two lines"), the band itself is mis-framed and
+            // a different pad is unlikely to fix it -- measured on the
+            // device (2026-11-05): all three such frames failed every
+            // alternate too, and the two extra CNN calls pushed the p95
+            // from 108 ms to 137 ms for zero accuracy gain.
+            val primaryHasTwoRows = rec.rawLine2.length == 44
+            if (structure.pair != null && !strictAccept(rec) && primaryHasTwoRows) {
+                framingTried = true
+                android.util.Log.i(
+                    "MrzOcr",
+                    "framing candidates: primary rejected, trying " +
+                        "${FRAME_PAD_ALTERNATES.size} alternates",
+                )
                 for ((idx, padSpec) in FRAME_PAD_ALTERNATES.withIndex()) {
                     remaining = (FAST_BUDGET_MS - elapsedMs(allStart).toInt()).coerceAtLeast(1)
-                    if (remaining < FALLBACK_MIN_BUDGET_MS) break
+                    // A framing candidate is ONE CNN call (the plain
+                    // engine), not the CNN+FUSE pair the fallback needs, so
+                    // it gets its own gate.  Reusing the fallback's 85 ms
+                    // skipped the second alternate on the device: the
+                    // first candidate had already spent the budget and
+                    // the tighter framing (0.45) -- the one that actually
+                    // fits a band whose two rows have very different
+                    // heights -- never ran.
+                    if (remaining < FRAMING_MIN_BUDGET_MS) {
+                        android.util.Log.i(
+                            "MrzOcr",
+                            "framing candidate $idx skipped: remaining=${remaining}ms " +
+                                "< $FRAMING_MIN_BUDGET_MS",
+                        )
+                        break
+                    }
                     val altBand = nativeBandFast(
                         source,
                         structure.pair.first,
@@ -452,6 +491,11 @@ object PhotoMrzPipeline {
                         altBand.recycle()
                     } catch (_: Throwable) {
                     }
+                    android.util.Log.i(
+                        "MrzOcr",
+                        "framing candidate $idx (pad=$padSpec): " +
+                            "accept=$accept line2='${alt?.line2 ?: ""}'",
+                    )
                     if (accept && alt != null && altRec != null) {
                         res = alt
                         rec = altRec
@@ -470,6 +514,23 @@ object PhotoMrzPipeline {
         val needSecond = when {
             first.error != null && first.error.isNotEmpty() -> true
             !firstOk -> true
+            // The framing candidates already ran on this frame and none
+            // of them decoded.  The fused fallback would re-run the whole
+            // CNN front-end on the SAME band to add the sequence head,
+            // and it cannot rescue a structural failure (the band itself
+            // is wrong -- the CRNN reads the same mis-framed pixels).
+            // Measured on the device: of the frames that failed, none was
+            // rescued by the fallback, and running it on top of the
+            // candidates pushed the p95 from 108 ms to 137 ms.
+            framingTried -> false
+            // A structural failure -- the band did not even yield two
+            // 44-character rows ("could not split into two lines") --
+            // cannot be rescued by the fused head either: it reads the
+            // same mis-framed pixels with a sequence model.  Measured on
+            // the device: 0 of the 3 structural failures were rescued by
+            // the fallback, and each attempt cost 50-80 ms of the frame
+            // budget (the worst frame went from 137 ms to 223 ms).
+            firstRec.rawLine2.length != 44 -> false
             // The CNN decoded cleanly BUT reports a checksum-valid near-tie
             // (native line2_ambiguous).  The residual CNN errors on the
             // real-photo corpus are exactly this shape -- clean decode,
@@ -1048,13 +1109,41 @@ object PhotoMrzPipeline {
         dark: IntArray? = null,
         maxInk: Int = Int.MAX_VALUE,
     ): Pair<IntRange, IntRange>? {
+        /* The "solid bar" test must NOT use the text row's 88% ink
+         * window.  On a dark panel the MRZ rows themselves are nearly
+         * full-width in ink, so the 88% test classified them as solid
+         * and filtered them out; the fallback then paired the two peaks
+         * ABOVE them and cropped the wrong band.
+         *
+         * Measured on the device (2026-11-05, 192.168.26.131): with the
+         * 88% window, 2026-9-30-I/J/K picked cand=(120..161, 184..208)
+         * instead of the real rows (301..331, 351..367) and all three
+         * ended as FAIL with a garbage CS/CD reading.  The solid limit
+         * is now 11% above the text window, which still rejects the
+         * 取景框 black bar but keeps the MRZ rows. */
+        /* A peak is only a device black bar (取景框) when it is solid AND
+         * tall.  A solid-but-short peak is an MRZ row printed on a dark
+         * panel: on 2026-9-30-I/J/K the whole row is ink, so ANY ink
+         * threshold classifies it as solid and the fallback then paired
+         * the peaks above it and cropped the wrong band.
+         *
+         * MEASURED on the device (2026-11-05, 192.168.26.131): with the
+         * 88% window the three photos picked cand=(120..161, 184..208)
+         * instead of the real rows (301..331, 351..367) and all three
+         * ended as FAIL with a garbage CS/CD reading.  With the height
+         * condition the real rows survive (an MRZ row is 5..40 rows tall,
+         * a black bar is much taller) and the bottom-most pair -- the
+         * one the fallback already prefers -- is chosen. */
+        val solidLimit = (maxInk * 1.11).toInt()
+        val solidMinHeight = 60
         fun isSolid(peak: IntRange): Boolean {
             if (dark == null) return false
             val len = peak.last - peak.first + 1
             if (len <= 0) return false
+            if (len < solidMinHeight) return false
             var sum = 0
             for (i in peak.first..peak.last) sum += dark[i]
-            return sum / len > maxInk
+            return sum / len > solidLimit
         }
         val filtered = peaks.filterNot { isSolid(it) }
         var best: Pair<IntRange, IntRange>? = null
