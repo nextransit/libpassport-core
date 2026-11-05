@@ -284,3 +284,31 @@ both-exact **28/41**；而 11:00 的旧组合（旧前端 + 旧 CRNN）是 37/41
 即：并行会话的 perf 前端改动（dead Sauvola / ink-indexed skew / 单次 beam）
 改变了 CRNN 吃的特征，重训后的 CRNN 仍未追平旧组合（28 vs 37）。
 CNN 与 fuse 未受影响（36/41、37/41）。
+
+---
+
+## 照片集合定义（tests/photo_sets.json + photo_sets.py，2026-11-05 16:30）
+
+不再靠"把 Photo/ 的 6 张拷进 PassPortPhoto"来凑 50 张 —— 改为**集合定义**，
+照片一个字节都不动。
+
+| set | 照片 | 证件 | GT 覆盖 | 权重集 |
+|---|---|---|---|---|
+| `passport` | tmp/PassPortPhoto 44 | 40 | 44 | passport |
+| `camshots` | Photo 6 | **1** | 6 | passport |
+| `passport_union` | PassPortPhoto + Photo = **50** | **41** | 50 | passport |
+| `pic` | assets/pic 64（另有 3 个元数据文件） | 57 | 64 | pic |
+| `all` | 114 | 98 | 114 | 跨分布，不用于评价单套权重 |
+
+**证件分组是这套东西的核心**：照片目录里的张数 ≠ 证件数
+（44→40、6→1、64→57）。按文件切分训练/测试会泄漏：同一证件的一张渲染进训练集、
+另一张进测试集。`photo_sets.doc_key()` 用 GT 首行的字母部分（去掉 filler）做证件键，
+`split(holdout_docs=N)` 按**证件**切分，`check_no_leakage()` 证明没有证件横跨两侧。
+
+bench 集成：`photo_direct_bench.py --set passport_union --holdout-docs 8`
+（集自带权重集归属；切分有泄漏就直接报错退出）。
+实测：8 份证件 → 9 张照片，cnn both 8/9、fuse 8/9、crnn 7/9，官方 PASS 8。
+
+`tests/test_photo_sets.py` 固化这些不变量：集合张数、证件数、
+多机位证件（PassPortPhoto 3 份、Photo/ 1 份、assets 5 份）不横跨切分、
+无 GT 的照片自成一组。

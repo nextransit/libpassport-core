@@ -183,6 +183,12 @@ def main(argv=None):
     ap.add_argument("--dirs", default="")
     ap.add_argument("--methods", default="")
     ap.add_argument("--no-indra-fullpage", action="store_true")
+    ap.add_argument("--set", default="",
+                    help="named photo set from tests/photo_sets.json "
+                         "(e.g. passport, camshots, passport_union, pic, all)")
+    ap.add_argument("--holdout-docs", type=int, default=0,
+                    help="with --set: keep only N documents for the test "
+                         "side of a document-grouped split")
     ap.add_argument("--resident", action="store_true",
                     help="预加载模型并常驻引擎；测的是单次完整识别时间，"
                          "不含进程/模型启动开销")
@@ -232,11 +238,40 @@ def main(argv=None):
 
         dirs = [d.strip() for d in args.dirs.split(",") if d.strip()]
         photos = []
-        for label, path in gui.iter_passport_photos():
-            if dirs and not any(label == d or label.startswith(d + "/")
-                                for d in dirs):
-                continue
-            photos.append((label, path))
+        if args.set:
+            sys.path.insert(0, str(ROOT / "tests"))
+            import photo_sets
+            sets = photo_sets.load_sets()
+            if args.set not in sets["sets"]:
+                raise SystemExit(f"unknown set {args.set!r}; have: "
+                                 f"{', '.join(sorted(sets['sets']))}")
+            spec_ = sets["sets"][args.set]
+            if args.weights == "passport" and spec_.get("weights") == "pic":
+                # A set knows which weight set it belongs to; measuring
+                # the pic photos with the passport weights measures the
+                # distribution gap, not the model.
+                app.ocr_weights_pic.set(True)
+                app._ocr_result_cache = {}
+            photos = photo_sets.resolve(args.set, sets)
+            if args.holdout_docs:
+                gt_map = app._gt_map()
+                sp = photo_sets.split(args.set, gt_map,
+                                      holdout_docs=args.holdout_docs)
+                leak = photo_sets.check_no_leakage(sp["train"], sp["test"],
+                                                   gt_map)
+                if leak:
+                    raise SystemExit(f"document leak in the split: {leak}")
+                hold = set(sp["test"])
+                photos = [(l, p) for l, p in photos if l in hold]
+                print(f"set {args.set}: {len(photos)} photos / "
+                      f"{args.holdout_docs} documents held out, "
+                      f"no document leakage")
+        else:
+            for label, path in gui.iter_passport_photos():
+                if dirs and not any(label == d or label.startswith(d + "/")
+                                    for d in dirs):
+                    continue
+                photos.append((label, path))
         if args.limit:
             photos = photos[:args.limit]
 

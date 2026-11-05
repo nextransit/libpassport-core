@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "note": "Declarative real-photo sets. A set is a named group of photo directories; photos of the SAME document must stay on the same side of a train/test split (see doc_key in tests/photo_sets.py). The ground truth stays in its own source (10_ocr_research/gt_review_loop.xlsx via gui._gt_map()) -- it is deliberately NOT duplicated here, so the sheet and the sets cannot drift apart.",
+  "sets": {
+    "passport": {
+      "description": "tmp/PassPortPhoto: 44 photos / 40 documents. The passport weight set's own evaluation set (official GT file tests/gt_photo_passport_official.json).",
+      "dirs": [
+        "tmp/PassPortPhoto"
+      ],
+      "weights": "passport"
+    },
+    "camshots": {
+      "description": "Photo/: 6 camera shots of ONE document (POCHNJIA<<LIMIN). Measures the robustness of a single document to camera angle and lighting -- it is ONE document, not six samples.",
+      "dirs": [
+        "Photo"
+      ],
+      "weights": "passport"
+    },
+    "passport_union": {
+      "description": "tmp/PassPortPhoto + Photo: 50 photos / 41 documents. The unified 50-photo set. Grouped by document for any train/test split: the six Photo/ shots and the three multi-shot documents in PassPortPhoto must not straddle the split.",
+      "dirs": [
+        "tmp/PassPortPhoto",
+        "Photo"
+      ],
+      "weights": "passport"
+    },
+    "pic": {
+      "description": "assets/pic: 64 photos (+3 metadata files: annotations.json, catalog.json, annotations_review.xlsx) / 57 documents. The assets/pic weight set's own evaluation set.",
+      "dirs": [
+        "assets/pic"
+      ],
+      "weights": "pic"
+    },
+    "all": {
+      "description": "Every real photo the GUI can list: 50 (passport_union) + 64 (pic) = 114 photos / 98 documents. Cross-distribution -- do not use it to judge one weight set.",
+      "dirs": [
+        "tmp/PassPortPhoto",
+        "Photo",
+        "assets/pic"
+      ],
+      "weights": null
+    }
+  }
+}
