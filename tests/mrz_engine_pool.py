@@ -25,6 +25,7 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 from pathlib import Path
@@ -102,17 +103,102 @@ def _tool_env(**extra):
     return env
 
 
-def get_cnn_tool(fuse=False):
-    """Resident CNN/fuse tool.  `fuse` selects the fused head."""
-    key = "fuse" if fuse else "cnn"
+def _cnn_binary(tool=None):
+    if tool is not None:
+        return Path(tool)
+    return ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_cnn_tool"
+
+
+def get_cnn_tool(fuse=False, tool=None):
+    """Resident CNN/fuse tool.  `fuse` selects the fused head.
+
+    `tool` is the weight-set binary chosen in the GUI (passport vs pic);
+    the pool keys on it so switching weight sets cannot reuse a resident
+    process that loaded the other set of heads.
+    """
+    binary = _cnn_binary(tool)
+    key = (str(binary), "fuse" if fuse else "cnn")
     with _POOL_LOCK:
-        tool = _POOL.get(key)
-        if tool is None:
-            argv = [ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_cnn_tool", "--serve"]
-            env = _tool_env(MRZ_OCR_CRNN="0", MRZ_OCR_FUSE="1" if fuse else None)
-            tool = ResidentTool(argv, env)
-            _POOL[key] = tool
-        return tool
+        pooled = _POOL.get(key)
+        if pooled is None:
+            env = _tool_env(MRZ_OCR_CRNN="0")
+            # FUSE wins over CRNN inside the C tool, so it must be absent
+            # -- not merely left at whatever the parent process exported.
+            env.pop("MRZ_OCR_FUSE", None)
+            if fuse:
+                env["MRZ_OCR_FUSE"] = "1"
+            pooled = ResidentTool([binary, "--serve"], env)
+            _POOL[key] = pooled
+        return pooled
+
+
+def get_crnn_c_tool(tool=None):
+    """Resident C tool running the CRNN sequence head (MRZ_OCR_CRNN=1).
+
+    The one-shot branch of `_rst_run_ocr_methods` already supported this
+    head, but the resident pool did not -- so selecting `crnn` silently
+    paid a fresh process start on every photo (measured: P95 107 ms vs
+    45 ms for fuse on the 50-photo corpus).  Keeping it resident makes
+    `crnn` the same cost as `cnn`/`fuse`, with no fallback involved.
+    """
+    binary = _cnn_binary(tool)
+    key = (str(binary), "crnn")
+    with _POOL_LOCK:
+        pooled = _POOL.get(key)
+        if pooled is None:
+            env = _tool_env(MRZ_OCR_CRNN="1")
+            env.pop("MRZ_OCR_FUSE", None)
+            pooled = ResidentTool([binary, "--serve"], env)
+            _POOL[key] = pooled
+        return pooled
+
+
+def get_bandpick_tool(tool=None):
+    """Resident C tool for the band-candidate check (no fuse, parallel).
+
+    The band search evaluates up to a dozen candidate crops per photo.
+    Spawning a process per candidate cost ~5.5 ms of start-up each
+    (measured 10 x 5.5 = 55 ms, and worse under CPU load), which was
+    the tail of the photo path: P95 271 ms, max 378 ms over the
+    108-photo corpus.  The same check over a resident pipe costs
+    ~1 ms.
+
+    This is its OWN pool slot.  The env differs from the cnn/crnn/fuse
+    slots (no fuse head, parallel dual-line) and the pool keys on the
+    slot name, so asking for it cannot swap the process the engines
+    are using -- that mistake cost the official pass rate once
+    already (99/114 -> 38/114).
+    """
+    return get_bandpick_tools(tool, 1)[0]
+
+
+def get_bandpick_tools(tool=None, count=4):
+    """`count` resident band-check tools, for parallel candidate checks.
+
+    The candidate crops are independent, so the search can run them
+    concurrently; the tool speaks one image per line over one pipe, so
+    each concurrent check needs its own process.  The first tool is the
+    same slot get_bandpick_tool returns.
+    """
+    count = max(1, int(count or 1))
+    binary = _cnn_binary(tool)
+    out = []
+    with _POOL_LOCK:
+        env = _tool_env(MRZ_OCR_CRNN="0", MRZ_OCR_FUSE="0",
+                        MRZ_OCR_PAR="1")
+        for i in range(count):
+            key = (str(binary), "bandpick", i)
+            pooled = _POOL.get(key)
+            if pooled is None:
+                pooled = ResidentTool([binary, "--serve"], env)
+                # One scratch file per tool, kept for the life of the
+                # process: creating and deleting one per candidate cost
+                # ~1.5 ms each, on every photo.
+                pooled.scratch = str(Path(tempfile.gettempdir()) /
+                                     f"_mrz_bandpick_{os.getpid()}_{i}.ppm")
+                _POOL[key] = pooled
+            out.append(pooled)
+    return out
 
 
 def get_traditional_tool():
@@ -202,6 +288,8 @@ def warmup_all(gui_module=None):
     get_traditional_tool()
     get_cnn_tool(fuse=False)
     get_cnn_tool(fuse=True)
+    get_crnn_c_tool()
+    get_bandpick_tool()
     crnn = get_crnn_module()
     get_paddle_module()
     band = _warmup_band()
@@ -209,6 +297,8 @@ def warmup_all(gui_module=None):
         get_traditional_tool().run(str(band))
         get_cnn_tool(fuse=False).run(str(band))
         get_cnn_tool(fuse=True).run(str(band))
+        get_crnn_c_tool().run(str(band))
+        get_bandpick_tool().run(str(band))
         crnn.read_band(str(band))
     except Exception:
         # Warm-up failures are not fatal: the engines report their own

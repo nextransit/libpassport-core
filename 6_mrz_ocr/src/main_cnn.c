@@ -1,19 +1,68 @@
 /* mrz_ocr_cnn_tool -- like mrz_ocr_tool but uses the CNN recogniser. */
 #include "mrz_ocr.h"
 #include "face.h"
+#include "crnn.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+/* The recognition head the tool ACTUALLY used.
+ *
+ * MRZ_OCR_CRNN / MRZ_OCR_FUSE select a head, but a weight set that
+ * ships no CRNN head (the assets/pic variant) makes both of them fall
+ * back to the plain CNN head -- inside the recogniser, silently.  A
+ * caller that asked for "CRNN" and got the CNN head has been given a
+ * different algorithm than the one it named, so the head that ran has
+ * to be reported, not assumed.
+ *
+ * "cnn(no-crnn)" is the substitution marker: the request named a CRNN
+ * head and the plain CNN head ran instead. */
+static const char *effective_head(void) {
+    const char *fuse_env = getenv("MRZ_OCR_FUSE");
+    const char *crnn_env = getenv("MRZ_OCR_CRNN");
+    int want_fuse = fuse_env && fuse_env[0] && strcmp(fuse_env, "0") != 0;
+    int want_crnn = crnn_env && crnn_env[0] && strcmp(crnn_env, "0") != 0;
+    if (want_fuse)
+        return crnn_weights_available() ? "fuse" : "cnn(no-crnn)";
+    if (want_crnn)
+        return crnn_weights_available() ? "crnn" : "cnn(no-crnn)";
+    return "cnn";
+}
+
+/* The head the caller demanded, or NULL when it did not demand one.
+ *
+ * MRZ_OCR_REQUIRE_HEAD=cnn|crnn|fuse turns "the head I asked for is not
+ * available" into a hard failure instead of a substituted result: the
+ * GUI names an algorithm, and naming it must not be silently ignored. */
+static const char *required_head(void) {
+    const char *e = getenv("MRZ_OCR_REQUIRE_HEAD");
+    if (!e || !e[0] || strcmp(e, "0") == 0) return NULL;
+    return e;
+}
 
 /* Print one recognition result in the shared KV contract. */
 static int run_one_cnn(const char *path) {
     face_image_t *img = face_image_load_ppm(path);
     if (!img) img = face_image_load_bmp(path);
     if (!img) { fprintf(stderr, "cannot load %s\n", path); return 2; }
+    const char *head = effective_head();
+    const char *want = required_head();
+    if (want && strcmp(want, head) != 0) {
+        printf("method            : %s\n", head);
+        printf("result.ok         : HEAD_UNAVAILABLE\n");
+        printf("result.head       : %s\n", head);
+        printf("result.required   : %s\n", want);
+        printf("result.note       : requested head is not available in this "
+               "weight set\n");
+        printf("result.done     : 1\n");
+        face_image_free(img);
+        return 3;
+    }
     mrz_ocr_result_t r;
     mrz_ocr_status_t s = mrz_ocr_recognise_cnn(img, &r);
     printf("method            : cnn\n");
+    printf("result.head       : %s\n", head);
     printf("result.ok         : %s\n", mrz_ocr_strerror(s));
     printf("result.line1      : %s\n", r.line1);
     printf("result.line2      : %s\n", r.line2);

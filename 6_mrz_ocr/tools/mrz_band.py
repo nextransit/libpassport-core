@@ -220,6 +220,23 @@ def parse_kv(out: str) -> dict:
     return kv
 
 
+def parse_result(kv: dict) -> dict:
+    """Map the tool's raw ``result.*`` keys to the flat shape run_tool returns.
+
+    A resident tool over a pipe returns the same stdout block as a
+    one-shot run, so the caller can parse it without spawning a
+    process per candidate.
+    """
+    return {
+        "ok": "OK" in kv.get("result.ok", ""),
+        "line1": kv.get("result.line1", ""),
+        "line2": kv.get("result.line2", ""),
+        "conf1": int(kv.get("result.conf1", 0) or 0),
+        "conf2": int(kv.get("result.conf2", 0) or 0),
+        "layout": kv.get("result.layoutname", "?"),
+    }
+
+
 def run_tool(tool, ppm: Path, env_extra: dict | None = None,
              timeout: int = 120) -> dict:
     env = dict(os.environ)
@@ -233,15 +250,7 @@ def run_tool(tool, ppm: Path, env_extra: dict | None = None,
                            text=True, timeout=timeout, env=env)
     except subprocess.TimeoutExpired:
         return {}
-    kv = parse_kv(p.stdout)
-    return {
-        "ok": "OK" in kv.get("result.ok", ""),
-        "line1": kv.get("result.line1", ""),
-        "line2": kv.get("result.line2", ""),
-        "conf1": int(kv.get("result.conf1", 0) or 0),
-        "conf2": int(kv.get("result.conf2", 0) or 0),
-        "layout": kv.get("result.layoutname", "?"),
-    }
+    return parse_result(parse_kv(p.stdout))
 
 
 def candidate_score(result: dict):
