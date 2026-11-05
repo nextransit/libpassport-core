@@ -159,3 +159,30 @@ v2+v1 mix ×20 → 36。**无一回��� 40951c5 的 crnn 37**（该值在 3
 - **下一杠杆不在采样**：逐格分类已改善 6.6% 但端到端不变，说明剩余失败在
   band 定位 / 分割 / beam 层，不在字符分类层。真实照片错误位置集中在
   line1 name 字段（col 3-14，35 errors at col4）。
+
+---
+
+## 主树最终状态（2026-11-05 11:00，含并行会话的 band-framing + 仲裁 + p95 优化）
+
+发布配置 = `40951c5` 权重 + `perf/exact-2026-11-05` 的产品路径代码。
+
+| 指标 | 结果 |
+|---|---|
+| 真实照片 44 张（官方仲裁） | **PASS 37 / FAIL 4，verified 41/41** |
+| 速度 | mean 55.9 ms、p50 51.5、p95 67.3 → **17.9 张/秒**（门槛 ≥2.0） |
+| 官方 GT passport | line1 41/41（char **100.00%**）、line2 40/41、both 40/41 |
+| 官方 GT pic | line1 57/63、line2 52/59、both 49/59（pic 权重未动） |
+| 语料 corpus_eval_v2 full | cnn 73.47% / crnn 74.93% / fuse 73.54% |
+| 单元测试 | test_postproc 147/147、test_mrz 89/89 |
+
+并行会话的两笔提交打中了 v3 实验指出的剩余瓶颈（band 定位层，非字符分类层）：
+`2cffcd3` p95 路径优化（去掉每帧的第二次 Sauvola、ink-indexed skew、单次 beam）、
+`c287979` band-framing 候选（restore pair 以 1.35×/0.45× pad 重框，取首个通过
+decode + shape + 五个 ICAO 校验位的候选）+ 歧义解码时的 CRNN 仲裁。
+
+### 环境更正（2026-11-05）
+
+先前记录的「仓库有两个克隆」是错的：`/Users/zhouyong/gitlab` 是指向
+`/Users/zhouyong/Desktop/work/Decard/gitlab` 的**符号链接**，只有一棵树。
+`6_mrz_ocr/build/` 的 CMake 缓存仍指向旧路径（移动前生成），因此主树里
+`cmake --build build` 会报错 —— 用 `6_mrz_ocr/build_v2`（已配置并验证）。
