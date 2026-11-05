@@ -69,6 +69,14 @@ class PhotoMrzDeviceTest {
             MrzNative.setParallel(parallel == "1")
             Log.i(TAG, "TEST parallel=${parallel == "1"}")
         }
+        // Weight-set switch: "passport" (default) or "pic" (the assets/pic
+        // set, namespaced into the same .so).  Mirrors the host split into
+        // mrz_ocr_cnn_tool vs mrz_ocr_cnn_tool_pic.
+        val weightSet = InstrumentationRegistry.getArguments().getString("weightSet").orEmpty()
+        if (weightSet.isNotEmpty()) {
+            MrzNative.setWeightSet(weightSet)
+            Log.i(TAG, "TEST weightSet=$weightSet")
+        }
         val paddleMode = InstrumentationRegistry.getArguments().getString("paddleMode").orEmpty()
         if (paddleMode.isNotEmpty()) {
             PaddleOcrAndroid.mode = when (paddleMode) {

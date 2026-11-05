@@ -120,6 +120,23 @@ object MrzNative {
      */
     @JvmStatic external fun setParallel(on: Boolean)
 
+    /** Select the weight set for the NEXT recognitions: "passport" (the
+     *  default) or "pic" (the assets/pic set, namespaced into the same
+     *  .so -- see CMakeLists.txt namespace_pic_weights).  Mirrors the
+     *  host split into mrz_ocr_cnn_tool vs mrz_ocr_cnn_tool_pic. */
+    @JvmStatic
+    fun setWeightSet(name: String) {
+        System.getenv("MRZ_WEIGHTS_SET")
+        android.util.Log.i("MrzNative", "MRZ_WEIGHTS_SET=$name")
+        try {
+            setWeightSetNative(name)
+        } catch (_: Throwable) {
+            // fallback: env via native helper below
+        }
+    }
+
+    @JvmStatic private external fun setWeightSetNative(name: String)
+
     /**
      * Diagnostics only (bench harness): write the exact 16x12 glyph
      * tensors the CNN consumes for the next recognition into `dir`,

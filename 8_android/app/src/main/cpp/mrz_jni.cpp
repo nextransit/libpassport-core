@@ -32,6 +32,60 @@
 #undef mrz_ocr_recognise_cnn
 #undef mrz_ocr_recognise_fuse
 extern "C" {
+// ---- assets/pic weight set (namespaced symbols, see CMakeLists.txt) ----
+// The pic archive is the SAME sources compiled with MRZ_WEIGHTS_SET_PIC and
+// every defined global renamed with a pic_ prefix, so both weight sets live
+// in one .so with independent statics.  MRZ_WEIGHTS_SET=pic switches the
+// whole recogniser (deadlines included) to the pic set.
+extern "C" {
+mrz_ocr_status_t pic_mrz_ocr_init(void);
+void pic_mrz_ocr_deadline_set_ms(int timeout_ms);
+int  pic_mrz_ocr_deadline_expired(void);
+mrz_ocr_status_t pic_mrz_ocr_recognise_cnn(const face_image_t *img, mrz_ocr_result_t *out);
+mrz_ocr_status_t pic_mrz_ocr_recognise_crnn(const face_image_t *img, mrz_ocr_result_t *out);
+mrz_ocr_status_t pic_mrz_ocr_recognise_fuse(const face_image_t *img, mrz_ocr_result_t *out);
+mrz_ocr_status_t pic_mrz_ocr_recognise(const face_image_t *img, mrz_ocr_result_t *out);
+const char *pic_mrz_ocr_strerror(mrz_ocr_status_t s);
+int pic_mrz_ocr_last_seg_score(void);
+}
+
+// One dispatch table per weight set.  `pic` mirrors the host
+// mrz_ocr_cnn_tool_pic (its crnn_weights_available() is 0, so crnn/fuse
+// degrade to cnn exactly like the host tool -- documented behaviour).
+struct MrzApi {
+    mrz_ocr_status_t (*init)(void);
+    void (*deadline_set_ms)(int);
+    mrz_ocr_status_t (*recognise_cnn)(const face_image_t *, mrz_ocr_result_t *);
+    mrz_ocr_status_t (*recognise_crnn)(const face_image_t *, mrz_ocr_result_t *);
+    mrz_ocr_status_t (*recognise_fuse)(const face_image_t *, mrz_ocr_result_t *);
+    mrz_ocr_status_t (*recognise)(const face_image_t *, mrz_ocr_result_t *);
+    const char *(*strerror)(mrz_ocr_status_t);
+    int (*last_seg_score)(void);
+};
+
+// Passport-set declarations for the two functions the header include
+// above renamed away (the #define/#undef trick): cnn and fuse.  The rest
+// of the passport API comes from mrz_ocr.h.
+extern "C" {
+mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img, mrz_ocr_result_t *out);
+mrz_ocr_status_t mrz_ocr_recognise_fuse(const face_image_t *img, mrz_ocr_result_t *out);
+}
+static const MrzApi kApiPassport = {
+    mrz_ocr_init, mrz_ocr_deadline_set_ms,
+    mrz_ocr_recognise_cnn, mrz_ocr_recognise_crnn, mrz_ocr_recognise_fuse,
+    mrz_ocr_recognise, mrz_ocr_strerror, mrz_ocr_last_seg_score,
+};
+static const MrzApi kApiPic = {
+    pic_mrz_ocr_init, pic_mrz_ocr_deadline_set_ms,
+    pic_mrz_ocr_recognise_cnn, pic_mrz_ocr_recognise_crnn, pic_mrz_ocr_recognise_fuse,
+    pic_mrz_ocr_recognise, pic_mrz_ocr_strerror, pic_mrz_ocr_last_seg_score,
+};
+
+static const MrzApi &activeApi() {
+    const char *ws = getenv("MRZ_WEIGHTS_SET");
+    return (ws && strcmp(ws, "pic") == 0) ? kApiPic : kApiPassport;
+}
+
 mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                                        mrz_ocr_result_t *out);
 mrz_ocr_status_t mrz_ocr_recognise_fuse(const face_image_t *img,
@@ -85,8 +139,9 @@ static jstring recognise_image(JNIEnv *env,
     if (!img) return env->NewStringUTF("{\"ok\":false,\"err\":\"image-null\"}");
     std::lock_guard<std::mutex> lock(g_recognise_mutex);
 
-    mrz_ocr_init();
-    mrz_ocr_deadline_set_ms(deadline_ms);
+    const MrzApi &api = activeApi();
+    api.init();
+    api.deadline_set_ms(deadline_ms);
     mrz_ocr_result_t r;
     std::memset(&r, 0, sizeof(r));
 
@@ -102,16 +157,16 @@ static jstring recognise_image(JNIEnv *env,
          * combined with the confidence gate.  On a 3-fold grouped
          * cross-validation over the 41 real photos this was the only
          * variant that beat the plain CNN (22/41 exact vs 21/41). */
-        st = mrz_ocr_recognise_fuse(img, &r);
+        st = api.recognise_fuse(img, &r);
     } else if (backend == 2) {
-        st = mrz_ocr_recognise_crnn(img, &r);
+        st = api.recognise_crnn(img, &r);
     } else if (backend == 1) {
-        st = mrz_ocr_recognise_cnn(img, &r);
+        st = api.recognise_cnn(img, &r);
     } else {
-        st = mrz_ocr_recognise(img, &r);
+        st = api.recognise(img, &r);
     }
     auto t1 = std::chrono::steady_clock::now();
-    mrz_ocr_deadline_set_ms(0);
+    api.deadline_set_ms(0);
     double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
 
 
@@ -132,7 +187,7 @@ static jstring recognise_image(JNIEnv *env,
                       "{\"ok\":false,\"timeout\":%s,\"err\":\"%s\","
                       "\"backend\":%d,\"ms\":%.3f}",
                       st == MRZ_OCR_ERR_TIMEOUT ? "true" : "false",
-                      mrz_ocr_strerror(st), backend, ms);
+                      api.strerror(st), backend, ms);
     } else {
         /* `ambiguous` reports that a second checksum-valid reading was
          * almost as likely as the one returned.  A wrong-but-checksum-
@@ -437,6 +492,14 @@ Java_com_nextransit_mrzbench_jni_MrzNative_setParallel(JNIEnv *, jobject, jboole
     LOGI("MRZ_OCR_PAR %s", on ? "ON (dual-line pthread forward)" : "OFF (sequential)");
 }
 
+extern "C" JNIEXPORT void JNICALL
+Java_com_nextransit_mrzbench_jni_MrzNative_setWeightSetNative(JNIEnv *env, jobject, jstring name) {
+    const char *n = env->GetStringUTFChars(name, nullptr);
+    setenv("MRZ_WEIGHTS_SET", n ? n : "", 1);
+    LOGI("MRZ_WEIGHTS_SET=%s", n ? n : "");
+    env->ReleaseStringUTFChars(name, n);
+}
+
 /* Diagnostics only: dump the 16x12 glyph tensors the CNN consumes for
  * the next recognition into `dir`, tagged `tag`. Empty tag disables. */
 JNIEXPORT void JNICALL
@@ -457,7 +520,7 @@ Java_com_nextransit_mrzbench_jni_MrzNative_setDump(
  * path gates the CRNN sequence head on it. */
 JNIEXPORT jint JNICALL
 Java_com_nextransit_mrzbench_jni_MrzNative_lastSegScore(JNIEnv *, jobject) {
-    return (jint)mrz_ocr_last_seg_score();
+    return (jint)activeApi().last_seg_score();
 }
 
  } // extern "C"

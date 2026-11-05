@@ -98,12 +98,66 @@ set_property(TARGET mrz_ocr APPEND PROPERTY
 # to keep the source identical across host/device builds).
 target_link_libraries(mrz_ocr PUBLIC log)
 
+# ---- 2b) The assets/pic weight set, namespaced into the same .so -------
+#
+# The host ships the pic weight set as a SECOND binary
+# (mrz_ocr_cnn_tool_pic, MRZ_WEIGHTS_SET_PIC) because the weight arrays
+# are `static const` with identical symbol names and two copies cannot
+# coexist in one link.  The app needs BOTH sets at runtime (passport
+# photos and assets/pic photos), so the pic variant is compiled as a
+# separate static library and every defined global symbol is renamed
+# with a `pic_` prefix via objcopy --redefine-syms.  Undefined refs
+# (face_image_*, __android_log_print, libc) are deliberately NOT
+# renamed, so the prefixed library still binds against the shared face
+# lib.  The result behaves exactly like the host pic tool: same recogniser,
+# same weights, independent statics (scratchpad, grid hand-off, ...),
+# entry points pic_mrz_ocr_recognise_{cnn,crnn,fuse}.
+set(MRZ_PIC_SOURCES
+    ${MRZ_DIR}/src/template.c
+    ${MRZ_DIR}/src/mrz_geom.c
+    ${MRZ_DIR}/src/mrz_ocr.c
+    ${MRZ_DIR}/src/mrz_ocr_cnn.c
+    ${MRZ_DIR}/src/mrz_ocr_crnn.c
+    ${MRZ_DIR}/src/mrz_classify.c
+    ${MRZ_DIR}/src/crnn.c
+    ${MRZ_DIR}/src/cnn.c)
+add_library(mrz_ocr_pic STATIC ${MRZ_PIC_SOURCES})
+target_include_directories(mrz_ocr_pic PUBLIC
+    ${MRZ_DIR}/include
+    ${MRZ_DIR}/src
+    ${FACE_DIR}/include)
+target_compile_definitions(mrz_ocr_pic PRIVATE MRZ_WEIGHTS_SET_PIC=1)
+set_source_files_properties(${MRZ_PIC_SOURCES} PROPERTIES COMPILE_OPTIONS "-fvisibility=default;")
+target_link_libraries(mrz_ocr_pic PUBLIC face m log)
+set(MRZ_WEIGHT_HEADERS_PIC
+    ${MRZ_DIR}/src/cnn_weights_line1_pic.h
+    ${MRZ_DIR}/src/cnn_weights_line2_pic.h)
+set_property(TARGET mrz_ocr_pic APPEND PROPERTY
+             OBJECT_DEPENDS ${MRZ_WEIGHT_HEADERS_PIC})
+
+# Rename every DEFINED global symbol of the pic archive with a pic_
+# prefix.  Run once at build time; the output is a namespaced archive
+# that can be linked alongside the un-prefixed passport one.
+add_custom_command(TARGET mrz_ocr_pic POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E env
+            bash ${CMAKE_CURRENT_SOURCE_DIR}/namespace_pic_weights.sh
+            ${CMAKE_NM} ${CMAKE_OBJCOPY}
+            $<TARGET_FILE:mrz_ocr_pic>
+            ${CMAKE_CURRENT_BINARY_DIR}/libmrz_ocr_pic_ns.a
+    BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/libmrz_ocr_pic_ns.a
+    VERBATIM)
+
 # 3) JNI shim that turns Java strings into UTF-8 paths and forwards
 #    per-image calls into the same C API the host tools use.
 add_library(mrz_jni SHARED
     mrz_jni.cpp
     mrz_run.cpp)
 target_link_libraries(mrz_jni PRIVATE mrz_ocr face log)
+# The namespaced pic weight-set archive (produced by the POST_BUILD step
+# on mrz_ocr_pic).  Linked by path: it is a plain archive, not a CMake
+# target, because its symbols were renamed after the build.
+target_link_libraries(mrz_jni PRIVATE
+    ${CMAKE_CURRENT_BINARY_DIR}/libmrz_ocr_pic_ns.a)
 target_include_directories(mrz_jni PRIVATE
     ${MRZ_DIR}/include
     ${MRZ_DIR}/src
