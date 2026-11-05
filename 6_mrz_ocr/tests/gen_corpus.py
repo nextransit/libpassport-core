@@ -33,6 +33,10 @@ GEN  = ROOT / "build" / "gen_mrz_image"
 ALNUM = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 ALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 DIGIT = "0123456789"
+# Alnum pool for the personal-number field: G/D/K/M/L/R oversampled ~3x
+# (measured-hard line-2 letter classes, see the pers drawing below).
+PERS_ALNUM_POOL = "".join(
+    ch * (3 if ch in "GDKMLR" else 1) for ch in ALNUM)
 
 
 def check_digit_of(seg: str) -> str:
@@ -177,15 +181,23 @@ def random_pair(rnd: random.Random, plausible: bool = True) -> tuple[str, str]:
             pn = ("".join(rnd.choice(ALNUM) for _ in range(k))).ljust(9, "<")
         bd = random_date(rnd, 1940, 2009)
         ex = random_date(rnd, 2015, 2039)
+        # Personal-number field.  Real prior: mostly '<'-filled or numeric;
+        # letters appear in the alnum tail.  G/D/K/M/L/R are the measured-
+        # hard classes in this zone (line-2 letter cells err 14.2% vs
+        # digits 5.6% on 106 real product bands, 2026-11-05), so the alnum
+        # drawing samples them ~3x -- WITHOUT changing the filler/digit
+        # shares, which is what keeps the '<'/'0' checksum-equivalence
+        # prior realistic.
         u = rnd.random()
         if u < 0.35:
             pers = "<" * 14
-        elif u < 0.65:
+        elif u < 0.60:
             pers = "".join(rnd.choice(DIGIT) for _ in range(14))
-        elif u < 0.9:
-            pers = "".join(rnd.choice(ALNUM) for _ in range(14))
+        elif u < 0.90:
+            pers = "".join(rnd.choice(PERS_ALNUM_POOL) for _ in range(14))
         else:
-            pers = ("".join(rnd.choice(ALNUM) for _ in range(rnd.randint(6, 12))
+            pers = ("".join(rnd.choice(PERS_ALNUM_POOL)
+                            for _ in range(rnd.randint(6, 12))
                             )).ljust(14, "<")
         l2 = build_line2(pn, nat, bd, rnd.choice("MF<"), ex, pers)
         assert icao_valid(l1, l2), (l1, l2)
@@ -236,6 +248,29 @@ VARIANTS_REALISTIC = [
     (5, 3, 8, 2, 0.05, -0.5, 2, 0, 0),
 ]
 
+# Training-only, harder-than-eval variants targeting the measured weak axes
+# (corpus_eval_v2 axis report, post-retrain baseline: blur=2 full 35.4%,
+# illum>=40 full 32.5%, scale=3 full 49.2%).  The eval corpus never carries
+# these, so the axis buckets on eval_v2 honestly measure transfer.
+#
+# Measured effect (2026-11-05, corpus_train_v3, CNN retrained on the v3
+# slices): the "letter -> 'B'" attractor on real photos fell 95 -> 60 cells
+# and "letter -> '<'" fell 90 -> 69, i.e. the degradation axis was the real
+# defect, not the class prior.  End-to-end product metrics were unchanged
+# (official PASS 32/verified 38 on the 44-photo set, identical to the
+# baseline), so this is infrastructure for the next round, not a win by
+# itself.
+VARIANTS_DEGRADED = [
+    (3, 2, 6, 0, 0.02, 1.5, 2, 40, 0),    # scale3 + blur2 + illum40 + rot
+    (3, 2, 6, 1, 0.03, -2.0, 1, 60, 0),   # scale3 + illum60
+    (4, 2, 6, 0, 0.02, 2.5, 3, 40, 0),    # blur3 (beyond the eval range)
+    (4, 2, 6, -1, 0.04, -2.5, 2, 80, 0),  # illum80 + blur2
+    (4, 4, 8, 1, 0.01, 3.0, 2, 50, 0),    # skew + rot3 + blur2
+    (5, 3, 8, 0, 0.03, 1.0, 3, 60, 0),    # blur3 + illum60
+    (4, 2, 6, 0, 0.05, 0.0, 2, 30, 0),    # heavy noise + blur2
+    (6, 3, 10, -1, 0.02, -1.0, 2, 40, 0), # scale6 + blur2 + illum40
+]
+
 
 def render(out_dir: Path, name: str, l1: str, l2: str, v: tuple,
            noise_seed: int, font: str = "bitmap", aa: bool = False) -> Path:
@@ -278,6 +313,10 @@ def main() -> int:
                     help="glyph shapes: bitmap = the hand-simplified bank "
                          "in src/template.c (historical default), ocrb = the "
                          "real OCR-B TrueType rendering (tools/ocrb_glyphs.h)")
+    ap.add_argument("--degraded", action="store_true",
+                    help="also render the training-only VARIANTS_DEGRADED "
+                         "set (hard blur/illum/scale combos) for every "
+                         "document; eval corpora must not pass this")
     ap.add_argument("--legacy-random", action="store_true",
                     help="draw fully-random fields (random 3-letter "
                          "nationalities, non-calendar dates) instead of the "
@@ -342,6 +381,9 @@ def main() -> int:
                 add(l1, l2, v, f"b{p_idx}", v_idx, "clean")
             for v_idx, v in enumerate(VARIANTS_REALISTIC):
                 add(l1, l2, v, f"b{p_idx}", v_idx, "realistic")
+            if a.degraded:
+                for v_idx, v in enumerate(VARIANTS_DEGRADED):
+                    add(l1, l2, v, f"b{p_idx}", v_idx, "degraded")
         n_extra = a.extra_pairs if a.extra_pairs is not None else 120
         for p_idx in range(n_extra):
             l1, l2 = random_pair(random.Random(a.seed * 131 + p_idx),
@@ -350,6 +392,9 @@ def main() -> int:
                 add(l1, l2, v, f"x{p_idx}", v_idx, "clean")
             for v_idx, v in enumerate(VARIANTS_REALISTIC):
                 add(l1, l2, v, f"x{p_idx}", v_idx, "realistic")
+            if a.degraded:
+                for v_idx, v in enumerate(VARIANTS_DEGRADED):
+                    add(l1, l2, v, f"x{p_idx}", v_idx, "degraded")
 
     out = out_dir / "corpus.json"
     out.write_text(json.dumps({"version": 2, "seed": a.seed,

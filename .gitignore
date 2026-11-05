@@ -35,8 +35,20 @@ __pycache__/
 6_mrz_ocr/data/corpus_train/
 6_mrz_ocr/data/corpus_eval_v2/
 6_mrz_ocr/data/corpus_train_v2/
+6_mrz_ocr/data/corpus_train_v3/
 6_mrz_ocr/data/hard_slices.npz
 6_mrz_ocr/failures_*.json
+# Exported training slices (regenerable from the corpora above; 100-300 MB
+# each).  The corpora are locked by data/manifests/*.manifest.json, so
+# regenerating them and re-signing is the documented path.
+6_mrz_ocr/data/synth_extra_*.npz
+6_mrz_ocr/data/crnn_combined.npz
+6_mrz_ocr/data/crnn_*.npz
+# Pre-retrain weight-header backups (local rollback aid).
+6_mrz_ocr/weights_backup_*/
+# NOTE: 6_mrz_ocr/data/manifests/ is deliberately NOT ignored -- the
+# sha256 manifests are the corpus distribution lock and must be reviewed
+# and committed together with any corpus change.
 3_face_recognition/tests/data/
 4_nfc_reader/data/*.json
 
