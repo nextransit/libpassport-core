@@ -116,13 +116,36 @@ HID = 64
 # Hard confusable pairs (extended; covers every (gt, got) seen in
 # 500-sample corpus benchmark). Each pair gets extra samples so the
 # model sees both sides under skew/noise.
+# BEGIN GENERATED CONFUSION PAIRS (tools/gen_confusion_tables.py -- do not edit by hand)
 HARD_PAIRS = [
+    # curated base (kept from the original hand list)
     ("0", "O"), ("1", "I"), ("2", "Z"), ("3", "D"), ("4", "A"),
     ("5", "S"), ("6", "O"), ("7", "Z"), ("8", "O"), ("9", "S"),
     ("B", "8"), ("F", "6"), ("G", "6"), ("P", "7"), ("J", "3"),
     ("E", "5"), ("R", "8"), ("T", "6"), ("M", "1"), ("Q", "O"),
     ("<", "0"), ("U", "V"), ("N", "M"), ("K", "X"),
+    # measured on real photos (tools/collect_confusions.py, official GTs)
+    ("0", "1"),  # n=9
+    ("L", "P"),  # n=6
+    ("A", "N"),  # n=5
+    ("3", "5"),  # n=4
+    ("0", "2"),  # n=4
+    ("5", "6"),  # n=4
+    ("A", "W"),  # n=4
+    ("1", "5"),  # n=4
+    ("6", "8"),  # n=4
+    ("0", "6"),  # n=3
+    ("4", "8"),  # n=3
+    ("P", "S"),  # n=3
+    ("L", "N"),  # n=3
+    ("L", "W"),  # n=3
+    ("A", "I"),  # n=3
+    ("1", "6"),  # n=3
+    ("H", "R"),  # n=3
+    ("A", "S"),  # n=3
+    ("0", "3"),  # n=3
 ]
+# END GENERATED CONFUSION PAIRS
 
 
 def draw_ink_box(ch, scale):
@@ -425,8 +448,23 @@ def _vec_render_batch(chars, scales, pad_ls, pad_rs, skews, noises):
     return np.clip(out, 0.0, 1.0).astype(np.float32)
 
 
-def build_dataset(n_per_class=1500, hard_extra=750):
-    """Build a large batch dataset using the vectorised renderer."""
+# Measured-hard GT classes on 106 real product bands (2026-11-05): the
+# per-class error rate of G/D/K/M/L/R is 12-19% against a 4.9% top-1
+# average, and the line-2 personal-number zone shows letter cells at
+# 14.2% vs digits 5.6%.  HARD_PAIRS boosts PAIRS; this boosts whole
+# CLASSES that the pair list does not cover.
+MEASURED_HARD_CLASSES = "GDKMLR7"
+
+
+def build_dataset(n_per_class=1500, hard_extra=750, class_boost=0,
+                  hard_classes=MEASURED_HARD_CLASSES):
+    """Build a large batch dataset using the vectorised renderer.
+
+    class_boost: extra samples for every character in `hard_classes`
+    (the measured-hard GT classes).  The renderer is per-GLYPH, so this
+    is the carrier that works: the corpus-slice route (synth-extra npz)
+    dilutes the real half instead of enriching the hard classes.
+    """
     import random as _r
     chars, scales, pad_ls, pad_rs, skews, noises = [], [], [], [], [], []
     for idx, (ch, _) in enumerate(GLYPHS):
@@ -439,6 +477,16 @@ def build_dataset(n_per_class=1500, hard_extra=750):
             pad_rs.append(8 - pad_ls[-1])
             skews.append(r.choice([0, 0, 0, 0, 1, -1, 2, -2]))
             noises.append(r.choice([0.0, 0.0, 0.0, 0.0, 0.005, 0.01, 0.02, 0.03, 0.05]))
+        if class_boost and ch in hard_classes:
+            for s in range(class_boost):
+                seed = 700_000 + idx * 1000 + s
+                r = _r.Random(seed)
+                chars.append(ch)
+                scales.append(r.choice([3, 4, 4, 4, 5, 6]))
+                pad_ls.append(r.randint(3, 5))
+                pad_rs.append(8 - pad_ls[-1])
+                skews.append(r.choice([0, 0, 0, 0, 1, -1, 2, -2]))
+                noises.append(r.choice([0.0, 0.0, 0.0, 0.0, 0.005, 0.01, 0.02, 0.03, 0.05]))
         for a, b in HARD_PAIRS:
             if a == ch or b == ch:
                 for s in range(hard_extra):

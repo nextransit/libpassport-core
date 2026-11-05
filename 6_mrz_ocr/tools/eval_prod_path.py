@@ -52,7 +52,9 @@ def load_corrected_truth():
     return out
 
 # Same ordered list as PhotoMrzPipeline.confusionPairs.
+# BEGIN GENERATED CONFUSION PAIRS (tools/gen_confusion_tables.py -- do not edit by hand)
 _PAIRS = [
+    # curated base (same as PhotoMrzPipeline.confusionPairs)
     ("0", "O"), ("0", "Q"), ("0", "U"), ("0", "D"),
     ("0", "V"), ("0", "G"), ("1", "I"), ("1", "L"),
     ("1", "T"), ("1", "7"), ("5", "S"), ("2", "Z"),
@@ -63,7 +65,12 @@ _PAIRS = [
     ("K", "B"), ("K", "X"), ("D", "U"), ("D", "O"),
     ("U", "V"), ("U", "O"), ("V", "Y"), ("Q", "O"),
     ("T", "I"), ("T", "7"), ("X", "K"),
+    # measured on real photos (tools/collect_confusions.py)
+    ("0", "1"),  # n=9
+    ("L", "P"),  # n=6
+    ("A", "N"),  # n=5
 ]
+# END GENERATED CONFUSION PAIRS
 
 
 def _build_confusions():

@@ -62,6 +62,15 @@ ap.add_argument("--real-frac", type=float, default=0.30)
 ap.add_argument("--line", type=int, choices=[0, 1], required=True,
                 help="0 = TD3 line 1, 1 = TD3 line 2")
 ap.add_argument("--out", required=True)
+ap.add_argument("--class-boost", type=int, default=0,
+                help="extra synthetic samples per MEASURED_HARD_CLASSES "
+                     "character (G/D/K/M/L/R/7 -- the measured-hard GT "
+                     "classes on real product bands).  0 = off.")
+ap.add_argument("--pn-weight", type=float, default=1.0,
+                help="loss weight multiplier for line-2 personal-number "
+                     "zone cells (cols 28..41) with hard labels; 1.0 = off. "
+                     "The measured residual-error surface concentrates "
+                     "there (letter cells 14.2%% err vs 5.6%% digits).")
 ap.add_argument("--weak-real-weight", type=float, default=0.25,
                 help="loss weight for rescue slices whose board label is "
                      "not checksum-pinned")
@@ -154,11 +163,18 @@ for row, src in enumerate(keep):
     Cr[row, ids] = 1.0 / len(ids)
     if weak:
         Wslice[row] = args.weak_real_weight
+    _col = info.get("col")
+    if (args.pn_weight != 1.0 and _col is not None
+            and int(info.get("line", -1)) == 1
+            and 28 <= int(_col) <= 41):
+        Wslice[row] *= args.pn_weight
 print(f"real slices for line {args.line}: {len(Yr)} "
       f"(soft cells: {n_soft}, weak slices: {int((Wslice < 1).sum())})",
       flush=True)
 
-Xs, Ys = v2.build_dataset(n_per_class=args.n_per_class, hard_extra=args.hard_extra)
+Xs, Ys = v2.build_dataset(n_per_class=args.n_per_class,
+                         hard_extra=args.hard_extra,
+                         class_boost=args.class_boost)
 Xs = Xs.reshape(-1, 1, IN_H, IN_W).astype(np.float32)
 Ys = Ys.astype(np.int64)
 print(f"synthetic: {Xs.shape[0]}", flush=True)
@@ -184,7 +200,14 @@ if args.synth_extra_npz:
     if "meta" in ex.files:
         # meta['weak'] marks slices whose label the tool did not agree
         # with; they stay in the training set but at a low weight.
-        _we = [0.25 if em[i].get("weak") else 1.0 for i in sel]
+        _we = [args.weak_real_weight if em[i].get("weak") else 1.0
+               for i in sel]
+        if args.pn_weight != 1.0:
+            for k, i in enumerate(sel):
+                _col = em[i].get("col")
+                if (_col is not None and int(em[i].get("line", -1)) == 1
+                        and 28 <= int(_col) <= 41):
+                    _we[k] *= args.pn_weight
         Wtr_syn = torch.cat([Wtr_syn, torch.tensor(_we, dtype=torch.float32)])
     Xtr_syn = torch.cat([Xtr_syn, torch.from_numpy(Xe)])
     Ytr_syn = torch.cat([Ytr_syn, torch.from_numpy(Ye)])
@@ -444,14 +467,21 @@ best = 0.0
 best_score = -1.0
 best_state = None
 for ep in range(args.epochs):
+    # Regenerate the real half FROM THE CLEAN COPY every epoch.  The old
+    # form mutated the Xall slice in place, so the noise did a cumulative
+    # random walk across epochs and clamped the pixels to the 0/1 borders
+    # -- the opposite of the intended JPEG-decode-noise simulation.
     if args.augment:
         torch.manual_seed(args.aug_seed + ep)
-        Xall[len(Xtr_syn):] = augment_real(Xr_r)
+        _real_base = augment_real(Xr_r)
+    else:
+        _real_base = Xr_r
     if args.jitter > 0:
         torch.manual_seed(args.aug_seed + ep + 1_000_000)
-        Xr_real = Xall[len(Xtr_syn):]
-        Xr_real += torch.randn_like(Xr_real) * args.jitter
-        Xr_real.clamp_(0.0, 1.0)
+        _real_base = (_real_base + torch.randn_like(_real_base) * args.jitter
+                      ).clamp_(0.0, 1.0)
+    if args.augment or args.jitter > 0:
+        Xall[len(Xtr_syn):] = _real_base
     model.train()
     perm_tr = torch.randperm(len(Xall))
     correct = tot = 0
@@ -515,6 +545,14 @@ for ep in range(args.epochs):
         # that generalises, so it dominates the selection.
         score = min(val_acc, hold_acc)
     else:
+        # MEASURED 2026-11-05: the previous "fix" (min(val_acc, real_acc)
+        # for both lines) REGRESSED the official-GT photos 41/41 -> 24/41
+        # on line 1.  val_syn saturates at 1.0 early and carries no
+        # information; min() therefore selects LATER epochs that drift
+        # toward the synthetic domain, while real_acc (saturating on the
+        # real slices, which share their source photos with the official
+        # GT) tracks the domain that matters.  Keep the original rule:
+        # line 0 selects on real_acc, line 1 on min(val, real).
         score = min(val_acc, real_acc) if args.line == 1 else real_acc
     if score > best_score:
         best_score = score

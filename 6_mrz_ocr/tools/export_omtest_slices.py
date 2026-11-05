@@ -37,9 +37,13 @@ from PIL import Image
 GLYPHS = list("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ<")
 GI = {c: i for i, c in enumerate(GLYPHS)}
 DIGIT_TO_LETTER = {'0': 'O', '1': 'I', '2': 'Z', '5': 'S', '6': 'G', '8': 'B'}
+# BEGIN GENERATED CONFUSION PAIRS (tools/gen_confusion_tables.py -- do not edit by hand)
 CONF = ["0O","0Q","0U","0D","0V","0G","1I","1L","1T","17","5S","2Z","8B","8R","8X",
         "83","6G","4W","4A","WH","WA","WU","WM","HN","HM","MN","RB","LC","KB","KX",
-        "DU","DO","UV","UO","VY","QO","TI","T7","XK"]
+        "DU","DO","UV","UO","VY","QO","TI","T7","XK",
+        # measured on real photos (tools/collect_confusions.py)
+       ]
+# END GENERATED CONFUSION PAIRS
 W = [7, 3, 1]
 
 
