@@ -407,7 +407,31 @@ S8 下采样（双线性，filter=true）+ JPEG 压缩
 7. 「Exact 率 95%」指 line / both / full match 哪一个？分母是否含 band-fail 与空输出？真值用 `gt_review_loop.xlsx` 还是官方 GT json？（§7.2）
 8. 是否引入训练期语法约束 Loss？与已上线的推理期 syntax mask + 校验位 DFS 是否构成重复约束、会否推高 false accept？（§7.1 / §8.3）
 9. 字段级准确率以 ICAO 9303 标准边界还是本仓库 `check_digit_of` 的 0-based 边界为准？本节暂按后者，需人工确认。（§7.3）
-10. `--pn-weight` 是否从默认关闭改为启用、取何值？须由 §8.5 的单变量 A/B 裁决，且不得与 `--class-boost` 同时开启。
+10. ~~`--pn-weight` 是否从默认关闭改为启用、取何值？~~ **已裁决（2026-11-05）**：
+    单变量 A/B（1.0 vs 2.0，唯一变量，同种子/同语料/同 epoch）→ **驳回，保持默认关闭**。
+    实测：both exact 持平（37/47、43/61、官方 40/41 与 49/59），但**目标区
+    （line2 pos28-41）字母错误率 7.16% → 9.81%**（其余 41 张 1/299 → 6/299）、
+    **false accept 9 → 10**；唯一上升的是合成语料（+1.3pp），而合成语料的关联已被
+    同日 v3 实验证伪。机理：推理期 syntax mask + 校验位 DFS 已隐含强先验，训练期再加权
+    等于与解码先验对抗。与 `--balance-real` / `--class-weight` / `--class-boost` /
+    `--mix-hard-slices` 同属一类净负干预。详见
+    `10_ocr_research/ab_protocol_pn_weight_1105.md`。
+11. **基线裁决（2026-11-05，人工签字）**：真值 = `gt_review_loop.xlsx`；口径 = **逐字符**
+    （AGENTS.md 98%/95%；不存在「Exact 95%」门槛）；权重基准 = **40951c5**；
+    `gt_review_loop.xlsx` 10-29 批次（各引擎逐字符 40.66%~74.24%）与 `AGENTS.md` 的
+    `0ab2131` 读数**被取代**。今日基线：passport l1 100.00%、both 40/41（达标）；
+    pic both 49/59（**未达标**）；真实照片 50 张 PASS 37/verified 49、pic 64 张 PASS 45/verified 58；
+    17.9 张/秒。剩余缺口 = pic/真实照片的 both exact，主导失败类是
+    §8.1 的 **C 类「校验通过但读错」20/114**。
+12. **A/B 协议必须写明 CRNN 的特征一致性步骤**：改 line2 权重后 CRNN 通道直接失效
+    （实测两臂都崩到 0/47，line2 l2_acc 5.35%）—— CRNN 头绑定 line2 CNN 的 conv 特征，
+    换权重必须重导特征 + 重训 CRNN，否则该通道不能当门禁。
+13. **§7.3 字段级面板已落地**：`6_mrz_ocr/tools/field_accuracy.py`（用本仓库
+    `check_digit_of` 的 0-based 边界，与 C 端校验位 DFS 同一套定义）。
+    114 张真实照片实测（cnn，逐格错 2.73%）：个人号/可选区 4.61%（最差多数字段区间）、
+    个人号校验位 11.21%、签发国 6.36%。**但该区 37 个字母错有 30 个来自 Photo/ 的
+    6 张机位照（同一证件，该区错 36.90%；其余 41 张仅 1.74%）** —— 任何以该区为靶心的
+    干预都必须按证件分开报告，否则等于对一份证件做记忆。
 
 ---
 
