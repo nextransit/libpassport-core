@@ -80,6 +80,7 @@ add_test(NAME mrz_postproc COMMAND test_postproc)
 add_executable(check_line_weights tools/check_line_weights.c)
 target_link_libraries(check_line_weights PRIVATE mrz_ocr)
 add_executable(test_golden tests/test_golden.c)
+target_include_directories(test_golden PRIVATE tools)
 target_link_libraries(test_golden PRIVATE mrz_ocr)
 add_test(NAME mrz_golden COMMAND test_golden)
 

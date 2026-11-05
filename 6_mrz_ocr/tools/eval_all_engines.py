@@ -947,6 +947,14 @@ def main() -> int:
     args = ap.parse_args()
 
     tool = Path(args.tool).resolve()
+    # Warn (not fatal) when the CRNN head was trained on a different tool
+    # build than the one under test -- its crnn/fuse rows would be noise.
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from weight_fingerprint import verify_crnn_fingerprint
+        verify_crnn_fingerprint(tool)
+    except ImportError:
+        pass
     gt_path = Path(args.gt)
     if gt_path.suffix == ".xlsx":
         gt = load_gt_xlsx(gt_path if gt_path.is_absolute() else ROOT / gt_path)

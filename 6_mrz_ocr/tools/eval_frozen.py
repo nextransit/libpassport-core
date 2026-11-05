@@ -35,6 +35,9 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 TOOL = ROOT / "build" / "mrz_ocr_cnn_tool"
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).resolve().parent))
+from weight_fingerprint import verify_crnn_fingerprint  # noqa: E402
 OMTEST = ROOT.parent / "tmp" / "omtest"
 ASSETS = ROOT.parent / "assets" / "pic"
 HIRES = ROOT.parent / "assets" / "pic_hires"
@@ -115,6 +118,10 @@ def main() -> int:
     ap.add_argument("--out", default="")
     ap.add_argument("--pads", default="")
     args = ap.parse_args()
+
+    # CRNN/fuse rows are only meaningful while the sequence head matches
+    # the tool's conv features (see tools/weight_fingerprint.py).
+    verify_crnn_fingerprint(TOOL)
 
     recs = load_gt(args.set)
     tmp = Path(tempfile.mkdtemp(prefix="evf_"))

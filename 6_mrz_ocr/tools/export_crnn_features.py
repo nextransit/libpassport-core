@@ -16,6 +16,7 @@ sequence length contract is always exact.
 from __future__ import annotations
 import argparse
 import glob
+import hashlib
 import json
 import os
 import shutil
@@ -30,6 +31,32 @@ ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ<"
 GLYPH_INDEX = {c: i for i, c in enumerate(ALPHABET)}
 CNN_FLAT = 96
 STEPS = 44
+
+_W = [7, 3, 1]
+
+
+def _cd(seg: str) -> int:
+    t = 0
+    for i, c in enumerate(seg):
+        v = (ord(c) - 48) if c.isdigit() else ((ord(c) - 55) if 'A' <= c <= 'Z' else 0)
+        t += v * _W[i % 3]
+    return t % 10
+
+
+def line2_checksum_ok(l2: str) -> bool:
+    """TD3 line2 five-segment ICAO check.  A checksum-invalid label can
+    never be ground truth, so training on one poisons the head (the
+    corpus_real fixmrz pollution: 5/41 labels failed, oversampled x20-50)."""
+    if len(l2) != 44:
+        return False
+    try:
+        if _cd(l2[0:9]) != int(l2[9]): return False
+        if _cd(l2[13:19]) != int(l2[19]): return False
+        if _cd(l2[21:27]) != int(l2[27]): return False
+        if _cd(l2[28:42]) != int(l2[42]): return False
+        return _cd(l2[0:10] + l2[13:20] + l2[21:43]) == int(l2[43])
+    except (ValueError, IndexError):
+        return False
 
 
 def read_feat(path: Path) -> np.ndarray | None:
@@ -103,6 +130,12 @@ def main() -> int:
         if len(l1) != STEPS or len(l2) != STEPS:
             skipped += 1
             continue
+        if not line2_checksum_ok(l2):
+            print(f"  SKIP {rec.get('id', rec.get('image'))}: line2 label "
+                  f"fails the ICAO checksum -- not ground truth, never train "
+                  f"on it", file=sys.stderr)
+            skipped += 1
+            continue
         try:
             y1 = [GLYPH_INDEX[c] for c in l1]
             y2 = [GLYPH_INDEX[c] for c in l2]
@@ -120,10 +153,25 @@ def main() -> int:
         return 1
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
+    # Feature fingerprint: the features ARE the line-head conv output of
+    # this exact tool binary.  Any rebuild of the conv/geometry front-end
+    # changes them and silently invalidates every weight trained on this
+    # npz (the 10-28 "CRNN 0/41" incident).  The md5 travels with the
+    # data so train_crnn_seq.py can stamp it into the emitted header and
+    # eval scripts can refuse a weights/tool mismatch.
+    tool_path = Path(args.tool)
+    tool_md5 = hashlib.md5(tool_path.read_bytes()).hexdigest() if tool_path.exists() else "unknown"
     np.savez_compressed(out, features=np.stack(feats), labels=np.stack(labels),
-                        ids=np.array(ids))
+                        ids=np.array(ids),
+                        tool_md5=np.array(tool_md5),
+                        tool_path=np.array(str(tool_path)),
+                        tool_env=np.array(
+                            f"line_models={args.line_models} crnn={args.crnn} "
+                            f"par={args.parallel}"))
     print(f"wrote {out} samples={len(ids)} skipped={skipped} "
           f"shape={np.stack(feats).shape}")
+    print(f"  feature fingerprint: tool={tool_path.name} md5={tool_md5} "
+          f"env=line_models={args.line_models} crnn={args.crnn} par={args.parallel}")
     return 0
 
 

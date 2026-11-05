@@ -1,0 +1,82 @@
+{
+"dir": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/6_mrz_ocr/data/corpus_passport_photo",
+"entries": {
+"2026-9-29-A.ppm": {
+"sha256": "eb5651c7b631013694903522bf14f3707294d54cbaa2ff31db7b150214abfeca",
+"size": 393135
+},
+"2026-9-29-B.ppm": {
+"sha256": "7eb156ab1f247fc0cef81601ba4ebeed0a93686bee7ff49577b24d4324e48f25",
+"size": 397455
+},
+"2026-9-29-D.ppm": {
+"sha256": "62783f293e54f0eba2a613db69bb69eb049c4c15456c2cb3c9a31651cef2bd96",
+"size": 393135
+},
+"2026-9-29-L.ppm": {
+"sha256": "0591a7207d086de41d91a04b2f2d77ec3c3856ea8d8ef0c2f87a6901816ebd86",
+"size": 397455
+},
+"2026-9-29-N.ppm": {
+"sha256": "e3f42cf176e7487d4a99f473b3aed21c82fb51d0ddf99ed628566dabddc57c63",
+"size": 397455
+},
+"2026-9-29-O.ppm": {
+"sha256": "1784d70f7818085a28e54f8db5c3f627e3a72e9420f94c90ecaae867cfa27768",
+"size": 393135
+},
+"2026-9-29-P.ppm": {
+"sha256": "05ce6e038578078732600d7fb7868e7d785503495ba2c5333aabfae12439e62c",
+"size": 397455
+},
+"2026-9-29-R.ppm": {
+"sha256": "8610337ea5f14b5ebc7b8bd2e2262be38535dcfeb888bb860647bb1528463531",
+"size": 397455
+},
+"2026-9-29-T.ppm": {
+"sha256": "d0c4eea88d2951ba90cda7c087caf1851e990aec73b7f01f8ab926c2136aade8",
+"size": 401775
+},
+"2026-9-29-U.ppm": {
+"sha256": "0a059082d9d3f01aa37ac86cade622628fb7d97ffbad46bdac122c9e8ce11f8f",
+"size": 410415
+},
+"2026-9-30-AB.ppm": {
+"sha256": "50488b40ed74a852db07d29627dd2f0060b5a167d9fcbb9b0b8223ac4e3cf864",
+"size": 393135
+},
+"2026-9-30-AD.ppm": {
+"sha256": "8052491237dd4b4a274cfefa01ab225cb1c951b99b95d6908906d3aaae38110d",
+"size": 388815
+},
+"2026-9-30-AE.ppm": {
+"sha256": "7bb64a820042787b56832dd940e4e23509a9821d03500b764aa88ccfd67b8209",
+"size": 375855
+},
+"2026-9-30-AF.ppm": {
+"sha256": "d97f975d00bd8c011eec9e1ea13d14914bd4059e8d04b1d610a5f0e01b7d8d86",
+"size": 388815
+},
+"2026-9-30-AH.ppm": {
+"sha256": "9ad0fc2d9e3a9fb669553deb600d82f5a7d17f34929285dc4e2a96f55af32e1d",
+"size": 388815
+},
+"2026-9-30-B.ppm": {
+"sha256": "96455de28f4fbfbfaac22aed28626b48a5ce016882e5a829b1ba5680ff018dcd",
+"size": 479536
+},
+"2026-9-30-D.ppm": {
+"sha256": "4ee6220fdaa1bd58d748a86e4b031fa5bf285fedf753613472fcf073802e56e9",
+"size": 453616
+},
+"2026-9-30-H.ppm": {
+"sha256": "cfeacacd9d6d4572d22c686017fc2b491c2a49890b0ebdf37d2b63983ad91431",
+"size": 453616
+},
+"corpus.json": {
+"sha256": "8b976426c89561da4ec08b9cc3327583acd271901e59da6db5c83cc639111a36",
+"size": 5561
+}
+},
+"files": 19
+}

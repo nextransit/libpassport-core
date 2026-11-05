@@ -229,6 +229,13 @@ def main() -> int:
 
     np.random.seed(args.seed)
     tr = np.load(args.train)
+    # Feature fingerprint: which tool binary produced these features.
+    # Stamped into the emitted header so eval scripts can refuse a
+    # weights/tool mismatch (front-end rebuilds silently change the conv
+    # features -- the 10-28 "CRNN 0/41" incident).
+    tool_md5 = str(tr["tool_md5"]) if "tool_md5" in tr.files else "unknown"
+    tool_path = str(tr["tool_path"]) if "tool_path" in tr.files else "unknown"
+    print(f"feature fingerprint: tool_md5={tool_md5} tool={tool_path}", flush=True)
     feats = tr["features"]
     if args.synth_subsample and args.synth_subsample < len(feats):
         rng = np.random.default_rng(args.synth_seed)
@@ -273,7 +280,18 @@ def main() -> int:
     export_header(m2, out, "CRNN2", mode="append")
     with out.open("a") as f:
         f.write("#endif\n")
+    # Feature provenance goes into the header as a comment so the shipped
+    # weights are self-describing; eval scripts parse MRZ_CRNN_FEATURE_MD5
+    # back out and compare it against the tool binary under test.
+    prov = (f"/* feature provenance: MRZ_CRNN_FEATURE_MD5={tool_md5} "
+            f"tool={Path(tool_path).name if tool_path != 'unknown' else 'unknown'} "
+            f"trained={__import__('datetime').date.today().isoformat()} */\n")
+    body = out.read_text()
+    marker = "#define MRZ_CRNN_WEIGHTS_AVAILABLE 1\n"
+    body = body.replace(marker, marker + prov, 1)
+    out.write_text(body)
     print(f"exported {out} line1_val={a1:.4f} line2_val={a2:.4f}")
+    print(f"  header fingerprint: MRZ_CRNN_FEATURE_MD5={tool_md5}")
     return 0
 
 

@@ -24,6 +24,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tests"))
 from bench import compare, line2_checksum_ok  # noqa: E402
+import corpus_manifest  # noqa: E402  (tools/ is on sys.path)
 
 ROOT = Path(__file__).resolve().parents[1]
 CNN = ROOT / "build" / "mrz_ocr_cnn_tool"
@@ -89,6 +90,10 @@ def main():
     args = ap.parse_args()
 
     corpus_dir = ROOT / args.corpus if not args.corpus.startswith("/") else Path(args.corpus)
+    # Distribution lock: refuse to score against a corpus that drifted
+    # from its signed manifest (regenerable + gitignored = one accidental
+    # re-run would silently change the benchmark).  See tools/corpus_manifest.py.
+    corpus_fp = corpus_manifest.verify_corpus_dir(corpus_dir, fatal=not args.limit)
     corpus = json.loads((corpus_dir / "corpus.json").read_text())["records"]
     if args.limit:
         corpus = corpus[: args.limit]
@@ -195,6 +200,20 @@ def main():
         p.write_text(json.dumps({"cnn": m_cnn, "crnn": m_crnn, "delta": d},
                                 indent=1))
         print("wrote", p)
+    # Ledger: full-corpus runs (no --limit) are recorded in
+    # metrics_history.md with the corpus fingerprint + weights md5 so the
+    # row stays comparable forever (see tools/metrics_log.py).
+    if not args.limit:
+        import metrics_log
+        from weight_fingerprint import tool_md5
+        metrics_log.append_rows(
+            [{"corpus": args.corpus, "method": name,
+              "l1": m["l1_acc"], "l2": m["l2_acc"],
+              "full": m["full_match_rate"], "cksum": m["cksum_rate"],
+              "p50": m["ms_p50"]}
+             for name, m in (("cnn", m_cnn), ("crnn", m_crnn), ("fuse", m_fuse))],
+            corpus_fingerprint=corpus_fp,
+            weights_md5=tool_md5(ROOT / "build" / "mrz_ocr_cnn_tool"))
     return 0
 
 

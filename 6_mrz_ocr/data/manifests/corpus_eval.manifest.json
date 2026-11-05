@@ -1,0 +1,5530 @@
+{
+"dir": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/6_mrz_ocr/data/corpus_eval",
+"entries": {
+"corpus.json": {
+"sha256": "652d62fe20ff9b6c090d2db80b0746d71c679466ff40786dac5df8b8ed55b371",
+"size": 548342
+},
+"img_0001_b0_v0.ppm": {
+"sha256": "742e10850fa765389ff01331743ac382615f05fb4bbc6341485ab279d2707f14",
+"size": 573820
+},
+"img_0002_b0_v1.ppm": {
+"sha256": "435c0f7cedae2f0c2b7b7ce35313c5872c6f6ce3f44d385cfb9f5b6380086716",
+"size": 573820
+},
+"img_0003_b0_v2.ppm": {
+"sha256": "4c0cd7062688259d0aa516d1b60b17cda9e8ff93b55fe4dc96796be0120a23af",
+"size": 573820
+},
+"img_0004_b0_v3.ppm": {
+"sha256": "4c0cd7062688259d0aa516d1b60b17cda9e8ff93b55fe4dc96796be0120a23af",
+"size": 573820
+},
+"img_0005_b0_v4.ppm": {
+"sha256": "bc6fd3a0e59f91ce23bddfaf9d2ccdec5cea3075177550779c20912185ea1bf4",
+"size": 872344
+},
+"img_0006_b0_v5.ppm": {
+"sha256": "1adcbda49dac121085f0764199b2bc61ea6d790b250655bcef0ffd165efac1de",
+"size": 872344
+},
+"img_0007_b0_v6.ppm": {
+"sha256": "f0a697417949e786c2858b3b38f999a4fbfa5e25e1997a771481369a05465b47",
+"size": 1186564
+},
+"img_0008_b0_v7.ppm": {
+"sha256": "7112844226d0ca871e2eb400e7811608174f7512b61315583bfd5367eae3830f",
+"size": 1209526
+},
+"img_0009_b0_v8.ppm": {
+"sha256": "be253de7021ede4836253242e42b33e99cad1f39c044638e6dafe6c12702de84",
+"size": 615952
+},
+"img_0010_b0_v9.ppm": {
+"sha256": "19637719d6f9fcb1716801203013be5a0f73c4f1032806d696612254b048859d",
+"size": 356812
+},
+"img_0011_b0_v10.ppm": {
+"sha256": "9b4d8b27110a297a48866cb952ab776457a32609121eac43052ba37b65f6bd4e",
+"size": 573820
+},
+"img_0012_b0_v11.ppm": {
+"sha256": "a7686f992b15b6b7710fc86883618503b1013cc1d133aa27a52f15f022f90da6",
+"size": 573820
+},
+"img_0013_b1_v0.ppm": {
+"sha256": "decd5264072f59878c46e43526ebd65b8db4d52f42fd955f7839218709f82740",
+"size": 573820
+},
+"img_0014_b1_v1.ppm": {
+"sha256": "7b67fbdd4282005d92eafe856343689e15f0438ee024bcd44603994a9ad56c48",
+"size": 573820
+},
+"img_0015_b1_v2.ppm": {
+"sha256": "1893bb2f3a31609d79f6e8144df2cbb06bc7dc9cb8a105f236e297b83b2b1840",
+"size": 573820
+},
+"img_0016_b1_v3.ppm": {
+"sha256": "1893bb2f3a31609d79f6e8144df2cbb06bc7dc9cb8a105f236e297b83b2b1840",
+"size": 573820
+},
+"img_0017_b1_v4.ppm": {
+"sha256": "ec33d91e14e624dbe7326595eb916d8a93c7f4541a33463d2b148514407b9898",
+"size": 872344
+},
+"img_0018_b1_v5.ppm": {
+"sha256": "ea27ac3a20d45ca510e529e98ed1642c98c14380d5829a0fb3a253e1a344d2db",
+"size": 872344
+},
+"img_0019_b1_v6.ppm": {
+"sha256": "1343105af1774e891acf14418c1c41e7d164a86c9ff7eaca97082a854bd36685",
+"size": 1186564
+},
+"img_0020_b1_v7.ppm": {
+"sha256": "84b3f12c77bfb6d6d9b5fbc707dd171bb7f92c10b15965ff5dd87bda2059e72d",
+"size": 1209526
+},
+"img_0021_b1_v8.ppm": {
+"sha256": "6d2201c47e978b061644214a2e31b1405158805e82c33b2135bbad6f914e8077",
+"size": 615952
+},
+"img_0022_b1_v9.ppm": {
+"sha256": "b285dd04f62a06659a6693576107d9380f7aaa53347f279d2a1312e54fbe81fe",
+"size": 356812
+},
+"img_0023_b1_v10.ppm": {
+"sha256": "5ded8c00a6da5b7dc4b4cbb3c39f8fe3567e9cfe98f5db874066085b2875c45f",
+"size": 573820
+},
+"img_0024_b1_v11.ppm": {
+"sha256": "8d12085474f5c34a90e95cf24bb9296166879cf83347d003e54de81796346907",
+"size": 573820
+},
+"img_0025_b2_v0.ppm": {
+"sha256": "4a38d41ae620f67789a0eedc998a3a2265cafa7626db1bbe6e3645b5859d2d03",
+"size": 573820
+},
+"img_0026_b2_v1.ppm": {
+"sha256": "18f9b25395dbd4c91b851138f6a02092fb16a0a05b4eb54b4065056611115a18",
+"size": 573820
+},
+"img_0027_b2_v2.ppm": {
+"sha256": "2bbf41779d36527af5b1999fd1ac8f2c353e602ec0a407a1cfcbf6b95c635c85",
+"size": 573820
+},
+"img_0028_b2_v3.ppm": {
+"sha256": "2bbf41779d36527af5b1999fd1ac8f2c353e602ec0a407a1cfcbf6b95c635c85",
+"size": 573820
+},
+"img_0029_b2_v4.ppm": {
+"sha256": "ac7fe28a9fbed3d62b6921b089d337cb6a418a1df01ab504a6671444766eac68",
+"size": 872344
+},
+"img_0030_b2_v5.ppm": {
+"sha256": "5aec1571bb491228b73f4cdb800fa14fb456b60531e251e4df67dad963e3a556",
+"size": 872344
+},
+"img_0031_b2_v6.ppm": {
+"sha256": "38cacda931b6b532c3aa56c080427247d386c42de5b0f7eecbf74e3cc35f9428",
+"size": 1186564
+},
+"img_0032_b2_v7.ppm": {
+"sha256": "bd9d74875123d973455ecd381d480c4c74941f475e80fab503d0935014a00d22",
+"size": 1209526
+},
+"img_0033_b2_v8.ppm": {
+"sha256": "4aac22fd6ff1067021604478ca09e0c1abc1f0f07e5c7bd9fc224d01f8a34e00",
+"size": 615952
+},
+"img_0034_b2_v9.ppm": {
+"sha256": "8325de7297c03892785c284ecf049e565e3ebd9c14e0fde8e496034a146f5fc1",
+"size": 356812
+},
+"img_0035_b2_v10.ppm": {
+"sha256": "133e01a2ab23286a5b1b5da8baf9b4c983059450ab7ad9823b765f2c1859b6bb",
+"size": 573820
+},
+"img_0036_b2_v11.ppm": {
+"sha256": "bf286f47d1570d59e87145151e3b72fdaaabc9244517d0323f5dfefe6e5a0d28",
+"size": 573820
+},
+"img_0037_b3_v0.ppm": {
+"sha256": "b545c371ad62696fc91a064b99d2619694b69609fa75e394ae586d8a590e7b34",
+"size": 573820
+},
+"img_0038_b3_v1.ppm": {
+"sha256": "eff9285da7bcc353c75e9c6ad626cc92648693addcdf6c736d79bed1cba4ad8f",
+"size": 573820
+},
+"img_0039_b3_v2.ppm": {
+"sha256": "c6f887f805f5e6e6d65437bbc6cea38ec8b47194b5cf27f1719926f80f3abc45",
+"size": 573820
+},
+"img_0040_b3_v3.ppm": {
+"sha256": "c6f887f805f5e6e6d65437bbc6cea38ec8b47194b5cf27f1719926f80f3abc45",
+"size": 573820
+},
+"img_0041_b3_v4.ppm": {
+"sha256": "108f4c4c8036ba391bf9a1a748494dcd14edb51a609114eccf3f7e2506b002eb",
+"size": 872344
+},
+"img_0042_b3_v5.ppm": {
+"sha256": "efae46174ffcb8607727f9effc409953974cb72ef2b2edb76508f141b33bd8e0",
+"size": 872344
+},
+"img_0043_b3_v6.ppm": {
+"sha256": "6325b156c7d45c6975348bd574d00b1b0e70a17526bb98d98b9429bbe7487e2f",
+"size": 1186564
+},
+"img_0044_b3_v7.ppm": {
+"sha256": "268629ca7a3498dde6ac434ef450186cc5539f10eda65c697552c83403704aa3",
+"size": 1209526
+},
+"img_0045_b3_v8.ppm": {
+"sha256": "5cb5b3aca07c143dd1d085ba5b8fa1961fe35ffebac228c4a5547e9341e4328d",
+"size": 615952
+},
+"img_0046_b3_v9.ppm": {
+"sha256": "c272b83353afa7178a8efa3195cddebeecfb09badc1bb2f4da1c3c9b48795c89",
+"size": 356812
+},
+"img_0047_b3_v10.ppm": {
+"sha256": "7418a0a513f72dea8146a8b32f0de903e4f0a282a03abd876ece89d75ffb1ce5",
+"size": 573820
+},
+"img_0048_b3_v11.ppm": {
+"sha256": "971fbb12aacee7994d6ef6d8525e696d6c733bac80f3584669b93ef74921cea3",
+"size": 573820
+},
+"img_0049_b4_v0.ppm": {
+"sha256": "66ec18d5b586f401f547b91601c4ac254f44c86428bfc7ffe0f3b38adfd650b0",
+"size": 573820
+},
+"img_0050_b4_v1.ppm": {
+"sha256": "ac8cdc18ab6e7a43a4c494ebdff0af0019fe6d1f016c5937169bdfd6f39859af",
+"size": 573820
+},
+"img_0051_b4_v2.ppm": {
+"sha256": "f1d38c4465e6b44761be16f76b5ba22d9cb126633df0e79162859f6dd64e6c53",
+"size": 573820
+},
+"img_0052_b4_v3.ppm": {
+"sha256": "f1d38c4465e6b44761be16f76b5ba22d9cb126633df0e79162859f6dd64e6c53",
+"size": 573820
+},
+"img_0053_b4_v4.ppm": {
+"sha256": "cfb009ec73ec62c154ab107dfcd3528cffc6878e32c6b95ed5ef83456265e38c",
+"size": 872344
+},
+"img_0054_b4_v5.ppm": {
+"sha256": "467ef74f8a1f3a0a40f05e895a94e3cc137c71e2873a9149469d2c54a972492a",
+"size": 872344
+},
+"img_0055_b4_v6.ppm": {
+"sha256": "d7946b48d5b69ae69ddc1d980e3c69b423fe68bc9038fbe79e2f1ff923f38f3c",
+"size": 1186564
+},
+"img_0056_b4_v7.ppm": {
+"sha256": "7ef11351014c1177f322c15e805cbf608672c7895ea8f3ad0fea76f3267f3652",
+"size": 1209526
+},
+"img_0057_b4_v8.ppm": {
+"sha256": "6a1aa475a959d316142a2b0ef3f582e8ba3c62143ceae82ff2b710cdf02b8b67",
+"size": 615952
+},
+"img_0058_b4_v9.ppm": {
+"sha256": "4d764bbc4694cf10207c28d06c27cf6bbaf08efea5cde664c0e24cd9079cc416",
+"size": 356812
+},
+"img_0059_b4_v10.ppm": {
+"sha256": "7ed38620ecb8d55566a090c11be28468a5d076bf16f1e5beaf2ed7af6ea03ca7",
+"size": 573820
+},
+"img_0060_b4_v11.ppm": {
+"sha256": "8f59af5a671f1af9ff8fcfb58ea2c25ff2fd801aebd35f24d1958e749a8eb2db",
+"size": 573820
+},
+"img_0061_x0_v0.ppm": {
+"sha256": "c58e5e8d17a27c31a1a7bf0f89221f5cf251d1561a706b719448d47c8de15178",
+"size": 573820
+},
+"img_0062_x0_v1.ppm": {
+"sha256": "38bb1b9fc7026950ab7758200637f361cdd8da370470b7e3c5fc5c464f7b516c",
+"size": 573820
+},
+"img_0063_x0_v2.ppm": {
+"sha256": "307f8be15d9d9c8a6ccc392a4b859bbb5670d7cf42f94cce9fd882019efe797b",
+"size": 573820
+},
+"img_0064_x0_v3.ppm": {
+"sha256": "307f8be15d9d9c8a6ccc392a4b859bbb5670d7cf42f94cce9fd882019efe797b",
+"size": 573820
+},
+"img_0065_x0_v4.ppm": {
+"sha256": "a49cc88d1be28e6f77fcfdad7720fad7a36b7d56f05d03ace613569345ba14c4",
+"size": 872344
+},
+"img_0066_x0_v5.ppm": {
+"sha256": "b7f0b0548155a735aac6f8feedc44afaaf38d638f26a02d27f9829861a81f6bf",
+"size": 872344
+},
+"img_0067_x0_v6.ppm": {
+"sha256": "550dbdf818421b93b320ee449afa47df108340064d9433487e95079858ce7ff2",
+"size": 1186564
+},
+"img_0068_x0_v7.ppm": {
+"sha256": "68db60695cdf37658774b539775eeaff25acf7566f71ca6d646958d53d854808",
+"size": 1209526
+},
+"img_0069_x0_v8.ppm": {
+"sha256": "0b8eae1bc2d0467f800067e356f8527b137ea6eaae1af2705905ad6b719e7f05",
+"size": 615952
+},
+"img_0070_x0_v9.ppm": {
+"sha256": "02a5cc2abf26969559d473460737645f0c19d87a37a85366f7020ab31b95c354",
+"size": 356812
+},
+"img_0071_x0_v10.ppm": {
+"sha256": "ec4d08b768892beb9c4aa4407b70fb515f24553325ce8d17664902a64b812464",
+"size": 573820
+},
+"img_0072_x0_v11.ppm": {
+"sha256": "6e750208bbe142a888686806eb7d816cca60929ce955893afba87c141ed1d4a6",
+"size": 573820
+},
+"img_0073_x0_v0.ppm": {
+"sha256": "0e79ae1f2b41f66eb1d50030cfa30bf27b4c78c0371474c2c18b08dfa2264365",
+"size": 573820
+},
+"img_0074_x0_v1.ppm": {
+"sha256": "512a97b3ac351d9e46292ac1b41e4b5d54f3ea6da2916db9053d4d6719024b9d",
+"size": 573820
+},
+"img_0075_x0_v2.ppm": {
+"sha256": "ea278904d7f24fcc6f031369e2cee679f60568f408d0c20e786eb205abc73a71",
+"size": 872344
+},
+"img_0076_x0_v3.ppm": {
+"sha256": "bc7a2128c545e8dab4162708f3584726227f83b4d75c862dc7f27beccf9198a8",
+"size": 1186564
+},
+"img_0077_x0_v4.ppm": {
+"sha256": "fd2d590dc7983eff724689c075d3fe21017c4b01fd740fbdded0d12ac4ac7b7b",
+"size": 356812
+},
+"img_0078_x0_v5.ppm": {
+"sha256": "379235a4b5b738862404b0fdf2f3a5361e737b3ff9abb26973de69b72d519d6c",
+"size": 615952
+},
+"img_0079_x0_v6.ppm": {
+"sha256": "50fd4879839a571eb3c123be2a459be89331e9788b0be8a963c67808fd5427b3",
+"size": 852736
+},
+"img_0080_x0_v7.ppm": {
+"sha256": "b1d59a304d5f66ba628870807734c8c35e45d95ca331f03709d3732c361db39d",
+"size": 573820
+},
+"img_0081_x0_v8.ppm": {
+"sha256": "017f2543a6c52dbf785be036b0d6a4ad791946a8e89fa16c8525cbbbee6cc752",
+"size": 573820
+},
+"img_0082_x0_v9.ppm": {
+"sha256": "b753b4d71838b8d16838e83343e047ef3dc1fa81aca6e8102632ea201e3dcd63",
+"size": 1209526
+},
+"img_0083_x0_v10.ppm": {
+"sha256": "a2cf8ea2d3169181e999f7c72880ecc4d38791b4e3b8ebe757a7fe6b24a51df0",
+"size": 573820
+},
+"img_0084_x0_v11.ppm": {
+"sha256": "d051878b45aac259315cc73e0416acbf875b1dbeba835d89386f4629dff28be3",
+"size": 872344
+},
+"img_0085_x1_v0.ppm": {
+"sha256": "511e29e80333162dbebaed466c8b3b9b416625721fb214414af8d46639034ae7",
+"size": 573820
+},
+"img_0086_x1_v1.ppm": {
+"sha256": "6ffea7951d729d3169e138f59aedbd25da83beb4a9f73eb49b4e14957f9d2f8d",
+"size": 573820
+},
+"img_0087_x1_v2.ppm": {
+"sha256": "474a483cd13fae0c581d624df66cd4cac9c7f1263c50e444956d55bd5b51e85e",
+"size": 573820
+},
+"img_0088_x1_v3.ppm": {
+"sha256": "474a483cd13fae0c581d624df66cd4cac9c7f1263c50e444956d55bd5b51e85e",
+"size": 573820
+},
+"img_0089_x1_v4.ppm": {
+"sha256": "a6b08f6bd6c55d5f24b2166d6d58957e1512dc99a8cc3a54ff8485610357bde9",
+"size": 872344
+},
+"img_0090_x1_v5.ppm": {
+"sha256": "9db4750075967d7ad3c56c78cf2e47a57a18f2c2de3e4168e3eb0580378a8457",
+"size": 872344
+},
+"img_0091_x1_v6.ppm": {
+"sha256": "e82a591a98c7d2e900869ef531dc4b263fc918bff2a53699c2d47eaa06f01df0",
+"size": 1186564
+},
+"img_0092_x1_v7.ppm": {
+"sha256": "834778806641add73d1cb00a6a41349d6777e7b99f97bcb79b73e2bed923e30e",
+"size": 1209526
+},
+"img_0093_x1_v8.ppm": {
+"sha256": "a30eeb253f6d676f5b7394b270714a57335d9a9c32406aa6fc9aee20fae39b90",
+"size": 615952
+},
+"img_0094_x1_v9.ppm": {
+"sha256": "0bc92bc4c7984790de74b2ae4d40f765db3f5249bad01f5ad5d05a3b17544aec",
+"size": 356812
+},
+"img_0095_x1_v10.ppm": {
+"sha256": "5a985c4629ee00d591ae1a23efdbf3ea6cc43db51e177037acd9a8f9831b490a",
+"size": 573820
+},
+"img_0096_x1_v11.ppm": {
+"sha256": "79055724744853fea18a5a141756b2081b8ef1190515ce32da98fd7a312d4ea6",
+"size": 573820
+},
+"img_0097_x1_v0.ppm": {
+"sha256": "a79fc305ebb9ad33090d460dee8501263b862c6a98273abd8712f374b72eade9",
+"size": 573820
+},
+"img_0098_x1_v1.ppm": {
+"sha256": "55f96ca4122eb73bcfd8b4b696cf5dc63746fddb4dd7dbe2b9ed174c28daa06c",
+"size": 573820
+},
+"img_0099_x1_v2.ppm": {
+"sha256": "d0ad0df0b75b90d2c90590f1220c521770576798b4e336db306a8983b5f02397",
+"size": 872344
+},
+"img_0100_x1_v3.ppm": {
+"sha256": "4a639a88d925901f402eb8dcf45eb76a7196ef4599d172d99017fc0991019ebe",
+"size": 1186564
+},
+"img_0101_x1_v4.ppm": {
+"sha256": "bd32d349cf9d0c85e705704f8f37943188fa701b9d64d851f491d1f21c3cad7b",
+"size": 356812
+},
+"img_0102_x1_v5.ppm": {
+"sha256": "154fb3bdd8993b0699bfeab5907dd6060b6ed4d8f59c435bfde4ef2d02a73e8e",
+"size": 615952
+},
+"img_0103_x1_v6.ppm": {
+"sha256": "a2a6f00a4cd888efa33d25c83a32d47b620d9a228740694c843e33cb9c9537b1",
+"size": 852736
+},
+"img_0104_x1_v7.ppm": {
+"sha256": "2693e70abf26af48cd51e70d38afd4547263ea53de28d12c258e580369f664d9",
+"size": 573820
+},
+"img_0105_x1_v8.ppm": {
+"sha256": "27f156c695143996fb772b0b84d2c32e0bb44cddb2e7fbc81323232adbc6cc12",
+"size": 573820
+},
+"img_0106_x1_v9.ppm": {
+"sha256": "1fcb7743d42f290e228e1447e9b1de853d9a3410b6bbdeae2a2992d29284bda8",
+"size": 1209526
+},
+"img_0107_x1_v10.ppm": {
+"sha256": "bfba6745645906254bb30514d1cbfd5a5941148e522bf097a77bf40c3d4f88e6",
+"size": 573820
+},
+"img_0108_x1_v11.ppm": {
+"sha256": "1320879dca12cefce2372390c4dad52f0cffb9b7d6b8d4b0fb0f949291439d71",
+"size": 872344
+},
+"img_0109_x2_v0.ppm": {
+"sha256": "65f6dc3382f3c476a1b5b2d7cebf3cec417b5973f662bdecdcbd97761d2ba6ac",
+"size": 573820
+},
+"img_0110_x2_v1.ppm": {
+"sha256": "77612adcb9193a0ce8da2b1523ce30b9e5c6cdc65bbd5494ad9387803e3c9935",
+"size": 573820
+},
+"img_0111_x2_v2.ppm": {
+"sha256": "47ff3620fcddad3eb3545955a81e5524413269a8268b394c0472aec37ea96a7b",
+"size": 573820
+},
+"img_0112_x2_v3.ppm": {
+"sha256": "47ff3620fcddad3eb3545955a81e5524413269a8268b394c0472aec37ea96a7b",
+"size": 573820
+},
+"img_0113_x2_v4.ppm": {
+"sha256": "b6200bf0490559a71aa67fed8de93bf016480b01ce7d744d479c5db411db13a6",
+"size": 872344
+},
+"img_0114_x2_v5.ppm": {
+"sha256": "ba74b5f17b782f5f9e67590322cff021442f42de6c786a4186380d1260efbf64",
+"size": 872344
+},
+"img_0115_x2_v6.ppm": {
+"sha256": "98b5223795d3cf798d201d77f64cc3b665256d21efbe01f25ee864ad59885502",
+"size": 1186564
+},
+"img_0116_x2_v7.ppm": {
+"sha256": "bf632b0233ab4c49f338b2afc7ed7678d95de4e3869d83340ae252e6aa5bf64c",
+"size": 1209526
+},
+"img_0117_x2_v8.ppm": {
+"sha256": "c026e3ae344a06d214addd9f2a82949ba4c9fc7539917d8471990131e610c270",
+"size": 615952
+},
+"img_0118_x2_v9.ppm": {
+"sha256": "107a7d980ece267c6e42941c2014834b814a37c5edda20990699d849a1db22ef",
+"size": 356812
+},
+"img_0119_x2_v10.ppm": {
+"sha256": "aad6d872c4f434e18a5956b0f3962cee2f1b6794b0383fce2d8b6c05092086fd",
+"size": 573820
+},
+"img_0120_x2_v11.ppm": {
+"sha256": "879ba6b9f018d98956d41c51fc19b274b620a7b068e484b13341fb8a9e9fdb00",
+"size": 573820
+},
+"img_0121_x2_v0.ppm": {
+"sha256": "9c9f4a95642d557d55007b2f4cfa2712e36eb63ef27c092a95575930ad482331",
+"size": 573820
+},
+"img_0122_x2_v1.ppm": {
+"sha256": "73cc004a17bb37246f9751b8e5c459576d893bface0fc3d0b0f15697f4c04637",
+"size": 573820
+},
+"img_0123_x2_v2.ppm": {
+"sha256": "b9456cfa36ea341a98f8c89a03fb89337f9ed4c85771c1ba8e14187b2d67cc93",
+"size": 872344
+},
+"img_0124_x2_v3.ppm": {
+"sha256": "cdb8cae33516b66c94d0c584480a7d39356457ce6c2e2faca5bb4c88aa450ac4",
+"size": 1186564
+},
+"img_0125_x2_v4.ppm": {
+"sha256": "913046026144b1c8a6ff97a1a996f766d6f012b98b4c0f121f4cf56794b3198b",
+"size": 356812
+},
+"img_0126_x2_v5.ppm": {
+"sha256": "2b55ed63c40ad3a1d3ab5383b85bf5508458d5413df7fe49cfae615414da04b4",
+"size": 615952
+},
+"img_0127_x2_v6.ppm": {
+"sha256": "75e232ce22947c99843d9eb83efac163ea812d7c70fa5f0130b50333bcfea806",
+"size": 852736
+},
+"img_0128_x2_v7.ppm": {
+"sha256": "d0075d65f558b2ad476cd25cb94d452aa7365bff3df62eda1dbccf3338d38d9f",
+"size": 573820
+},
+"img_0129_x2_v8.ppm": {
+"sha256": "1e769bd967a77d290016466ac8e94367711a17d16f14be44ea9355af6ca070e4",
+"size": 573820
+},
+"img_0130_x2_v9.ppm": {
+"sha256": "248afbc0b2dfced490bb2279ce9482f969dfe45145699d138e276aa9d8d1e08c",
+"size": 1209526
+},
+"img_0131_x2_v10.ppm": {
+"sha256": "f97937027274369481d7f93f37633f3f1cba706794353d8a216d4e043439fe6b",
+"size": 573820
+},
+"img_0132_x2_v11.ppm": {
+"sha256": "53fe6117aa747c2a853ab181ac32bfdb725a05a605bf5be8dfa7552c4c83ae13",
+"size": 872344
+},
+"img_0133_x3_v0.ppm": {
+"sha256": "881f3e53435eba0b2a42ca48e19534dd4d489d3ca5bdfa6bc4b1e61d67d694fd",
+"size": 573820
+},
+"img_0134_x3_v1.ppm": {
+"sha256": "2762e3444880cbbac366f8d45344dbb21e6a70d4c11bd76bca804278d4d50e40",
+"size": 573820
+},
+"img_0135_x3_v2.ppm": {
+"sha256": "4f433611fe9408ca353f70a23ab8b841e71bbf1e7f65e0b6c1f5a57cae34d5c9",
+"size": 573820
+},
+"img_0136_x3_v3.ppm": {
+"sha256": "4f433611fe9408ca353f70a23ab8b841e71bbf1e7f65e0b6c1f5a57cae34d5c9",
+"size": 573820
+},
+"img_0137_x3_v4.ppm": {
+"sha256": "5ca382a6d70117a6c665f96fd36ec1708beed232e3ac7695df9b87dd3dc932a9",
+"size": 872344
+},
+"img_0138_x3_v5.ppm": {
+"sha256": "ed48a445c0e3b833de2f78625b7072cbe379709626b0d5160fc114c2a2d6cf91",
+"size": 872344
+},
+"img_0139_x3_v6.ppm": {
+"sha256": "fb577db2c89397cfa29d59e95dcb6db6a88d8c8eae890c4ff105f3259bf8324c",
+"size": 1186564
+},
+"img_0140_x3_v7.ppm": {
+"sha256": "9e55b45f5a34f0b5af253f78376e99c202b91ac5eb165e781b978f0663354f88",
+"size": 1209526
+},
+"img_0141_x3_v8.ppm": {
+"sha256": "d3013ed08383b833020ce8f7f6e7e4d1f1cc48358449a9335039dec31d59595f",
+"size": 615952
+},
+"img_0142_x3_v9.ppm": {
+"sha256": "bc9a8de095061433399773ea925194f36d78aeccbd6e69d873a549af9ac96ac0",
+"size": 356812
+},
+"img_0143_x3_v10.ppm": {
+"sha256": "883af9e6b9d44b98f01546245e9decae420887013ba50e4f564341161dbb40ca",
+"size": 573820
+},
+"img_0144_x3_v11.ppm": {
+"sha256": "ddcd42fbef9ffb8c3ac35023ba2d4b520f4a3b7e2549b01a49ffe3766e933864",
+"size": 573820
+},
+"img_0145_x3_v0.ppm": {
+"sha256": "4ad4096913e73947f3b7943dc778dc33e1317fdb0fc73b0fb4ad467981975e4d",
+"size": 573820
+},
+"img_0146_x3_v1.ppm": {
+"sha256": "80576d7c9e890aaef21a7bf2b53693c3d1fee24449aae53e1600f67d6fb358e1",
+"size": 573820
+},
+"img_0147_x3_v2.ppm": {
+"sha256": "217d742cb1d12430a214b13395ed6cb32c1be8fc6d3962ca90044c390e11083e",
+"size": 872344
+},
+"img_0148_x3_v3.ppm": {
+"sha256": "76be72a9717772037f92cfde87cf6c69e45c15eae855913be09c5c69af9631a7",
+"size": 1186564
+},
+"img_0149_x3_v4.ppm": {
+"sha256": "f73e0193a9e78b2a5647cb87ff69a10dc1bf845f0362b6eaba121e8a6f1c67ba",
+"size": 356812
+},
+"img_0150_x3_v5.ppm": {
+"sha256": "981155bd7efdc58955e7edde86767ddae46130f36657e849232ff9700f1c8f3e",
+"size": 615952
+},
+"img_0151_x3_v6.ppm": {
+"sha256": "1fa89498ae113839495a3a1eaf0451bac45defb82b52ae418cf1d23b4e4bdde3",
+"size": 852736
+},
+"img_0152_x3_v7.ppm": {
+"sha256": "1455f3ed467ee4677530b1a9d6e4e9e2ff734f9a51c4e6780d5fdb1c971c2672",
+"size": 573820
+},
+"img_0153_x3_v8.ppm": {
+"sha256": "01386440434995a503e9f6a527273a0c09b6ad63090dbae052d76e65e534c578",
+"size": 573820
+},
+"img_0154_x3_v9.ppm": {
+"sha256": "0ec8a3a1c4ad07df439cd7851fc1fb64f0dabfe7594b392c9a61c31a0feaf255",
+"size": 1209526
+},
+"img_0155_x3_v10.ppm": {
+"sha256": "7b9ea8d7f592d4d016e19f27e4bc8ce20fd9ba411a24400eded15d28edfea613",
+"size": 573820
+},
+"img_0156_x3_v11.ppm": {
+"sha256": "9a71c493cd32a36e3aca005112f0b5ddb0ed8e4a31a1ef7de7cff08cbcdb8776",
+"size": 872344
+},
+"img_0157_x4_v0.ppm": {
+"sha256": "0591fc34ae28478f1f20065a5575bf1424d489e68f7acc761fdb9d63f3c58c27",
+"size": 573820
+},
+"img_0158_x4_v1.ppm": {
+"sha256": "2ff2262fc8cd33e7725c75f5e81f05f4fb06462e73c522a3e9e5091115eaa184",
+"size": 573820
+},
+"img_0159_x4_v2.ppm": {
+"sha256": "0a52f9108b3bf9f6e4ef83b94339d0234eb3178108593c1b15eb10e2cb951117",
+"size": 573820
+},
+"img_0160_x4_v3.ppm": {
+"sha256": "0a52f9108b3bf9f6e4ef83b94339d0234eb3178108593c1b15eb10e2cb951117",
+"size": 573820
+},
+"img_0161_x4_v4.ppm": {
+"sha256": "19492ae04080eaea4f0395b724094721e4f2d2d423f4d7f85d06f4ad1cf7f521",
+"size": 872344
+},
+"img_0162_x4_v5.ppm": {
+"sha256": "085c9962c5d035d1258da48341b50a3d6e54f4e9a644aed4dc220b5b28b77ce9",
+"size": 872344
+},
+"img_0163_x4_v6.ppm": {
+"sha256": "9089b172e514ff3724fdfffc41ae6b87a413cb81b70e89d8fa1abd8ebe33b7eb",
+"size": 1186564
+},
+"img_0164_x4_v7.ppm": {
+"sha256": "9af5b13e1e5350ecbd00d8dbfbf44fb7d2b84aef1218a6ebb1d8c5f7e1a73896",
+"size": 1209526
+},
+"img_0165_x4_v8.ppm": {
+"sha256": "e9564595a6d78406d9c22b76d6f9ed06a3cf72847036cdd69fe00fb2a88047df",
+"size": 615952
+},
+"img_0166_x4_v9.ppm": {
+"sha256": "4d1f268d55f982ce4662f063d1348a5ac830eb93a957e0573f25ad62ca7f518a",
+"size": 356812
+},
+"img_0167_x4_v10.ppm": {
+"sha256": "72ee1872087e39d7f27503043e2c5c3d9b09ee90d1499c3129224c9a59b6c44f",
+"size": 573820
+},
+"img_0168_x4_v11.ppm": {
+"sha256": "c793820a221d2ba4d80516ef7f4904d25549249d8d01e7b393562b7d974eeac0",
+"size": 573820
+},
+"img_0169_x4_v0.ppm": {
+"sha256": "d7d4fc184f0d3bffca2d0b2270ab3c091ddb3800ba6b5ed84855701329e9a3fe",
+"size": 573820
+},
+"img_0170_x4_v1.ppm": {
+"sha256": "cfbba89b3a9831431d3a1adb08d73f13ca9071df07d92af5c3c0b47e5658fe49",
+"size": 573820
+},
+"img_0171_x4_v2.ppm": {
+"sha256": "0fed62684da07b16c2d6cc81cef42888eee065aa6f8b9fc85406226dc733ca51",
+"size": 872344
+},
+"img_0172_x4_v3.ppm": {
+"sha256": "e0c78435053fb24a7e968567a54f8427e4399d8f8e08990d5ae4eb62badc027c",
+"size": 1186564
+},
+"img_0173_x4_v4.ppm": {
+"sha256": "58ab90e7f91d6476755668cb4b146d2a26718a8f8a7a3484b82707ceda26d03e",
+"size": 356812
+},
+"img_0174_x4_v5.ppm": {
+"sha256": "b14a18375f73bddbf3e92de44d0e84a2b684ed334265aafe3b73b5167b640b0a",
+"size": 615952
+},
+"img_0175_x4_v6.ppm": {
+"sha256": "2c62a6bde1e18e104344fefc68f55e53e3bf152544ceb3117af7bc7daee4d980",
+"size": 852736
+},
+"img_0176_x4_v7.ppm": {
+"sha256": "86cd139b2007e54e3fd40f899ec47e44e94d626fcacc9e09c26fc167411e8c7a",
+"size": 573820
+},
+"img_0177_x4_v8.ppm": {
+"sha256": "3f265838f1ed1625cb28da484f9cbce278cd959a6fc4f8334bda33a609fa2bd0",
+"size": 573820
+},
+"img_0178_x4_v9.ppm": {
+"sha256": "35a698d597063bddc14ae8c20188c0074775ba8afbb1116bbe1f17c2c3ce816a",
+"size": 1209526
+},
+"img_0179_x4_v10.ppm": {
+"sha256": "87e78c13a0f8ec3bd52f17a5353af82cadf698a51363d4711a196e86d2b1182d",
+"size": 573820
+},
+"img_0180_x4_v11.ppm": {
+"sha256": "3dd4ae011a00c336d3829730df698f5cb30d1751e39c9132c809823837f76ce6",
+"size": 872344
+},
+"img_0181_x5_v0.ppm": {
+"sha256": "0ffe1c01aa08f2867a4679de5e925344544d85f3c27b261197f880e86f23245b",
+"size": 573820
+},
+"img_0182_x5_v1.ppm": {
+"sha256": "d7e9dd25666510a61f5ebe4485607f04a5236c8fe3d7f65d3b9387dbe55f8aa9",
+"size": 573820
+},
+"img_0183_x5_v2.ppm": {
+"sha256": "d74892f0e262c1657a420f48fa5a9f1f449abb2715eeaabbeb24f2a69c8660f9",
+"size": 573820
+},
+"img_0184_x5_v3.ppm": {
+"sha256": "d74892f0e262c1657a420f48fa5a9f1f449abb2715eeaabbeb24f2a69c8660f9",
+"size": 573820
+},
+"img_0185_x5_v4.ppm": {
+"sha256": "736f34576a01d874f51e2ea2360bdf080cce9f3f8c7e5f12a9c6b31df97eedab",
+"size": 872344
+},
+"img_0186_x5_v5.ppm": {
+"sha256": "256b3e30d15425637615c40dde63076d589a1abe13e51e2c583ca1f84ed7d733",
+"size": 872344
+},
+"img_0187_x5_v6.ppm": {
+"sha256": "e20e2c751fda8e0f230f845a7a254ad4a6a1440e73075da184aadd82ee0d05aa",
+"size": 1186564
+},
+"img_0188_x5_v7.ppm": {
+"sha256": "3958973683db35a4e70c846b9eeb336b56d2c3fa8868c443d19abf5fff4305b9",
+"size": 1209526
+},
+"img_0189_x5_v8.ppm": {
+"sha256": "da49956a87bfee0bac75101fdf372a59f002f1404ce67028c1eb86769da9f524",
+"size": 615952
+},
+"img_0190_x5_v9.ppm": {
+"sha256": "36b9787a32cfd62b9d2b5ef049b127c823de93267cb8dd93c4a9d3a4b8bb326f",
+"size": 356812
+},
+"img_0191_x5_v10.ppm": {
+"sha256": "7774237044a37fa0eb460a451bc824d86f1dd7e8d706b927c36682793f0cd70f",
+"size": 573820
+},
+"img_0192_x5_v11.ppm": {
+"sha256": "c95d658f53868f67e55f72219520cd22949ddaca60d3f8f1b7a3dcc6a93767f0",
+"size": 573820
+},
+"img_0193_x5_v0.ppm": {
+"sha256": "753c7abc1c8198a4750c75159af34c8dcbc4bb482680b154d179cae4abb8c1fa",
+"size": 573820
+},
+"img_0194_x5_v1.ppm": {
+"sha256": "05ab558863ab7d193415a9fddbee08319b034b58ca1369e2d814887aa965d0c0",
+"size": 573820
+},
+"img_0195_x5_v2.ppm": {
+"sha256": "b81737bbe413afcb4f9182d291acb33e1cc38ca09fbb025e808c01732a816e5a",
+"size": 872344
+},
+"img_0196_x5_v3.ppm": {
+"sha256": "4f7e5a6d7b20df7f76223f8d2e7456afc71718f29d5adc76d2bfa0b29aa224c1",
+"size": 1186564
+},
+"img_0197_x5_v4.ppm": {
+"sha256": "09c47d633f4571b56b03996385d1e24c1ab6eb5626325a54362c1ebce877c6bf",
+"size": 356812
+},
+"img_0198_x5_v5.ppm": {
+"sha256": "f41d7fd3f3cfd685eb6a2600e0b20f1cba7cff298f78100302574dce5e840113",
+"size": 615952
+},
+"img_0199_x5_v6.ppm": {
+"sha256": "e7b73ccd85be49065f8a37abb60e22ee919bc5e8cca30dd3f1aaf853b4352070",
+"size": 852736
+},
+"img_0200_x5_v7.ppm": {
+"sha256": "b93f9360d7af7d366319f607556cbc08be291606ba744afe5081aaca19962f08",
+"size": 573820
+},
+"img_0201_x5_v8.ppm": {
+"sha256": "a8535332a1252b45d9a5d128887d7280c0e3e8c2f85c4816fc910d16ddf89bf2",
+"size": 573820
+},
+"img_0202_x5_v9.ppm": {
+"sha256": "751691096a8f392a492699482c19b7e355188fc316d7732b4662d4c1e40da833",
+"size": 1209526
+},
+"img_0203_x5_v10.ppm": {
+"sha256": "2530d0663638f76def9191a80863cdfca808720ff64beca8be5e2cb27c735a59",
+"size": 573820
+},
+"img_0204_x5_v11.ppm": {
+"sha256": "e253607d961917420febdee2e9555df8db177e2782db9f0da0300f82f8ccc79b",
+"size": 872344
+},
+"img_0205_x6_v0.ppm": {
+"sha256": "3eb0cbe4242db594216833bb4fe178e098f379b084ee0509a0a5bdb1745a8741",
+"size": 573820
+},
+"img_0206_x6_v1.ppm": {
+"sha256": "1ed5ff0f376902d3da551936dbb0d849b9a4bc6336f9ef60f81c4d8f3d936a2e",
+"size": 573820
+},
+"img_0207_x6_v2.ppm": {
+"sha256": "f95439db7d75ec2f0911bdceb822d796070a812185e952a07c1b50d7f63d1e03",
+"size": 573820
+},
+"img_0208_x6_v3.ppm": {
+"sha256": "f95439db7d75ec2f0911bdceb822d796070a812185e952a07c1b50d7f63d1e03",
+"size": 573820
+},
+"img_0209_x6_v4.ppm": {
+"sha256": "a527e523b7a71e6a41d8eea3cd9a5a1a0b1a652fa24b7667c00bffff3ab33a46",
+"size": 872344
+},
+"img_0210_x6_v5.ppm": {
+"sha256": "83290787bb2bb3127e9187fccf52fd89fcfb4c6301e835fc63583552ecccfddd",
+"size": 872344
+},
+"img_0211_x6_v6.ppm": {
+"sha256": "13a5967bca701442ad3883691d622db4e4b7f9a33f8471cef18fe5ca04554d0e",
+"size": 1186564
+},
+"img_0212_x6_v7.ppm": {
+"sha256": "11f08337107e957dc47b3fad65cfe38b6cd994192960d7ecf516b7f1a219b5aa",
+"size": 1209526
+},
+"img_0213_x6_v8.ppm": {
+"sha256": "7ded157434192a2794a316fe9b9fb426c6bfdc6643dc812e2b7d06250d7953b8",
+"size": 615952
+},
+"img_0214_x6_v9.ppm": {
+"sha256": "941298fe57c6cc6cfe312d38b7e3797d3efd0b905a04d0bbfbb8d1035b54478d",
+"size": 356812
+},
+"img_0215_x6_v10.ppm": {
+"sha256": "48bfe6c1fb0c38cada98fed8310ba8b87c67cd5d5e1902b64b55f70fea9c4e72",
+"size": 573820
+},
+"img_0216_x6_v11.ppm": {
+"sha256": "10abb6d0e9e8f005f77c0da79b825610aeecfbdc2f07ca49803f808837ac33f8",
+"size": 573820
+},
+"img_0217_x6_v0.ppm": {
+"sha256": "39454690a84c5b9cf31848f6f1ca34bb300e2c737c1f7bbf67096fc0589f80c0",
+"size": 573820
+},
+"img_0218_x6_v1.ppm": {
+"sha256": "1875c7295594228645dabc6dc1d485130cbde14ae81d4d16f571443e1be25412",
+"size": 573820
+},
+"img_0219_x6_v2.ppm": {
+"sha256": "b68e40915e06b2512739c3c73e376be13e1c4682841fbd645f3e90236dccd2d3",
+"size": 872344
+},
+"img_0220_x6_v3.ppm": {
+"sha256": "d78a95f65eeb8791fdfe52a519b03bbb2c5ce768ce173d4a6879bd23adab6189",
+"size": 1186564
+},
+"img_0221_x6_v4.ppm": {
+"sha256": "0577eca1259a84da7b6707f0ec96cf77894291bdff20f6eba4f50cae42df70db",
+"size": 356812
+},
+"img_0222_x6_v5.ppm": {
+"sha256": "1db5fb3a72f31a60cba0ab39eb798adaf6de6ddd8369b05a34a4e384dfa669c8",
+"size": 615952
+},
+"img_0223_x6_v6.ppm": {
+"sha256": "0400015b31427f90fca000ef99943cc632d858cea5a92d288fc1bc15aabbcec5",
+"size": 852736
+},
+"img_0224_x6_v7.ppm": {
+"sha256": "ac4e2693a841f6749e842d38127c599cf319ba4626e9ec58bf3e55f036a9830b",
+"size": 573820
+},
+"img_0225_x6_v8.ppm": {
+"sha256": "c7a7ef4e61b6e5c28790889047820a441802d898176067e68e5f5c44605e5b0f",
+"size": 573820
+},
+"img_0226_x6_v9.ppm": {
+"sha256": "7d90fab20711aa0affcd8403e9127b49f6e304446d6eed12f82a721406aae3bd",
+"size": 1209526
+},
+"img_0227_x6_v10.ppm": {
+"sha256": "a6fdf174ae53a540e0c526897ba2261af7d585bb88abc57e86a51928f31c3cbc",
+"size": 573820
+},
+"img_0228_x6_v11.ppm": {
+"sha256": "b00ad202750cd96a54a63dca244cff319287d316507b00dc0cfb95c6f702be3a",
+"size": 872344
+},
+"img_0229_x7_v0.ppm": {
+"sha256": "c241a29857f5cd7338fdb405f89baab54d8c2c1df6da5be5b5a152dcc0cc936f",
+"size": 573820
+},
+"img_0230_x7_v1.ppm": {
+"sha256": "1a61ebaf281d08d68cf2b0087990462523d4670133d602063a736fef0168dfaa",
+"size": 573820
+},
+"img_0231_x7_v2.ppm": {
+"sha256": "b3da570bdc867a4610e216de05cf6dd1110a67c22b7dd463866e5bab1734a073",
+"size": 573820
+},
+"img_0232_x7_v3.ppm": {
+"sha256": "b3da570bdc867a4610e216de05cf6dd1110a67c22b7dd463866e5bab1734a073",
+"size": 573820
+},
+"img_0233_x7_v4.ppm": {
+"sha256": "3cca5171ac11a8414f612f2a2a645b87efc513d295bfdc940b40200bc83ccba5",
+"size": 872344
+},
+"img_0234_x7_v5.ppm": {
+"sha256": "3af693fbbb9883b70f63ca023216d8f2ac80ed6478c5116d969de2020ff00474",
+"size": 872344
+},
+"img_0235_x7_v6.ppm": {
+"sha256": "7756b3bb101bd54ec59035325c5d40f42d98befb7cac627a4f0edf0bb690e135",
+"size": 1186564
+},
+"img_0236_x7_v7.ppm": {
+"sha256": "e3b0a301c64d8de6c29a7f01774b10f989dc33b8c536b2850836ab316f1022a5",
+"size": 1209526
+},
+"img_0237_x7_v8.ppm": {
+"sha256": "aa74c5fa3534360bccc04c0f97b5090ae38756ce412f1f4a9731e2d0fc9bda19",
+"size": 615952
+},
+"img_0238_x7_v9.ppm": {
+"sha256": "431cbbde9181332b36eeb2e72df5de5b9f2053eac1df715093445d65dfa51fc6",
+"size": 356812
+},
+"img_0239_x7_v10.ppm": {
+"sha256": "0f7eaefc3e3c2d5fdb50c740b6d0ef665cd405c6ec2808b267ba39ebbb1afc74",
+"size": 573820
+},
+"img_0240_x7_v11.ppm": {
+"sha256": "eaff5f61f428a53e574f5c16532c134f714bea590eafee0f2b8fe5e54afc9d60",
+"size": 573820
+},
+"img_0241_x7_v0.ppm": {
+"sha256": "c7fa79feb58425eff19b2fda02528d18686e2f68a0a0e2c811c52a7b04cec558",
+"size": 573820
+},
+"img_0242_x7_v1.ppm": {
+"sha256": "87414d942873a142199cea9a678b3c8008ae2b70d7a53e6672020628e15bdbc8",
+"size": 573820
+},
+"img_0243_x7_v2.ppm": {
+"sha256": "c3eaa30b0f3225ae947efa0a558be576660b1e508a1bf310d8ae74314eb24753",
+"size": 872344
+},
+"img_0244_x7_v3.ppm": {
+"sha256": "3a38915cdbaba353b3f630ab03cdcca23791f50a1036e818b42e2b777f144b04",
+"size": 1186564
+},
+"img_0245_x7_v4.ppm": {
+"sha256": "ffa806ef01252a65410597d592c65f57755ed309c4be72472fef4be073ba9c76",
+"size": 356812
+},
+"img_0246_x7_v5.ppm": {
+"sha256": "546a0aa03556b23a15d6916e35cb8640ca79c737900b8ba5faf94cd283204a28",
+"size": 615952
+},
+"img_0247_x7_v6.ppm": {
+"sha256": "b5730edf3a9e7abeb05a261212efffdbd17b2442d9027d7be58d6254e62b18e3",
+"size": 852736
+},
+"img_0248_x7_v7.ppm": {
+"sha256": "f929177a1460fa164b6a3bb7da44283ac5ec3b7da2d7cdd7da8415517fb9a8a7",
+"size": 573820
+},
+"img_0249_x7_v8.ppm": {
+"sha256": "74b956fa5d5af5754507c891acbd77249d6d85dd0fed034dbbcb1c9bb1f01c34",
+"size": 573820
+},
+"img_0250_x7_v9.ppm": {
+"sha256": "657faa5f0cc7f260b1c46c2aa18fd45bc6fbabb825278148eb3ef759bdb382d4",
+"size": 1209526
+},
+"img_0251_x7_v10.ppm": {
+"sha256": "f74e2d95a1927743c0fea74fad16837195b6b12528a8c125ebc98edec9ab55ac",
+"size": 573820
+},
+"img_0252_x7_v11.ppm": {
+"sha256": "47b81a9d908a31de01d52baed672ad9995fecfe6452713368f877adacdab8903",
+"size": 872344
+},
+"img_0253_x8_v0.ppm": {
+"sha256": "ad54896467ef429b99feca473e3d8c831750da50a3c0bd08ea07b1b12de7fd9e",
+"size": 573820
+},
+"img_0254_x8_v1.ppm": {
+"sha256": "e81fb831e83819c439902f15dfe714a2f125eccb0949887dd464d3514ff31cde",
+"size": 573820
+},
+"img_0255_x8_v2.ppm": {
+"sha256": "7eaa366b8787a1ed184374a23c97e60854b88ce06f7a2f20b90cea1467e90037",
+"size": 573820
+},
+"img_0256_x8_v3.ppm": {
+"sha256": "7eaa366b8787a1ed184374a23c97e60854b88ce06f7a2f20b90cea1467e90037",
+"size": 573820
+},
+"img_0257_x8_v4.ppm": {
+"sha256": "fb130b9bed291392918cab965951b2db583a75c82ce16d76a02f971465c4b300",
+"size": 872344
+},
+"img_0258_x8_v5.ppm": {
+"sha256": "da5a72b08233a6a31bf356e56d1fd01a16de40c57ee80323689d74368a4dd7cc",
+"size": 872344
+},
+"img_0259_x8_v6.ppm": {
+"sha256": "3058de0d9a9d11f9ea530c6e86cc18f2c3cc129b59d28edfe05af97c7babfcc4",
+"size": 1186564
+},
+"img_0260_x8_v7.ppm": {
+"sha256": "22b4ed2b56825706ef8aed1117da9f75653e2c93a5e24b5d96aff2dbc9274268",
+"size": 1209526
+},
+"img_0261_x8_v8.ppm": {
+"sha256": "a32c8609faf2fecbc64ce150866620d590ec8ceb4e5d053255f628689737731a",
+"size": 615952
+},
+"img_0262_x8_v9.ppm": {
+"sha256": "30a810e4108327c3dec2bc8c47f74ac9eb3d3b570a416ef1c1160c91ae1c6702",
+"size": 356812
+},
+"img_0263_x8_v10.ppm": {
+"sha256": "e0d711117cfdf81c64bc58f1e3961ee60611d722ce99fbd80e2b94f267ce3624",
+"size": 573820
+},
+"img_0264_x8_v11.ppm": {
+"sha256": "dde360e57b77c2ba2e567c1814860ac6c6e2aa1d412aaf038d6465685e77abc6",
+"size": 573820
+},
+"img_0265_x8_v0.ppm": {
+"sha256": "5b199f6716e60e00b4c4ffca9e53fe67075c14d71f8a7e61413d7a8be86d7625",
+"size": 573820
+},
+"img_0266_x8_v1.ppm": {
+"sha256": "8d9ba825a464e7f80275f07f6f53d2079852e2a23ba3988a556ae782ff4fa4df",
+"size": 573820
+},
+"img_0267_x8_v2.ppm": {
+"sha256": "7e6f2b0f0011be4c486531219b3ca4fb2240861c6d46803405296bc5ba7dd20d",
+"size": 872344
+},
+"img_0268_x8_v3.ppm": {
+"sha256": "1a8543ff697949e41cd2fb528afe3f55df2ca0b46b8b3fc525955e48eea37a57",
+"size": 1186564
+},
+"img_0269_x8_v4.ppm": {
+"sha256": "71a1e2cdb1db356db9ec0dae755adf73135e4ea805f9381c69fcecf07dbfdb3f",
+"size": 356812
+},
+"img_0270_x8_v5.ppm": {
+"sha256": "e5d92bdbee2cdf6cd8cafa38a9d2182d0e9d296794e50708b6dfb57d6bb3760b",
+"size": 615952
+},
+"img_0271_x8_v6.ppm": {
+"sha256": "b4a884948d3a3ec7534aa4ee42d2152fd6f61ac02998f91adbeeed729b90e290",
+"size": 852736
+},
+"img_0272_x8_v7.ppm": {
+"sha256": "902a38e4ac85fb53066a9b62be8b515576f4bae360695f14a810e61a6cab660e",
+"size": 573820
+},
+"img_0273_x8_v8.ppm": {
+"sha256": "bc0533ec87716562b5ce7cb29e7f0f6942085ae8d2a699327c9961e160684fbf",
+"size": 573820
+},
+"img_0274_x8_v9.ppm": {
+"sha256": "7083094a119b5452f9ccfcb5f20dd5c38d68b6e1170054e7b24b982400dd3772",
+"size": 1209526
+},
+"img_0275_x8_v10.ppm": {
+"sha256": "7c2bd44df6ef57288c6244368b04ce5f0499236dbcaa58e09fcf8e3cb2d64142",
+"size": 573820
+},
+"img_0276_x8_v11.ppm": {
+"sha256": "b02275fa62905fecdf9646a18dec456473ea108c65856b80dcfc9d588bf3357f",
+"size": 872344
+},
+"img_0277_x9_v0.ppm": {
+"sha256": "6c558ac903cb805da7933a4770c53239547f1df4dd53f8ef9cbde7e460c97826",
+"size": 573820
+},
+"img_0278_x9_v1.ppm": {
+"sha256": "dd8025c9605e3aeeae31e1c8ea72182d36d8e52157db77aaf493f07968315142",
+"size": 573820
+},
+"img_0279_x9_v2.ppm": {
+"sha256": "8cd13b7f4023297f6aca188a22663f3691df4abbf5959ebafce1740f2d22163d",
+"size": 573820
+},
+"img_0280_x9_v3.ppm": {
+"sha256": "8cd13b7f4023297f6aca188a22663f3691df4abbf5959ebafce1740f2d22163d",
+"size": 573820
+},
+"img_0281_x9_v4.ppm": {
+"sha256": "c653895e752be5d267566f31841dea03082c23f5613bd33cb482a3b5c8662d87",
+"size": 872344
+},
+"img_0282_x9_v5.ppm": {
+"sha256": "55829e1e22e199bb9c2bfbc44413209eb037b0fff7e345b4a509be34e32ae792",
+"size": 872344
+},
+"img_0283_x9_v6.ppm": {
+"sha256": "cdadcfcc3ce170b214d551b708f31b20606689b05717226838229fc92f986206",
+"size": 1186564
+},
+"img_0284_x9_v7.ppm": {
+"sha256": "2e9a86d637b3417b26f5f42148d2db8e1a670c8230cfc5222f8eb3608daa5405",
+"size": 1209526
+},
+"img_0285_x9_v8.ppm": {
+"sha256": "52d85c9b9d6d6a4b04b226a5dbd49bd34db7f2fac545239fac196f5350eb872c",
+"size": 615952
+},
+"img_0286_x9_v9.ppm": {
+"sha256": "114e727302c9fb49e41334e8927bf575f7bcd64d2953229ff0221a05299260c4",
+"size": 356812
+},
+"img_0287_x9_v10.ppm": {
+"sha256": "d3b921a37851e6bb400ba27220bbc1d94f09dc328f18a4c4f8a231022572dd88",
+"size": 573820
+},
+"img_0288_x9_v11.ppm": {
+"sha256": "0c685ad4f30cb88647b5dedaca58fd7f754b971bf53b7809498a04b2d86e3b8f",
+"size": 573820
+},
+"img_0289_x9_v0.ppm": {
+"sha256": "70925a7c27168030746b1d7ebd0fb344db426c32a7669e5e04ef99ceb7fbdc59",
+"size": 573820
+},
+"img_0290_x9_v1.ppm": {
+"sha256": "1e1040782bc96e6b1a517552a47c6bf5f6c6d47f79f479395e6e7f9506543bdf",
+"size": 573820
+},
+"img_0291_x9_v2.ppm": {
+"sha256": "f89187652dba07607c8c87c80bf453894c88fb59947bce3c9ed9c93c9b36f528",
+"size": 872344
+},
+"img_0292_x9_v3.ppm": {
+"sha256": "bc4fa01820612e645ee82c3e60079f074a5940d4a4460a3ad054358695123859",
+"size": 1186564
+},
+"img_0293_x9_v4.ppm": {
+"sha256": "a8dfa9da81f8fe49fef1bbdf02e59907dca285c0a52e50c5f78dfc0749e7ff1d",
+"size": 356812
+},
+"img_0294_x9_v5.ppm": {
+"sha256": "e0a0773bf7b1790508d3c92aeee07f360e3bfc61d9cdc47ae659dd831691277b",
+"size": 615952
+},
+"img_0295_x9_v6.ppm": {
+"sha256": "3d6c18653cac9d0458971ba9e7c53a4f1f1ef4cbe6caa243eb9a29139c6ba559",
+"size": 852736
+},
+"img_0296_x9_v7.ppm": {
+"sha256": "a6a2065f143ed06f536b9d8c0aca5af7cd8d39873ddfeacd319133a98d7979f2",
+"size": 573820
+},
+"img_0297_x9_v8.ppm": {
+"sha256": "42a91c83bffb6885bfbcef97759e77b8b0f8018dde8289da20c411eb139abc1d",
+"size": 573820
+},
+"img_0298_x9_v9.ppm": {
+"sha256": "b2c450c3b3a878bdb40f90275c7a2a85c4f551ad61460d656a19c91142bb5b68",
+"size": 1209526
+},
+"img_0299_x9_v10.ppm": {
+"sha256": "d12123ef56555705c40bcbec02632ba6fad13b8632ce782682a6fb28c341cdf7",
+"size": 573820
+},
+"img_0300_x9_v11.ppm": {
+"sha256": "0b5c967846a9e464fafc6b3a023846e54b722b026272087910b86503112ac8c2",
+"size": 872344
+},
+"img_0301_x10_v0.ppm": {
+"sha256": "e0fccc0bcf24d5b1ee12793aaf2d2468bfe20f88222e0f0d83baf86fc303f49d",
+"size": 573820
+},
+"img_0302_x10_v1.ppm": {
+"sha256": "67a1b4a5d0578c0977c1fb20eeacca54f5e8014d75244da7e2503d604a157772",
+"size": 573820
+},
+"img_0303_x10_v2.ppm": {
+"sha256": "a88f4d20f2e8646046e6183af88335f0f954ce1333a59d51b62ef37aa4fed4e1",
+"size": 573820
+},
+"img_0304_x10_v3.ppm": {
+"sha256": "a88f4d20f2e8646046e6183af88335f0f954ce1333a59d51b62ef37aa4fed4e1",
+"size": 573820
+},
+"img_0305_x10_v4.ppm": {
+"sha256": "d1de24c083d356f64b4947dc59fb9e96601241a6f90226f941e04e80cb749202",
+"size": 872344
+},
+"img_0306_x10_v5.ppm": {
+"sha256": "aa47b433a6ba4b720b52d98e1dc2e34a5b32eac47b5acd98c27ae9f3dae2afaa",
+"size": 872344
+},
+"img_0307_x10_v6.ppm": {
+"sha256": "6b29658c97f4aa5832807e6e1021db6034e87944ac22a48ee8ae91b5ef538af8",
+"size": 1186564
+},
+"img_0308_x10_v7.ppm": {
+"sha256": "0b0672f82f8239efd835ba412e99a855c716b057e4d68e5a58ad2f48dc8778d2",
+"size": 1209526
+},
+"img_0309_x10_v8.ppm": {
+"sha256": "504ef6ccf200d2cf0d506ff184d07cb3891a2783a1d33f20e5e46b87e3ca9abf",
+"size": 615952
+},
+"img_0310_x10_v9.ppm": {
+"sha256": "cd52145f1bc0c9658b25e38d60f729bb4d393f82fd58678b4b6f2092586d169c",
+"size": 356812
+},
+"img_0311_x10_v10.ppm": {
+"sha256": "617e14541b5410890255143db7771952179423e2c2b07a518edcf2ca8ed04afd",
+"size": 573820
+},
+"img_0312_x10_v11.ppm": {
+"sha256": "b9e729f39d126e4973239016c9bdaa6df44712724d6804dafbcbcb779e2e3bbe",
+"size": 573820
+},
+"img_0313_x10_v0.ppm": {
+"sha256": "1d20bfb4c722fa828d565405123b52ce85cfce60184a1b9c8816ec5b4f019792",
+"size": 573820
+},
+"img_0314_x10_v1.ppm": {
+"sha256": "a3c387476d082501bdcce4531d7012811f8856a71ace1787d92cede3ee24278d",
+"size": 573820
+},
+"img_0315_x10_v2.ppm": {
+"sha256": "ee3395121b1d06f4915319c63acbec60b15d896038bd42e18a9630dc67749f24",
+"size": 872344
+},
+"img_0316_x10_v3.ppm": {
+"sha256": "c55ad34974f5ff015e8b166ae63a5919d333850b13389e70b494830161155c4f",
+"size": 1186564
+},
+"img_0317_x10_v4.ppm": {
+"sha256": "9257e919fbfd7db0f7a8fb848c925ccadf1f9f7327fcbd5d2f2aae7d0892580e",
+"size": 356812
+},
+"img_0318_x10_v5.ppm": {
+"sha256": "fd4d3afe9f7d6542c91217ff5e6508d2550fb2e6424f4629f92bc75eafb1cce7",
+"size": 615952
+},
+"img_0319_x10_v6.ppm": {
+"sha256": "b55bcba5b7e75c84f27a23744ea88e25b69a95d1d7805f61291ea5070cdf01ac",
+"size": 852736
+},
+"img_0320_x10_v7.ppm": {
+"sha256": "19304a7bded5c53effcf7964c9055c91c6d6bc771e2bb007dcaf5d2430e446c1",
+"size": 573820
+},
+"img_0321_x10_v8.ppm": {
+"sha256": "920572fe7e5644278d47b8c53b00753eae8941a4ce21266e4ff1e1db9cb7de18",
+"size": 573820
+},
+"img_0322_x10_v9.ppm": {
+"sha256": "93faafd9ffe23313379852019c8cb00446b041ec73bb3296504d106a40b68f85",
+"size": 1209526
+},
+"img_0323_x10_v10.ppm": {
+"sha256": "0dd79b6ee76ffa7523857087ba51545581e3cf267dab395b925fa7793cad7377",
+"size": 573820
+},
+"img_0324_x10_v11.ppm": {
+"sha256": "204c758aec556f03bf13020a40a1937154a2bc450175c8733a978066025b3b3a",
+"size": 872344
+},
+"img_0325_x11_v0.ppm": {
+"sha256": "e2daafb70c4eeae9cacbe1bca12bbb08933903f9a3d0bd459db47b7b55a1e6f4",
+"size": 573820
+},
+"img_0326_x11_v1.ppm": {
+"sha256": "d802220d0b9dc1e2844eca7a2633e11393e0ce151999181776afed2db4a27ac2",
+"size": 573820
+},
+"img_0327_x11_v2.ppm": {
+"sha256": "d3aaa8a57700d109c40623fdaebb14e164be4bef2c453eaf50c2a7f6d05dd060",
+"size": 573820
+},
+"img_0328_x11_v3.ppm": {
+"sha256": "d3aaa8a57700d109c40623fdaebb14e164be4bef2c453eaf50c2a7f6d05dd060",
+"size": 573820
+},
+"img_0329_x11_v4.ppm": {
+"sha256": "195f36ab347d43a8d25c0e1cdf94d324036926e6fc8c530c588e5f0f4c37225d",
+"size": 872344
+},
+"img_0330_x11_v5.ppm": {
+"sha256": "510d9529d749c8477b129f0e69b796dadc9cdc4c903d6637bca218a00a5f4417",
+"size": 872344
+},
+"img_0331_x11_v6.ppm": {
+"sha256": "9e62da2a862b4d9b2626910cd7ef75670d68e73f9d8ffb5ff214361fd8aa645d",
+"size": 1186564
+},
+"img_0332_x11_v7.ppm": {
+"sha256": "9b3f2c35b54bf744758223de7aebd8f1d7ec5492c5c37f014eda8e2d3d14212a",
+"size": 1209526
+},
+"img_0333_x11_v8.ppm": {
+"sha256": "c58ec68dc802a52c2be82631dc7473cd70f63169a1f9e79195a599d870cf4542",
+"size": 615952
+},
+"img_0334_x11_v9.ppm": {
+"sha256": "e9ec1dc3f79a71f922b74043ee6fff753bff8438c22224a2ff4b13d0bb69c70c",
+"size": 356812
+},
+"img_0335_x11_v10.ppm": {
+"sha256": "fd58ea6e2ee49d6ffa9a4b042c20e195e49187867ffeaf9099ee9272fef9938d",
+"size": 573820
+},
+"img_0336_x11_v11.ppm": {
+"sha256": "87a87f7e0a61125e3a7d39be70fe9584571e12ffdfd16923055de2d0d95d7ff4",
+"size": 573820
+},
+"img_0337_x11_v0.ppm": {
+"sha256": "bbf06719a8a443a1b63ef89ea08e0e2a02c63bf5288c3c21ef72171b040fa95e",
+"size": 573820
+},
+"img_0338_x11_v1.ppm": {
+"sha256": "d7cb8531026631dc73dd20154c71b968c4285582213391b49c74fbf37d59c8fc",
+"size": 573820
+},
+"img_0339_x11_v2.ppm": {
+"sha256": "ed12b969c53f0d24d708dec622356009da44f13da51f97f0844c341c68a72f35",
+"size": 872344
+},
+"img_0340_x11_v3.ppm": {
+"sha256": "8113daaef1b84825a5564245ccbcf49c1f81f20315e76b69172721d19a9ad891",
+"size": 1186564
+},
+"img_0341_x11_v4.ppm": {
+"sha256": "153e1e28a2d14dbef686276ef45de2f97593770c6d84cd34647f05ad2e78a7b1",
+"size": 356812
+},
+"img_0342_x11_v5.ppm": {
+"sha256": "be74dc9c4aa840e1825445d4cd811d755c62f83da36ee18bd066c63cc6a5168e",
+"size": 615952
+},
+"img_0343_x11_v6.ppm": {
+"sha256": "b95f07df26a07fa2cb3ce9896d80ad5209270b209987b5a258161199336a58fd",
+"size": 852736
+},
+"img_0344_x11_v7.ppm": {
+"sha256": "65c6434c0114a5246b570be4eeddd209acac803ac768e5dfea2b208e41b4153b",
+"size": 573820
+},
+"img_0345_x11_v8.ppm": {
+"sha256": "017f7972661fa1a408e52d8751d79ddbe707c9e6aaf7e96124fc38c760df5f17",
+"size": 573820
+},
+"img_0346_x11_v9.ppm": {
+"sha256": "478ec071e5f398cea6635de74f2c0d7bc33a345b96a7a12a399facee209b2811",
+"size": 1209526
+},
+"img_0347_x11_v10.ppm": {
+"sha256": "d63ff6ee9f2e5fb6227a1876dc25acec35d874e92770b7f2ed26f52671f99d3f",
+"size": 573820
+},
+"img_0348_x11_v11.ppm": {
+"sha256": "50058b4f6a48e4c04f9ab9b87295b4d420a65f213817e8affe40bb39df56838c",
+"size": 872344
+},
+"img_0349_x12_v0.ppm": {
+"sha256": "c0feb34594f19f3f3a31fb4b09e0461872d5f652dcd92faca0b4bdb581ffe0e6",
+"size": 573820
+},
+"img_0350_x12_v1.ppm": {
+"sha256": "cbe492ea4c5b050876dd1063d8d4439b055902b637e173c08fa1e1d25b69855c",
+"size": 573820
+},
+"img_0351_x12_v2.ppm": {
+"sha256": "e454d63ef0cb2b2116d5bfcf7ad6ec61265b4522093db873f2bf401a9c3fa7b0",
+"size": 573820
+},
+"img_0352_x12_v3.ppm": {
+"sha256": "e454d63ef0cb2b2116d5bfcf7ad6ec61265b4522093db873f2bf401a9c3fa7b0",
+"size": 573820
+},
+"img_0353_x12_v4.ppm": {
+"sha256": "895e385f7eb1979bc694c0674ec08b0196c314df8ca2af8a5b928f5e45596f1b",
+"size": 872344
+},
+"img_0354_x12_v5.ppm": {
+"sha256": "711e6015c9cbe9ee7d26dc4ba8411366333db94d22b1ab799079faef52e90ffe",
+"size": 872344
+},
+"img_0355_x12_v6.ppm": {
+"sha256": "36ec7bf9c05efc8c1f10a912ee19d6b7ba296131457363ae8b4ecedeafdff7f9",
+"size": 1186564
+},
+"img_0356_x12_v7.ppm": {
+"sha256": "c5cbc1718c0f1272adca77617c147218b97cc8230d81ee4b933a0f3254c2f57a",
+"size": 1209526
+},
+"img_0357_x12_v8.ppm": {
+"sha256": "fc83418de991f4bad56d14c94eee767c56e23be776f6e6fc76d41b8d9197fca5",
+"size": 615952
+},
+"img_0358_x12_v9.ppm": {
+"sha256": "0fd8102e99c66d14d3c6efd43d166ad4b62c996f74fd033a90671f5be183641b",
+"size": 356812
+},
+"img_0359_x12_v10.ppm": {
+"sha256": "67eecd5d533f849171ef660c44d7a9cd470ec40be16e03996ce789869c28a031",
+"size": 573820
+},
+"img_0360_x12_v11.ppm": {
+"sha256": "33b7574060854301d4dc9ece6e781d0aa1dd28c46d36e5fbc884719457d95857",
+"size": 573820
+},
+"img_0361_x12_v0.ppm": {
+"sha256": "706049cf6beb9a8e1188c060dc344ab0be9003d60d827f3b7fe4b3fafadf83e1",
+"size": 573820
+},
+"img_0362_x12_v1.ppm": {
+"sha256": "6871487d3a85f58804370b20d447f36ef8820e3b1d1ab1f97bee12b0060767b3",
+"size": 573820
+},
+"img_0363_x12_v2.ppm": {
+"sha256": "ea8a781353d040d2cf9a6370f99b9f2a76dce228bd518cdc09872782b4dc34c0",
+"size": 872344
+},
+"img_0364_x12_v3.ppm": {
+"sha256": "a82cad44121cdc16e9c15aa7c7bf789c8eb6046ae976ffc1fe5760614d711d99",
+"size": 1186564
+},
+"img_0365_x12_v4.ppm": {
+"sha256": "7b55fdf33173657d35917e313964cf0ec9e3306b861f95d18bab4bfdfed8ac2a",
+"size": 356812
+},
+"img_0366_x12_v5.ppm": {
+"sha256": "769992751d748dc7c117c7e6eeabe407c57bfe5291aecdaee697e58a095ab4e0",
+"size": 615952
+},
+"img_0367_x12_v6.ppm": {
+"sha256": "710edc1a627fbcc307b48e79af80aab1bea80bc75032a5e6729c71c24fd02edb",
+"size": 852736
+},
+"img_0368_x12_v7.ppm": {
+"sha256": "57cf49b0742f5710aad585f6d9bc2a76d73172e415919cd1e7a713636d516af4",
+"size": 573820
+},
+"img_0369_x12_v8.ppm": {
+"sha256": "cc3429fec3bf74c4bb4ab8792d548e57bc8298acaa5c76cd13c59bc9067c86cd",
+"size": 573820
+},
+"img_0370_x12_v9.ppm": {
+"sha256": "ecaa6966eac0da490d01a844a7165f565d3ccaef865bcce39eedf92ea8a2e78e",
+"size": 1209526
+},
+"img_0371_x12_v10.ppm": {
+"sha256": "685798b970660b7f8b89a5900c5435d8b202e496223909244c439452c8e4155c",
+"size": 573820
+},
+"img_0372_x12_v11.ppm": {
+"sha256": "293d6147e9d02a2e463a1525ef43beffced01e643a0b6b6652fde0028da1dc34",
+"size": 872344
+},
+"img_0373_x13_v0.ppm": {
+"sha256": "c796ae22d84facb30ee9e93d955b832f0b44a37c4b060706c451c8f701306cc0",
+"size": 573820
+},
+"img_0374_x13_v1.ppm": {
+"sha256": "5d77322423a0b3d4b5852c26c0003b8356259507af67effc8565a55806f01051",
+"size": 573820
+},
+"img_0375_x13_v2.ppm": {
+"sha256": "9b72c73739f1062c8a2dff74cb355cf6ead21ff2d1a4f1eff5bc3ebe5a014854",
+"size": 573820
+},
+"img_0376_x13_v3.ppm": {
+"sha256": "9b72c73739f1062c8a2dff74cb355cf6ead21ff2d1a4f1eff5bc3ebe5a014854",
+"size": 573820
+},
+"img_0377_x13_v4.ppm": {
+"sha256": "e2e85a0b28ce11c8dc3bf9aaaa879b6a2838a3d8b307458245352efe97d53943",
+"size": 872344
+},
+"img_0378_x13_v5.ppm": {
+"sha256": "c0d56a78c24f261e78e00bdd6ad00ac9b0dd6f9f72650572358bcb670a5746eb",
+"size": 872344
+},
+"img_0379_x13_v6.ppm": {
+"sha256": "4575853a95a2d93dc2d368a6d4d6a119a73a1c8bd538274becd0461d5851014d",
+"size": 1186564
+},
+"img_0380_x13_v7.ppm": {
+"sha256": "d0a8ef675ee3570924832eb0863e8fd6e1b9880f8f150decc7f9aab841d9d7ed",
+"size": 1209526
+},
+"img_0381_x13_v8.ppm": {
+"sha256": "1b47e606d8b0aea7d77b03007bf00a1a151f60649c689d7b8579e17825fe992d",
+"size": 615952
+},
+"img_0382_x13_v9.ppm": {
+"sha256": "ed82f4aef5d5b065a9ac0d031ca83975bb05c7cd8578346437455054b2221e9d",
+"size": 356812
+},
+"img_0383_x13_v10.ppm": {
+"sha256": "6f750ea5321d3052d0075914a95706da667d433ae41f5475b60fbca57fcb57d0",
+"size": 573820
+},
+"img_0384_x13_v11.ppm": {
+"sha256": "ffb5bca3a0229639cdae37213d4b080a35f29842d330def1fc5cfa8cd05cef16",
+"size": 573820
+},
+"img_0385_x13_v0.ppm": {
+"sha256": "3ed6993ed3ac73b314c887cd2476cc8e6098c27bd4011758e7cc7cb9e5561540",
+"size": 573820
+},
+"img_0386_x13_v1.ppm": {
+"sha256": "964708779a8a97d06a532d7ea83d6f9bff34c26f6da361e6d31abc4f54e6752a",
+"size": 573820
+},
+"img_0387_x13_v2.ppm": {
+"sha256": "c369970da7fb502e665b7af073e19e4c1d1ca8f7e8bb503d19d572216a0d6352",
+"size": 872344
+},
+"img_0388_x13_v3.ppm": {
+"sha256": "e0b9d553e1481385ed5101d5ca77eb6886d39e3826d845e78af4423cd3c57fd1",
+"size": 1186564
+},
+"img_0389_x13_v4.ppm": {
+"sha256": "cf64bf126567f59f62222ea057cc7a28094ed25ad7cd5bfac8a0c343a1b7e00e",
+"size": 356812
+},
+"img_0390_x13_v5.ppm": {
+"sha256": "0ce8616b39a91540ea900465c6e403e45fe5d9bce52ab68ffa99b9b46d0caf19",
+"size": 615952
+},
+"img_0391_x13_v6.ppm": {
+"sha256": "f5ec8c1fa6caa69932a81d25e7c8ab8a64b08160ef1b233565eee4f885f82a84",
+"size": 852736
+},
+"img_0392_x13_v7.ppm": {
+"sha256": "fe23548e3c2b366a3a6458538f26407044eea212d48acb517b94511267f4f57f",
+"size": 573820
+},
+"img_0393_x13_v8.ppm": {
+"sha256": "0ebfc13494c20fa10323c5e086dc2c7ceeae2fd854499ded5583e60895180812",
+"size": 573820
+},
+"img_0394_x13_v9.ppm": {
+"sha256": "69a23baac1c4c7c05a664ca3bc4301c52577651a5fdc968be4b2704f3d2be401",
+"size": 1209526
+},
+"img_0395_x13_v10.ppm": {
+"sha256": "ab163a61ef0bc956b722fc4cdbd058391a2ca7787ccdd2cf805859405944d19e",
+"size": 573820
+},
+"img_0396_x13_v11.ppm": {
+"sha256": "706cd3feb31d9bbecc8e1be1c6d65161ef393d462a7b0d951cf2f367949ed58f",
+"size": 872344
+},
+"img_0397_x14_v0.ppm": {
+"sha256": "17390dda906317c1d8b4e86abd1f68675cd8485d4679a36fd9ad697735d77052",
+"size": 573820
+},
+"img_0398_x14_v1.ppm": {
+"sha256": "0588bbc2f6047bd6a09d74003c5214983f4323d465ddc8b2b8d5357537e85606",
+"size": 573820
+},
+"img_0399_x14_v2.ppm": {
+"sha256": "f88d523bedc74eac09453dca24c649a32887ed17025610e4d7f20264f1e5af63",
+"size": 573820
+},
+"img_0400_x14_v3.ppm": {
+"sha256": "f88d523bedc74eac09453dca24c649a32887ed17025610e4d7f20264f1e5af63",
+"size": 573820
+},
+"img_0401_x14_v4.ppm": {
+"sha256": "783db51e41ccdb2a5bae9a9906287f25d9ae81d0c4ae478f4676adbb51aa8c07",
+"size": 872344
+},
+"img_0402_x14_v5.ppm": {
+"sha256": "941d10f255938a6f7df6a679f65506a3f7f5ac1b40c619d3a5946b6a9ac9f187",
+"size": 872344
+},
+"img_0403_x14_v6.ppm": {
+"sha256": "937679780b19131af736468568f834fc28a135827c7f76bb6eb3ad28c7730f05",
+"size": 1186564
+},
+"img_0404_x14_v7.ppm": {
+"sha256": "c44b3cb50879608cd5db2797cc7d04c3e67a716893bb0a847a8836b4f6d8cbd5",
+"size": 1209526
+},
+"img_0405_x14_v8.ppm": {
+"sha256": "f6578646421e998efb7d703cd22490c3194703f098b9e5115a8c110c2e126adf",
+"size": 615952
+},
+"img_0406_x14_v9.ppm": {
+"sha256": "6427296ae77e03d896f20906b6f5a7f5c0abd7e0f0c9608198817606f0458f6f",
+"size": 356812
+},
+"img_0407_x14_v10.ppm": {
+"sha256": "b5d500480c01c35063ace1438064d2cf345e5ed77eb7f55449c85ff8213a1bf6",
+"size": 573820
+},
+"img_0408_x14_v11.ppm": {
+"sha256": "82ca1f8ef326cadda42721f604c14ebc479779ebaf31224e88e04e7a303c9d2f",
+"size": 573820
+},
+"img_0409_x14_v0.ppm": {
+"sha256": "81bacc1179ffe17a0eeb2ef4592fcf0f5dc65bc226284ee3a235bece8a6821ae",
+"size": 573820
+},
+"img_0410_x14_v1.ppm": {
+"sha256": "986c8704fa303ae41427c3f5d102aa85518c354371f307c10f333176bc27c9e0",
+"size": 573820
+},
+"img_0411_x14_v2.ppm": {
+"sha256": "a3a92ace76d14803b457a69e00d5c8d484439c6540385a955472fcb18c98cfea",
+"size": 872344
+},
+"img_0412_x14_v3.ppm": {
+"sha256": "f2a21d1bf9519040af50da6f4b3c24811807029e2561b39aeb42fb6861d35ca3",
+"size": 1186564
+},
+"img_0413_x14_v4.ppm": {
+"sha256": "d74ad154240c64238502df188a7c398f494c938b9122738809e69af67724ea8e",
+"size": 356812
+},
+"img_0414_x14_v5.ppm": {
+"sha256": "3ef11479b033435eb83dcba54a9f7a5eb79c44417e1730898b2492ca9c4d88ba",
+"size": 615952
+},
+"img_0415_x14_v6.ppm": {
+"sha256": "4005b79a5a57bcbd7f76b9171aefcb24c240a7b713f0d64458ced4842b13ef61",
+"size": 852736
+},
+"img_0416_x14_v7.ppm": {
+"sha256": "c6cd44461583c16dd2a3b181ef5deb39ce38e5e111ef4ceabf9d30293edbd7f5",
+"size": 573820
+},
+"img_0417_x14_v8.ppm": {
+"sha256": "9f7aa93a32dd786086613fb486f5af4768227c53cbbe21424269260ab51063a7",
+"size": 573820
+},
+"img_0418_x14_v9.ppm": {
+"sha256": "e344fe6e0451ce5c84d540e066cfa3cf320bb558940413821979e0f1cf746837",
+"size": 1209526
+},
+"img_0419_x14_v10.ppm": {
+"sha256": "19285b442c3e7073b3b3331149334daf6cc576651a898a770d4451f10ea24fdf",
+"size": 573820
+},
+"img_0420_x14_v11.ppm": {
+"sha256": "de51dd172a0072e649a01ca97f9fe9bc84104197d10aeb87f4d4e814f5cb0ad3",
+"size": 872344
+},
+"img_0421_x15_v0.ppm": {
+"sha256": "2fcece5c0c97f2a261062b561b7a54bc1eb98cf4b845c3ff52d5b5ae0097a09e",
+"size": 573820
+},
+"img_0422_x15_v1.ppm": {
+"sha256": "32b416d87b6adb7a522102e938f06e81105478f40639fdfb3d3e13c3c1c80907",
+"size": 573820
+},
+"img_0423_x15_v2.ppm": {
+"sha256": "4d5c6e0294c0300d9f806db16f9df0d93e251a88d11613f5fdba490721590f32",
+"size": 573820
+},
+"img_0424_x15_v3.ppm": {
+"sha256": "4d5c6e0294c0300d9f806db16f9df0d93e251a88d11613f5fdba490721590f32",
+"size": 573820
+},
+"img_0425_x15_v4.ppm": {
+"sha256": "39962ffdba5b0a98b0e5b8bafc296377e26c66f01226c35c9adf05aceeee060d",
+"size": 872344
+},
+"img_0426_x15_v5.ppm": {
+"sha256": "f02b6fc350a22ddd48236344980d88f48525788083ced06410767eae77e4bd56",
+"size": 872344
+},
+"img_0427_x15_v6.ppm": {
+"sha256": "cb2a7bb1d1b51027816a8437f503a3b13f3b0ae0fb454eec8e01d7e54768455b",
+"size": 1186564
+},
+"img_0428_x15_v7.ppm": {
+"sha256": "f63dc9dd4a8bf2b99de5e824c9583af581803c86a7e198f9cf8e3b2b427f4f94",
+"size": 1209526
+},
+"img_0429_x15_v8.ppm": {
+"sha256": "46526eb4976ded39b9bcbf213daee8e2d70922d41669f15b84790941fc67990c",
+"size": 615952
+},
+"img_0430_x15_v9.ppm": {
+"sha256": "b1a4ec0d83ef77888bd0539cd3faf2715c3db591681ad04405e5dd6274756d79",
+"size": 356812
+},
+"img_0431_x15_v10.ppm": {
+"sha256": "de860d809789e18ec74a7e5647cfc2df58b9f8fc23d6c6c006ab9fda4995ecca",
+"size": 573820
+},
+"img_0432_x15_v11.ppm": {
+"sha256": "b88ef3f5ef4818018c6000801453627f4ccde6b1ab7c43214f9a5db9a96428e1",
+"size": 573820
+},
+"img_0433_x15_v0.ppm": {
+"sha256": "3c3deb4d4b153ad67a8a6bbbd7566e07b0159ac4e3477513beaf2fdb0f2e0a39",
+"size": 573820
+},
+"img_0434_x15_v1.ppm": {
+"sha256": "3c7b7b3ce5e5dfdc12491b1ddb8a57c45621d4a38bc992339f2ffb806dbc2547",
+"size": 573820
+},
+"img_0435_x15_v2.ppm": {
+"sha256": "b0bcce429e51402372b12eed3d0c7a8ce29e76512fbc64fb442a6a4a66849214",
+"size": 872344
+},
+"img_0436_x15_v3.ppm": {
+"sha256": "bcab621befdb33360db258f34c3167ee54d6537b2a1065931e9eddf337602512",
+"size": 1186564
+},
+"img_0437_x15_v4.ppm": {
+"sha256": "8cacbbb680df818f364a09d1ac897d891305de06883da7b146d9a556628d1c72",
+"size": 356812
+},
+"img_0438_x15_v5.ppm": {
+"sha256": "c9e0cac763a50c1c8f6471438c78b2516abeec8c2f92303d82434d1ac0a64502",
+"size": 615952
+},
+"img_0439_x15_v6.ppm": {
+"sha256": "83477669c7a5484d9b3b89a63912eb6876908b310199cebe87789a07f1e1a7b9",
+"size": 852736
+},
+"img_0440_x15_v7.ppm": {
+"sha256": "0d637310588021fba3050759bc34d500c32db6abdc896994f823c7cccea51537",
+"size": 573820
+},
+"img_0441_x15_v8.ppm": {
+"sha256": "67e68ac56d8302085af19facc6c9bc2016a92647efee5b3134db57a58853186d",
+"size": 573820
+},
+"img_0442_x15_v9.ppm": {
+"sha256": "ab34ae99415d1bc74defb8884a34e61592227d7a6e958079f06a1d1c484ab84e",
+"size": 1209526
+},
+"img_0443_x15_v10.ppm": {
+"sha256": "af3e4bb34ff9f930834c2a9c9c0689aadb564b3f748caf0db4fe0897568441bc",
+"size": 573820
+},
+"img_0444_x15_v11.ppm": {
+"sha256": "bb65e69b832c98959b562028a719629894946259ac3f85380af538d6cf86cd31",
+"size": 872344
+},
+"img_0445_x16_v0.ppm": {
+"sha256": "1dfa83f1f57e2330b1c12918834188076c6d0b3b62a6edc26e9be2e50ed54b1b",
+"size": 573820
+},
+"img_0446_x16_v1.ppm": {
+"sha256": "3089237398781ea3bacd2e2c1f7e1931483e170bcc847e155069bdd2b7569c56",
+"size": 573820
+},
+"img_0447_x16_v2.ppm": {
+"sha256": "f978be10ab5799671048357a17fbd63e1659906aae47eac4d716496063e8cce1",
+"size": 573820
+},
+"img_0448_x16_v3.ppm": {
+"sha256": "f978be10ab5799671048357a17fbd63e1659906aae47eac4d716496063e8cce1",
+"size": 573820
+},
+"img_0449_x16_v4.ppm": {
+"sha256": "9b7a8b85765f0ed03f6dc87e8f99a058d2a3e50b260d93b0a8e81193ad0c829d",
+"size": 872344
+},
+"img_0450_x16_v5.ppm": {
+"sha256": "b337a7cb7c3aced63babf46999b9d48854bfd144ccfc53272c6e5725fceb4c37",
+"size": 872344
+},
+"img_0451_x16_v6.ppm": {
+"sha256": "2b6e42b0d122bb252c110bba17f50f1176d7654d0317c87fba0d9dbc62785b3c",
+"size": 1186564
+},
+"img_0452_x16_v7.ppm": {
+"sha256": "a84c6d8976a5a296bc1851ccdad8e97d9a45806fa2ef2471afef4dc4f810039c",
+"size": 1209526
+},
+"img_0453_x16_v8.ppm": {
+"sha256": "472bf7ce5865d4b9acb508bd5409f062b9965889adc38d75b3db319dd0bdb30b",
+"size": 615952
+},
+"img_0454_x16_v9.ppm": {
+"sha256": "08e1175d95b0c1f2bb9dccce6bf10d8b8d11b4bc78c0d2299f42b8428c93155a",
+"size": 356812
+},
+"img_0455_x16_v10.ppm": {
+"sha256": "09772bbd29a2504394e5e55eac0a37b1d3b61b04c1f1bcf36946d2e28379d5d3",
+"size": 573820
+},
+"img_0456_x16_v11.ppm": {
+"sha256": "d10807a8ecaf32c0f766e74383602c1c831e3d7435d884a2d177c32a8ed7fdab",
+"size": 573820
+},
+"img_0457_x16_v0.ppm": {
+"sha256": "cf1e1b3f636203d1ab39f9207d282f2f49d53353d8e6c3577b66a7d67715dce8",
+"size": 573820
+},
+"img_0458_x16_v1.ppm": {
+"sha256": "d8d0f06bccee3d9f300aed579fd9c7a21f19525e690c37aa7dce4133b1b60236",
+"size": 573820
+},
+"img_0459_x16_v2.ppm": {
+"sha256": "c2de7cfe651d8201c8d827e24d122adebe0afface7aafc98e049d6aec3a1b5a9",
+"size": 872344
+},
+"img_0460_x16_v3.ppm": {
+"sha256": "a6e9273258cd926757ba5d23bcbcc610efee0a9799fcf947b098005cb980e26c",
+"size": 1186564
+},
+"img_0461_x16_v4.ppm": {
+"sha256": "13e3689f1cad3a078cf91db5a98cef5b46605746347a4da42dd4d60862391e2e",
+"size": 356812
+},
+"img_0462_x16_v5.ppm": {
+"sha256": "289d3faab915ec9b9b0ccf0596225ed1900155609a3336d0742e8c675df62f0e",
+"size": 615952
+},
+"img_0463_x16_v6.ppm": {
+"sha256": "8b64c071188a2e8840f8122375b8b52ec1cc287a724d4bc697faf7e9861dd671",
+"size": 852736
+},
+"img_0464_x16_v7.ppm": {
+"sha256": "097066d8c6857f6fe05668136596b0c7e967a0b003152257c2e7078b5ae86ae2",
+"size": 573820
+},
+"img_0465_x16_v8.ppm": {
+"sha256": "71ea4458775509e0dc25285f9eb9f1d82a1af4ceddcbbace7836a1760926352d",
+"size": 573820
+},
+"img_0466_x16_v9.ppm": {
+"sha256": "10e841a2087ffec6a4c3bc1403d86d2619ab720d0083a12d533917f3f1d4855f",
+"size": 1209526
+},
+"img_0467_x16_v10.ppm": {
+"sha256": "ad871e9baa3c0392db3f9eb2531b6e95e4ad34122509edb3fac722b2f9410396",
+"size": 573820
+},
+"img_0468_x16_v11.ppm": {
+"sha256": "f3b59df8cf7d6b7702beab490255d4b3d099d8e0d66f0f759280913472ab1833",
+"size": 872344
+},
+"img_0469_x17_v0.ppm": {
+"sha256": "9bd0b4dfacf45226b713bade953267059e35894c3f4a4899f84f06909a3dd692",
+"size": 573820
+},
+"img_0470_x17_v1.ppm": {
+"sha256": "5afaa185e8a8f6dbaa257257bbc547b4f4cfa1fcabd5cbbc79333b659a30343f",
+"size": 573820
+},
+"img_0471_x17_v2.ppm": {
+"sha256": "f7b335a3ce56ba1e6f12b3934af7bd7b6f4591cc5710edd5bec9cdc9814c3253",
+"size": 573820
+},
+"img_0472_x17_v3.ppm": {
+"sha256": "f7b335a3ce56ba1e6f12b3934af7bd7b6f4591cc5710edd5bec9cdc9814c3253",
+"size": 573820
+},
+"img_0473_x17_v4.ppm": {
+"sha256": "87ed9994bf8dccb1ec6ec84ad9ddb55339808eb0586db902b4a907ffb8a7987b",
+"size": 872344
+},
+"img_0474_x17_v5.ppm": {
+"sha256": "3cbe4740ad71dfdb0c6195c0ee2d7607ea6fbf1699055f303340da63ee357713",
+"size": 872344
+},
+"img_0475_x17_v6.ppm": {
+"sha256": "d617c413abd57e9b55e01bfb9114acfe02953b10b253a4fe8601b0659492ca3e",
+"size": 1186564
+},
+"img_0476_x17_v7.ppm": {
+"sha256": "98bcf94d72488b5faec123b4080214b70a1c38d219bd5e34840fc07d197d2e39",
+"size": 1209526
+},
+"img_0477_x17_v8.ppm": {
+"sha256": "169ee04b7e6e39acd30d2b9b74e3d3e85ed6128fbe4ac80178c20d1a3477ded5",
+"size": 615952
+},
+"img_0478_x17_v9.ppm": {
+"sha256": "7f81e8de16cf195727e629d6d24c2b181d1729e03b6d6f7710b6e087f044b513",
+"size": 356812
+},
+"img_0479_x17_v10.ppm": {
+"sha256": "0180e1035c1819026b26f0527b4d9c39d151f1c0273ddf91e148c46a7a8064b2",
+"size": 573820
+},
+"img_0480_x17_v11.ppm": {
+"sha256": "573e99592919be71e6c42448389f9ef47f1ed7e242cca5030fd8b46895bfa8db",
+"size": 573820
+},
+"img_0481_x17_v0.ppm": {
+"sha256": "4c5bbecd966b02984cb69f7eb185a1545a6a86f72c6e0fe3c9c22ccb49f409d7",
+"size": 573820
+},
+"img_0482_x17_v1.ppm": {
+"sha256": "8d721a241e77972515ec8a1eecd9c54727f918395f28585e7870eca83dc16443",
+"size": 573820
+},
+"img_0483_x17_v2.ppm": {
+"sha256": "ac36b6eb2d682707602ddc1a0d2390cb4caf1e04b9c1202d01a06721721abafc",
+"size": 872344
+},
+"img_0484_x17_v3.ppm": {
+"sha256": "ac535e2b688f32b51bf67e50e4698860a4f529ea34e8e92013d36ed5439b2d25",
+"size": 1186564
+},
+"img_0485_x17_v4.ppm": {
+"sha256": "f9c1fcbcc69d02b9d005fd7c9efd72eb0d3828ed80226c93a44be037c7c509f3",
+"size": 356812
+},
+"img_0486_x17_v5.ppm": {
+"sha256": "d1a1469b14c30b2e5dfcf0e8998e26c62d74161977bebb1931d3ccb676459837",
+"size": 615952
+},
+"img_0487_x17_v6.ppm": {
+"sha256": "4c37344f75cc5b76e02df814b1c0e99c7b4fe09dad9106f1d86a1a02ba50562b",
+"size": 852736
+},
+"img_0488_x17_v7.ppm": {
+"sha256": "095ae938fb174d7851965f7ecfb4599867b132d531ebf5a5dc8297b5332fba38",
+"size": 573820
+},
+"img_0489_x17_v8.ppm": {
+"sha256": "8221bdca62a237b7045678da4d4b7a3dd39713d64a8c7649e84ea0b56e780e0f",
+"size": 573820
+},
+"img_0490_x17_v9.ppm": {
+"sha256": "aeab22e127f6b0d94752cab1b7136074c3f36a9548a2c5277ccc0bd92366cd08",
+"size": 1209526
+},
+"img_0491_x17_v10.ppm": {
+"sha256": "941e4f86455f90c9199d13fd08a997634add5314e5bacc9ed4b990bd46f5c99e",
+"size": 573820
+},
+"img_0492_x17_v11.ppm": {
+"sha256": "b84aa03b201d3dc259a339b0538c9be71ed1959a64d75b51166ceced21ee470d",
+"size": 872344
+},
+"img_0493_x18_v0.ppm": {
+"sha256": "4163f02c554ee74302c3f2613173a45bc2421650721bf528f0bc1f931c3c4d17",
+"size": 573820
+},
+"img_0494_x18_v1.ppm": {
+"sha256": "186645eb5f5d4455482a89e7f9a25e51f1517859fd17f16928f9ec900b8ddd22",
+"size": 573820
+},
+"img_0495_x18_v2.ppm": {
+"sha256": "93dfd804d4d1bee0204c92d82eb091762d5fbbecc145d404ac0643778701545f",
+"size": 573820
+},
+"img_0496_x18_v3.ppm": {
+"sha256": "93dfd804d4d1bee0204c92d82eb091762d5fbbecc145d404ac0643778701545f",
+"size": 573820
+},
+"img_0497_x18_v4.ppm": {
+"sha256": "5ab20921108e8a1734fa533eeccf049c1ff938d02132e123c53f857b8cbfb0f0",
+"size": 872344
+},
+"img_0498_x18_v5.ppm": {
+"sha256": "811f24e9fe704f1456b1d1672e42d2ac0fea8815a61a4ba63ffaeff23147af03",
+"size": 872344
+},
+"img_0499_x18_v6.ppm": {
+"sha256": "5ca8c6ebfae35506a49368f80d116da1e4de8851e491138805f6a59e9606d3e3",
+"size": 1186564
+},
+"img_0500_x18_v7.ppm": {
+"sha256": "b8d862c77d7d8cb8b389758cd8039179944996381abdedcdd2aee30626bf7e5b",
+"size": 1209526
+},
+"img_0501_x18_v8.ppm": {
+"sha256": "d94014270c42002b0fc8d2fc3efe57ba3e220c50098df2d948f03e9a70ffed3e",
+"size": 615952
+},
+"img_0502_x18_v9.ppm": {
+"sha256": "b781ec683643fa486ce62b99a80a595852e8c03844116457f445195a8309198f",
+"size": 356812
+},
+"img_0503_x18_v10.ppm": {
+"sha256": "e1feac7e29d5dc70a9b172b146c4f561d8bc8e558dd923adbc76de42233fe00d",
+"size": 573820
+},
+"img_0504_x18_v11.ppm": {
+"sha256": "74bba3857b05cada2b05c61cf5739b16fc0851e9107bfbf3b9504aff4a718af8",
+"size": 573820
+},
+"img_0505_x18_v0.ppm": {
+"sha256": "b0064fd7ce2d28c58f268a317a5e113f1e2f6c7eede4fdec734f0a343f477544",
+"size": 573820
+},
+"img_0506_x18_v1.ppm": {
+"sha256": "b3c89c718aebe66f389537a53ca7b574a3fdfcf71bd989f6e893ea5d7ac341cf",
+"size": 573820
+},
+"img_0507_x18_v2.ppm": {
+"sha256": "7ff2c76b707e331d3582dd1e5485eca24b1e9e4673a499ebf0c4ba2983f5cbbe",
+"size": 872344
+},
+"img_0508_x18_v3.ppm": {
+"sha256": "95da744a27b919f362d1f692749b507a13fcdf9ab9f5b632b8573cfd0e8fd932",
+"size": 1186564
+},
+"img_0509_x18_v4.ppm": {
+"sha256": "a4f8eb3d2d3300857ddb4ba3f6fd394e227ff0ddbc7f8525603906ed39fd781e",
+"size": 356812
+},
+"img_0510_x18_v5.ppm": {
+"sha256": "cc0b04c97857d69d8604b56452b2bbcf1c057a46012c7db2e26e8835d83b332d",
+"size": 615952
+},
+"img_0511_x18_v6.ppm": {
+"sha256": "8966d3e00a41dcf6d09b73a12651656b9eed889815cc04469c67605d715fe8e8",
+"size": 852736
+},
+"img_0512_x18_v7.ppm": {
+"sha256": "5c54fff307cc12acccee69155bb69c4e86632d6f1f3240c5b17320dc8a15db01",
+"size": 573820
+},
+"img_0513_x18_v8.ppm": {
+"sha256": "7bf6b1360c9311d7530bd39e8e13d20f0408726d5638b65672626334b9019cdd",
+"size": 573820
+},
+"img_0514_x18_v9.ppm": {
+"sha256": "4d2145045c3f8d92657e07f2fbe227becaac03db34f96d17b419e323e38f2f33",
+"size": 1209526
+},
+"img_0515_x18_v10.ppm": {
+"sha256": "fc5eeb08dcd9fa03914c1f133fc8fd59a47dc427a7e73c2c7381b5dd87c74b79",
+"size": 573820
+},
+"img_0516_x18_v11.ppm": {
+"sha256": "b4aa3f19557db2d186d61f461aed1ba41a35198f5e922473c3f9bb6f30fde120",
+"size": 872344
+},
+"img_0517_x19_v0.ppm": {
+"sha256": "2093d29cca59e629d0abfc3c28a12c9ab327a83584b8565b89806e5684819721",
+"size": 573820
+},
+"img_0518_x19_v1.ppm": {
+"sha256": "5a0a99a1fdda628e62a2a55e2fb7eb0f46578014996b05cbb6c4e6db19b419cf",
+"size": 573820
+},
+"img_0519_x19_v2.ppm": {
+"sha256": "3ad907be7825ae9bc819e89238d7ee4fb1750efb3e4f5e2c0b167e914c99ed31",
+"size": 573820
+},
+"img_0520_x19_v3.ppm": {
+"sha256": "3ad907be7825ae9bc819e89238d7ee4fb1750efb3e4f5e2c0b167e914c99ed31",
+"size": 573820
+},
+"img_0521_x19_v4.ppm": {
+"sha256": "476d6b2a424b4ad9cccf661d23a43ceb47b7bee94fd48d719aa34ed12b537273",
+"size": 872344
+},
+"img_0522_x19_v5.ppm": {
+"sha256": "c29124778892bfa65041c673620a7b17ad6c4969ca8b0ffbb5bb026c566e2def",
+"size": 872344
+},
+"img_0523_x19_v6.ppm": {
+"sha256": "569f45c469316983faff7a6a7537015e09a90e0491207d7b7f4bef6fd32154f5",
+"size": 1186564
+},
+"img_0524_x19_v7.ppm": {
+"sha256": "f4f30ae683128520bb7dc642a7f212828f881e5bfccfd4dbb8ec5825d569ffbc",
+"size": 1209526
+},
+"img_0525_x19_v8.ppm": {
+"sha256": "16ed93827b4ba015fca8b31d8fba67a8554f715a831016024ce87840d360d786",
+"size": 615952
+},
+"img_0526_x19_v9.ppm": {
+"sha256": "5b606b1e1c309866193809a56b13675389f87b3b2d20f82f51f47ce6bb95883e",
+"size": 356812
+},
+"img_0527_x19_v10.ppm": {
+"sha256": "cea3026c3b39713a04668c322e667245daf0a14d97d50a0657406d2a4104e286",
+"size": 573820
+},
+"img_0528_x19_v11.ppm": {
+"sha256": "37c1604c0bb4ef5a6b7815c4922495400f23adbdddad9993bc7b5aa92900354b",
+"size": 573820
+},
+"img_0529_x19_v0.ppm": {
+"sha256": "0439bf82bd86bb4492718623f6fe0c457bd9e57b09c01cb18dad21ae781d0f6d",
+"size": 573820
+},
+"img_0530_x19_v1.ppm": {
+"sha256": "1ac366220ebdfe7cca07979dbe9d2368f519e9ebbbdf03c30bf14df696ccb8f3",
+"size": 573820
+},
+"img_0531_x19_v2.ppm": {
+"sha256": "4d65b0192d262a13d9268d6faa45ed18b2507eb9db7e2c1baaeca6ef409f1773",
+"size": 872344
+},
+"img_0532_x19_v3.ppm": {
+"sha256": "6c05e0b4655fac450dbe699c94bea99d18f908f55fa545793c0a8ae48db38ab3",
+"size": 1186564
+},
+"img_0533_x19_v4.ppm": {
+"sha256": "7b8ca0779b050ccfd8831d4c4e0e3eab839a1c3694d0a5d7dc206630200a0fc7",
+"size": 356812
+},
+"img_0534_x19_v5.ppm": {
+"sha256": "f2438d19078cba027d916e0c38a05e94ed018a43dda5705e1e5afdb29d6f8c54",
+"size": 615952
+},
+"img_0535_x19_v6.ppm": {
+"sha256": "cfd43a9c63d962964c0312037bbab705e4123b83409b4d7db5dfba4f2e817d81",
+"size": 852736
+},
+"img_0536_x19_v7.ppm": {
+"sha256": "5559916a890fd58ed826d5a7d2abda9727bdcbc49b332a88810f568ca1949a75",
+"size": 573820
+},
+"img_0537_x19_v8.ppm": {
+"sha256": "9aae7cee43ffa3d4e82b98fcbfa8c1f8a136a71bbeba34fc81346dbc4111214c",
+"size": 573820
+},
+"img_0538_x19_v9.ppm": {
+"sha256": "a6eebce5d98d30e355389aecf75e7cf964758c51cb2059408c0dce7dd753dce2",
+"size": 1209526
+},
+"img_0539_x19_v10.ppm": {
+"sha256": "75c2dea2c661ba7bc42108d5e627e7b992b3d907019863bb89366d56aa60c342",
+"size": 573820
+},
+"img_0540_x19_v11.ppm": {
+"sha256": "ccf73dd46d7964f9b647e942e5b910b6e26c7a1f76186217a27e233c8eabe143",
+"size": 872344
+},
+"img_0541_x20_v0.ppm": {
+"sha256": "b044120552b66f1e91ecd8668005329f0230a80894f6faa81b17a5c8cd754fd3",
+"size": 573820
+},
+"img_0542_x20_v1.ppm": {
+"sha256": "255f8e3c0fab8c0c693920249059a4b29aff2ea2219c81cb0d3da40dc4987340",
+"size": 573820
+},
+"img_0543_x20_v2.ppm": {
+"sha256": "12ce49875db754623d8e1b26cd9c8768b05d0e72321c13ceecd52a6557060acd",
+"size": 573820
+},
+"img_0544_x20_v3.ppm": {
+"sha256": "12ce49875db754623d8e1b26cd9c8768b05d0e72321c13ceecd52a6557060acd",
+"size": 573820
+},
+"img_0545_x20_v4.ppm": {
+"sha256": "1b60b658f0e1082d34b0dcffbdfafcb347853f510fb3c0bca2c7dd82f1769da1",
+"size": 872344
+},
+"img_0546_x20_v5.ppm": {
+"sha256": "c2b99b3ec96e829a7f479fe0fd77b535bfc20df45236da113cec09514613d4d0",
+"size": 872344
+},
+"img_0547_x20_v6.ppm": {
+"sha256": "ca56a78a81297af3e3c7396bf55c59108883327c51a3607fc00950a782f2027e",
+"size": 1186564
+},
+"img_0548_x20_v7.ppm": {
+"sha256": "ec7dea80a42f31f8685145060f0ea18b7af4d1e90bb8459e081633f9025f949c",
+"size": 1209526
+},
+"img_0549_x20_v8.ppm": {
+"sha256": "0817fec88cfa096090a4af1d00e5c2d6ffbcacfda276d9a106e46da12bd06b39",
+"size": 615952
+},
+"img_0550_x20_v9.ppm": {
+"sha256": "1802e8b4feaa6e937f71686330a881ecf2c740e32ab1db285ec3f2acad4e816c",
+"size": 356812
+},
+"img_0551_x20_v10.ppm": {
+"sha256": "d3befc8dfd6b3cc9a021ba2166611a85df47ebfab8cba5132284340fcf2ce8b9",
+"size": 573820
+},
+"img_0552_x20_v11.ppm": {
+"sha256": "ed68ec4fa691d0cd616c6ee13e97c5059af0603efd8135aa69bd3d6969eadfa3",
+"size": 573820
+},
+"img_0553_x20_v0.ppm": {
+"sha256": "8f5e74626b6e9c32bd5f840e554f97275fc5b18444c68c776cc9b895b69487bf",
+"size": 573820
+},
+"img_0554_x20_v1.ppm": {
+"sha256": "89c23ae4f72ae916d5c274204af275043ca293d9dae8427e4125e3b7b5747f80",
+"size": 573820
+},
+"img_0555_x20_v2.ppm": {
+"sha256": "af54411a453e80c1ddd3c8da84af6b80e93f0b3ad828dc155aec436307cf6c3f",
+"size": 872344
+},
+"img_0556_x20_v3.ppm": {
+"sha256": "bcc4f7e98b2c9d86f7e1d8051fbee02509557a3dd2d027f7874139921e255e67",
+"size": 1186564
+},
+"img_0557_x20_v4.ppm": {
+"sha256": "791ff05af640bc4e8444a5075a569b1c18e194edfa62208ce7415226eb9d3007",
+"size": 356812
+},
+"img_0558_x20_v5.ppm": {
+"sha256": "f5a7ab473088fa6f26b63da235a3e4f01057f313b5e6c79d52b73694f82337f5",
+"size": 615952
+},
+"img_0559_x20_v6.ppm": {
+"sha256": "6915cfb930bcd7a27d6c66cd701f22c2e403652df193fc82a6c6262aece9fe30",
+"size": 852736
+},
+"img_0560_x20_v7.ppm": {
+"sha256": "b5932f17064e2e45f5628e6f2fde2c095cf76c140c3deddfa49d31ae8f7bac35",
+"size": 573820
+},
+"img_0561_x20_v8.ppm": {
+"sha256": "d49570a78b6232202d2bd3bcc0d55e72a4f244a4972b161e1f164eb6c7005993",
+"size": 573820
+},
+"img_0562_x20_v9.ppm": {
+"sha256": "c2e81ef07787602f1b1a7b91da47f625b99ca0a5648a56598cdbeb1237544aa1",
+"size": 1209526
+},
+"img_0563_x20_v10.ppm": {
+"sha256": "b0a14b5ba22784f033e3c9d179eb9f86519036e3ee33e578a02a3b79c93d0f1a",
+"size": 573820
+},
+"img_0564_x20_v11.ppm": {
+"sha256": "4d9f454911eff2a96a4fb2467075111440dce14804250a0ce63a06b087f3e34b",
+"size": 872344
+},
+"img_0565_x21_v0.ppm": {
+"sha256": "7f4773e255a24d2edbcb05bf95fa4c147e795261b6e7f89f4e046abd148351a3",
+"size": 573820
+},
+"img_0566_x21_v1.ppm": {
+"sha256": "9e7e664a66f6e6aa1ef43405708d45e400d4e48a5be992ef553452fec783812f",
+"size": 573820
+},
+"img_0567_x21_v2.ppm": {
+"sha256": "fc064132c2872605b79f829ebdad954cd0a429328a9ab1909e7c20333af96485",
+"size": 573820
+},
+"img_0568_x21_v3.ppm": {
+"sha256": "fc064132c2872605b79f829ebdad954cd0a429328a9ab1909e7c20333af96485",
+"size": 573820
+},
+"img_0569_x21_v4.ppm": {
+"sha256": "d6c4b82d480f8567f664338e9e50f09425e3ae1d3c2e5fa301682dfe1a7ca98c",
+"size": 872344
+},
+"img_0570_x21_v5.ppm": {
+"sha256": "971adacaf9b67a5912bc225d2d0cf4cf8044d16d2974f6296dc77d06ea2860fc",
+"size": 872344
+},
+"img_0571_x21_v6.ppm": {
+"sha256": "d503832a571b1ac7676382d576d0c9a443587590dba06aa014f5b1053dbe43df",
+"size": 1186564
+},
+"img_0572_x21_v7.ppm": {
+"sha256": "2cdd90832804550da1b0ee516a921195fc74ba746adfbb73aac282b28775cb60",
+"size": 1209526
+},
+"img_0573_x21_v8.ppm": {
+"sha256": "604a8efb7a796fda589f14ae7f5781a250da20c4ef4b0a893e3f10f9b3f66a10",
+"size": 615952
+},
+"img_0574_x21_v9.ppm": {
+"sha256": "e067cc3a225e3d25ae1785c3251f317bda372353bced033182e43e7c57150dc8",
+"size": 356812
+},
+"img_0575_x21_v10.ppm": {
+"sha256": "ddb8b1edecb74ce9830055a4d032f9f73947e9fb9925ea28d58a685a3f1d9711",
+"size": 573820
+},
+"img_0576_x21_v11.ppm": {
+"sha256": "c967832792012249a68ce9d2b59e71871ffb6983880a645d7999b6f0af806943",
+"size": 573820
+},
+"img_0577_x21_v0.ppm": {
+"sha256": "e7d51e9254f1016645a6d26b0753bdb44b487ec3b6dd2f061abab9d93c791ead",
+"size": 573820
+},
+"img_0578_x21_v1.ppm": {
+"sha256": "506df83c6fd5758949ec076a02ff6b5ea844949717674ffbddbd5adb8b12120d",
+"size": 573820
+},
+"img_0579_x21_v2.ppm": {
+"sha256": "a3fa2e69263261abda9676ab0891f697d5a7c32d79391e361dbc8e7323fb2ef2",
+"size": 872344
+},
+"img_0580_x21_v3.ppm": {
+"sha256": "1884c6344e92eac436be75ea74fbbfa583e139ba0a9366573f17068feac1718b",
+"size": 1186564
+},
+"img_0581_x21_v4.ppm": {
+"sha256": "88d3e86aa253e0d32ef040f76895b73b4be7464f8dbf8a836be5408611deb5fa",
+"size": 356812
+},
+"img_0582_x21_v5.ppm": {
+"sha256": "072a1b9aa0236a3d6abcf517f30a0aa0c3b882e12c18f154abbdb137a645f3ad",
+"size": 615952
+},
+"img_0583_x21_v6.ppm": {
+"sha256": "8e0b0d00207e57c41620fc5d5787a0b2f130e911bee8a6300ff87ff4873252b4",
+"size": 852736
+},
+"img_0584_x21_v7.ppm": {
+"sha256": "89ba410d77f13d2275e6423fbbebc471154faaed8a93a7bba7bd7d2c78ac3a3b",
+"size": 573820
+},
+"img_0585_x21_v8.ppm": {
+"sha256": "4806c51b376a23e8c568e98b2822fd2194e5b97904e844d277dbf1153557b630",
+"size": 573820
+},
+"img_0586_x21_v9.ppm": {
+"sha256": "c65f751bdb9c6668e4337243706a45c14b962545b1f7e72a0ba3280b19fc44c7",
+"size": 1209526
+},
+"img_0587_x21_v10.ppm": {
+"sha256": "3c62bc4bdbf63f2f7a375073925a558b733c2655999892126dfc937ebef912bb",
+"size": 573820
+},
+"img_0588_x21_v11.ppm": {
+"sha256": "674bb1ee0f9ef2dfae50bcd1ee9b6f526d6a2b92c60cfd2180ee20a62a3463ca",
+"size": 872344
+},
+"img_0589_x22_v0.ppm": {
+"sha256": "477b932967b26774a1ed1b9c5f7597d5b1303f360178eda3e2b05184a9516827",
+"size": 573820
+},
+"img_0590_x22_v1.ppm": {
+"sha256": "599b27debbb89ca2f9047c8f28470090482aa2183528c592c04f84396b190ced",
+"size": 573820
+},
+"img_0591_x22_v2.ppm": {
+"sha256": "2ae65b296f7c2f63360d1815659c0e1e7a177eea944b84e0858ad94e726d7e3c",
+"size": 573820
+},
+"img_0592_x22_v3.ppm": {
+"sha256": "2ae65b296f7c2f63360d1815659c0e1e7a177eea944b84e0858ad94e726d7e3c",
+"size": 573820
+},
+"img_0593_x22_v4.ppm": {
+"sha256": "42ec6f07fc3581033e28ec1aa291e6b38e6cc850a0136b8b6dd98c3c845d63d6",
+"size": 872344
+},
+"img_0594_x22_v5.ppm": {
+"sha256": "59be7cb99663576c237aaffaa6b1172e856f581f42dd511bd826288692d9f35e",
+"size": 872344
+},
+"img_0595_x22_v6.ppm": {
+"sha256": "c40ae2f410e0d6b2a05f0325c7797387cd903cba42114c43155e04ad0064fde9",
+"size": 1186564
+},
+"img_0596_x22_v7.ppm": {
+"sha256": "bd4a7c156ab513ac9fa4c7b8b9df22288c2959ca16e4ec94efee9d0fdd85c7dc",
+"size": 1209526
+},
+"img_0597_x22_v8.ppm": {
+"sha256": "16dcbe141b6d421e0d9cb2838031fb7bb2eb1be063c27fea8b78459da0c87fe8",
+"size": 615952
+},
+"img_0598_x22_v9.ppm": {
+"sha256": "f88aec83bbf5500582c721a9d153cdc82a8bf4002f46b58c2a356cbf44b128b2",
+"size": 356812
+},
+"img_0599_x22_v10.ppm": {
+"sha256": "8002e6360dab947f6354b2882abc6a33435b1962527a56b86911f3bd319c59ee",
+"size": 573820
+},
+"img_0600_x22_v11.ppm": {
+"sha256": "f69a67773bd324100af226946829e6addfa35c7828d4a8b07e93bb2e3c6137df",
+"size": 573820
+},
+"img_0601_x22_v0.ppm": {
+"sha256": "13e47be28c4af923a8e9bc66d0a2f46666d3476794b023e384b7523e572d0bc9",
+"size": 573820
+},
+"img_0602_x22_v1.ppm": {
+"sha256": "23a9f6f2d77afc25ad6bdb2658c6ae6c4e74d0df5df3c8f1774b80c205eb0f93",
+"size": 573820
+},
+"img_0603_x22_v2.ppm": {
+"sha256": "8ab2a5742a9bfb67dc99ebf15e536d0b821cb644fc1759955e28591c432a13d7",
+"size": 872344
+},
+"img_0604_x22_v3.ppm": {
+"sha256": "ffaec5e6c46397dd6715f5570dacb47dc2f910d7e8807d5ca71b1efe07946dad",
+"size": 1186564
+},
+"img_0605_x22_v4.ppm": {
+"sha256": "07326256ace600323a3e9aecea97083cc81c361427d591a7693fe3a3695e95c9",
+"size": 356812
+},
+"img_0606_x22_v5.ppm": {
+"sha256": "5ee4077952efc41ba2551810d57d972ad048b7cfceae2fbbc1ece532686e0505",
+"size": 615952
+},
+"img_0607_x22_v6.ppm": {
+"sha256": "08477227c0510117105dbae79df6da8ad6a1d998de2b434ff1139e0d0f849656",
+"size": 852736
+},
+"img_0608_x22_v7.ppm": {
+"sha256": "21e708a77fa433fc330b6ea769d4d3d5d5702b4c30c59b5be62b1b236675d76e",
+"size": 573820
+},
+"img_0609_x22_v8.ppm": {
+"sha256": "f658a8817a4eda0e9338f2494b149ea2e29830d7ea495222b625f475ccbc4a86",
+"size": 573820
+},
+"img_0610_x22_v9.ppm": {
+"sha256": "24d26c3cfb28b9d7970e5ba61b489c80048651b59c60feba3dffe380076301ef",
+"size": 1209526
+},
+"img_0611_x22_v10.ppm": {
+"sha256": "2c9b71b5a98b3a0b7d976b78ece5fa88300eab95997a75b72c18b35616fd9e78",
+"size": 573820
+},
+"img_0612_x22_v11.ppm": {
+"sha256": "424b571b41ade6f47eb66de809df88aab5c3b78a1932f8345231c68772e42026",
+"size": 872344
+},
+"img_0613_x23_v0.ppm": {
+"sha256": "6b703c0cd963d8e9f0331e4fef4201b7604e7ba0c9de39ff47d878199185ebad",
+"size": 573820
+},
+"img_0614_x23_v1.ppm": {
+"sha256": "0c7e2a9c50ae0fb7b05cd26ba7bd3d652f2f4aac664d46fecb15c60f7c95f3eb",
+"size": 573820
+},
+"img_0615_x23_v2.ppm": {
+"sha256": "eeb288b7527afc872bc3cf20c5c155f16a59310283ee76da4ee71d0157168787",
+"size": 573820
+},
+"img_0616_x23_v3.ppm": {
+"sha256": "eeb288b7527afc872bc3cf20c5c155f16a59310283ee76da4ee71d0157168787",
+"size": 573820
+},
+"img_0617_x23_v4.ppm": {
+"sha256": "85fb3460e3b87d11832478d41e26ef019fa2a08230a462c0cbcc569d24324474",
+"size": 872344
+},
+"img_0618_x23_v5.ppm": {
+"sha256": "7f6f649e8cae1f57042cf9aea1a71937f1b8eec0512d36afe3ece87d368b4ef5",
+"size": 872344
+},
+"img_0619_x23_v6.ppm": {
+"sha256": "208c9cba62657d5562c287f139b3f2c7134a560d4811b5d7bab45f60dff5b669",
+"size": 1186564
+},
+"img_0620_x23_v7.ppm": {
+"sha256": "b2c121fd46afecf3679d8346968dd7dce86effb97f1d7b112ba2f6270aab6e51",
+"size": 1209526
+},
+"img_0621_x23_v8.ppm": {
+"sha256": "a6ff9a0d5e8743602061d45bebd4bdc23156387f4fdeba26533b7ba1eea95493",
+"size": 615952
+},
+"img_0622_x23_v9.ppm": {
+"sha256": "5a7d8f2d77d63de372040ed98ea24b486cdab1bdf292ab1f12a0f336fe1feca7",
+"size": 356812
+},
+"img_0623_x23_v10.ppm": {
+"sha256": "6d3c02df86388fdcdac34946114416bd5b1428771ed3475c444e5119e4df2466",
+"size": 573820
+},
+"img_0624_x23_v11.ppm": {
+"sha256": "e0b184db4d98a277a9d67c2e7f0ffdea0efb07667a80021808f526281dc8504e",
+"size": 573820
+},
+"img_0625_x23_v0.ppm": {
+"sha256": "0f623f30577d657f528b8673ffb8d90e22780e1119caff907f45a2bf1da89293",
+"size": 573820
+},
+"img_0626_x23_v1.ppm": {
+"sha256": "a167dda9aaa33ee4ac274b3b45c2d63ff5d13d45df93c576daffff0c90cdf52c",
+"size": 573820
+},
+"img_0627_x23_v2.ppm": {
+"sha256": "0a4f8de3d4d10f97a8caf2865b88e2cd6b83e902dd6e4f6940f0f44b2b19db9d",
+"size": 872344
+},
+"img_0628_x23_v3.ppm": {
+"sha256": "df96bf545a00eff1a7ff0af9bb391a25e340e4d2f33725e735d2f7a93b2ed68b",
+"size": 1186564
+},
+"img_0629_x23_v4.ppm": {
+"sha256": "e0a75df2a196c899b526f1293681304813419f6799001f648ec099ca9b1681f6",
+"size": 356812
+},
+"img_0630_x23_v5.ppm": {
+"sha256": "2a0351e6dd2c1be57e0deb6d488df10ced8079c851d5e19ac305b1b2adfd0688",
+"size": 615952
+},
+"img_0631_x23_v6.ppm": {
+"sha256": "11e67e3d4d6011ade709d48b309ed13589fcc984d94229c6187ebac16733e8cc",
+"size": 852736
+},
+"img_0632_x23_v7.ppm": {
+"sha256": "19db07e2bb11622566cd4b539c1f4faeba8fb5c2e9156c8245eec754f764761f",
+"size": 573820
+},
+"img_0633_x23_v8.ppm": {
+"sha256": "b4455f2de34c611428431d08f3ccfef98c82cc2574ad5c74292930af0011d448",
+"size": 573820
+},
+"img_0634_x23_v9.ppm": {
+"sha256": "5adf0725cd6c43cb62e9eb75895c481f6fa002350207a4326c9df4d6d96af089",
+"size": 1209526
+},
+"img_0635_x23_v10.ppm": {
+"sha256": "abbe34f0aa6f7272b916b90b2e9be4c9dc5c3ec5738a43959b89fd7e23fb285f",
+"size": 573820
+},
+"img_0636_x23_v11.ppm": {
+"sha256": "996378ceab1185ffb4236b1752d9757af62b5ce7f228e5c86e3fabfcd79113ae",
+"size": 872344
+},
+"img_0637_x24_v0.ppm": {
+"sha256": "cf7ffffadb1fd6265dd8d523e66106d02fe9adbacf61fb176dcdf6d4c1f2f4dc",
+"size": 573820
+},
+"img_0638_x24_v1.ppm": {
+"sha256": "bbffd912f5dedee68209fcf1c8fcf59fed16a033e36f2b6ff3ea6731b7da93c5",
+"size": 573820
+},
+"img_0639_x24_v2.ppm": {
+"sha256": "851de3fab87dbf03f482492f286434b10045c633856e1044c1a4ca9843f6276f",
+"size": 573820
+},
+"img_0640_x24_v3.ppm": {
+"sha256": "851de3fab87dbf03f482492f286434b10045c633856e1044c1a4ca9843f6276f",
+"size": 573820
+},
+"img_0641_x24_v4.ppm": {
+"sha256": "51f709847d0a6d4d8ff67a6d5bef2ecd983a6a7e2cd0a453731323297e284bf7",
+"size": 872344
+},
+"img_0642_x24_v5.ppm": {
+"sha256": "166cdad3d741c848945265acf919331f3cba420e6befc4ee3d0e628cba5f6321",
+"size": 872344
+},
+"img_0643_x24_v6.ppm": {
+"sha256": "e5b4b9d171e78d774bf7c41236a56d6af5451c0b0f0470a4e8d8964bafb71a62",
+"size": 1186564
+},
+"img_0644_x24_v7.ppm": {
+"sha256": "2339366fa71139558acbf294902384846889bf4bc97c76b7f19382de41663a13",
+"size": 1209526
+},
+"img_0645_x24_v8.ppm": {
+"sha256": "0f4bb636fa86e542fa040d6bf81f3214072cf931f1f382b9aa2fcde7ba1fad5f",
+"size": 615952
+},
+"img_0646_x24_v9.ppm": {
+"sha256": "6d7bfc33055fa828ec89078a586d6f44ea7a9a41f733264b529cab5a001de781",
+"size": 356812
+},
+"img_0647_x24_v10.ppm": {
+"sha256": "3c56186f6d3643c25dd37e325674dad53826411c2daf8cc2a43591d71f3e6056",
+"size": 573820
+},
+"img_0648_x24_v11.ppm": {
+"sha256": "7333a7bf08a36626669805689dd6a495a1a91054990b4106262468428839e253",
+"size": 573820
+},
+"img_0649_x24_v0.ppm": {
+"sha256": "d411235ce83362e39655d8d15333c12201aedb77c7497ba16d24b11efe9fd4d7",
+"size": 573820
+},
+"img_0650_x24_v1.ppm": {
+"sha256": "35e7e422fd719d3150e722f824df40458646152c6ebaea21667ae94bd4264a81",
+"size": 573820
+},
+"img_0651_x24_v2.ppm": {
+"sha256": "dd03aa967be1364a4f50c9574edf6334d2c2b5007f51e451313ae26a72c5f814",
+"size": 872344
+},
+"img_0652_x24_v3.ppm": {
+"sha256": "f3637df5785bdf505feb8702eb4928e3edaa4826edc78f3e34408ae8e6268e9f",
+"size": 1186564
+},
+"img_0653_x24_v4.ppm": {
+"sha256": "f5687288743d2f8bef83889258823a00adcbf9744b120ccb0e31d6d2e5705908",
+"size": 356812
+},
+"img_0654_x24_v5.ppm": {
+"sha256": "20c72a1c977948b465f96f94585d12c8c748603d92f88902910b898ea434597d",
+"size": 615952
+},
+"img_0655_x24_v6.ppm": {
+"sha256": "32e2f78c07fab59096f93305d5440a8312b288165c402330e221fdcd49aef442",
+"size": 852736
+},
+"img_0656_x24_v7.ppm": {
+"sha256": "cf1deeccbb0580a5d06bbd4390d3e9cbacd3de5576a80ffac5bf74563f990849",
+"size": 573820
+},
+"img_0657_x24_v8.ppm": {
+"sha256": "e21b2bee78154e41bd3d99d1637c65945221235cce344697762372509183982c",
+"size": 573820
+},
+"img_0658_x24_v9.ppm": {
+"sha256": "1f6266521b25331ff7e275752d87efb6e4302e941bb9da0cbcf83165fe9467b1",
+"size": 1209526
+},
+"img_0659_x24_v10.ppm": {
+"sha256": "710c91f6cdb784d86573cb3e5a987a0625f34ce047db57e58e7c5544edd69f04",
+"size": 573820
+},
+"img_0660_x24_v11.ppm": {
+"sha256": "33474683c7fad98de4bf62fc68b851d2981f341095e3458bb39409055af798cd",
+"size": 872344
+},
+"img_0661_x25_v0.ppm": {
+"sha256": "7b5b67cca33df17e82c2bd1b945499873b714de45548e39283a77b27d3b3b191",
+"size": 573820
+},
+"img_0662_x25_v1.ppm": {
+"sha256": "8516e83d59df3789e4a76459a36f9711689e73fff9634b52d723ae78dbd751c5",
+"size": 573820
+},
+"img_0663_x25_v2.ppm": {
+"sha256": "5d69eb8e1472d856293cc4b838ccd0c434dccbe6bf6d81430b2c26701a572d30",
+"size": 573820
+},
+"img_0664_x25_v3.ppm": {
+"sha256": "5d69eb8e1472d856293cc4b838ccd0c434dccbe6bf6d81430b2c26701a572d30",
+"size": 573820
+},
+"img_0665_x25_v4.ppm": {
+"sha256": "ca5d38c67752a52c6abbe760c3acd9643b8846e1ea1e26c3eeade7f47c07cff7",
+"size": 872344
+},
+"img_0666_x25_v5.ppm": {
+"sha256": "904419eca4a39177a127edb4085f681acc49cd18410d29ebea30ac29eb38ff38",
+"size": 872344
+},
+"img_0667_x25_v6.ppm": {
+"sha256": "1b5004267caaed49f390fcd2289f0134fd71ba8b8300cda63e521554a98c4efd",
+"size": 1186564
+},
+"img_0668_x25_v7.ppm": {
+"sha256": "25ac9b40cb0bf7f5a2d5078500fef1ed222f668b7359928ea94c0c2c059ffb92",
+"size": 1209526
+},
+"img_0669_x25_v8.ppm": {
+"sha256": "2c19a76b555e8d19be6cbbde40202edc23ad71437083047078504f8b5f0a8fb9",
+"size": 615952
+},
+"img_0670_x25_v9.ppm": {
+"sha256": "9088a6b38bf2eee4c86366c963296703486c2eeaeb3be7b650c4adf7db4f1a04",
+"size": 356812
+},
+"img_0671_x25_v10.ppm": {
+"sha256": "bf866f17f0823003aaccad6075017f358a17d865600655cf2f50851b69bcf54c",
+"size": 573820
+},
+"img_0672_x25_v11.ppm": {
+"sha256": "bf9aa07374892908e15362ac48bc9ad490b85e7a2e85c923cd6d94f3ea467889",
+"size": 573820
+},
+"img_0673_x25_v0.ppm": {
+"sha256": "5863b3407e908967938828c10b1bdb2b6c72ce878fb758901cb45a7f78543c24",
+"size": 573820
+},
+"img_0674_x25_v1.ppm": {
+"sha256": "ca0f845dd2e9708862ce92f9062bb03ab331081347707a2af2d51c614aea609a",
+"size": 573820
+},
+"img_0675_x25_v2.ppm": {
+"sha256": "aea8d15154a7f267865167ce2493e12b6d20ca4f923809e905a3a29a19bcee29",
+"size": 872344
+},
+"img_0676_x25_v3.ppm": {
+"sha256": "443df7d1ef0622d5f52a4b5091de941ef3e70cd7cad0edfbe8874c3e861575d0",
+"size": 1186564
+},
+"img_0677_x25_v4.ppm": {
+"sha256": "67d72a656191e3f1687a6bcdc2ff6916b9798b4784d162f97b601a30e25cdf71",
+"size": 356812
+},
+"img_0678_x25_v5.ppm": {
+"sha256": "45a24b02df211566048caaa26839db6b755d03e1307647f94a8c012631bd7b8d",
+"size": 615952
+},
+"img_0679_x25_v6.ppm": {
+"sha256": "51047c19f09645f046c9a6b80bc420edfe20ab51bb54bae620c5fadf7cd47790",
+"size": 852736
+},
+"img_0680_x25_v7.ppm": {
+"sha256": "3d75a848c15cf03df71193725402d53666921f3379e4955db83e4badf424f175",
+"size": 573820
+},
+"img_0681_x25_v8.ppm": {
+"sha256": "85c5d6963d38ba82e28d50b049af02c992695fd6c41e503d6a2813c2c3868bea",
+"size": 573820
+},
+"img_0682_x25_v9.ppm": {
+"sha256": "f4884602d56cc9763037c4195f65afedd4423cb0e70e0df76fa5d9b0811ffaae",
+"size": 1209526
+},
+"img_0683_x25_v10.ppm": {
+"sha256": "30cee79f0a519454d9e081d71c8a266d1de1f3639d4ec4f2d9c53918567fe13d",
+"size": 573820
+},
+"img_0684_x25_v11.ppm": {
+"sha256": "011a076013df7cee9ca6a4d30a465fb29d87063ca797e295c602ef95e0f8c0a5",
+"size": 872344
+},
+"img_0685_x26_v0.ppm": {
+"sha256": "709f7fa6153603eee0c013b28698e4546c50c7163c9e3099c90c61dea815cdee",
+"size": 573820
+},
+"img_0686_x26_v1.ppm": {
+"sha256": "539bb1fe4609f96b34fdb2f875888e28f961154c8e2786fe021b207d1ec44939",
+"size": 573820
+},
+"img_0687_x26_v2.ppm": {
+"sha256": "264257b63efbb4591b7a069c299c5d1afdf510f5b74f2d50fc2765b939557a1c",
+"size": 573820
+},
+"img_0688_x26_v3.ppm": {
+"sha256": "264257b63efbb4591b7a069c299c5d1afdf510f5b74f2d50fc2765b939557a1c",
+"size": 573820
+},
+"img_0689_x26_v4.ppm": {
+"sha256": "7678905153927579f022a3c868106e200ad58fd53e0715aaa09863270c28e3be",
+"size": 872344
+},
+"img_0690_x26_v5.ppm": {
+"sha256": "71250fdaab821dc5dbd2d4583934997b64bdd7395ce5a3933bbba539b2589590",
+"size": 872344
+},
+"img_0691_x26_v6.ppm": {
+"sha256": "29a283c26b3f3c8464e7e2a4829bb760d72a17b2857129dd4e79de5a8076818a",
+"size": 1186564
+},
+"img_0692_x26_v7.ppm": {
+"sha256": "d8aaea63c255c6e74bb1e1630c7fd27a426f390d6c9338ef2da210913fdd003c",
+"size": 1209526
+},
+"img_0693_x26_v8.ppm": {
+"sha256": "6e309a47888035a176a5d0155aaa038b1612f08383e35905d7d07e4cb0d64900",
+"size": 615952
+},
+"img_0694_x26_v9.ppm": {
+"sha256": "b05e7e1c9030321d1db9da240de2adf3ee61504ada7f8d01eedc07a24278cd47",
+"size": 356812
+},
+"img_0695_x26_v10.ppm": {
+"sha256": "9d113b94d377957c0fa3f2a96c3caa03d4483a128c696747c1a13c7f84a9f514",
+"size": 573820
+},
+"img_0696_x26_v11.ppm": {
+"sha256": "83c90d11161b35b8de5e246986b564159a2d5a723c919c23b190355669ba8027",
+"size": 573820
+},
+"img_0697_x26_v0.ppm": {
+"sha256": "c965871996226977ebec68b779053f7c872b12d28fd7215b840ef5e59831298e",
+"size": 573820
+},
+"img_0698_x26_v1.ppm": {
+"sha256": "398b364862fb47fa7bf28b74bdc6785f2949482bb1aad611017f5fed35e81e36",
+"size": 573820
+},
+"img_0699_x26_v2.ppm": {
+"sha256": "2202a47bc9bff788bf723a16114f400bc684c914aa62ae4c0613a0d3a0d80343",
+"size": 872344
+},
+"img_0700_x26_v3.ppm": {
+"sha256": "b8394ef029bb6d7efb3c0635984b87f3859c9846a477d76086189089eae1a177",
+"size": 1186564
+},
+"img_0701_x26_v4.ppm": {
+"sha256": "b9efb8c4e4d63aa17175b59f83e398bda3fe3ead978e0f86a3e7b731794cf11b",
+"size": 356812
+},
+"img_0702_x26_v5.ppm": {
+"sha256": "0e4ba079b2d843fb7dbe69f1b798898d10a72cd2fb99bb74cd0df3881241c2b8",
+"size": 615952
+},
+"img_0703_x26_v6.ppm": {
+"sha256": "ba4e29e72e36f8411940edb5209c178bbb0327bfed48294004e5f98251f897fc",
+"size": 852736
+},
+"img_0704_x26_v7.ppm": {
+"sha256": "195a06fe19e2a992fc6eeaa4ba52027681b55fd36d591ffd9498f73d0a232517",
+"size": 573820
+},
+"img_0705_x26_v8.ppm": {
+"sha256": "85323cf4331d41277eac0acd2694881ee808680f003908e5728e85ac9e83d427",
+"size": 573820
+},
+"img_0706_x26_v9.ppm": {
+"sha256": "46d1f1abec3fd479d24fc4b401df9670d40d7b6091b362c250e1b1f70ac32842",
+"size": 1209526
+},
+"img_0707_x26_v10.ppm": {
+"sha256": "74c4ac522c2264d9bd10b9f2653156de98399f11680032273414d6f375540a12",
+"size": 573820
+},
+"img_0708_x26_v11.ppm": {
+"sha256": "defe36394c1c0225b1c59e5663e419a72e4771a9fbf1d525ac8e6924ebdc036a",
+"size": 872344
+},
+"img_0709_x27_v0.ppm": {
+"sha256": "09227a39ab744e5989d442fe043ba12567180ba5adbbc22420126432f695c9a2",
+"size": 573820
+},
+"img_0710_x27_v1.ppm": {
+"sha256": "444933a39731f245d76cb99c2896da372604f7884ce32b3ffdcfd13d2a3a3988",
+"size": 573820
+},
+"img_0711_x27_v2.ppm": {
+"sha256": "d06015c9cba6bf592289079b9116ac0a93cdeaceb931ffba4929f9f8d0434c8a",
+"size": 573820
+},
+"img_0712_x27_v3.ppm": {
+"sha256": "d06015c9cba6bf592289079b9116ac0a93cdeaceb931ffba4929f9f8d0434c8a",
+"size": 573820
+},
+"img_0713_x27_v4.ppm": {
+"sha256": "37babb5bd75e949e53b3648f6d7e571e97dd4c43e2183c1db9d77e1c3053475f",
+"size": 872344
+},
+"img_0714_x27_v5.ppm": {
+"sha256": "cedd473d6845cf14a13aaab3570961eea513516b625858ec19e6df51fc9360be",
+"size": 872344
+},
+"img_0715_x27_v6.ppm": {
+"sha256": "b0872be384db58e5f9ae64b9dace063f8c27e0744a5e0db163743d8bae7eb544",
+"size": 1186564
+},
+"img_0716_x27_v7.ppm": {
+"sha256": "78e6e9c296fefe297c25d6d37399a7454dd6a3ba98b4b487070033da5857c5b0",
+"size": 1209526
+},
+"img_0717_x27_v8.ppm": {
+"sha256": "582c74f791acbd71d5255f96f932535b7b8ae50dd2365f4e2ba239db32155a7e",
+"size": 615952
+},
+"img_0718_x27_v9.ppm": {
+"sha256": "4c034927f83b68536e8b8276930c3c57d0c9ae75009891cc01883db6a7354f1a",
+"size": 356812
+},
+"img_0719_x27_v10.ppm": {
+"sha256": "158208e9cbbf613280821ba44c9807d961c838dedb954877dbb409f39b5ef471",
+"size": 573820
+},
+"img_0720_x27_v11.ppm": {
+"sha256": "e8b388b609cbaad9353b3fd18a79cf048c97c98fe26e9c92cd1dae07de9d2a2c",
+"size": 573820
+},
+"img_0721_x27_v0.ppm": {
+"sha256": "d8ba6738c739123b8626e10ee4ff45d41e8dbc6cf6c8c183c0720aad0eee0628",
+"size": 573820
+},
+"img_0722_x27_v1.ppm": {
+"sha256": "7ccbd353be713727ba808537800c7392cf71a482182bae14cce27cc78d7a3e54",
+"size": 573820
+},
+"img_0723_x27_v2.ppm": {
+"sha256": "9d8dba5a496ae63c070a4bfb5f07b621cca8fb2404181c24add12696fd122f5a",
+"size": 872344
+},
+"img_0724_x27_v3.ppm": {
+"sha256": "fe2c40f4da2aef4cba01c419edc61941cdfd300452157354647b406b9feae967",
+"size": 1186564
+},
+"img_0725_x27_v4.ppm": {
+"sha256": "fdf15cd50e7214185ebce4388f391cf0d150093482341ce2176f2b7d42c72de2",
+"size": 356812
+},
+"img_0726_x27_v5.ppm": {
+"sha256": "c6cfdffcacb79a5e84b6bc094ca01956864a823d6a14daebab46ec6e48ffeb9d",
+"size": 615952
+},
+"img_0727_x27_v6.ppm": {
+"sha256": "9f200909f0637b40dc80b916c24bc858f3f1be1ae1dbb8ab6ec1d32871582149",
+"size": 852736
+},
+"img_0728_x27_v7.ppm": {
+"sha256": "259d5375bc7c7444f397b222515aee52f3d4d9c1da02cd33eb9986f3982e0bf1",
+"size": 573820
+},
+"img_0729_x27_v8.ppm": {
+"sha256": "a7a37e7b61960f5685361e534828870e6995719ac2740edd6efb3b60d27d750e",
+"size": 573820
+},
+"img_0730_x27_v9.ppm": {
+"sha256": "b0a4f4d3e544ed6b02b1e92f9323abf7078e0055845ed0f812db64b75ce90262",
+"size": 1209526
+},
+"img_0731_x27_v10.ppm": {
+"sha256": "7ae6740c76af91a6edc17754e72e36579d02b36699404d750ec435f1920a9597",
+"size": 573820
+},
+"img_0732_x27_v11.ppm": {
+"sha256": "bb3291b14ffa8d4f2c3822533cd91399b44824850d48276dbfa67ea5e2fac610",
+"size": 872344
+},
+"img_0733_x28_v0.ppm": {
+"sha256": "65ac6752e6b2d78dd516dc4d158c177b33d45a5e5681210e033c8de9663e9f08",
+"size": 573820
+},
+"img_0734_x28_v1.ppm": {
+"sha256": "794959b49f646c3bcae6b40401e73e0a33a8443b2c30ff3b0e1fcd87eca168b1",
+"size": 573820
+},
+"img_0735_x28_v2.ppm": {
+"sha256": "cfd5fcc70e86d966dec2c80bfc3e007a99063434cfd0454cab17046492e6afe5",
+"size": 573820
+},
+"img_0736_x28_v3.ppm": {
+"sha256": "cfd5fcc70e86d966dec2c80bfc3e007a99063434cfd0454cab17046492e6afe5",
+"size": 573820
+},
+"img_0737_x28_v4.ppm": {
+"sha256": "373c0c9d46909b05ad7d154c2367dcd742b8444e8bb652fa0d0742aaf7f297a0",
+"size": 872344
+},
+"img_0738_x28_v5.ppm": {
+"sha256": "433f8347a4d6217d8afa632b755b7ce11d4668fd48d84e6369a21b9fa1edb086",
+"size": 872344
+},
+"img_0739_x28_v6.ppm": {
+"sha256": "2d6ae97db1e4519702000633a8caca497f62cdbca1741d0bb0d22d2c14e76ffc",
+"size": 1186564
+},
+"img_0740_x28_v7.ppm": {
+"sha256": "ea1a80e3b81b912acc30d23ef01e8d9b1ae65e1d1721741463649534cba45663",
+"size": 1209526
+},
+"img_0741_x28_v8.ppm": {
+"sha256": "8c71e7420df316aa5079c0298267d1eb0394dda6527a09817c1b67dcd451531b",
+"size": 615952
+},
+"img_0742_x28_v9.ppm": {
+"sha256": "cb1c0790408afd593c2fe1fad9541420084a9b744d29eb5d8f930dfd057b591c",
+"size": 356812
+},
+"img_0743_x28_v10.ppm": {
+"sha256": "ad8c181339cd8078af4262516f486f4ce1f46060c46908f6a889e968a0795080",
+"size": 573820
+},
+"img_0744_x28_v11.ppm": {
+"sha256": "b3fe58d13a310c77bd632e8f1f81c41ded958be874b6a2976f43e3c4facf03ed",
+"size": 573820
+},
+"img_0745_x28_v0.ppm": {
+"sha256": "dc47bac50758265ea9c97a10d3b55c67c931a1c70db86e041a906236fd7649f7",
+"size": 573820
+},
+"img_0746_x28_v1.ppm": {
+"sha256": "399e7f1e7ef8e538204580326a67ecca663374bd4db8e88eaf520fbfe9fceac4",
+"size": 573820
+},
+"img_0747_x28_v2.ppm": {
+"sha256": "3c77a5fd780cb34f163f72054d60cb62986f94da45b9beabc718784d76451790",
+"size": 872344
+},
+"img_0748_x28_v3.ppm": {
+"sha256": "c8bfdd2e922b93c135db31c6aaa5ad5bb7114122fafcfd9dad4e8fd6379ac27c",
+"size": 1186564
+},
+"img_0749_x28_v4.ppm": {
+"sha256": "e26b40b527aaf50da41d9e9cc4bbe15dc8b3c049b4700383254d1bda8fd67056",
+"size": 356812
+},
+"img_0750_x28_v5.ppm": {
+"sha256": "016b99cb682bab3cc3d4760995cbbbcd7db2b09aa9b45a35f678e53db4ac91ac",
+"size": 615952
+},
+"img_0751_x28_v6.ppm": {
+"sha256": "2f4fdffa9ac91238aa6359924cc532f57b275a8f584262c5dd5093fbb59095e5",
+"size": 852736
+},
+"img_0752_x28_v7.ppm": {
+"sha256": "9cccd2fb9627b79174b201b3d8ce3b1c617428c721bda928cac87df01f74be2e",
+"size": 573820
+},
+"img_0753_x28_v8.ppm": {
+"sha256": "3f0f15197fc9da9374e59487085224b7d281c50a1097a24fc97108bf9268a362",
+"size": 573820
+},
+"img_0754_x28_v9.ppm": {
+"sha256": "415918dda831e53f044bb329d93d2e8b04a31d66c3fc8396f7c799aa7ffb6175",
+"size": 1209526
+},
+"img_0755_x28_v10.ppm": {
+"sha256": "1f2f028194f800de9a57dea1ac175e7dc22edf7781a6f96db9bd50e4e742a44f",
+"size": 573820
+},
+"img_0756_x28_v11.ppm": {
+"sha256": "b1210a9df10ecaf2115983df39b85d63b2b656e9551d9657218587de5c890d8d",
+"size": 872344
+},
+"img_0757_x29_v0.ppm": {
+"sha256": "610986290dceabb96b1b6743155cf31fa05fcc9eb18b81a857ff8a8df0ef9e61",
+"size": 573820
+},
+"img_0758_x29_v1.ppm": {
+"sha256": "00e1bd0ada7bfc3414f93194d7c3ea5e0a2f0920f8190207c1a24651f036f345",
+"size": 573820
+},
+"img_0759_x29_v2.ppm": {
+"sha256": "924e2ed6553724bec50464b8941add093d894f5ac4c88e1889d121581f679a05",
+"size": 573820
+},
+"img_0760_x29_v3.ppm": {
+"sha256": "924e2ed6553724bec50464b8941add093d894f5ac4c88e1889d121581f679a05",
+"size": 573820
+},
+"img_0761_x29_v4.ppm": {
+"sha256": "a3a012b445fffc667d26bccfb404bf9ad5781fb104a49ca95a857478a389d264",
+"size": 872344
+},
+"img_0762_x29_v5.ppm": {
+"sha256": "69c3cf1e9201aad10229b5a171fa9d91e6ba562b898cc661c477338511d83913",
+"size": 872344
+},
+"img_0763_x29_v6.ppm": {
+"sha256": "ec6a0234a86472c688683559464ab09b01be4c989fedf5816c9e1eff6964a1e9",
+"size": 1186564
+},
+"img_0764_x29_v7.ppm": {
+"sha256": "26621dfb08dd288e3b9374017ed151a801ab9504be9fd03143e9e9ddceddf6f0",
+"size": 1209526
+},
+"img_0765_x29_v8.ppm": {
+"sha256": "71ab042a09ef05297729bd3044becf91b8840384e4dc83e0e71dd4128a49a644",
+"size": 615952
+},
+"img_0766_x29_v9.ppm": {
+"sha256": "3373e346726005d3926e42f725b1265ec40200141952cfe865d241fc4f1287fd",
+"size": 356812
+},
+"img_0767_x29_v10.ppm": {
+"sha256": "0a10e857b6e6dfbb7bdd95fe913850e231138815e8ca01929338c9c97195d8db",
+"size": 573820
+},
+"img_0768_x29_v11.ppm": {
+"sha256": "14982b070187fd08847aedf2dc5e229265076f650b7add28164ffc1606688012",
+"size": 573820
+},
+"img_0769_x29_v0.ppm": {
+"sha256": "e8f87eefa796a348d7c3c737ae024ca54b83f89d0d886a370b93b61d9869ad59",
+"size": 573820
+},
+"img_0770_x29_v1.ppm": {
+"sha256": "72992730e94fc9cea0d78b58aecb11b00ff08e42751832c6f60ceb35f2e6a4ad",
+"size": 573820
+},
+"img_0771_x29_v2.ppm": {
+"sha256": "bde879a30252d052cd1e2bad99e844657e29a50b5e2aa9184992c154afd3cda3",
+"size": 872344
+},
+"img_0772_x29_v3.ppm": {
+"sha256": "381c584de79771725e72f5d8524eb5b2fbc018847b2fa5a0571b64f477b8fb08",
+"size": 1186564
+},
+"img_0773_x29_v4.ppm": {
+"sha256": "d784bfc941db0286810910cc5b7088346154376658974973ebe778ae40c769da",
+"size": 356812
+},
+"img_0774_x29_v5.ppm": {
+"sha256": "9c8ded0b88e93392ca3f38545c8567ef82327fd813232486ca20dbb197aaf804",
+"size": 615952
+},
+"img_0775_x29_v6.ppm": {
+"sha256": "2b24f2656ed66eb35bf8631ee68a3270c33c1040e82a9701693b9f6082f588ed",
+"size": 852736
+},
+"img_0776_x29_v7.ppm": {
+"sha256": "47c5e8b93830ca845dbe3da1a6885fdd97bb3321b39266b8981a8ce7877e837f",
+"size": 573820
+},
+"img_0777_x29_v8.ppm": {
+"sha256": "58679a9b25ce089bf3405fd3bdffc6016088325a6c5f3c92689ffa0722f7aae0",
+"size": 573820
+},
+"img_0778_x29_v9.ppm": {
+"sha256": "bb82ccb5d0816d7bb65ad5fa95895d9bd79f6f6ddb3091e67490c8e475402867",
+"size": 1209526
+},
+"img_0779_x29_v10.ppm": {
+"sha256": "d7320a919a904b92f89f0ed58075c341afe74d11c3e634af8e501abcfa97d837",
+"size": 573820
+},
+"img_0780_x29_v11.ppm": {
+"sha256": "52c8a68e907ca797cb54eb287a776a544c9af4b31ab7dda2a699781343fa44c5",
+"size": 872344
+},
+"img_0781_x30_v0.ppm": {
+"sha256": "5d5e355acc6f41610e252f70a1b05cbfd8c3d2178c24b9c8ac12904e088bd2ea",
+"size": 573820
+},
+"img_0782_x30_v1.ppm": {
+"sha256": "638e5d6cc6508a8056befc3e0bf3a3ac410ca358e0a34008112cf889c6573185",
+"size": 573820
+},
+"img_0783_x30_v2.ppm": {
+"sha256": "1ffe1923c9aa92ce1fafd70e08b8300fefe07cb36138a28d38a2bebe50e33ab2",
+"size": 573820
+},
+"img_0784_x30_v3.ppm": {
+"sha256": "1ffe1923c9aa92ce1fafd70e08b8300fefe07cb36138a28d38a2bebe50e33ab2",
+"size": 573820
+},
+"img_0785_x30_v4.ppm": {
+"sha256": "0c2a23716c2a68e6eaf527a37650fbfad459dd7d44163cccea543f9df3428d32",
+"size": 872344
+},
+"img_0786_x30_v5.ppm": {
+"sha256": "50b208e3f1126b1bcf217c461bc03dbb214a1adcfeae17dae45862984d672302",
+"size": 872344
+},
+"img_0787_x30_v6.ppm": {
+"sha256": "752ee9db76db26f749ee62908c80e73c24feccc6a2ab82c238bd7746947080a9",
+"size": 1186564
+},
+"img_0788_x30_v7.ppm": {
+"sha256": "a98775c490de1b315e50c91b4e8f8a02ce131926f1776eca0bf788a20c1d31ba",
+"size": 1209526
+},
+"img_0789_x30_v8.ppm": {
+"sha256": "142b6cc3c86eb7c40c51de6f6caacbf1fd3e56380652c9df1ed3d9b4aa53d08b",
+"size": 615952
+},
+"img_0790_x30_v9.ppm": {
+"sha256": "78cf7b887ecd8b68d3b10a8fab5d0b3e4d84deede7bfa73f7c57ad13eb7fbb72",
+"size": 356812
+},
+"img_0791_x30_v10.ppm": {
+"sha256": "24f1e8b18f64c9bebf1904a7f40eeda1f165a3204527f6d0365f9aa4152e0668",
+"size": 573820
+},
+"img_0792_x30_v11.ppm": {
+"sha256": "a22f35451e2b6009f80ed4e85ccea32d388b85fc56a3ea8add343aa9832d4c82",
+"size": 573820
+},
+"img_0793_x30_v0.ppm": {
+"sha256": "864e92eb7a132e479e70855e8bdff8d290fb8031e0cee17bba81cfc579af114a",
+"size": 573820
+},
+"img_0794_x30_v1.ppm": {
+"sha256": "36821b50eaf5f838185fd6c3929f8914c9a3c1bbb2310507457e669a15e5e84e",
+"size": 573820
+},
+"img_0795_x30_v2.ppm": {
+"sha256": "e50c8622e2b38757c0edc0a6faaf0a2722c75ea185ab6830855f96ec839ae02c",
+"size": 872344
+},
+"img_0796_x30_v3.ppm": {
+"sha256": "a99f1e8fa0a63a5c6c991b4af934c43503288d03392be4224d7cbf29ec4a0bfd",
+"size": 1186564
+},
+"img_0797_x30_v4.ppm": {
+"sha256": "9cf629fd47792f082cafb1344bd53cdaf9fe6cfb181c7a5780ada31cb3efbaca",
+"size": 356812
+},
+"img_0798_x30_v5.ppm": {
+"sha256": "8610e1016f82073cb6454848503621c56343094a6e724b4dc104d6f13f07b39a",
+"size": 615952
+},
+"img_0799_x30_v6.ppm": {
+"sha256": "b7bb76538c11d2a16b30197216c8c4958a05e4a14b55de5b01e4655d608d5fba",
+"size": 852736
+},
+"img_0800_x30_v7.ppm": {
+"sha256": "53cf91b9f8129b74c436bea633b144e573d27c52b96de57104b9f62b5d976ce5",
+"size": 573820
+},
+"img_0801_x30_v8.ppm": {
+"sha256": "d620189de59a511196779ce6ebb6dc51d95232449f7d37e0350f3bf2add26d0c",
+"size": 573820
+},
+"img_0802_x30_v9.ppm": {
+"sha256": "4597547e8d85de08cc735d9ae4949efeb20874efabcf8d23b61af47aa9235fd9",
+"size": 1209526
+},
+"img_0803_x30_v10.ppm": {
+"sha256": "1c34c3976e59bcaac55f398908ab7ab7e59426c94372772ac007b63407f7e12e",
+"size": 573820
+},
+"img_0804_x30_v11.ppm": {
+"sha256": "1f525aee95429131558cedfb78031740cdcdcd57120952a35187eea0cd6c2fea",
+"size": 872344
+},
+"img_0805_x31_v0.ppm": {
+"sha256": "14695f79735aa8d99ac19cfc0363d55479d5ac6d2b0e13f5f064daaeca2f1cda",
+"size": 573820
+},
+"img_0806_x31_v1.ppm": {
+"sha256": "c1d04b996b97e2a42475f0df045ab8b1798abb56c023051f8265aa04077c1a3e",
+"size": 573820
+},
+"img_0807_x31_v2.ppm": {
+"sha256": "a2ae7c7ab50a5fc2a4f6261e019a1b780c0b61fda0008e97205212d977722bdc",
+"size": 573820
+},
+"img_0808_x31_v3.ppm": {
+"sha256": "a2ae7c7ab50a5fc2a4f6261e019a1b780c0b61fda0008e97205212d977722bdc",
+"size": 573820
+},
+"img_0809_x31_v4.ppm": {
+"sha256": "6cafeff687048c83ff5d8011b6ad08eb4a3ab9443c4d34e0e2b76c51da94e7e0",
+"size": 872344
+},
+"img_0810_x31_v5.ppm": {
+"sha256": "b4e5da232f49d34c16b1db2a4938feac29290e4d7f654b8cf9b5f393f996cca5",
+"size": 872344
+},
+"img_0811_x31_v6.ppm": {
+"sha256": "595869eb1c781dfb3fa9abdc3370b44e5b93ad97e4b4b77c29cdd42492cf8de7",
+"size": 1186564
+},
+"img_0812_x31_v7.ppm": {
+"sha256": "31939c64379b4cf0491019b121f52833ab8bbc510ff3caa116cae97862ed0530",
+"size": 1209526
+},
+"img_0813_x31_v8.ppm": {
+"sha256": "1fa0677cb193823fcba8414bc22fc37eb50e7252be9892092e68346f78601d9f",
+"size": 615952
+},
+"img_0814_x31_v9.ppm": {
+"sha256": "60e217de847a2dcb47d2b5bf57119f10cec96040412887ba8c529dcf3894d2aa",
+"size": 356812
+},
+"img_0815_x31_v10.ppm": {
+"sha256": "b1f3ec51f6282255a01b9908eda7644683cb7a9ecd91d2bafd1fe48173844996",
+"size": 573820
+},
+"img_0816_x31_v11.ppm": {
+"sha256": "5541694331133033aaebc2fcd8da3b5fa9a10ad1098fc587cd7ecc435410e260",
+"size": 573820
+},
+"img_0817_x31_v0.ppm": {
+"sha256": "6b0529177690a97ef8545485b01da4d2b7a26029903b876db8953a7228d281fa",
+"size": 573820
+},
+"img_0818_x31_v1.ppm": {
+"sha256": "7012d9943dfbd3a2a0ea01595284316d0e17a06b7b80544c9ed1a659b1343f9f",
+"size": 573820
+},
+"img_0819_x31_v2.ppm": {
+"sha256": "b29feea4dee9c679b37dfa53054ba90da6097ccddafe5996d0fbd536606636ef",
+"size": 872344
+},
+"img_0820_x31_v3.ppm": {
+"sha256": "180404276aa214db994506a11f1fd69c970716a9b86554e5bdc9c3b33c5d0f0e",
+"size": 1186564
+},
+"img_0821_x31_v4.ppm": {
+"sha256": "9dbf0811d63a1c1aac75288a9f595aff30cb3d46bb1955990b0053048338954a",
+"size": 356812
+},
+"img_0822_x31_v5.ppm": {
+"sha256": "f6a9de55f234d0f9450a4e5dbdd88873194543b4892aa2291ea76238cbdbe5ad",
+"size": 615952
+},
+"img_0823_x31_v6.ppm": {
+"sha256": "27bd7adf6ff6eaf6204cd168faf3c36900d77c31ca1885d94b98b809b8d548ec",
+"size": 852736
+},
+"img_0824_x31_v7.ppm": {
+"sha256": "1bac217877731f9f5798295a54afa0d22c1ba00b29a24a450dbdc12b43c78781",
+"size": 573820
+},
+"img_0825_x31_v8.ppm": {
+"sha256": "95f84112e41f6234397c6f693d4c295fdcb7daaf92a4ff605ccc4332618cf0ee",
+"size": 573820
+},
+"img_0826_x31_v9.ppm": {
+"sha256": "4f087ebfc9358c5f66a870113c3b7ab93b2f26f40770104f0041d6577c3dcfcf",
+"size": 1209526
+},
+"img_0827_x31_v10.ppm": {
+"sha256": "2d6fcd8eab273eaf651c4a9df3821288903d33bd4ce23ecc58d7243598f06673",
+"size": 573820
+},
+"img_0828_x31_v11.ppm": {
+"sha256": "227c7a4429143ba10051e7df9e5988c50423f8220fdc560bbe1a7a0852b6ceef",
+"size": 872344
+},
+"img_0829_x32_v0.ppm": {
+"sha256": "37f9798990d38530f18f3fb0b3f3fd0041a62c085df849d0ccd9f82eab23ef77",
+"size": 573820
+},
+"img_0830_x32_v1.ppm": {
+"sha256": "37581f01d7d3b0038138bc33d15d6e5734dbcc1f7bed6adbea8dfe308e74e13d",
+"size": 573820
+},
+"img_0831_x32_v2.ppm": {
+"sha256": "aef3a5295cbcd4973f880553df162b0e9475721fd591df20a035789b439e2db6",
+"size": 573820
+},
+"img_0832_x32_v3.ppm": {
+"sha256": "aef3a5295cbcd4973f880553df162b0e9475721fd591df20a035789b439e2db6",
+"size": 573820
+},
+"img_0833_x32_v4.ppm": {
+"sha256": "2091273041f923c0839c4ae6d1d5cee8a8eba2978dc383c0c58878b996cc09de",
+"size": 872344
+},
+"img_0834_x32_v5.ppm": {
+"sha256": "f0c30d10bf6d51a404aab939d68a91712501e96069fb611fe0f4a56019eaaf90",
+"size": 872344
+},
+"img_0835_x32_v6.ppm": {
+"sha256": "ae22540ec2cb83b85c8c6ea9407b63ee6ccb498728e7a5200091b649b1f6399f",
+"size": 1186564
+},
+"img_0836_x32_v7.ppm": {
+"sha256": "0da57ce79896a1e9110fb65a621ec86aef0af9627a0a8272001d9d5ecbbad6cf",
+"size": 1209526
+},
+"img_0837_x32_v8.ppm": {
+"sha256": "6d25a8eb08746d1fd74236328b98ab375b410803e706a50468717e8937a88372",
+"size": 615952
+},
+"img_0838_x32_v9.ppm": {
+"sha256": "392d2abd66a09b7a534aeaa759f8af679e0a61c5f633f5c4d35ca423bccddbdf",
+"size": 356812
+},
+"img_0839_x32_v10.ppm": {
+"sha256": "bed441ed8f9cda41ee92a452eed0e1389837e08b9a5569147795bb3067bae8bd",
+"size": 573820
+},
+"img_0840_x32_v11.ppm": {
+"sha256": "bcb1fe027cbd96d61d6e85f01c9283f98c46c41bd569025babee96172b5e7296",
+"size": 573820
+},
+"img_0841_x32_v0.ppm": {
+"sha256": "2f73ac394788e7ae4a74affb089c9234c6fc53a0695cfb1067cd2e7113a5521f",
+"size": 573820
+},
+"img_0842_x32_v1.ppm": {
+"sha256": "b02c13f02e6b64107051bb57db8f3fe94c051f298b2c5675d3f6729e063cf4ca",
+"size": 573820
+},
+"img_0843_x32_v2.ppm": {
+"sha256": "93fab1934e54222c0b8a0cffb4c27016a5eaa0355cb5d870d3ac11982733d6ba",
+"size": 872344
+},
+"img_0844_x32_v3.ppm": {
+"sha256": "a663a427e0363c9a9175b2c0ecc3a1a41234a5be7c8d2ea6b38e9c8022a3ee38",
+"size": 1186564
+},
+"img_0845_x32_v4.ppm": {
+"sha256": "34c685dcd385795fffe08f01ca2bb25c12d9d8c60306aeb3954dc2e99c7a8f9f",
+"size": 356812
+},
+"img_0846_x32_v5.ppm": {
+"sha256": "cb8da25536063d5dcb7d534b7be4c4357ee612c31f8d177a5d826140e7e6164e",
+"size": 615952
+},
+"img_0847_x32_v6.ppm": {
+"sha256": "b31d6004cfe417966124462e81c08aff0f5eea5de27066f95d8e9b6d35e28a0a",
+"size": 852736
+},
+"img_0848_x32_v7.ppm": {
+"sha256": "0454e8d9aa90b37369396f2c03a76f913eab76e8a5ecd0f0e5592c897e4f0266",
+"size": 573820
+},
+"img_0849_x32_v8.ppm": {
+"sha256": "365b0cf2288087ec56ce930974106a09eaa184eaec9a1e9ba863821d89598c37",
+"size": 573820
+},
+"img_0850_x32_v9.ppm": {
+"sha256": "f2589c491c453563789c97e1e4897822666ce5f42e0cc6018793a3137c1029fb",
+"size": 1209526
+},
+"img_0851_x32_v10.ppm": {
+"sha256": "9cf922b622cb1b8cb749a3ee809a345a1f7101449aca663e58bedbd134f44733",
+"size": 573820
+},
+"img_0852_x32_v11.ppm": {
+"sha256": "1954d7331c163813acc7908ac133326f1eb2dda2c386e185b035af8800893fd8",
+"size": 872344
+},
+"img_0853_x33_v0.ppm": {
+"sha256": "088de99f1906df04b177b2be53155c5532d134c28e3f0f14826dde48285b5f2e",
+"size": 573820
+},
+"img_0854_x33_v1.ppm": {
+"sha256": "6340481df6e0694ac600788b7ca1093c64f8cb6f37821764af8cb214045cc5ad",
+"size": 573820
+},
+"img_0855_x33_v2.ppm": {
+"sha256": "2ff41b697c313917b7530e03d4bf35812172ef7ed0da49e043866f2c5c4440e5",
+"size": 573820
+},
+"img_0856_x33_v3.ppm": {
+"sha256": "2ff41b697c313917b7530e03d4bf35812172ef7ed0da49e043866f2c5c4440e5",
+"size": 573820
+},
+"img_0857_x33_v4.ppm": {
+"sha256": "e84595dd778f2912fd1cbfd174413da4a3d014ea0ad7f2182ccc0607f2df3dc7",
+"size": 872344
+},
+"img_0858_x33_v5.ppm": {
+"sha256": "cb49ff2b255a7315881d86870cd73cc1bdc7c6752cd384c1c0ae8c9be423e72b",
+"size": 872344
+},
+"img_0859_x33_v6.ppm": {
+"sha256": "98d0a518bc3b7af32454090e339076f2941b94bccb3f1045cd937c293909c167",
+"size": 1186564
+},
+"img_0860_x33_v7.ppm": {
+"sha256": "896c714c1b12ca9516bfb6733def9a89b052cc6d25fec892444ca7f076b02900",
+"size": 1209526
+},
+"img_0861_x33_v8.ppm": {
+"sha256": "e40c6b0b44e1264cb0ed337e333456f175a3831926f3ccca532a7c471a0d0a1f",
+"size": 615952
+},
+"img_0862_x33_v9.ppm": {
+"sha256": "db029fe53702379ea06de35925eb96cfc469450a02ff590a6ac6e61882893bd6",
+"size": 356812
+},
+"img_0863_x33_v10.ppm": {
+"sha256": "75d549ceffd37f4b0031de1e795e681189dcb30f28da371db68d4c8f5c2945b4",
+"size": 573820
+},
+"img_0864_x33_v11.ppm": {
+"sha256": "87ee75dadf47ee9dbb09bd7db5aa039bc4b120abecd6af83bca622074160adb5",
+"size": 573820
+},
+"img_0865_x33_v0.ppm": {
+"sha256": "bba0bfc0cfa2c2f570bfb705f44926b1ae3bc9ccda7ec08824296d21dec28102",
+"size": 573820
+},
+"img_0866_x33_v1.ppm": {
+"sha256": "3f184ccdd4d6263b19d8bfe90d47193fa24b75fb3d82710384e7d096347121a3",
+"size": 573820
+},
+"img_0867_x33_v2.ppm": {
+"sha256": "1f9d91788cef8d67cb0f6724058c11af1c9ac8a4ca7b0e9c23e08dbec51e1675",
+"size": 872344
+},
+"img_0868_x33_v3.ppm": {
+"sha256": "4a8166afe46350ace07c5134f4864709fd0e1a5f96e84ec6f70b2f637dca667c",
+"size": 1186564
+},
+"img_0869_x33_v4.ppm": {
+"sha256": "0e45f720b60dd44a98c4fe16091f7390ef25c950a2a35502d067b6c533062b2f",
+"size": 356812
+},
+"img_0870_x33_v5.ppm": {
+"sha256": "c48386907e793fa1637a78eff1f1ee1e8523ef081d8c564165dad1f6f7386469",
+"size": 615952
+},
+"img_0871_x33_v6.ppm": {
+"sha256": "5a1c7dbc79b4fc300838c526cef1bd33f9a4f1b04129a80f3b56abb6a9bb2c50",
+"size": 852736
+},
+"img_0872_x33_v7.ppm": {
+"sha256": "929b6910a1e951b09bee6d453c39b702048efbb15899df9b8c8c666f82f46c4f",
+"size": 573820
+},
+"img_0873_x33_v8.ppm": {
+"sha256": "782415e4df5b683263192430efb6d484f0cae4b99885735ab59b9eca8c73b753",
+"size": 573820
+},
+"img_0874_x33_v9.ppm": {
+"sha256": "23446f3ee3a9b3d4ff21824acf0062c972b45e11b91e7a84df6dea76f7ddc116",
+"size": 1209526
+},
+"img_0875_x33_v10.ppm": {
+"sha256": "8835c1e19c894433852265ad1d33414bfbee5cf68e4939de0670bbc130df3b21",
+"size": 573820
+},
+"img_0876_x33_v11.ppm": {
+"sha256": "392aaeb18af457b2aadd9f79e9e22197e3cce1cf8b0a8d0f6cbad6449b6438ac",
+"size": 872344
+},
+"img_0877_x34_v0.ppm": {
+"sha256": "60c083f948abd5d198fb18776e45a87cd7a125a303d3a90f29f0c29b711771ce",
+"size": 573820
+},
+"img_0878_x34_v1.ppm": {
+"sha256": "c88d2992ede6129e9302c77eee1c868f09fbb1df5c4af4e19f44709c30d78f58",
+"size": 573820
+},
+"img_0879_x34_v2.ppm": {
+"sha256": "a14d2fba6dbaa8e08ab0c34096180e4ffa1c7e203ae8ff0ddca38d25b6162d48",
+"size": 573820
+},
+"img_0880_x34_v3.ppm": {
+"sha256": "a14d2fba6dbaa8e08ab0c34096180e4ffa1c7e203ae8ff0ddca38d25b6162d48",
+"size": 573820
+},
+"img_0881_x34_v4.ppm": {
+"sha256": "45179948bfe5a850bf91b51c418c45beb72ffac6d4527cdeea44a513b4688db1",
+"size": 872344
+},
+"img_0882_x34_v5.ppm": {
+"sha256": "13411d3a4b9b23f6d592bd4fbfcd4ea4db564d8c97a21862e481431bcbd8b047",
+"size": 872344
+},
+"img_0883_x34_v6.ppm": {
+"sha256": "c993dec016b2c3bec5b6b9dffcb6fae040c46c468d23ac2d4414d0a365101df3",
+"size": 1186564
+},
+"img_0884_x34_v7.ppm": {
+"sha256": "9325cbd9ad58a58312dfe13ff843d7700d4019b310fb529b9143aaef5317ff39",
+"size": 1209526
+},
+"img_0885_x34_v8.ppm": {
+"sha256": "fb9adc160c1beca8743a5dbc5943d09fdf6243cc354d8d9b558a8faf691cbe08",
+"size": 615952
+},
+"img_0886_x34_v9.ppm": {
+"sha256": "caf781e31b9ee39ed3f4dc34489f5dc53f87c1643b44fbe6b9c986e3aa4a1980",
+"size": 356812
+},
+"img_0887_x34_v10.ppm": {
+"sha256": "c81bf74c2c4f41b6cddc286d9c49075853ba11d65e68aa0d8a0d2ede6bf028d0",
+"size": 573820
+},
+"img_0888_x34_v11.ppm": {
+"sha256": "ec62f1765a1e2571e5238c89fd9390fee6307f53bbfcfd73cdbe6967f5604ae8",
+"size": 573820
+},
+"img_0889_x34_v0.ppm": {
+"sha256": "5a517e3c794cd3fcb093d86bb5675f282b9fbb9237ab7374c889f0759c7450d7",
+"size": 573820
+},
+"img_0890_x34_v1.ppm": {
+"sha256": "d6a872fa95f23b14c1b4ae628f0396f2ae70f063692eef0f946f8e95a0f13c06",
+"size": 573820
+},
+"img_0891_x34_v2.ppm": {
+"sha256": "86d02d59742e97f6a42d9ab3f0e55592ab10d882eb2a3bb25b5d734f80e6ccc2",
+"size": 872344
+},
+"img_0892_x34_v3.ppm": {
+"sha256": "292cf507cdc6b24f7197edf8275a37e201fe9d91bed211ae85472dd74483d53c",
+"size": 1186564
+},
+"img_0893_x34_v4.ppm": {
+"sha256": "f53e04b1576bc95b406901c2a76bed52f4bfd51e0d8331f1ed0a9e7c1b29994f",
+"size": 356812
+},
+"img_0894_x34_v5.ppm": {
+"sha256": "3dfb1144a72776eb4fd7a2fe421d6e674593b1ae71e0b1e46fb6384d6c548a5b",
+"size": 615952
+},
+"img_0895_x34_v6.ppm": {
+"sha256": "77f41e54b46f9a363730fbae9c599f9c5941f7fbf132c526c55b8dfcdfdf4f95",
+"size": 852736
+},
+"img_0896_x34_v7.ppm": {
+"sha256": "a19d555ed314d1397dd8af0b4256961f24797df5aa3c3702578f0bc6938cdc01",
+"size": 573820
+},
+"img_0897_x34_v8.ppm": {
+"sha256": "bb2a859e5855e9e808d578bf9ca0d08d231ac6518f6d74c5df508492e941a7e3",
+"size": 573820
+},
+"img_0898_x34_v9.ppm": {
+"sha256": "6a430dd66b8e7ec62fa3e0ef520e539afe4e7847d0725162d8abd0d0c6e4f7af",
+"size": 1209526
+},
+"img_0899_x34_v10.ppm": {
+"sha256": "673e5550d195aae9888b7b327c6aa145844c2edac9784d7ded3e466f0249776b",
+"size": 573820
+},
+"img_0900_x34_v11.ppm": {
+"sha256": "dc4492a796fe6811a37eda3e2909b785950edf02efe78b9a65721875bda079b1",
+"size": 872344
+},
+"img_0901_x35_v0.ppm": {
+"sha256": "fa33b3bc0579a2a1f77e8f0c5290bed3b33abaa38b5a8354a8745df1e2051ec0",
+"size": 573820
+},
+"img_0902_x35_v1.ppm": {
+"sha256": "843fde8a6dedbb16fbb61cc7500effc52b695e7595c042ed0ed773a6964d8706",
+"size": 573820
+},
+"img_0903_x35_v2.ppm": {
+"sha256": "d7fc41369fe53a56ab0cf05ccc0c287c47089ed871b6e922b23fa1592b8a271d",
+"size": 573820
+},
+"img_0904_x35_v3.ppm": {
+"sha256": "d7fc41369fe53a56ab0cf05ccc0c287c47089ed871b6e922b23fa1592b8a271d",
+"size": 573820
+},
+"img_0905_x35_v4.ppm": {
+"sha256": "e9592738fc54777cd5c33ddb7d790ada92756f1c03e187544f6a1e2dc91dce64",
+"size": 872344
+},
+"img_0906_x35_v5.ppm": {
+"sha256": "82ebd8836e30930389ba963a1e8b53fc06bd9010ba37b6872d5f36c6965af4bc",
+"size": 872344
+},
+"img_0907_x35_v6.ppm": {
+"sha256": "fd8c02ee7140c1ec8fa61c2d31b786f732f50daebab7582625e1ef3050c859a1",
+"size": 1186564
+},
+"img_0908_x35_v7.ppm": {
+"sha256": "22f12564a8c2aefe7d67f3b43d9c2929e6a38d89106acf27ed38edfbe0d35d80",
+"size": 1209526
+},
+"img_0909_x35_v8.ppm": {
+"sha256": "6c6e7bd8a52d9486cd806918d732f119bbbd302fd8d4d3a9763e4b74df0a40d9",
+"size": 615952
+},
+"img_0910_x35_v9.ppm": {
+"sha256": "f4aeee703714516e66f34130c1149896c496b211b8ca60f5c92e207ec8d03d3e",
+"size": 356812
+},
+"img_0911_x35_v10.ppm": {
+"sha256": "00da40339c95d10870be8c7eaa5e36b99c932d5893da0a5c0a54fd9d16b2f040",
+"size": 573820
+},
+"img_0912_x35_v11.ppm": {
+"sha256": "82acfc6b146925e18b0fe0266e74bb3e2c3b12f75302d675fff227126e87e46b",
+"size": 573820
+},
+"img_0913_x35_v0.ppm": {
+"sha256": "9d7084eadbaac0573eadfb7219ff9443b111f0274077ccd3cb1f34a9712638cc",
+"size": 573820
+},
+"img_0914_x35_v1.ppm": {
+"sha256": "9c63928f79ade238b4cd0bb675e3f2e495e72ebed26ae0c6df13cab051664931",
+"size": 573820
+},
+"img_0915_x35_v2.ppm": {
+"sha256": "c27a5dbb0eb36cb40dfdc654cbe307fdbb8bcb4581857c068b757ec7392aa605",
+"size": 872344
+},
+"img_0916_x35_v3.ppm": {
+"sha256": "9795865e20d0e49870a701c441afaa5363c8dae36b3c22a854c1722c265923c4",
+"size": 1186564
+},
+"img_0917_x35_v4.ppm": {
+"sha256": "3f0363231281e8bce463e930e3f251c2e9b93d00f97b114e789030ca6c6aca9f",
+"size": 356812
+},
+"img_0918_x35_v5.ppm": {
+"sha256": "9723cb2b4213e5eb9780917d8d49b30a33035335116725ce1f5a649dd6883b89",
+"size": 615952
+},
+"img_0919_x35_v6.ppm": {
+"sha256": "f205adbe147b55e806af98f9bdb49fdab496cb59464d0bc7069486f10ad00cb3",
+"size": 852736
+},
+"img_0920_x35_v7.ppm": {
+"sha256": "3d71f084b4354762e0a3cc67eb959455b537666fb2a05db43e9ab1f048acd854",
+"size": 573820
+},
+"img_0921_x35_v8.ppm": {
+"sha256": "0db6f25570b928e02a808f0be5946d2995a9c0052a78686ba78c644dc3ffa170",
+"size": 573820
+},
+"img_0922_x35_v9.ppm": {
+"sha256": "46358976a39a838495db6597f0f0163106d430b78764224c38fde61323199ec7",
+"size": 1209526
+},
+"img_0923_x35_v10.ppm": {
+"sha256": "487f5cc34d665d78ffda66e2190e597b7c4260d529bc204ab669a2c3a93c8a2b",
+"size": 573820
+},
+"img_0924_x35_v11.ppm": {
+"sha256": "35921c3faa5260137556c38a9e219df48895f5bb5aa7ab90fc26db0817f25376",
+"size": 872344
+},
+"img_0925_x36_v0.ppm": {
+"sha256": "a61aff4444461350a716a2117a4b142b6fa45f1bb260f5efcc703dd5b45dafbb",
+"size": 573820
+},
+"img_0926_x36_v1.ppm": {
+"sha256": "b5e66008520c1b5a5b9dd6f2906355c8c4eb9f291e880dd9984cbf37568aaf5c",
+"size": 573820
+},
+"img_0927_x36_v2.ppm": {
+"sha256": "faf32671c4487e8b8bbfcc66bf9bc54fb04e345ba19730383b06f9087a4c0cb4",
+"size": 573820
+},
+"img_0928_x36_v3.ppm": {
+"sha256": "faf32671c4487e8b8bbfcc66bf9bc54fb04e345ba19730383b06f9087a4c0cb4",
+"size": 573820
+},
+"img_0929_x36_v4.ppm": {
+"sha256": "33d5dd706f20b8ab4ddb4cb380d7cc57e0bd18cd3814d71350938a6d6cb9a5f0",
+"size": 872344
+},
+"img_0930_x36_v5.ppm": {
+"sha256": "51ba1d5d4674d56a4b58a0ef85bceafe6570fd5d24db9e7854497c6ff4d3cbb7",
+"size": 872344
+},
+"img_0931_x36_v6.ppm": {
+"sha256": "76c266b139f1f3be82913c2c488e21ededef4abfd67e6933e172b2eeb2a533f2",
+"size": 1186564
+},
+"img_0932_x36_v7.ppm": {
+"sha256": "b63c8b88c02a8aca1d83a47616dabf8f99a3fea8b41cf4a3d4197e99bac0c6fe",
+"size": 1209526
+},
+"img_0933_x36_v8.ppm": {
+"sha256": "f7d8290126590b39b20d4602397a16213dc9549e84e0e40628f07f2a12e1ec07",
+"size": 615952
+},
+"img_0934_x36_v9.ppm": {
+"sha256": "35232cbb65a68203318bf838fd21371d928c80bfc864b40488d574a4a11b760a",
+"size": 356812
+},
+"img_0935_x36_v10.ppm": {
+"sha256": "014096b4f0b5450d97b4676a79fa1b8b7d008d348db418a77162c49d557ec3e2",
+"size": 573820
+},
+"img_0936_x36_v11.ppm": {
+"sha256": "89001662f66f23bb8b1da375b3bf734a07fd8373721ad6c6f4fe54d468e9315a",
+"size": 573820
+},
+"img_0937_x36_v0.ppm": {
+"sha256": "bb69ba4d3f423d2ac0794f8fe463e19fe3562ace4f3987217506e34b8505e623",
+"size": 573820
+},
+"img_0938_x36_v1.ppm": {
+"sha256": "fa16bbe71dfb7e544e826494163814ca985320de22a41f1eda5dddc8e4c8ad39",
+"size": 573820
+},
+"img_0939_x36_v2.ppm": {
+"sha256": "96bfd1291e818c15ae930061a3d7e3c0b3f1b6fe529f0cf846edba89c913dde4",
+"size": 872344
+},
+"img_0940_x36_v3.ppm": {
+"sha256": "fcd13641318b3b38fbe93eef89a3ed555ed94c9f39a8a0b6f4c352b241a2b75b",
+"size": 1186564
+},
+"img_0941_x36_v4.ppm": {
+"sha256": "d20e10376d3c00044b8f4f92487eee77dafb055a18003f90f51804037077f040",
+"size": 356812
+},
+"img_0942_x36_v5.ppm": {
+"sha256": "6d165a88b0b5dd9d3641c23cf712304ded63c649a886c84b895b131bdb444167",
+"size": 615952
+},
+"img_0943_x36_v6.ppm": {
+"sha256": "d4eb6710509d4f493b382608387e4eb7e29835a6378337bfb3a4cd7b32866ee1",
+"size": 852736
+},
+"img_0944_x36_v7.ppm": {
+"sha256": "65307f6dddd0896dcfbd8791a8e312b6d9083ecc5f937900a4263f323474b2c0",
+"size": 573820
+},
+"img_0945_x36_v8.ppm": {
+"sha256": "78a2f5039fffe1d2474df57fdafadeb3f6958102d4c84cb666df00d93972ccec",
+"size": 573820
+},
+"img_0946_x36_v9.ppm": {
+"sha256": "9af1923b46885eb2dd1371e7c7a0f496f640f3379729b58849dbeb0e0ba33858",
+"size": 1209526
+},
+"img_0947_x36_v10.ppm": {
+"sha256": "ec310dcf54ad1479bb0ce09632c4c62ec2335a01c62aabca5ab047202e89b506",
+"size": 573820
+},
+"img_0948_x36_v11.ppm": {
+"sha256": "bc90927dfaf81ec84c67c7b8caae5f911b14c5fdb27c3cec68202163aba80108",
+"size": 872344
+},
+"img_0949_x37_v0.ppm": {
+"sha256": "beece6df456172eeafb9feaff894c4705853cc764eeb1bba357ece30d2a255c8",
+"size": 573820
+},
+"img_0950_x37_v1.ppm": {
+"sha256": "b02097353a6a17861e648ac086503f686ed70e4a3c8e78a81015e3508569a703",
+"size": 573820
+},
+"img_0951_x37_v2.ppm": {
+"sha256": "33c4156cc1410199c563fa9de34a194e8297f928f805caf2be47f0f844da9b37",
+"size": 573820
+},
+"img_0952_x37_v3.ppm": {
+"sha256": "33c4156cc1410199c563fa9de34a194e8297f928f805caf2be47f0f844da9b37",
+"size": 573820
+},
+"img_0953_x37_v4.ppm": {
+"sha256": "c7d8de43120794d413479e53d55039d24c9a97d494d3f6bb4cc38a0b96bd609f",
+"size": 872344
+},
+"img_0954_x37_v5.ppm": {
+"sha256": "f9ce396f86bf4760ba6adcfebbb8c250dc185480396610366cb4fd33f79c8360",
+"size": 872344
+},
+"img_0955_x37_v6.ppm": {
+"sha256": "9b19ce81cd6e7fd5ad0023192bc0ccc4da1f571e8c8490aa39521dfc5892cb01",
+"size": 1186564
+},
+"img_0956_x37_v7.ppm": {
+"sha256": "66ea9551d0f2cc7c8b9b8e8a07454bf6bf887704211cbec708923c537830f2e4",
+"size": 1209526
+},
+"img_0957_x37_v8.ppm": {
+"sha256": "b3eed190c1de9b382c781b825ae87ad17d40e6ffb97e5316a7a4f27a885b0be8",
+"size": 615952
+},
+"img_0958_x37_v9.ppm": {
+"sha256": "4c069196eea4db2a43b8931a1e448b017089be32a8089d4e4240e95517b63886",
+"size": 356812
+},
+"img_0959_x37_v10.ppm": {
+"sha256": "8fe7b371fe799d0ddc567aad6f93e91b7d6e55d17e2dcd9731df8a721b638873",
+"size": 573820
+},
+"img_0960_x37_v11.ppm": {
+"sha256": "070b8bd0e54543934a03d47e5a2a4a4498040d11b3ea7b246790c0d1c2fec9db",
+"size": 573820
+},
+"img_0961_x37_v0.ppm": {
+"sha256": "7ee3545ae6d6645e93f0f87ebe04c3a6671ec88a7c22199b61b52c5fd94c1fc4",
+"size": 573820
+},
+"img_0962_x37_v1.ppm": {
+"sha256": "107416aef88809980e7206b6731cdb3b5fae105df1a3f372ec23fa09edbbda94",
+"size": 573820
+},
+"img_0963_x37_v2.ppm": {
+"sha256": "09b3f6b267a75ace120c867231a8172667cb0d92f39e986e4d8404e0071c16a1",
+"size": 872344
+},
+"img_0964_x37_v3.ppm": {
+"sha256": "2f6d96a78b330a1a28c3dc46a0eb2d1ab33a5207faf1f458fecafa2cf525b48e",
+"size": 1186564
+},
+"img_0965_x37_v4.ppm": {
+"sha256": "75d68264144af0a73a0e23c4c1e08702adb3b0f0f8ec80aea458cbcf5c47a626",
+"size": 356812
+},
+"img_0966_x37_v5.ppm": {
+"sha256": "20b61810c12ed942b06505b17c53fada2fab97eef7f24c754b70d36469529e18",
+"size": 615952
+},
+"img_0967_x37_v6.ppm": {
+"sha256": "60e2b58f346ddab946cd7c9ee485149fca5ffadc598b5e7ee475c6da303553f9",
+"size": 852736
+},
+"img_0968_x37_v7.ppm": {
+"sha256": "12e9099bfb28a509d8d235207bd586c525545f46f0e4005a4e53a9964c301481",
+"size": 573820
+},
+"img_0969_x37_v8.ppm": {
+"sha256": "ecd4f490743412d0f4725a2dcc2ea2d856c96da693f368261439523cf66c9a6b",
+"size": 573820
+},
+"img_0970_x37_v9.ppm": {
+"sha256": "8620e36ebf0eed07e4bc2cabdab9c9acaf5b6211ad5071e0d570dc15182c3ae5",
+"size": 1209526
+},
+"img_0971_x37_v10.ppm": {
+"sha256": "a3c44df71bda0b8b1066aa2664c1c8c0863ccf530c79dd26d2ae4dd2943441a2",
+"size": 573820
+},
+"img_0972_x37_v11.ppm": {
+"sha256": "b70e6773494c3814e808e9bd3056fa9fddae5a0c4b4547a28e9d7045ca3817e3",
+"size": 872344
+},
+"img_0973_x38_v0.ppm": {
+"sha256": "db26582505fbeb78842054d63cd374f6bbf3bda3a50f42134f22e680865a1b87",
+"size": 573820
+},
+"img_0974_x38_v1.ppm": {
+"sha256": "b8a325815afbdf13da93098b1acf2c18f79858a3f509a77b5b4e234c2dec4fe5",
+"size": 573820
+},
+"img_0975_x38_v2.ppm": {
+"sha256": "2e9a70342ef1d4509fe916c30cec028050c3752cdf71f24d4af4ac0d012c34ef",
+"size": 573820
+},
+"img_0976_x38_v3.ppm": {
+"sha256": "2e9a70342ef1d4509fe916c30cec028050c3752cdf71f24d4af4ac0d012c34ef",
+"size": 573820
+},
+"img_0977_x38_v4.ppm": {
+"sha256": "01865f83d6afa27a8ae42e488e5f20c48f1a6691e459f6158a7223295a002408",
+"size": 872344
+},
+"img_0978_x38_v5.ppm": {
+"sha256": "1b80d64c02c42fc4661e78d63c4195a97fd9ffe16ec2d8070ba46d931211f861",
+"size": 872344
+},
+"img_0979_x38_v6.ppm": {
+"sha256": "fba99fa8999124a923f11aadcae61fb216a5a1d75ae92d1b8118b34978554b5f",
+"size": 1186564
+},
+"img_0980_x38_v7.ppm": {
+"sha256": "95175b8c65a69c38c41a0b8796fb6c6dd6d6d6410d6d1a16a3d49b7d4346d604",
+"size": 1209526
+},
+"img_0981_x38_v8.ppm": {
+"sha256": "b2900f00ccee53c863e627b6823976c7a7d7c1a6895ba47e66fc60fcb36df25c",
+"size": 615952
+},
+"img_0982_x38_v9.ppm": {
+"sha256": "c382c6cb4ee0b80b2321073942c22830eb7b9db8da6db22fed0cfb36b8ef2b15",
+"size": 356812
+},
+"img_0983_x38_v10.ppm": {
+"sha256": "ade2ff2c93a58b896f127cc9f9f076375dd962dadcf203240e1751bd7d83e4cc",
+"size": 573820
+},
+"img_0984_x38_v11.ppm": {
+"sha256": "e1f89dfee70c5b3ace24462c6896fc94ae390223f9eff05e7e1fa4347bbd5485",
+"size": 573820
+},
+"img_0985_x38_v0.ppm": {
+"sha256": "631e83914b4bc7b683dfe383eb51cd7056dcfae9aa412a4e96e42fc03baec312",
+"size": 573820
+},
+"img_0986_x38_v1.ppm": {
+"sha256": "fae6125ecc8d098f114a258274caaed441ad0f551a2620927f8413dc132e1509",
+"size": 573820
+},
+"img_0987_x38_v2.ppm": {
+"sha256": "9098c0dd325955697c3a9d04f147f1c51097a1c278231e8cbbc28d8567eaf339",
+"size": 872344
+},
+"img_0988_x38_v3.ppm": {
+"sha256": "a53d5c282e7dc679ee54d813eb13ad6dff0f7f556512ab07923c281fe9a4f8d6",
+"size": 1186564
+},
+"img_0989_x38_v4.ppm": {
+"sha256": "66fc53bc81abf69ffab6e3e07f4ba59008aadd2fd3eff2f234f4f0f09b839815",
+"size": 356812
+},
+"img_0990_x38_v5.ppm": {
+"sha256": "740325b8340fcc52078a57951bc3398df78c8bea41cb85207c0de8213a4bdcc3",
+"size": 615952
+},
+"img_0991_x38_v6.ppm": {
+"sha256": "0f9d20e10ccbc566e973811d9e9a783668733bf227840193d4adf469372b7a96",
+"size": 852736
+},
+"img_0992_x38_v7.ppm": {
+"sha256": "9e0b8258aeb5e79ed611e8b37481a0c487c1d65963074862552a0442537afb1b",
+"size": 573820
+},
+"img_0993_x38_v8.ppm": {
+"sha256": "c2a05501c5ef2971ceb2dd69d4dcf45b8681c014d89dfd83f98517abe80b772b",
+"size": 573820
+},
+"img_0994_x38_v9.ppm": {
+"sha256": "6e28e9f1da36490e451012c46fd21e480674a2658de3e2d6bd5e983a13a7c9a5",
+"size": 1209526
+},
+"img_0995_x38_v10.ppm": {
+"sha256": "f3371b9077b28da2c7d700c4800b6a3a4f94081a0f9e6a7282890f8e84f18b0a",
+"size": 573820
+},
+"img_0996_x38_v11.ppm": {
+"sha256": "9bff64186d218b702901c081df4f6dd45e7387af39a449db84d61504a451a4cc",
+"size": 872344
+},
+"img_0997_x39_v0.ppm": {
+"sha256": "cf99ec1508f4000b97c56f8d6ef8db69f4c3f6977b590f23d7899d5f0eba887c",
+"size": 573820
+},
+"img_0998_x39_v1.ppm": {
+"sha256": "b5bda4369b16fbe5de8d3c48c24027bdddab4f5061d44e70342b1dda3a09a8db",
+"size": 573820
+},
+"img_0999_x39_v2.ppm": {
+"sha256": "820d97f0a7d9b2231e8f837a7c99f1c85fe4536603c854d4f84a8d794518c304",
+"size": 573820
+},
+"img_1000_x39_v3.ppm": {
+"sha256": "820d97f0a7d9b2231e8f837a7c99f1c85fe4536603c854d4f84a8d794518c304",
+"size": 573820
+},
+"img_1001_x39_v4.ppm": {
+"sha256": "e3f8d3152bcac8ecdc606c477562ec6e2201b1d80bf7f67567b99fbec3c44c35",
+"size": 872344
+},
+"img_1002_x39_v5.ppm": {
+"sha256": "11a50be52c12cf5a3a8dd9e56ecba5cb216d35020d1e9f4e89d58caa9d5dbe83",
+"size": 872344
+},
+"img_1003_x39_v6.ppm": {
+"sha256": "f5c97e5ae6e910abc22ee1c7a17e068e7ccfde632633990defe27d9ba9fd8fac",
+"size": 1186564
+},
+"img_1004_x39_v7.ppm": {
+"sha256": "c4a801253b9ef481d5158bf4c922df263b1ea0ef415301c2e17684d76aea2d26",
+"size": 1209526
+},
+"img_1005_x39_v8.ppm": {
+"sha256": "d29ba45e7e00c1779e6bad0870f5843fd15d00a745dfd71069bc2cf9834bb836",
+"size": 615952
+},
+"img_1006_x39_v9.ppm": {
+"sha256": "d2d3df97b23c9d82993b0ac7fa358242fb0c58e750b3371a5027e7e1a15aa1be",
+"size": 356812
+},
+"img_1007_x39_v10.ppm": {
+"sha256": "4fa8ca003163464bccc8d714f0a6161d4eea5ac7f99650fc22f37b464a08535e",
+"size": 573820
+},
+"img_1008_x39_v11.ppm": {
+"sha256": "b7b4460552d318d7bf81fb603252b2aabec61a0c7335000f7a36885e39416415",
+"size": 573820
+},
+"img_1009_x39_v0.ppm": {
+"sha256": "82291760e1d46fee9589d82000135d72039884385680008bf272e4d08bd616f5",
+"size": 573820
+},
+"img_1010_x39_v1.ppm": {
+"sha256": "7c525fa1a1ec92828c6277fb3c215d38a0a57a5fe3aae28b856ba54c9c3a1fea",
+"size": 573820
+},
+"img_1011_x39_v2.ppm": {
+"sha256": "c9f68137fff7b0d0b8a9498312319c082e000a6b69d353b73537618eb6fda2e7",
+"size": 872344
+},
+"img_1012_x39_v3.ppm": {
+"sha256": "6eeae4aa04e45749650d3b213e7782e4b5541fbcce79763c8da78fb7968be0ce",
+"size": 1186564
+},
+"img_1013_x39_v4.ppm": {
+"sha256": "4c2c0f0e956b1c2409533604e6bc5cbac9ed881c69c484d33a9f2ec31cb31c0a",
+"size": 356812
+},
+"img_1014_x39_v5.ppm": {
+"sha256": "e6277ed53d7e41e155a52489eaa0e83e1bfc9c30569c4898e8185c65c4467c65",
+"size": 615952
+},
+"img_1015_x39_v6.ppm": {
+"sha256": "f24ae8d3b5756570447b69c30fbc673f7d3ef4c4edc26bffe81232c77e111f38",
+"size": 852736
+},
+"img_1016_x39_v7.ppm": {
+"sha256": "dbc36a50fc8c89752dba9415fdbafd6bb689eb0612d6d9aa24578331a83d9685",
+"size": 573820
+},
+"img_1017_x39_v8.ppm": {
+"sha256": "bc0af1cbe1f3b25d5d72c048e87480b38224770a6ed8fd0523a8a5b20fd4f15d",
+"size": 573820
+},
+"img_1018_x39_v9.ppm": {
+"sha256": "5c1a1678a198f6bca61db30fa3128dc3b5f466265e4b8c9e17db839f1c875444",
+"size": 1209526
+},
+"img_1019_x39_v10.ppm": {
+"sha256": "762d940d6f3b681c5d012964b33067efc2650ddbaf3d09ddf9468d996ea425e4",
+"size": 573820
+},
+"img_1020_x39_v11.ppm": {
+"sha256": "0bb70cbe1dfe3e852790e23dad660b7becc7a361f27bb83378c9dea696c84fc3",
+"size": 872344
+},
+"img_1021_x40_v0.ppm": {
+"sha256": "8ab4debaec45e6cd63fffe1c1ab326a1df9708ffe5c0ec22c21f0783482f9d2a",
+"size": 573820
+},
+"img_1022_x40_v1.ppm": {
+"sha256": "6a2f2f8676078328623a6880f746825ab55c8dc604c70c232b44a2f9b846f6d8",
+"size": 573820
+},
+"img_1023_x40_v2.ppm": {
+"sha256": "30fa5a72f93794291e189027a18521fe0c5b6317289a4aa4d5585edfcc09c584",
+"size": 573820
+},
+"img_1024_x40_v3.ppm": {
+"sha256": "30fa5a72f93794291e189027a18521fe0c5b6317289a4aa4d5585edfcc09c584",
+"size": 573820
+},
+"img_1025_x40_v4.ppm": {
+"sha256": "fda40724ef1fee508f7d39f8b114954e1151455888154f83dcda92bbaa8928bb",
+"size": 872344
+},
+"img_1026_x40_v5.ppm": {
+"sha256": "abf441774bcf432264d975b5a9c793693510a9cb78e2f1401d3f47e4130ef5fc",
+"size": 872344
+},
+"img_1027_x40_v6.ppm": {
+"sha256": "85e029fb789500da5288e04acf1af900c0ee505016730b692ceb646a50a298cf",
+"size": 1186564
+},
+"img_1028_x40_v7.ppm": {
+"sha256": "e7b1c060d20422e1820f34c6a00ab7ff9e58a5a6dee52dfdcfdb1db87d9c7b37",
+"size": 1209526
+},
+"img_1029_x40_v8.ppm": {
+"sha256": "8b2aaeb768ee23da314d03dec43405822d1a0c60560d1c80cffd2c6a7d78dc97",
+"size": 615952
+},
+"img_1030_x40_v9.ppm": {
+"sha256": "17c4573298704f5660e4576ca9b70c41a72af48fe4dd15dfd615a4fd3cf92729",
+"size": 356812
+},
+"img_1031_x40_v10.ppm": {
+"sha256": "40ac688d8be612e3b2224e114e7cc8034575c3817bf4ca807af6973470ebf8e8",
+"size": 573820
+},
+"img_1032_x40_v11.ppm": {
+"sha256": "90e3c4a28d756c6735d7961aecb2aa354307c0fbcc43a6d2a6991c7f7fed4877",
+"size": 573820
+},
+"img_1033_x40_v0.ppm": {
+"sha256": "6b958a139c6f26c5e2ca4081da1cc12e6b02c2047bee3504684b1ea11a26c75c",
+"size": 573820
+},
+"img_1034_x40_v1.ppm": {
+"sha256": "1bd6cd16dd8bef3a08644e7861cff538ef8ca5f7e250f7d88fccb1a0a0a76aee",
+"size": 573820
+},
+"img_1035_x40_v2.ppm": {
+"sha256": "c649247692c9098a69980999b6b2383720d7016b64eabe8d83bffcfd5ddc2f31",
+"size": 872344
+},
+"img_1036_x40_v3.ppm": {
+"sha256": "9b693c7b07b134e2b1856485ede13829d0adb66f1432cbf5ff63f9c6d3f8e7e9",
+"size": 1186564
+},
+"img_1037_x40_v4.ppm": {
+"sha256": "ba17dd6b4753a9787b8a4390751e2bf22710468976ecdeff04f49ed46169ee07",
+"size": 356812
+},
+"img_1038_x40_v5.ppm": {
+"sha256": "c0e7c263907b6c8d33adfe9cba592c58bfcb9d1d9eeb8ee87a57240996cbbf0f",
+"size": 615952
+},
+"img_1039_x40_v6.ppm": {
+"sha256": "9a9336edb7316bdb32ec3bcf97a2a8e74003f7531751d78ad6f1142fd3a24366",
+"size": 852736
+},
+"img_1040_x40_v7.ppm": {
+"sha256": "774e66011b7ab7d7a861514053d70ec2302ecca7f5578b5671851fc640c110ae",
+"size": 573820
+},
+"img_1041_x40_v8.ppm": {
+"sha256": "906e1eee9a7a74fa54e0ff330631e65c5e7274abbc1c694ad4366c08773f9ecd",
+"size": 573820
+},
+"img_1042_x40_v9.ppm": {
+"sha256": "3614ee75430e343f6d93f3ed4f74b58471ccbe5dd373631ee4975e084030e01c",
+"size": 1209526
+},
+"img_1043_x40_v10.ppm": {
+"sha256": "88ac8ba9f990aeec4570ffb3d8e818f16ddbef0af5203d2b26b1d209183db0ca",
+"size": 573820
+},
+"img_1044_x40_v11.ppm": {
+"sha256": "537b4b64da7096baabe0c6d8304cf4c26b3125bf7469c84c47a7d148b54865f2",
+"size": 872344
+},
+"img_1045_x41_v0.ppm": {
+"sha256": "8b468e43f491b5f55e13aae34fcee5feb1708ce70d5dbe0e65e4dc10d1d4ac90",
+"size": 573820
+},
+"img_1046_x41_v1.ppm": {
+"sha256": "2b55fc68dfc9c493e8ed86974f3ac8c6486cbf16d12c2e3f2711858657a21041",
+"size": 573820
+},
+"img_1047_x41_v2.ppm": {
+"sha256": "2a1268b6080378843c06bd4db266c01f62ce487bab56d2761b37ed2d8c2e3115",
+"size": 573820
+},
+"img_1048_x41_v3.ppm": {
+"sha256": "2a1268b6080378843c06bd4db266c01f62ce487bab56d2761b37ed2d8c2e3115",
+"size": 573820
+},
+"img_1049_x41_v4.ppm": {
+"sha256": "f7b3ff31f47689b35832a2d8da1536a143155cb366b5864d677ceed2ce07a6df",
+"size": 872344
+},
+"img_1050_x41_v5.ppm": {
+"sha256": "c2876f24a77d78e40ca977367450237be7a5339c6c3feea3711b3f66cd39d9d9",
+"size": 872344
+},
+"img_1051_x41_v6.ppm": {
+"sha256": "a93d11641b7d7d191adb8d33a7156ff2fe1038d87e413ae4636e5a98c3f1e6d3",
+"size": 1186564
+},
+"img_1052_x41_v7.ppm": {
+"sha256": "4fec27473f1fa5ea4fb32d2d87189194e5bdb305840b6cd41c832aa1ff860f5c",
+"size": 1209526
+},
+"img_1053_x41_v8.ppm": {
+"sha256": "7a805573c20f36d7bd377a707219d1b2285b73c83f8083bc4ebf7907ccf54b86",
+"size": 615952
+},
+"img_1054_x41_v9.ppm": {
+"sha256": "58ef8922383667246d45ff2d216224316a813a3c2530fd640a7c743461c22cf9",
+"size": 356812
+},
+"img_1055_x41_v10.ppm": {
+"sha256": "9cab976af48655f310acab2693bf852f3c9b911a8392b4bea81c314b2e4bc0e9",
+"size": 573820
+},
+"img_1056_x41_v11.ppm": {
+"sha256": "c14bceaef3d4323e8df75e1a72b7872303136279b25b519026d66078e874b562",
+"size": 573820
+},
+"img_1057_x41_v0.ppm": {
+"sha256": "f339c58530b0e6bf0dfe1843c373193ab70466d4c00874f9b2d794772b29ab4e",
+"size": 573820
+},
+"img_1058_x41_v1.ppm": {
+"sha256": "bb35b542ef33f54fed47924d199413621d3594294939eb006c17d992f4eb105f",
+"size": 573820
+},
+"img_1059_x41_v2.ppm": {
+"sha256": "b2f9268589b73184462c0aa50df2724a4dbdc877fad560c5bf0b6e2aa676851a",
+"size": 872344
+},
+"img_1060_x41_v3.ppm": {
+"sha256": "3d0b4fadb4de618700783a44f69895fbcb45ab2e9d8284fa1956e74ad5b43fc6",
+"size": 1186564
+},
+"img_1061_x41_v4.ppm": {
+"sha256": "cddb98d82705b9b78c3197be8b132795496b514975d89b4affe991f988620eb5",
+"size": 356812
+},
+"img_1062_x41_v5.ppm": {
+"sha256": "2ece24c761f0e375b45353553d6db0344b3130f1fd871a3507d49068c497d33d",
+"size": 615952
+},
+"img_1063_x41_v6.ppm": {
+"sha256": "c630f390b21c0c53d0ce32159fe69fda94989a617b40c39a1435f85e81a6cad7",
+"size": 852736
+},
+"img_1064_x41_v7.ppm": {
+"sha256": "c86012e8263f4b1f46ea0df6cc3de40ef85def52566e816410637b66908ee2a8",
+"size": 573820
+},
+"img_1065_x41_v8.ppm": {
+"sha256": "d38234ba8c59c0768a2f26d6517d3ee127c91b5090219185884a062cfd1c5058",
+"size": 573820
+},
+"img_1066_x41_v9.ppm": {
+"sha256": "4c0241b710a8e9e7f5c0fed18712d21a117ab957f46b11c3b8d18fdabcea7757",
+"size": 1209526
+},
+"img_1067_x41_v10.ppm": {
+"sha256": "65b1cf18ff9b2f446518c977cd18d2318f38f66f8a0fb99c338a82fff9958eb0",
+"size": 573820
+},
+"img_1068_x41_v11.ppm": {
+"sha256": "4d0d51618c484130cbc32eaa053d33c9938e80a17ceeb448841be6707b4238c0",
+"size": 872344
+},
+"img_1069_x42_v0.ppm": {
+"sha256": "5ab3eb3831e84c1d61587467cfbf8e153cde9105b404938a53b41906fe57beae",
+"size": 573820
+},
+"img_1070_x42_v1.ppm": {
+"sha256": "e9281b1605965f8842ce931af256b3c79d15647c60d238e678966c31cfc3ce31",
+"size": 573820
+},
+"img_1071_x42_v2.ppm": {
+"sha256": "bebd0a9d5a7c109719d5c0c339afa9e312d81ca93dedc00a3cc69a8609769aa6",
+"size": 573820
+},
+"img_1072_x42_v3.ppm": {
+"sha256": "bebd0a9d5a7c109719d5c0c339afa9e312d81ca93dedc00a3cc69a8609769aa6",
+"size": 573820
+},
+"img_1073_x42_v4.ppm": {
+"sha256": "43a97b5733cd5f9f13edc612a7a1294c190b3ae8573c7cf964c93cf42a4df57f",
+"size": 872344
+},
+"img_1074_x42_v5.ppm": {
+"sha256": "9431b1475d2c147fad8f37fe6a2eff62cebb64798a53b60be3cf09df061dae9d",
+"size": 872344
+},
+"img_1075_x42_v6.ppm": {
+"sha256": "dfbf03be9bdee4f8f09568543454fd8432e23e9e4ad9d80a4ec488c73890eaf9",
+"size": 1186564
+},
+"img_1076_x42_v7.ppm": {
+"sha256": "ab31172fe0ffe063da766caa51e174532d6f9d1df53a11014f6e470890ed3add",
+"size": 1209526
+},
+"img_1077_x42_v8.ppm": {
+"sha256": "759dea347c3995d19f43b3fb51b45c4302db8cccc1f42fd4bf2efcbf1ed3266c",
+"size": 615952
+},
+"img_1078_x42_v9.ppm": {
+"sha256": "7dfe08e99460004564d1afeeac9b7a075560eeb8f4fd1cbd44d80e3040966b8e",
+"size": 356812
+},
+"img_1079_x42_v10.ppm": {
+"sha256": "67d0e3695bd74122ab7ada53fefe89caa310f527cdc91a1922835561cad74f98",
+"size": 573820
+},
+"img_1080_x42_v11.ppm": {
+"sha256": "ba04b6d6cc35c5af2606159b0143dc509a3ccaefb15d6f6643021d132fa2af8f",
+"size": 573820
+},
+"img_1081_x42_v0.ppm": {
+"sha256": "c28735c35c1688c407a6d15cca974d91145b47d0e04da54699bff1a68f0aea82",
+"size": 573820
+},
+"img_1082_x42_v1.ppm": {
+"sha256": "b91c5b25304e738b49ee24335d75f6c90ef72b54793e47064ee3acff49777213",
+"size": 573820
+},
+"img_1083_x42_v2.ppm": {
+"sha256": "21cbc8d83defdc0bd2835f926a08d8165a8f946cf333d72ca1d6b6438e2e7b4c",
+"size": 872344
+},
+"img_1084_x42_v3.ppm": {
+"sha256": "e9960954e1ec249bbdd969d17803bf4f9295e893d67e283848eef9a82b57f2f4",
+"size": 1186564
+},
+"img_1085_x42_v4.ppm": {
+"sha256": "03190349cb4a290e99389b338fdf2ac9d2cbfffe9092fc4dc1b20ac3f04f6c34",
+"size": 356812
+},
+"img_1086_x42_v5.ppm": {
+"sha256": "e20a88b725f6759bce86cc1a56c19bcec251e3b77509ed2a8731b915b3b5b1a8",
+"size": 615952
+},
+"img_1087_x42_v6.ppm": {
+"sha256": "59405b45f2e94dce1847471cd817685bf5d92c8e1cf44e802c264fe5892f2cbe",
+"size": 852736
+},
+"img_1088_x42_v7.ppm": {
+"sha256": "173dd7d003b2a86887dcbd63afe545de72177d4f36f52ecbdc3200e4d5d71343",
+"size": 573820
+},
+"img_1089_x42_v8.ppm": {
+"sha256": "942195b6e4159a0d7a4bb1efdfc6367642a54a29a19cf424d25377be387644b0",
+"size": 573820
+},
+"img_1090_x42_v9.ppm": {
+"sha256": "224704d9b3f990a699261a2bbe3215eabfa41c2d6adccf54b687c887b8e59132",
+"size": 1209526
+},
+"img_1091_x42_v10.ppm": {
+"sha256": "1be00148ef625e7e24c9791fc4b34f63ab7efc0b5b4fc525ab9d2876573abca4",
+"size": 573820
+},
+"img_1092_x42_v11.ppm": {
+"sha256": "19a966cf460faff8577fdb49344321aebdb3ac4725d8525070346d2c0454ff7e",
+"size": 872344
+},
+"img_1093_x43_v0.ppm": {
+"sha256": "4927ff7cc2a43cb7d69527fd575c949fb46f8d7117bb73926a48359b6a2936e9",
+"size": 573820
+},
+"img_1094_x43_v1.ppm": {
+"sha256": "444793aadfb9d6310da71e64847ca9690ea0bf4b5712136ac969f7243a907ad8",
+"size": 573820
+},
+"img_1095_x43_v2.ppm": {
+"sha256": "5fe344bbd213cb17345c1263b7edfd2e3feabddc3f50650e25fead4df2048903",
+"size": 573820
+},
+"img_1096_x43_v3.ppm": {
+"sha256": "5fe344bbd213cb17345c1263b7edfd2e3feabddc3f50650e25fead4df2048903",
+"size": 573820
+},
+"img_1097_x43_v4.ppm": {
+"sha256": "d236fb1b2eabfd43d51d9e28a193785a7f1cfbf109dc45015a423ab0bc075e7e",
+"size": 872344
+},
+"img_1098_x43_v5.ppm": {
+"sha256": "09826b46fa4385458f780ad6d23a7012763ef7102823eba511b1558158d12ed9",
+"size": 872344
+},
+"img_1099_x43_v6.ppm": {
+"sha256": "df2cb4d872f1cf2b2bc288d0acba60f70c343203ddcad76c423839016a89cee9",
+"size": 1186564
+},
+"img_1100_x43_v7.ppm": {
+"sha256": "bf27ba2d1dad3dc7575a0adc9dd7b99d39298431f9b4507a4edf66873f27356f",
+"size": 1209526
+},
+"img_1101_x43_v8.ppm": {
+"sha256": "6b78ef398dd159f5c9a58ff78257e84fbfb4e362792337b00507c0286bcbbf50",
+"size": 615952
+},
+"img_1102_x43_v9.ppm": {
+"sha256": "975413e5587aa239f46d14a74caba60bb0df4595d7c9d0c1d918aef7812dcf00",
+"size": 356812
+},
+"img_1103_x43_v10.ppm": {
+"sha256": "5d6a1a3b08c2d83a41f458c3aaf0736fc5d1d9e72aabdb68ef80609a0841e2ed",
+"size": 573820
+},
+"img_1104_x43_v11.ppm": {
+"sha256": "20b8cbb9d53e8cb1ead067ddcc9fda0aedf651ca9aea259d256bc50cf613fc88",
+"size": 573820
+},
+"img_1105_x43_v0.ppm": {
+"sha256": "cfa4eccb0ff1dc2bc3b352feb05d715da85e9ad19b31c9905e2c7eba5cf070ef",
+"size": 573820
+},
+"img_1106_x43_v1.ppm": {
+"sha256": "2372dea5ce0e24d4375f0e5878ddedacf7e41d6ad664cfc44938006e2b988cd6",
+"size": 573820
+},
+"img_1107_x43_v2.ppm": {
+"sha256": "4617b013cfbd26f183403b743d03b0ceb289776d14b1643fd81bfec540c82987",
+"size": 872344
+},
+"img_1108_x43_v3.ppm": {
+"sha256": "6f6be085f34989d086e98ff89aa4a2870d8d34a022c459be13f748a8e4f44fc0",
+"size": 1186564
+},
+"img_1109_x43_v4.ppm": {
+"sha256": "04f128dc54aeb8d1fdd995046eff34b3cf9307d718efc66a97dd0d2469fd5890",
+"size": 356812
+},
+"img_1110_x43_v5.ppm": {
+"sha256": "3274dea77f10669f4e3db88f0552a8be2de4b250cb75d86a831c6d822f621ebb",
+"size": 615952
+},
+"img_1111_x43_v6.ppm": {
+"sha256": "07abb881c55c6aeef33be33c9a7e36c27ff6d6d32cffc5b43eb63290a31edb08",
+"size": 852736
+},
+"img_1112_x43_v7.ppm": {
+"sha256": "4936d9bd5d56301e3a2baa7042d98e6399c35f42c788f4e637a0029d70cc689e",
+"size": 573820
+},
+"img_1113_x43_v8.ppm": {
+"sha256": "82789c69c4c727df31e6e416757e0dbb242eadf7fefa959f3dde32437534342a",
+"size": 573820
+},
+"img_1114_x43_v9.ppm": {
+"sha256": "438f3e059d4b7fb6942162de5e71d87c063e7d492a00186e7c9025a372c971aa",
+"size": 1209526
+},
+"img_1115_x43_v10.ppm": {
+"sha256": "5925fb5db104e816f65ec2387c04bf80d2e55e2f54c7c340d1015f895ea94f5c",
+"size": 573820
+},
+"img_1116_x43_v11.ppm": {
+"sha256": "243fe3061fc0e824d9c7cdd818c4cdd23116b416d8fbc0c319853d5cbe27a853",
+"size": 872344
+},
+"img_1117_x44_v0.ppm": {
+"sha256": "cf6795d90adf7e8a39477fa5a2b0791e011be8d27074ffa191fe1fc0bd310657",
+"size": 573820
+},
+"img_1118_x44_v1.ppm": {
+"sha256": "b962bf6d730a35eec7ad8e451843b9d3a7e8d2d5ae2147068da58126563c3f23",
+"size": 573820
+},
+"img_1119_x44_v2.ppm": {
+"sha256": "80546a7e02ec5416a016ef38b2003fe37cedf33d5b464b143b4a2778778f9f56",
+"size": 573820
+},
+"img_1120_x44_v3.ppm": {
+"sha256": "80546a7e02ec5416a016ef38b2003fe37cedf33d5b464b143b4a2778778f9f56",
+"size": 573820
+},
+"img_1121_x44_v4.ppm": {
+"sha256": "05cf5f356eb794068ab3b711525e33dcbe1fd344d01f7c6281aae85b85af2e47",
+"size": 872344
+},
+"img_1122_x44_v5.ppm": {
+"sha256": "98df348afb152b1ca7c1f9328bf983cdacd381aea2fd25825cbe0d2cca789359",
+"size": 872344
+},
+"img_1123_x44_v6.ppm": {
+"sha256": "9df864578c140704899273fd9b9ab3bc4e417d89b36ae1bcf0ab6752715ccb8a",
+"size": 1186564
+},
+"img_1124_x44_v7.ppm": {
+"sha256": "8adce31147e55ed14a96291091bc8533273c627fcdf34660197dd3f1855b14df",
+"size": 1209526
+},
+"img_1125_x44_v8.ppm": {
+"sha256": "4495b295f4061ae00015183c7c3fad81a13849c33a2cd79aa2e8315f073bde78",
+"size": 615952
+},
+"img_1126_x44_v9.ppm": {
+"sha256": "3a9c76d81200e454346ef711e97f9013d3ce9abcc100de3ba6a2effd9f41a78d",
+"size": 356812
+},
+"img_1127_x44_v10.ppm": {
+"sha256": "077aa4521d5b504f1b8e1ab005b8c54b3bcea1517618c86c2941cd1d03f16d66",
+"size": 573820
+},
+"img_1128_x44_v11.ppm": {
+"sha256": "39f266e82f876287e746973e291d8bfb908ca5f0ccff5dbd0879e04500d7b908",
+"size": 573820
+},
+"img_1129_x44_v0.ppm": {
+"sha256": "74b006e509c1deb2b147bea0aad9b018305d416134746dba57aa336318203a74",
+"size": 573820
+},
+"img_1130_x44_v1.ppm": {
+"sha256": "6ab773202f83cd2b982a27512d58dc0190595282812e8c0d98ab5ca9ac99f74e",
+"size": 573820
+},
+"img_1131_x44_v2.ppm": {
+"sha256": "00857c76e5d4be8cdfa2cc5ae9e8167822495b15dc70833f838ba39a248df1f3",
+"size": 872344
+},
+"img_1132_x44_v3.ppm": {
+"sha256": "ecd337a10a19b8d8f457192fe35633517de28d1f2639b379204db1840c0d7900",
+"size": 1186564
+},
+"img_1133_x44_v4.ppm": {
+"sha256": "b883f1e6341921a6157498ce61e4a6943efa3fd402fe7204f436825bb0d23585",
+"size": 356812
+},
+"img_1134_x44_v5.ppm": {
+"sha256": "02d201a215f469389dc0f3b39d7b641e68e072413a4880d30c1f33a4a70cf735",
+"size": 615952
+},
+"img_1135_x44_v6.ppm": {
+"sha256": "68d17f1c7846058edf119d0d545ec563627ecd6d30c1ad904b4d489f4aa555bd",
+"size": 852736
+},
+"img_1136_x44_v7.ppm": {
+"sha256": "f52460fbf61efc76b67412294115e62eedb49c1ce670b6f66e43bc74cfab8b13",
+"size": 573820
+},
+"img_1137_x44_v8.ppm": {
+"sha256": "48d707687e6ab6664d823f01d4aa4307770f7a9d55f141fbe1de142d9b469976",
+"size": 573820
+},
+"img_1138_x44_v9.ppm": {
+"sha256": "cdb010d8fc9a19e77af5baae7f7c8558a35ed8a31c96d91733f6386b98f009fa",
+"size": 1209526
+},
+"img_1139_x44_v10.ppm": {
+"sha256": "250cc4955ed26107a803344ae644706e7c237aa1d6818aa3bdc940a33fd40e5f",
+"size": 573820
+},
+"img_1140_x44_v11.ppm": {
+"sha256": "58ddf234b70b6fbba800b8bff623d85d3955ba7e27f7ab4cffbc764572829e48",
+"size": 872344
+},
+"img_1141_x45_v0.ppm": {
+"sha256": "230b4d275c734f26acc8fb49869ef1af92a65c571b52fe84d529aeeecf56ff72",
+"size": 573820
+},
+"img_1142_x45_v1.ppm": {
+"sha256": "f9e2d798b9607a31f2fc624467f7c611fc0ccda82dac45a31ff71465180d689a",
+"size": 573820
+},
+"img_1143_x45_v2.ppm": {
+"sha256": "5c24b8a4c5e9cc644027f071e46db8ec7440fb71eb7ada4c45b741378044a4c1",
+"size": 573820
+},
+"img_1144_x45_v3.ppm": {
+"sha256": "5c24b8a4c5e9cc644027f071e46db8ec7440fb71eb7ada4c45b741378044a4c1",
+"size": 573820
+},
+"img_1145_x45_v4.ppm": {
+"sha256": "5aae28cf68913462416f4c93f9e937e7cef61f79f98579acaf12fc53762f819c",
+"size": 872344
+},
+"img_1146_x45_v5.ppm": {
+"sha256": "ad3060f6af0a554fc6755c9c3249cf10ee987a41ffe0739d38b1e133d5b92203",
+"size": 872344
+},
+"img_1147_x45_v6.ppm": {
+"sha256": "f8796bf3ea2e2b041bfcba9589bbdb8dcff4c022b3ab1bf46a4c903add4f7149",
+"size": 1186564
+},
+"img_1148_x45_v7.ppm": {
+"sha256": "c9f8a8d0a880fb5a93908c699aa81cd82767a2a7f417dcc47492528ce084c856",
+"size": 1209526
+},
+"img_1149_x45_v8.ppm": {
+"sha256": "01e31025a4df0f42a6ab916955ccda58537a0f8a52bd8da8919c1877d87d996a",
+"size": 615952
+},
+"img_1150_x45_v9.ppm": {
+"sha256": "40499b95b4ea706afb75261b5356c9bbca09f16f7ee4f369409c090a41216162",
+"size": 356812
+},
+"img_1151_x45_v10.ppm": {
+"sha256": "4001b0d69aee31012dfdc61efa5a7617483630666da4e22013935d4acb845009",
+"size": 573820
+},
+"img_1152_x45_v11.ppm": {
+"sha256": "3bcc03636a08f3f2b85a111e77d8ceb75d644df4ac1264cefb6eb989dcb99262",
+"size": 573820
+},
+"img_1153_x45_v0.ppm": {
+"sha256": "2aeb4f7998dfea13955f46ab018485f4a76d87ad5661c71bb32a7243af08b982",
+"size": 573820
+},
+"img_1154_x45_v1.ppm": {
+"sha256": "d9edbaae437dee14beb06f09eb7f5e172382c4b1a2301e1ccdfd73a8659e82d0",
+"size": 573820
+},
+"img_1155_x45_v2.ppm": {
+"sha256": "f0f187997a3dced80211c18cdd64cf98956bf2cf610787c3e8a028d57c5857fe",
+"size": 872344
+},
+"img_1156_x45_v3.ppm": {
+"sha256": "3b8526d12f7d3cf01b8a1ffa20156e7dbc1162c01ceb43e55a0b3884a49d97b4",
+"size": 1186564
+},
+"img_1157_x45_v4.ppm": {
+"sha256": "2b9973e8dd65192073d9b6b8ff5792256ee820fdef6f2672b68c5cc6c34f98c3",
+"size": 356812
+},
+"img_1158_x45_v5.ppm": {
+"sha256": "e9f94911402359a0e688e0c878b98845cc0243a8319399bdde1e36b026afa834",
+"size": 615952
+},
+"img_1159_x45_v6.ppm": {
+"sha256": "cc5b712da3d0c62d8ed291216bc057b208dc532cdc334e8825f03767930a9ad9",
+"size": 852736
+},
+"img_1160_x45_v7.ppm": {
+"sha256": "915af8aa739c7f187ba4bd799ce2638311635d21137b2dfcd7f35b28ff604739",
+"size": 573820
+},
+"img_1161_x45_v8.ppm": {
+"sha256": "a3eb8a439ec7609831f135612ca7357d9c3bffb6f057193f6a6f4241e4ac4c6a",
+"size": 573820
+},
+"img_1162_x45_v9.ppm": {
+"sha256": "7d95c15de0b22f825289e7f5715eddab361b2301d5209780eac993928be56ebe",
+"size": 1209526
+},
+"img_1163_x45_v10.ppm": {
+"sha256": "293188923bb9baee3ca9f82f0b704de85cfec4cbf5e7d7d2c4e9943965fca28a",
+"size": 573820
+},
+"img_1164_x45_v11.ppm": {
+"sha256": "0aeda1abc3a16b227de5fd2954a997df23833558995e1412f3f2660a24d9a6b9",
+"size": 872344
+},
+"img_1165_x46_v0.ppm": {
+"sha256": "d5e2b575e2a6c2097dba797bbb63722ca83ea64ecbd1127f8367ce3bbf400a9b",
+"size": 573820
+},
+"img_1166_x46_v1.ppm": {
+"sha256": "f7ba97ced9e29be552bc63f22fe9232b3afd70500630f707bc9a03493c2d9fc5",
+"size": 573820
+},
+"img_1167_x46_v2.ppm": {
+"sha256": "ea1c102b56c787f7dd31667ad437d7a44782a8f71b98c42702781aaec8672541",
+"size": 573820
+},
+"img_1168_x46_v3.ppm": {
+"sha256": "ea1c102b56c787f7dd31667ad437d7a44782a8f71b98c42702781aaec8672541",
+"size": 573820
+},
+"img_1169_x46_v4.ppm": {
+"sha256": "3cb04e4bdb9aa48b9bc69b1b6bbc131001062c094d491acdba597c6c1666595c",
+"size": 872344
+},
+"img_1170_x46_v5.ppm": {
+"sha256": "e6c3dc952d8497484adf20f8e2ba2b2a32201be1398b2f1fad6aa2d7137a8c4f",
+"size": 872344
+},
+"img_1171_x46_v6.ppm": {
+"sha256": "fce05e49cb322c1d4e1d01b4f6fcee2c1d69c962835ef313cc98c9ed37fbf547",
+"size": 1186564
+},
+"img_1172_x46_v7.ppm": {
+"sha256": "d6ce5b8157f35255f8d9354bd5c3d4966edd2e51b07895c775ae9ee77585675e",
+"size": 1209526
+},
+"img_1173_x46_v8.ppm": {
+"sha256": "a26a45f466061ccb9b235d8d3c911d7d793db862e458f772d9a843065a9f71bb",
+"size": 615952
+},
+"img_1174_x46_v9.ppm": {
+"sha256": "0208a65a561d71b991ee3cb68e1f7477f632d99111f8f0c14c6c62d594679f84",
+"size": 356812
+},
+"img_1175_x46_v10.ppm": {
+"sha256": "127707fb229e81943f026b04973299d336569c2a12d5a58567604dd856fb2f40",
+"size": 573820
+},
+"img_1176_x46_v11.ppm": {
+"sha256": "a60c7b7d8cc912faf8393dd319d39e5d81e0ee061a4af5f210361e844a86ee50",
+"size": 573820
+},
+"img_1177_x46_v0.ppm": {
+"sha256": "7f258d31dfe918ecf6ed9f63faad3ee47ab0837c58f0f08fff6df178497fcfe2",
+"size": 573820
+},
+"img_1178_x46_v1.ppm": {
+"sha256": "06fe39351de9fbd8ab63f3ff610d6a9b71c2ae6a0a71d747f8e7fd5061eca4b1",
+"size": 573820
+},
+"img_1179_x46_v2.ppm": {
+"sha256": "4fe01a2829188fbea95eda295a086e680d94dea51a3eecfbe7013191eebb1f11",
+"size": 872344
+},
+"img_1180_x46_v3.ppm": {
+"sha256": "cf89c3373ba81dd31852841533ab754f95d357272c79eb10f5a6d3d417a84d6f",
+"size": 1186564
+},
+"img_1181_x46_v4.ppm": {
+"sha256": "e835c36a4ff46cb4c1f8f9cb8dcaa6844c169bb6f60bff732a53a90f0fcb8b0b",
+"size": 356812
+},
+"img_1182_x46_v5.ppm": {
+"sha256": "90976121dce30f33a1e4eb194371f52710ad69a8c9df22cfd23bfa27f1c542f2",
+"size": 615952
+},
+"img_1183_x46_v6.ppm": {
+"sha256": "f7f3ea487fd4d66d443d8beb53058898579f1db5104e04d99967cf07a3175e23",
+"size": 852736
+},
+"img_1184_x46_v7.ppm": {
+"sha256": "459cc2eadf179f757fda14cf22ac77d74a0c0976e5a6e1ea1844803123e44e09",
+"size": 573820
+},
+"img_1185_x46_v8.ppm": {
+"sha256": "8efdb06bfee70692f0ee62a2f74268406144b9e0ae590460fe9a455bba469cd9",
+"size": 573820
+},
+"img_1186_x46_v9.ppm": {
+"sha256": "91c46a8a7df8a8704439e4393078253892523e1c88fb2ac2807b57fb29ba44b9",
+"size": 1209526
+},
+"img_1187_x46_v10.ppm": {
+"sha256": "badc6f8119af8702176ff21a02ea3bd537de0e8c26e5c8533984f31d75ce3b11",
+"size": 573820
+},
+"img_1188_x46_v11.ppm": {
+"sha256": "e4c34769786728620efdbc3ec22d8ef0ffedbb7fd26e85f42c489cfd2ab694cb",
+"size": 872344
+},
+"img_1189_x47_v0.ppm": {
+"sha256": "c5002bef4789c4574cc57826e4cf66d7f1a86146514f8f71bf937fccbb8c4039",
+"size": 573820
+},
+"img_1190_x47_v1.ppm": {
+"sha256": "7115787a0af806edfb900d83dbef931bbe88171a1dd536db8c5a1b1144f9ea33",
+"size": 573820
+},
+"img_1191_x47_v2.ppm": {
+"sha256": "8d5a41c6dc816d1b5c9c141f7ee50b41c77cc801b7ff19e66d5af74f6dee232a",
+"size": 573820
+},
+"img_1192_x47_v3.ppm": {
+"sha256": "8d5a41c6dc816d1b5c9c141f7ee50b41c77cc801b7ff19e66d5af74f6dee232a",
+"size": 573820
+},
+"img_1193_x47_v4.ppm": {
+"sha256": "73b31df4a379c44eaf009f04216b3cd60bb26df21a66a8b5821de3c255391cd7",
+"size": 872344
+},
+"img_1194_x47_v5.ppm": {
+"sha256": "9487c79050e254b2b48467937a38d2366f6eb876106dfeed8e152e6232fd5a1a",
+"size": 872344
+},
+"img_1195_x47_v6.ppm": {
+"sha256": "ad8cd4bb9582e2f0cdb082eadc0d416e483d8fa6028ebe1bd1b17166e21b53d2",
+"size": 1186564
+},
+"img_1196_x47_v7.ppm": {
+"sha256": "455b326eba235387cac7dbcc0ffe94e96cdd530119475e00d21e233d39035cdd",
+"size": 1209526
+},
+"img_1197_x47_v8.ppm": {
+"sha256": "c31b863b20b9a408b2bb1bf38e91d09bd7fe14e9913addb3a0c4b2e197bf8e3a",
+"size": 615952
+},
+"img_1198_x47_v9.ppm": {
+"sha256": "7f6169a11ee6dcfb233737d61108fdb0138aa2e495f8e3b5b599da380a478db9",
+"size": 356812
+},
+"img_1199_x47_v10.ppm": {
+"sha256": "1ea68708b821d12737581e4ed72c96c0a7b8f0f573ba7c2132ffaa0cae685c7a",
+"size": 573820
+},
+"img_1200_x47_v11.ppm": {
+"sha256": "604787536f1f69769c8cd958fe8b2be4db0d54e5fda57d7ecf5331524f679b49",
+"size": 573820
+},
+"img_1201_x47_v0.ppm": {
+"sha256": "428fdabfdd619ce9705d7929576d7e5b10147f92b3ed0de9534087d99d89cfba",
+"size": 573820
+},
+"img_1202_x47_v1.ppm": {
+"sha256": "a5bb5d1b169604b6ceb99c55a26c14c390a9be2314227c674d839924654e8b7f",
+"size": 573820
+},
+"img_1203_x47_v2.ppm": {
+"sha256": "f1e5e8c2f957f699a8a846382922a1b5b38e80741f21f489b9c37e980879b3d1",
+"size": 872344
+},
+"img_1204_x47_v3.ppm": {
+"sha256": "fe46cf56990b6fdb82b889a9f38a98843e0f281d9a41d3249ad5a33acce1e55d",
+"size": 1186564
+},
+"img_1205_x47_v4.ppm": {
+"sha256": "4a41f28a4fcfba0729218a5957f1d9eda1dec2b8831ad0c27658923041eade55",
+"size": 356812
+},
+"img_1206_x47_v5.ppm": {
+"sha256": "8bf4abf144fe1856d96f7ddeefab38d948d2235f16ed8edf1db97d927c78c26a",
+"size": 615952
+},
+"img_1207_x47_v6.ppm": {
+"sha256": "b5bf6d7b8741c452119c9c8120e1ac681093e28b331f8801d881dffca12a663e",
+"size": 852736
+},
+"img_1208_x47_v7.ppm": {
+"sha256": "84c742455ada453484587ff367f15edf25a3b5e283322d638d52d8e98ddb04d0",
+"size": 573820
+},
+"img_1209_x47_v8.ppm": {
+"sha256": "036682ac4ad5a9ca7d251ee9bf26055cbee6edfc4e83344ef10d3c46251a8eb4",
+"size": 573820
+},
+"img_1210_x47_v9.ppm": {
+"sha256": "74a373799ad15c55081f355a98079b8da9be965ecd9260189b03999437640f68",
+"size": 1209526
+},
+"img_1211_x47_v10.ppm": {
+"sha256": "8f2af998a697b1933df7f6c4f3805fa00dec898585161fddfd7f1bd100481424",
+"size": 573820
+},
+"img_1212_x47_v11.ppm": {
+"sha256": "24c675976684da92641d0c963ea9ab921f9b94999650fd3c7a6f62e249e2a5e9",
+"size": 872344
+},
+"img_1213_x48_v0.ppm": {
+"sha256": "5a71a5bbd3da3bca543263da09a09ebc5457351b5183ee652fdfbaacbcdde98e",
+"size": 573820
+},
+"img_1214_x48_v1.ppm": {
+"sha256": "7d83cef3b6aca1082ca6794b907644b3041182d7eae7b03232d09f471976e783",
+"size": 573820
+},
+"img_1215_x48_v2.ppm": {
+"sha256": "e9cccab269a44f0fe86dc2fe898df6fc17864a2024cf9a051fd131e73ff7e41a",
+"size": 573820
+},
+"img_1216_x48_v3.ppm": {
+"sha256": "e9cccab269a44f0fe86dc2fe898df6fc17864a2024cf9a051fd131e73ff7e41a",
+"size": 573820
+},
+"img_1217_x48_v4.ppm": {
+"sha256": "839f8c0d4d26c434c2304477c9b75b358be82919f6ae1d94f06877327a2230a7",
+"size": 872344
+},
+"img_1218_x48_v5.ppm": {
+"sha256": "40919101d766178ac54e6065c158498eb658648709972ce7f972a3e714511aaa",
+"size": 872344
+},
+"img_1219_x48_v6.ppm": {
+"sha256": "ba3e8f4a9dc5ceeb8d1f9aa2e70b11be6e5ebdbffff3769bb0bdf4037681f614",
+"size": 1186564
+},
+"img_1220_x48_v7.ppm": {
+"sha256": "2a7ab5209cde47d43b249a61c096882108e51e7d009817439ffc5293edd0c542",
+"size": 1209526
+},
+"img_1221_x48_v8.ppm": {
+"sha256": "4b1137027522c3ad6ae1dc053ac1742d0e4053e4f4c298e0a5800bc2dc8fa2d9",
+"size": 615952
+},
+"img_1222_x48_v9.ppm": {
+"sha256": "fac093cf8b77a25f74c2ef92b2efd38ab846bc5554bc5e8388b4b1035495ae89",
+"size": 356812
+},
+"img_1223_x48_v10.ppm": {
+"sha256": "569c7cefc476d30ec9bb323a13fcb62c943c82795c142fd6df28f95413091826",
+"size": 573820
+},
+"img_1224_x48_v11.ppm": {
+"sha256": "9bf28d5b19b37e8222aafe6911b3b1f94893a77af8c7d8f2daed83dd8320ba2a",
+"size": 573820
+},
+"img_1225_x48_v0.ppm": {
+"sha256": "8e5ef26e93198c50eb7d6b4cff1661bc6c66d8959ee264c8946b6b333ef9651f",
+"size": 573820
+},
+"img_1226_x48_v1.ppm": {
+"sha256": "6b25a30a003233e3075060ad2af5b745a8f02886cb02637d6dcf6738edbe48fe",
+"size": 573820
+},
+"img_1227_x48_v2.ppm": {
+"sha256": "46691f276bfbecdf91feb77bc73ee75797e6e444f2d09c2f4a64a7e4b677b047",
+"size": 872344
+},
+"img_1228_x48_v3.ppm": {
+"sha256": "084f60722fb117f9ec54d8eb51bae67cde2daf7af1f060093c831f17030f38e8",
+"size": 1186564
+},
+"img_1229_x48_v4.ppm": {
+"sha256": "4e8c9bc5bc0b0fac5999792168cb7f1bee57c62096a4a78632261b2b2d359eda",
+"size": 356812
+},
+"img_1230_x48_v5.ppm": {
+"sha256": "79423d6df1cb65855581cf400ec795cb891d086b5ea3015607b3eb5a65786c31",
+"size": 615952
+},
+"img_1231_x48_v6.ppm": {
+"sha256": "1552f1788d128f8fb3778196a1d170735744e107369fa76963a188d3ff581bb3",
+"size": 852736
+},
+"img_1232_x48_v7.ppm": {
+"sha256": "bf546405cef3aa945ad570ec59a6395915a2d9b42bf5d1af22d050bb0b5b1c01",
+"size": 573820
+},
+"img_1233_x48_v8.ppm": {
+"sha256": "a1c954ffe5bf6eff6a5f2b4b188afe708dee958839ff431034629404c526862c",
+"size": 573820
+},
+"img_1234_x48_v9.ppm": {
+"sha256": "9db69b16c782867d0d9f13dafcc853ebafb4e28ab965c1508d8e030fe0034e47",
+"size": 1209526
+},
+"img_1235_x48_v10.ppm": {
+"sha256": "66230112e14ee6fedaab843fe474b6a78e75a47e3f96002fc1dfe888f6f684e2",
+"size": 573820
+},
+"img_1236_x48_v11.ppm": {
+"sha256": "5f0b23ff5fd84f1c492097925ff7b5f65f18f3ce90b04f17373dc50d2620c3a8",
+"size": 872344
+},
+"img_1237_x49_v0.ppm": {
+"sha256": "4bdfc925718038ec06c508b0ef357b6e7d67d6e119d3d4e5c7fc8e539183a609",
+"size": 573820
+},
+"img_1238_x49_v1.ppm": {
+"sha256": "39300eca353f3a96446ee610950cd44589d026188d1523f0e835ae3e9f7f9647",
+"size": 573820
+},
+"img_1239_x49_v2.ppm": {
+"sha256": "9e49f3ec45a7c8486546e40b9ae8754dec9a0a82fd08691b06db05e547304983",
+"size": 573820
+},
+"img_1240_x49_v3.ppm": {
+"sha256": "9e49f3ec45a7c8486546e40b9ae8754dec9a0a82fd08691b06db05e547304983",
+"size": 573820
+},
+"img_1241_x49_v4.ppm": {
+"sha256": "64b991fda9085422706509c036693478b70c4b63cf9c3bc539a396d2914db62a",
+"size": 872344
+},
+"img_1242_x49_v5.ppm": {
+"sha256": "05ef749695a0eaa333a721b82fdbd1731cfd6a54db478caf1f1d2b803fcfb8a9",
+"size": 872344
+},
+"img_1243_x49_v6.ppm": {
+"sha256": "6c14c96cd6e82872844535501a5a6d9f09d769412a4644f2f70e0a1b4b31a921",
+"size": 1186564
+},
+"img_1244_x49_v7.ppm": {
+"sha256": "3c1b2c83cba7313f00194f013ff7fdf114761efd72f29537f7ce669a0ff25aa6",
+"size": 1209526
+},
+"img_1245_x49_v8.ppm": {
+"sha256": "3ad55af46c56ef370000dd0bfcc45542d20a033517ae20da9f272366d0411bea",
+"size": 615952
+},
+"img_1246_x49_v9.ppm": {
+"sha256": "644b3cecce7bd85e32d0676baecd7e9bb9f02114f60a1dd3d5cbde96034cd5b8",
+"size": 356812
+},
+"img_1247_x49_v10.ppm": {
+"sha256": "a6a174e108c476384f53d9baba2c3d9cbdc4e7114448134a27b947fb0f0c60bc",
+"size": 573820
+},
+"img_1248_x49_v11.ppm": {
+"sha256": "0f99dddfd8355f8f35e04b146d66e814942152e07c398ba7f69714e72b4d54d0",
+"size": 573820
+},
+"img_1249_x49_v0.ppm": {
+"sha256": "8f519d7d0c60c5c5a8176e2854354c0cc3a3be387add689c848eb151a1fedb72",
+"size": 573820
+},
+"img_1250_x49_v1.ppm": {
+"sha256": "547bea1bdef2af2b118cb548948419e260090208e7cb9b0277ae3365107b6b42",
+"size": 573820
+},
+"img_1251_x49_v2.ppm": {
+"sha256": "f33046615a8b02aa2d0716f78e32b1241cd5cf8ac11b101c9495812e82dc2955",
+"size": 872344
+},
+"img_1252_x49_v3.ppm": {
+"sha256": "5ed694d6b44a10d32b57b473744677fc1e424fd3d6842e0abdba89a461576760",
+"size": 1186564
+},
+"img_1253_x49_v4.ppm": {
+"sha256": "8716173af69c5f5d0bb5eb2c8e3176ff5f66b2b089b96900d504d85f9d91e42a",
+"size": 356812
+},
+"img_1254_x49_v5.ppm": {
+"sha256": "ec3fc89be525517d8609781ae5df864764447bbf5d5f2b0d8576993c42dd54d5",
+"size": 615952
+},
+"img_1255_x49_v6.ppm": {
+"sha256": "d0388381dfd753f258c226ae38fa7d0b385ff309cac862c4216eed62337ccd45",
+"size": 852736
+},
+"img_1256_x49_v7.ppm": {
+"sha256": "02b5b028faef481f9b90f1b484e3b80d2a68f8894a0bab4df56b6dad382027af",
+"size": 573820
+},
+"img_1257_x49_v8.ppm": {
+"sha256": "f92ec775af2d997a8a9c103d41dcf23ebcc3534d3256d8838f59a31f82cb55f5",
+"size": 573820
+},
+"img_1258_x49_v9.ppm": {
+"sha256": "3c72c1310a0e1b252a3e2d3712623905bf4a409ee9b083569fb530dfe02545a4",
+"size": 1209526
+},
+"img_1259_x49_v10.ppm": {
+"sha256": "4cc9db8b7454d29ff5c5717a533a175d456e5e5c1d753e6c577dbe4f79ca52aa",
+"size": 573820
+},
+"img_1260_x49_v11.ppm": {
+"sha256": "c0a4b83c7184cbc77748c8a1eb4e495a591ecfc12fd1599bc0033b4af61d7a77",
+"size": 872344
+},
+"img_1261_x50_v0.ppm": {
+"sha256": "b5b5460434bd22aafe18f73afa0fe4ac395fcfd133d26249e4fafec263063f12",
+"size": 573820
+},
+"img_1262_x50_v1.ppm": {
+"sha256": "462eae8c720376eac48ef2ec88146f780e8eb57373b582845e258558871d6637",
+"size": 573820
+},
+"img_1263_x50_v2.ppm": {
+"sha256": "c58bc0ad9c3378682e5c3e8c96c609d3acec684220cc4d07bc8b2ba3ce10ed95",
+"size": 573820
+},
+"img_1264_x50_v3.ppm": {
+"sha256": "c58bc0ad9c3378682e5c3e8c96c609d3acec684220cc4d07bc8b2ba3ce10ed95",
+"size": 573820
+},
+"img_1265_x50_v4.ppm": {
+"sha256": "133c9348353e247001c0131572cb592c20a4ef0075781b862d419f7ea65c495d",
+"size": 872344
+},
+"img_1266_x50_v5.ppm": {
+"sha256": "4c071e5217778a794e3f0d25525731aa871f09fe3e0a0d60a2cce02e185f36e6",
+"size": 872344
+},
+"img_1267_x50_v6.ppm": {
+"sha256": "423fa8666e880e44f64992e4def7f214a09f5b78c375331d7dc65656afcd6b77",
+"size": 1186564
+},
+"img_1268_x50_v7.ppm": {
+"sha256": "75c4c54f0b9a88b158ce5baffac11bed0a14c75f6d912390b953109da39c8b43",
+"size": 1209526
+},
+"img_1269_x50_v8.ppm": {
+"sha256": "f0843b63213285adf41361e92ce9c046e15a8b9bf34cfe90fe1632b8b53c0d7b",
+"size": 615952
+},
+"img_1270_x50_v9.ppm": {
+"sha256": "e5d5968575623b9b0fb74c41a5a91d5976a7551997f0dcaa04a8a6cc6ebca47e",
+"size": 356812
+},
+"img_1271_x50_v10.ppm": {
+"sha256": "44845a6f8b92d68e0d313fd186ca8a8d283ab3275f41713d4bc5f7ef321d08b6",
+"size": 573820
+},
+"img_1272_x50_v11.ppm": {
+"sha256": "1191f65262902c7d8c32ff1b7bde1fd98bdb2d6073c01897681d7694dd755c4e",
+"size": 573820
+},
+"img_1273_x50_v0.ppm": {
+"sha256": "976efd5753ac5f8252d3854f7028fe442590a624b07c10b053f126671028be43",
+"size": 573820
+},
+"img_1274_x50_v1.ppm": {
+"sha256": "9af749b7dcf57f4e46b6a3087c610b95210131bd4583d2477248bf8914da5293",
+"size": 573820
+},
+"img_1275_x50_v2.ppm": {
+"sha256": "da582fcc7d715aa3a8ffd8a8efb36e6a47e14ee65f3465b305f8bb6eddc1de83",
+"size": 872344
+},
+"img_1276_x50_v3.ppm": {
+"sha256": "cac456fc607e7887e7c9a98d39f290d1ef8468fee086dc934c375c72c706995f",
+"size": 1186564
+},
+"img_1277_x50_v4.ppm": {
+"sha256": "3947ddd85bed95fa653b40e5e211be43cb08e21d0d231050153e452da6cdc331",
+"size": 356812
+},
+"img_1278_x50_v5.ppm": {
+"sha256": "8d96f7835b03ea5e33630b724b023c90399ad6f78c619502a24b3c39ec2af835",
+"size": 615952
+},
+"img_1279_x50_v6.ppm": {
+"sha256": "80325d5eb301fb20a5cb0a06445a918b6fbbf09063f547225cddf60ce21a7501",
+"size": 852736
+},
+"img_1280_x50_v7.ppm": {
+"sha256": "a0eb449a27b2ddb25780545196062943f09c63cf09d41edad74144c9f402e3a6",
+"size": 573820
+},
+"img_1281_x50_v8.ppm": {
+"sha256": "91f3455abb1b271c9f94e27331b295aa56d4231b4825e8728cada632adb3bcb7",
+"size": 573820
+},
+"img_1282_x50_v9.ppm": {
+"sha256": "bf9c3b922f61726cba031a0b24c257583bd0d0e7f2c1b81e14e1aa2d1e238d7a",
+"size": 1209526
+},
+"img_1283_x50_v10.ppm": {
+"sha256": "3dcd0fd1523ce25b894c064ee3c66d62ff98c8f79e37e3f0e17da5c8167acf50",
+"size": 573820
+},
+"img_1284_x50_v11.ppm": {
+"sha256": "a24fa345bf1004f7f00b2b285566bfcffb4fbb430559eb4089d3ecffb877b3d1",
+"size": 872344
+},
+"img_1285_x51_v0.ppm": {
+"sha256": "483850f1ae9ba0ecfc1cf3513a27d1ababf6d8ce610bf1067bf018f04bdf84da",
+"size": 573820
+},
+"img_1286_x51_v1.ppm": {
+"sha256": "bb7d01f5d181e61205eca30fd5d278b1c3ab0d19c2d30b20cb5a9a3f53e5c9ef",
+"size": 573820
+},
+"img_1287_x51_v2.ppm": {
+"sha256": "87df9247f248eacbe472bc8e41f7a9412b95a4a0235c89a45eb12e5bc6f8cf25",
+"size": 573820
+},
+"img_1288_x51_v3.ppm": {
+"sha256": "87df9247f248eacbe472bc8e41f7a9412b95a4a0235c89a45eb12e5bc6f8cf25",
+"size": 573820
+},
+"img_1289_x51_v4.ppm": {
+"sha256": "c1f9a4f7d6730b27d3eea12662cf9bd79d80b8481778a2b2c1a493e6a2516b43",
+"size": 872344
+},
+"img_1290_x51_v5.ppm": {
+"sha256": "d6a207c4d2616496610c86969c58e739428fba1a1a83f54bc455e74ead8b3126",
+"size": 872344
+},
+"img_1291_x51_v6.ppm": {
+"sha256": "78cfceff10659c72b9a49c6bda5295430fa959429ca85a33a432aa2b28198601",
+"size": 1186564
+},
+"img_1292_x51_v7.ppm": {
+"sha256": "52cd58ef695130e3974c406c533885cfa1f97dc1f94c4e2e0b6deed3a96a72c5",
+"size": 1209526
+},
+"img_1293_x51_v8.ppm": {
+"sha256": "92ef621d4e29d5f31b58e71950a0af6bba2b43196b7beeee51f1d7b7d62fda97",
+"size": 615952
+},
+"img_1294_x51_v9.ppm": {
+"sha256": "cb8540d7f13caf7573a78977b0d9f24cfeed244db8d0a0a74c47bf988a99b7e5",
+"size": 356812
+},
+"img_1295_x51_v10.ppm": {
+"sha256": "96e9ec6606926bf2789932cd5b3ee7407f333e5c04c6f07c53a4b4e4937b43d5",
+"size": 573820
+},
+"img_1296_x51_v11.ppm": {
+"sha256": "b3a6ec7298b2fe79747be919d07b0e4a277541d054fd3c809faaa84aef25217e",
+"size": 573820
+},
+"img_1297_x51_v0.ppm": {
+"sha256": "395723e862ca3cf3c54d23940dc0c93395e75d26a1f0cb835823d352420de4b7",
+"size": 573820
+},
+"img_1298_x51_v1.ppm": {
+"sha256": "90d24fdfe8be24aee74896839d33d57e2fc41285c7511b910d6f07fada8a5f53",
+"size": 573820
+},
+"img_1299_x51_v2.ppm": {
+"sha256": "1834653e6ac0f40b47fd03362c79205ef0e4d9982d7fb67fb0a56ad35a575bdc",
+"size": 872344
+},
+"img_1300_x51_v3.ppm": {
+"sha256": "6a32e95f47cc79386b34bb3e876397744ba5aaba6e09b715e4ce13d365df8476",
+"size": 1186564
+},
+"img_1301_x51_v4.ppm": {
+"sha256": "45c7e933404bd3521f435c1848e8b6e72fc7cc116625b7bd30883709bf6d09c0",
+"size": 356812
+},
+"img_1302_x51_v5.ppm": {
+"sha256": "c912032e84a9ddabe33234e2844bc14390adec56d2d14054cdf5093f5636fa1a",
+"size": 615952
+},
+"img_1303_x51_v6.ppm": {
+"sha256": "8c41b8c80873c9aefdebad91d89ffc891d7ab32996fe6eeddcd3fa85975ec3ec",
+"size": 852736
+},
+"img_1304_x51_v7.ppm": {
+"sha256": "5ebf1568a809e93fecca43494d509a0e12c554630e468012fed18f4885620ffb",
+"size": 573820
+},
+"img_1305_x51_v8.ppm": {
+"sha256": "44210b59d979e62f30450c2d62059fb9d5472864c8fc28fd0a0c9693a95f7ccd",
+"size": 573820
+},
+"img_1306_x51_v9.ppm": {
+"sha256": "62a3e4e3ac23149972120046f659f13780ed121bbbe4f09930a9006a986b1baf",
+"size": 1209526
+},
+"img_1307_x51_v10.ppm": {
+"sha256": "45566d2ce5904675c6d17bd3d8bbd06a7da524a8ea8040347adf56a67ae4db00",
+"size": 573820
+},
+"img_1308_x51_v11.ppm": {
+"sha256": "d624b893dd5be88ebd0d89eafd353e948f458e642f5c6fea673e52e3fba46e58",
+"size": 872344
+},
+"img_1309_x52_v0.ppm": {
+"sha256": "20aeecdfe701448be6f6bc5e0a23e9b9e0605d9c04b892a04a07dab55dd73ebb",
+"size": 573820
+},
+"img_1310_x52_v1.ppm": {
+"sha256": "fc943e64508ff857ec1aff917a488a9e4b301c749e10ecdc2c07cc7ef4898d80",
+"size": 573820
+},
+"img_1311_x52_v2.ppm": {
+"sha256": "9e493d2bf8e831b8c66f61ef80125956578b8d854c1ce44b6c8856a1772170e2",
+"size": 573820
+},
+"img_1312_x52_v3.ppm": {
+"sha256": "9e493d2bf8e831b8c66f61ef80125956578b8d854c1ce44b6c8856a1772170e2",
+"size": 573820
+},
+"img_1313_x52_v4.ppm": {
+"sha256": "cbf51f9d75c88eb80493d15174529eff8691cb784d44442e53776ed2f89d09d2",
+"size": 872344
+},
+"img_1314_x52_v5.ppm": {
+"sha256": "e8e81b2c6057a76484176a61fc0d3dd3f53821b6cbbcea244a019d613a30b6fd",
+"size": 872344
+},
+"img_1315_x52_v6.ppm": {
+"sha256": "cbb2791b386dc285852d9f65780b047189861a14f5c3a8aa254f1025adb3d8f3",
+"size": 1186564
+},
+"img_1316_x52_v7.ppm": {
+"sha256": "fb5237f48ffda380bf57f19dfd2f4b11a124f74622f3e92f0e1245f425f14962",
+"size": 1209526
+},
+"img_1317_x52_v8.ppm": {
+"sha256": "c08c00e0c162746c93d13f3af831248db171a2425a45a71cab9d211a0ee5565f",
+"size": 615952
+},
+"img_1318_x52_v9.ppm": {
+"sha256": "f55a716841e91e2af26ee7a580dfcf9b6e0cfaff4382d8aa0fe4bb9d88d38fe3",
+"size": 356812
+},
+"img_1319_x52_v10.ppm": {
+"sha256": "6406940f5e75660905c75aaa5dae31d8a5f405d0f382efb80ddf000a4ec76f3e",
+"size": 573820
+},
+"img_1320_x52_v11.ppm": {
+"sha256": "71183abef28046a03704da5d70624ac73b8bcb8973421e85550fa4d2c9739012",
+"size": 573820
+},
+"img_1321_x52_v0.ppm": {
+"sha256": "a24306c17b632586a99ea8561f841d2e4017e4c2d88f6e25e2ae9987fd423a2c",
+"size": 573820
+},
+"img_1322_x52_v1.ppm": {
+"sha256": "9070fefffb68929e3790d7bb1c9d348f03750bbc29b83558ad7216fe13a0e688",
+"size": 573820
+},
+"img_1323_x52_v2.ppm": {
+"sha256": "fc0ef123c191bacb1a4c9d6c610c0105203a0d6c0c767086793732d82589ef89",
+"size": 872344
+},
+"img_1324_x52_v3.ppm": {
+"sha256": "4e8234448c79980cdffa522576066509a122318e0c90f961284b44673b372c56",
+"size": 1186564
+},
+"img_1325_x52_v4.ppm": {
+"sha256": "9a1bfa6af8611d73d325f8aa5376851df6a585e9c7dcd8984ccfa511514539df",
+"size": 356812
+},
+"img_1326_x52_v5.ppm": {
+"sha256": "16b2c79b22bdeb8c7860f1e764410333a9c3f167c48749e9839eb120da09b50b",
+"size": 615952
+},
+"img_1327_x52_v6.ppm": {
+"sha256": "00c134877e0b2ce3964fc3fbb7e4da068714ae2774156e38618489bed7b0eca6",
+"size": 852736
+},
+"img_1328_x52_v7.ppm": {
+"sha256": "ef0a2c88b592ec065db56fe50f4386e9e561dec0c2ded9c968f690a07744f6c8",
+"size": 573820
+},
+"img_1329_x52_v8.ppm": {
+"sha256": "5a095025bab0c3cdf9e70fa7b6fc7b9cea7181244bbfc46ee80ab0b72dbd1903",
+"size": 573820
+},
+"img_1330_x52_v9.ppm": {
+"sha256": "00229364934d74983ae003a758519bb2e6caac9ba11189705b7a409d1e711bbc",
+"size": 1209526
+},
+"img_1331_x52_v10.ppm": {
+"sha256": "5af346ce8f00241e3478c098c6bb74f6ae6da2de241cc2f17fadaab29addd24a",
+"size": 573820
+},
+"img_1332_x52_v11.ppm": {
+"sha256": "f217803f4fc792fb1242238b653bf5ecc3775b198b23fff43b1dfec5617079d8",
+"size": 872344
+},
+"img_1333_x53_v0.ppm": {
+"sha256": "1c98faafb03a458b4289a1d7ff473f4878bd0970e3f7644d94074a0c0c7b4857",
+"size": 573820
+},
+"img_1334_x53_v1.ppm": {
+"sha256": "e8dfe19813e6b71505069ee87a1ba164b1b56c4e5080ef971c9dea7f93883e62",
+"size": 573820
+},
+"img_1335_x53_v2.ppm": {
+"sha256": "6c7f796feb6ac1db24f806be3a40940ddc1b65e0eccce15de4f0b809b3de8dd0",
+"size": 573820
+},
+"img_1336_x53_v3.ppm": {
+"sha256": "6c7f796feb6ac1db24f806be3a40940ddc1b65e0eccce15de4f0b809b3de8dd0",
+"size": 573820
+},
+"img_1337_x53_v4.ppm": {
+"sha256": "4cf28e13a35e2682ccdbe67d0998d6094b915daf7d158ba4db7062858763ceef",
+"size": 872344
+},
+"img_1338_x53_v5.ppm": {
+"sha256": "ecc94d0827704f14a50e4b21bd864a995b31b7016cf49fa8d786cbc182ca8bd2",
+"size": 872344
+},
+"img_1339_x53_v6.ppm": {
+"sha256": "89aee744f6374807319123b84e9aa67d2703ed12663f20fc663b8b46305f8145",
+"size": 1186564
+},
+"img_1340_x53_v7.ppm": {
+"sha256": "3b7f5a5037474def9ca9802759617179d79a9d33a864f8f96e9272e42b2201a3",
+"size": 1209526
+},
+"img_1341_x53_v8.ppm": {
+"sha256": "bcdfbf7c0c53818e440ab2a5fdfa69916ba0d2e32b69d8e75f77e01c9b56a853",
+"size": 615952
+},
+"img_1342_x53_v9.ppm": {
+"sha256": "defb4aee2066d4ab270d420dbc16e4444a3362155eeba9e430e6e6fd24bf05d1",
+"size": 356812
+},
+"img_1343_x53_v10.ppm": {
+"sha256": "90fa096b9e93f702793bfd22b3c620d784aa78a91b1a312e1b47bd685b02ad4c",
+"size": 573820
+},
+"img_1344_x53_v11.ppm": {
+"sha256": "be859d246140bdfe185bc2cec64607f21a36fc788883b0092cb6537a3286cb23",
+"size": 573820
+},
+"img_1345_x53_v0.ppm": {
+"sha256": "2daba4bf4c912739bf2f19bdcb4fa49f4769808f3cddc706f69e2d6bab1f8fba",
+"size": 573820
+},
+"img_1346_x53_v1.ppm": {
+"sha256": "e0f8d70f1265bf58218ccc07ad1020cd0cfc3a0dbf4222d25df06f987094343e",
+"size": 573820
+},
+"img_1347_x53_v2.ppm": {
+"sha256": "61726b43b57a663ce246b98f3415ab25e0267338d7f3a41009b9ecd2e423ef17",
+"size": 872344
+},
+"img_1348_x53_v3.ppm": {
+"sha256": "71078b33fd55a8f0e6f2724225eec89e8f3384e2b5ab2cd86fd2fd524b33544b",
+"size": 1186564
+},
+"img_1349_x53_v4.ppm": {
+"sha256": "64def827b6839561d5b1075077874eaee2e6da4c6497482ebe489b94c24a7e68",
+"size": 356812
+},
+"img_1350_x53_v5.ppm": {
+"sha256": "bfedb93cfd779c0bf060ddb7312df0980a03d88904c20c0511afda4b879f1345",
+"size": 615952
+},
+"img_1351_x53_v6.ppm": {
+"sha256": "06ef016c944ecf9c3d4053d93e4d99a6deb24af4c1aa01b5aad8ca446b959891",
+"size": 852736
+},
+"img_1352_x53_v7.ppm": {
+"sha256": "846a006ecea8d09b0970f37c723c7d94655e3cc3d17da7df0d8e23eae3682050",
+"size": 573820
+},
+"img_1353_x53_v8.ppm": {
+"sha256": "325db79fafe7b8213e763ee1318d0cb3ab0bad833d13585def7bd380f9e7681d",
+"size": 573820
+},
+"img_1354_x53_v9.ppm": {
+"sha256": "4c2ba75d511a56c09ddba106487e465b406d990eb1912d1d6a8ccfb467f6e261",
+"size": 1209526
+},
+"img_1355_x53_v10.ppm": {
+"sha256": "765905778ca841567a1f0d25f41ed0c73939036717f11e8a476cac8e2e8f54bc",
+"size": 573820
+},
+"img_1356_x53_v11.ppm": {
+"sha256": "8397ea582b33c15a5ae93bd65e69ae059e60de9515d68288622161b70210f4c0",
+"size": 872344
+},
+"img_1357_x54_v0.ppm": {
+"sha256": "c8489213961ada18fbd0e5c31fefd90f676441faeaa4e904cd2d6f62453ba3df",
+"size": 573820
+},
+"img_1358_x54_v1.ppm": {
+"sha256": "77fdefc243e38dc29760c0f9b6472e03a31a744812c247258314118326793dcf",
+"size": 573820
+},
+"img_1359_x54_v2.ppm": {
+"sha256": "6502bdfc2a58f9c86298439213dc1fecd42ac341ac7f1c2e1aaee33641259d24",
+"size": 573820
+},
+"img_1360_x54_v3.ppm": {
+"sha256": "6502bdfc2a58f9c86298439213dc1fecd42ac341ac7f1c2e1aaee33641259d24",
+"size": 573820
+},
+"img_1361_x54_v4.ppm": {
+"sha256": "9cad101178bf394386a1d4ad9bd7d0a779ad0908ce65765c1a1b6df69ed006f5",
+"size": 872344
+},
+"img_1362_x54_v5.ppm": {
+"sha256": "082533488b221335a032d830029886025ce1918f882e1f7e8962291d336cbfc4",
+"size": 872344
+},
+"img_1363_x54_v6.ppm": {
+"sha256": "3cdd117d5b34ccd405314b417039be9e54ee5d5e4e4ebaa7e66db57be4d8bae9",
+"size": 1186564
+},
+"img_1364_x54_v7.ppm": {
+"sha256": "9530451d74e0633c3c8c66f9b4b9536faa35d19cfc9287795fa611c16a49db46",
+"size": 1209526
+},
+"img_1365_x54_v8.ppm": {
+"sha256": "627836a2fc30004bfb49c780986ddac9191661945f6b30c3dc539f40fc9c109f",
+"size": 615952
+},
+"img_1366_x54_v9.ppm": {
+"sha256": "43678c7a18fdf603e8f8e05f8b9641564ce134324c1e27e0113d7213968c8ec7",
+"size": 356812
+},
+"img_1367_x54_v10.ppm": {
+"sha256": "27523139d2ed079ba830a3e2f88f4ae0ce86bcc15594087dce8940e0791ca3a4",
+"size": 573820
+},
+"img_1368_x54_v11.ppm": {
+"sha256": "746dd1c58a5997230d6337ae79234035a6f145ae5fc3c93c5a869b8f5afbb8bd",
+"size": 573820
+},
+"img_1369_x54_v0.ppm": {
+"sha256": "08c99b017545979738c27e0241a854883ce83ab8043b4f2979c5fdf2375c52ea",
+"size": 573820
+},
+"img_1370_x54_v1.ppm": {
+"sha256": "056c962ebdb58027f7ddcb0d229fb0847a34a2c6a0c11e0349c3cb5e00413f6a",
+"size": 573820
+},
+"img_1371_x54_v2.ppm": {
+"sha256": "ade2b48d03cb21270d5bd08606a21144e37d53aaeff973d8b680f8e017df4b56",
+"size": 872344
+},
+"img_1372_x54_v3.ppm": {
+"sha256": "a155aedaddef4752c491d61c8c96bc6a8210ae05a3cd97e4b329f491669d133b",
+"size": 1186564
+},
+"img_1373_x54_v4.ppm": {
+"sha256": "c1e418abfb779b2d4bc03dd170476d1e33eb356f0396287de7767df8037be013",
+"size": 356812
+},
+"img_1374_x54_v5.ppm": {
+"sha256": "fb02080e5792cf9ee989d8e518afa395e421e9abffd0e314e4a00eb77d789f7d",
+"size": 615952
+},
+"img_1375_x54_v6.ppm": {
+"sha256": "f273e4ec36dae4e78cff5b842c351249e17e1ddfb60fd64acbc580ebc21450a5",
+"size": 852736
+},
+"img_1376_x54_v7.ppm": {
+"sha256": "50a91178fdcc68674ec87e9dd6dd641f52415efe505bf17069b3cab816ff79fd",
+"size": 573820
+},
+"img_1377_x54_v8.ppm": {
+"sha256": "c4f5ae6b8f17fe32127aff1353fe83443a2af4e0048a58e30139ff8e7ad54a45",
+"size": 573820
+},
+"img_1378_x54_v9.ppm": {
+"sha256": "a1122e685d395e26672ec6102125aa8f398c551626637693dc2f5a9a66304548",
+"size": 1209526
+},
+"img_1379_x54_v10.ppm": {
+"sha256": "9112c5dc53d9cb50d2767faf6a5071243b7c6f480a612404e3dca57c79dc1df7",
+"size": 573820
+},
+"img_1380_x54_v11.ppm": {
+"sha256": "e89bceba43cb27e9e84b4146397585eeeba7493ac3adb9272274a86660eb8c2e",
+"size": 872344
+}
+},
+"files": 1381
+}
