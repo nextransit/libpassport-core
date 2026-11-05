@@ -168,8 +168,21 @@ object PhotoMrzPipeline {
      * allowed to run.  The FUSED fallback costs 50-80 ms on the device, so
      * starting it with less than that left would blow the 200 ms request
      * budget for a result that is no better than the review flag.
+     *
+     * The gate must cover the ENGINE cost, not just "some progress left":
+     * 70 ms of headroom still allowed 190-70+85 = 205 ms worst case.
+     * 85 = 70 ms engine cost + 15 ms scheduling slack keeps the worst
+     * case inside the 190 ms fast budget: 190 - 85 + 85 = 190.
      */
-    private const val FALLBACK_MIN_BUDGET_MS = 70
+    private const val FALLBACK_MIN_BUDGET_MS = 85
+
+    /**
+     * Band framing alternates for the candidate loop (shared-pad scale
+     * factors on the restore pair; 0.70 = the shipped framing, implicit).
+     * Only tried when the primary framing fails decode+shape+ICAO; see
+     * [processFast] and 10_ocr_research/band_candidates_product_port.md.
+     */
+    private val FRAME_PAD_ALTERNATES = doubleArrayOf(1.35, 0.45)
 
     private const val FAST_NATIVE_MAX_WIDTH = 1600
     private const val LOCATE_DOWNSCALE_THRESHOLD = 1600
@@ -377,20 +390,95 @@ object PhotoMrzPipeline {
         // BOTH engines: it used to be set only on the non-CRNN branch,
         // which meant the CRNN branch silently ran serially.
         MrzNative.setParallel(true)
-        val first = try {
-            NativeEngine(app, NativeEngine.MODE_CNN).recognizeBitmap(ocrInput, remaining)
-        } finally {
-            /* bitmaps released after both engines have run */
-        }
-        val firstRec = postProcess(
-            first.line1, first.line2, first.conf1, first.conf2,
-            first.engineName, first.error ?: "",
-            first.structOk, first.natSuspect, first.countryMismatch, first.issuerSuspect,
+        // ---- Band framing candidates ------------------------------------
+        // The restore-pair band with the shipped pad (0.70 x row height) is
+        // the p50-optimal framing, but the measured assets gap (74.17% char
+        // on the product framing vs 97.15% with candidate selection, see
+        // 10_ocr_research/band_candidates_product_port.md) shows some
+        // photos only decode under a different vertical framing.  The two
+        // alternates below re-frame the SAME restore pair wider/tighter.
+        // They are only built when the primary framing fails the strict
+        // test (decode + shape + five ICAO checksums), so a clean frame --
+        // ~98% of photos -- costs exactly what it did before.  Each
+        // alternate is budget-gated like the fused fallback.
+        fun postProcessOf(res: OcrResult): Recognition = postProcess(
+            res.line1, res.line2, res.conf1, res.conf2,
+            res.engineName, res.error ?: "",
+            res.structOk, res.natSuspect, res.countryMismatch, res.issuerSuspect,
         )
+        fun strictAccept(rec: Recognition): Boolean {
+            if (!decodesOk(rec)) return false
+            // Gate on the RAW engine output, not the repaired line: a
+            // checksum-repaired line can be valid while the raw read was
+            // not, and the framing question is about the raw read.
+            val raw = rec.rawLine2
+            if (raw.length != 44) return false
+            return isMrzShape(rec.rawLine1, raw) && IcaoChecksum.line2Ok(raw)
+        }
+        val first: OcrResult
+        val firstRec: Recognition
+        var framingUsed = 0
+        run {
+            val primary = try {
+                NativeEngine(app, NativeEngine.MODE_CNN).recognizeBitmap(ocrInput, remaining)
+            } finally {
+                /* bitmaps released after both engines have run */
+            }
+            var rec = postProcessOf(primary)
+            var res = primary
+            if (structure.pair != null && !strictAccept(rec)) {
+                for ((idx, padSpec) in FRAME_PAD_ALTERNATES.withIndex()) {
+                    remaining = (FAST_BUDGET_MS - elapsedMs(allStart).toInt()).coerceAtLeast(1)
+                    if (remaining < FALLBACK_MIN_BUDGET_MS) break
+                    val altBand = nativeBandFast(
+                        source,
+                        structure.pair.first,
+                        structure.pair.second,
+                        structure.xpadAdaptive,
+                        padSpec,
+                    )
+                    val altInput = fastNativeInput(altBand)
+                    val alt = try {
+                        MrzNative.setParallel(true)
+                        NativeEngine(app, NativeEngine.MODE_CNN)
+                            .recognizeBitmap(altInput, remaining)
+                    } catch (_: Throwable) {
+                        null
+                    }
+                    val altRec = alt?.let { postProcessOf(it) }
+                    val accept = altRec != null && strictAccept(altRec)
+                    try {
+                        if (altInput !== altBand) altInput.recycle()
+                        altBand.recycle()
+                    } catch (_: Throwable) {
+                    }
+                    if (accept && alt != null && altRec != null) {
+                        res = alt
+                        rec = altRec
+                        framingUsed = idx + 1
+                        break
+                    }
+                }
+            }
+            first = res
+            firstRec = rec
+        }
+        if (framingUsed > 0) {
+            timings["framing candidate"] = framingUsed.toLong()
+        }
         val firstOk = decodesOk(firstRec)
         val needSecond = when {
             first.error != null && first.error.isNotEmpty() -> true
             !firstOk -> true
+            // The CNN decoded cleanly BUT reports a checksum-valid near-tie
+            // (native line2_ambiguous).  The residual CNN errors on the
+            // real-photo corpus are exactly this shape -- clean decode,
+            // checksum-valid, wrong text (2026-9-30-H) -- and the fused
+            // engine (CNN decode + CRNN arbitration) can rescue precisely
+            // those: it equals the CNN unless the CRNN clearly favours the
+            // runner-up on the differing columns.  The budget gate below
+            // still applies.
+            first.ambiguous -> true
             else -> false
         }
         val result: OcrResult
@@ -514,12 +602,19 @@ object PhotoMrzPipeline {
      * skipping the per-line bitmaps that [nativeBand] produces for the
      * detailed path.  The sharedPad calculation matches nativeBand exactly
      * (padded row heights → shared pad), so the band is identical.
+     *
+     * [padSpec] scales the shared vertical pad (default 0.70 = the shipped
+     * framing).  The framing alternates used by the band-candidate loop
+     * pass 1.35 / 0.45 to re-frame photos whose MRZ only decodes with more
+     * or less surrounding context (see FRAME_PAD_ALTERNATES in
+     * [processFast] and 10_ocr_research/band_candidates_product_port.md).
      */
     private fun nativeBandFast(
         source: Bitmap,
         first: IntRange,
         second: IntRange,
         xpadAdaptive: Pair<Int, Int>,
+        padSpec: Double = 0.70,
     ): Bitmap {
         val xpadL = xpadAdaptive.first
         val xpadR = xpadAdaptive.second
@@ -535,7 +630,13 @@ object PhotoMrzPipeline {
         val pad1 = max(8, min(25, (row1H * 0.70).roundToInt()))
         val row1Height = min(source.height, row1Y1 + pad1) - max(0, row1Y0 - pad1)
         val sharedHeight = max(row0Height, row1Height)
-        val sharedPad = max(8, min(25, (sharedHeight * 0.70).roundToInt()))
+        // padSpec scales the shared pad; the clamp widens proportionally so
+        // the alternates produce genuinely different framings (the shipped
+        // 25 px ceiling would swallow a 1.35x pad on tall rows).
+        val sharedPad = max(
+            (8 * padSpec).roundToInt(),
+            min((25 * padSpec).roundToInt(), (sharedHeight * padSpec).roundToInt()),
+        )
         val firstTop = max(0, first.first)
         val secondBottom = min(source.height, second.last + 1)
         val cropTop = max(0, firstTop - sharedPad)
@@ -1363,7 +1464,9 @@ object PhotoMrzPipeline {
         return line2[20] == 'M' || line2[20] == 'F' || line2[20] == '<'
     }
 
+    // BEGIN GENERATED CONFUSION PAIRS (tools/gen_confusion_tables.py -- do not edit by hand)
     private val confusionPairs = listOf(
+        // curated base
         "0" to "O", "0" to "Q", "0" to "U", "0" to "D",
         "0" to "V", "0" to "G", "1" to "I", "1" to "L",
         "1" to "T", "1" to "7", "5" to "S", "2" to "Z",
@@ -1374,6 +1477,12 @@ object PhotoMrzPipeline {
         "K" to "B", "K" to "X", "D" to "U", "D" to "O",
         "U" to "V", "U" to "O", "V" to "Y", "Q" to "O",
         "T" to "I", "T" to "7", "X" to "K",
+        // measured on real photos (tools/collect_confusions.py)
+        "0" to "1",  // n=9
+        "L" to "P",  // n=6
+        "A" to "N",  // n=5
+
+// END GENERATED CONFUSION PAIRS
     ).flatMap { (a, b) ->
         val cost = if (a in "0152689" || b in "0152689") 1 else 2
         listOf(a[0] to (b[0] to cost), b[0] to (a[0] to cost))

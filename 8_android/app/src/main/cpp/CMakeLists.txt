@@ -24,8 +24,22 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #
 # -march=native is deliberately NOT used: the library is cross-compiled
 # for arm64-v8a and must not depend on the build machine's CPU.
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -DNDEBUG -O2 -ffp-contract=off -fvisibility=hidden")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -DNDEBUG -O2 -ffp-contract=off -fvisibility=hidden")
+#
+# -O3 (raised from -O2, 2026-11-05): the conv2 hot loop's accumulation
+# order is hand-structured (16 independent per-output-co accumulators,
+# unit-stride inner), so vectorisation does not reorder the FP sums and
+# -O3 only unrolls/vectorises more aggressively.  With -ffp-contract=off
+# still in force no FMA contraction happens, so the results should stay
+# byte-identical to the host -O3 build.  VERIFY on device before ship:
+#   host reference:  cc -O3 -ffp-contract=off -march=native \
+#     -I6_mrz_ocr/include -I6_mrz_ocr/src 6_mrz_ocr/tools/bench_cnn_kernel.c \
+#     6_mrz_ocr/src/cnn.c -o /tmp/bench_host -lm && /tmp/bench_host 500
+#     -> probs_fnv = 1b7517dffdc4f6f0   (host M-series, 11-04 weights)
+#   device: build tools/bench_cnn_kernel.c the same way (NDK clang) and
+#   compare probs_fnv; if it differs, revert to -O2 (or move the
+#   byte-exact gate to a 0.3pp tol-gate after a full eval).
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -DNDEBUG -O3 -ffp-contract=off -fvisibility=hidden")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -DNDEBUG -O3 -ffp-contract=off -fvisibility=hidden")
 
 # Re-use the exact source from the host project so the CNN weights and
 # geometric heuristics stay in lock-step with bench_results.json.
