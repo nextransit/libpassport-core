@@ -50,8 +50,20 @@
 | 文本 | 同一 seed（eval 2002 / train 1001）→ 两臂**文本完全相同**，只有渲染不同 |
 | 变体表 | 同一 `VARIANTS_CLEAN` / `VARIANTS_REALISTIC` |
 | 语料内容 | plausible（k_iso3 池 + 日历合法日期），两臂一致 |
-| 训练脚本 / real-frac / epochs / seed / batch | `train_cnn_omtest.py --line 1`、0.5、40、1、512（两臂一致）|
-| 切片导出 | 两臂都用同一导出流程（`export_corpus_slices.py`），标签来自 corpus.json |
+| 训练脚本 / real-frac / epochs / seed / batch | `train_cnn_omtest.py`，line0 与 line1 **都训**（两臂同待遇）、0.5、40、1、512 |
+| 切片导出 | `tools/export_corpus_slices_geom.py`（**几何切割**，标签由构造保证，不依赖任何识别器）—— 旧的 align 导出器在物理语料上失效（legacy 模型读不出，tool_fail 173-243/375，align_drop ~250-300），且用读不出图的模型引导标签是错误的依赖 |
+
+### 协议修订记录（跑前修订，§8.5 允许）
+
+1. **训练范围从 line2 扩大到 line0+line1**：评测门禁用整条管线（both exact），两臂共用
+   40951c5 的 line1 会让 legacy-line1 读 physical 语料成为混淆变量。两臂两线全部重训，
+   变量仍然只有一个（渲染）。
+2. **切片导出器换为几何切割**（原因见上表）；两臂同一把尺子。
+3. **CRNN/fuse 通道在两臂均为 N/A**（大纲 §11 #12 的特征一致性规则：换 CNN 权重后
+   CRNN 头必须重导特征重训；本轮不做，故 corpus bench 只读 cnn 行，fuse/crnn 行标记
+   无效）。
+4. **S8 JPEG 由 Python 侧实现**（渲染二进制无 libjpeg；gen_corpus.py 用 PIL 做
+   quality 60-95 的编码-解码回写，伪影烘焙进语料图）。
 | GT / 评估 | `gt_review_loop.xlsx`；`bench_crnn.py`（corpus）+ `photo_direct_bench.py --set`（真实照片）+ `eval_weight_sets.py`（官方集）|
 | 门禁 | corpus full exact（用户目标 ≥90%）、真实照片两集、官方集、单测 147/89、速率 ≥2.0 张/秒 |
 
