@@ -46,6 +46,8 @@
 #define _DEFAULT_SOURCE
 #include "template.h"
 #include "ocrb_glyphs.h"
+#include "ocrb_glyphs_aa.h"
+#include "mrz_phys.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -122,6 +124,21 @@ static int g_font_ocrb = 0;
  * filtered down to the cell grid, so stroke edges carry grey levels
  * (the CNN was trained on grayscale photographs, not on bilevel art). */
 static int g_aa = 0;
+
+/* Physical pipeline (outline §4.1 / §4.3).  phys=0 keeps the legacy
+ * rendering bit-identical; phys=1 renders with the 8-bit coverage bank
+ * and the S1..S8 order. */
+static int g_phys = 0;
+static int g_ink_min = 20, g_ink_max = 110;
+static int g_paper_min = 180, g_paper_max = 245;
+static float g_blur_sigma = -1.0f;      /* <0: derive from blur= */
+static int g_motion_len = 0;
+static float g_motion_deg = 0.0f;
+static float g_noise_gauss = 0.0f;
+static float g_dark_current = 0.0f;
+static float g_downscale = 1.0f;
+static int g_jpeg_q = 0;
+static float g_guilloche = 0.0f;
 
 static int ocrb_glyph_index(char c) {
     for (int i = 0; i < (int)(sizeof(MRZ_OCRB_GLYPHS) / sizeof(MRZ_OCRB_GLYPHS[0])); ++i)
@@ -228,6 +245,19 @@ int main(int argc, char **argv) {
         else if (strncmp(argv[i], "rot", 3) == 0 && (f = get_float("rot", argv[i])) >= -8.0f && f <= 8.0f) rot = f;
         else if (strncmp(argv[i], "font", 4) == 0 && strcmp(argv[i] + 5, "ocrb") == 0) g_font_ocrb = 1;
         else if (strncmp(argv[i], "aa", 2) == 0 && (v = get_int("aa", argv[i])) >= 0) g_aa = v ? 1 : 0;
+        else if (strncmp(argv[i], "phys", 4) == 0 && (v = get_int("phys", argv[i])) >= 0) g_phys = v ? 1 : 0;
+        else if (strncmp(argv[i], "ink-min", 7) == 0 && (v = get_int("ink-min", argv[i])) >= 0) g_ink_min = v;
+        else if (strncmp(argv[i], "ink-max", 7) == 0 && (v = get_int("ink-max", argv[i])) >= 0) g_ink_max = v;
+        else if (strncmp(argv[i], "paper-min", 9) == 0 && (v = get_int("paper-min", argv[i])) >= 0) g_paper_min = v;
+        else if (strncmp(argv[i], "paper-max", 9) == 0 && (v = get_int("paper-max", argv[i])) >= 0) g_paper_max = v;
+        else if (strncmp(argv[i], "blur-sigma", 10) == 0) g_blur_sigma = get_float("blur-sigma", argv[i]);
+        else if (strncmp(argv[i], "motion-len", 10) == 0 && (v = get_int("motion-len", argv[i])) >= 0) g_motion_len = v;
+        else if (strncmp(argv[i], "motion-deg", 10) == 0) g_motion_deg = get_float("motion-deg", argv[i]);
+        else if (strncmp(argv[i], "noise-gauss", 11) == 0) g_noise_gauss = get_float("noise-gauss", argv[i]);
+        else if (strncmp(argv[i], "dark-current", 12) == 0) g_dark_current = get_float("dark-current", argv[i]);
+        else if (strncmp(argv[i], "downscale", 9) == 0) g_downscale = get_float("downscale", argv[i]);
+        else if (strncmp(argv[i], "jpeg", 4) == 0 && (v = get_int("jpeg", argv[i])) >= 0) g_jpeg_q = v;
+        else if (strncmp(argv[i], "guilloche", 9) == 0) g_guilloche = get_float("guilloche", argv[i]);
     }
     int n1 = (int)strlen(l1);
     int n2 = (int)strlen(l2);
@@ -259,6 +289,112 @@ int main(int argc, char **argv) {
             gray[y * band_w + x] = (uint8_t)v;
         }
 
+    if (g_phys) {
+        /* ---------- physical pipeline (outline §4.1 / §4.3) ---------- */
+        uint32_t seed = (uint32_t)(noise_seed >= 0 ? noise_seed : 12345u);
+        mrz_phys_srand(seed ? seed : 1u);
+        int paper = g_paper_min + (int)(mrz_phys_randf() *
+                                        (float)(g_paper_max - g_paper_min));
+        if (paper > 255) paper = 255;
+        memset(gray, (uint8_t)paper, (size_t)band_w * band_h);
+
+        /* S2: slow ink-density field (per-stroke unevenness). */
+        float *field = (float *)malloc(sizeof(float) * (size_t)band_w * band_h);
+        if (field) {
+            float cx = mrz_phys_randf() * (float)band_w;
+            float cy = mrz_phys_randf() * (float)band_h;
+            for (int y = 0; y < band_h; ++y)
+                for (int x = 0; x < band_w; ++x) {
+                    float dx = (float)x - cx, dy = (float)y - cy;
+                    float d2 = (dx * dx + dy * dy) / 900.0f;
+                    field[y * band_w + x] = 1.0f - 0.15f * expf(-d2)
+                                         + 0.05f * mrz_phys_gauss();
+                    if (field[y * band_w + x] < 0.5f)
+                        field[y * band_w + x] = 0.5f;
+                    if (field[y * band_w + x] > 1.15f)
+                        field[y * band_w + x] = 1.15f;
+                }
+        }
+
+        /* S1: antialiased grey glyphs with a real ink colour. */
+        for (int li = 0; li < n_lines; ++li) {
+            const char *line = (li == 0) ? l1 : l2;
+            int len = (int)strlen(line);
+            int row_y = margin + li * (line_h + vgap);
+            int row_x_start = margin;
+            for (int i = 0; i < len; ++i) {
+                int skew_dx = skew * i / len;
+                int x = row_x_start + i * (glyph_w + hgap) + skew_dx;
+                int ink = g_ink_min + (int)(mrz_phys_randf() *
+                                            (float)(g_ink_max - g_ink_min));
+                mrz_phys_draw_glyph(gray, band_w, band_h, x, row_y, line[i],
+                                    scale, ink, field);
+            }
+        }
+        free(field);
+
+        /* S3: guilloche background. */
+        if (g_guilloche > 0.0f)
+            mrz_phys_guilloche(gray, band_w, band_h, g_guilloche);
+
+        /* S4: light field + 2D highlight (clipped). */
+        {
+            float hl_peak = 0.0f, hl_sx = 0.25f, hl_sy = 0.2f;
+            float hl_cx = 0.5f, hl_cy = 0.5f;
+            if (mrz_phys_randf() < 0.35f) {
+                hl_peak = 1.2f + 0.8f * mrz_phys_randf();
+                hl_sx = 0.1f + 0.3f * mrz_phys_randf();
+                hl_sy = 0.1f + 0.3f * mrz_phys_randf();
+                hl_cx = mrz_phys_randf();
+                hl_cy = mrz_phys_randf();
+            }
+            mrz_phys_light_field(gray, band_w, band_h, illum, hl_peak,
+                                 hl_sx, hl_sy, hl_cx, hl_cy);
+        }
+
+        /* S5: geometry -- BEFORE the blur (the legacy path blurs first
+         * and then rotates with nearest neighbour, which re-introduces
+         * stair-stepping and is the wrong physical order). */
+        if (rot != 0.0f) {
+            uint8_t bgpix = (uint8_t)paper;
+            rotate_gray(gray, band_w, band_h, (double)rot, (int)bgpix);
+        }
+
+        /* S6: optical blur (explicit sigma) + motion blur. */
+        {
+            float sigma = g_blur_sigma;
+            if (sigma < 0.0f)
+                sigma = (blur == 0) ? 0.0f : (blur == 1 ? 0.7f : 1.2f);
+            if (sigma > 0.0f)
+                mrz_phys_gauss_blur(gray, band_w, band_h, sigma);
+        }
+        if (g_motion_len >= 3 && mrz_phys_randf() < 0.2f)
+            mrz_phys_motion_blur(gray, band_w, band_h, g_motion_len,
+                                 g_motion_deg);
+
+        /* S7: sensor noise (additive gaussian + dark current + salt&pepper). */
+        {
+            float salt = (noise > 0.0f) ? (float)noise : 0.0f;
+            if (salt > 0.05f) salt = 0.05f;
+            mrz_phys_sensor_noise(gray, band_w, band_h, g_noise_gauss, salt,
+                                  seed ^ 0x9e3779b9u);
+            if (g_dark_current > 0.0f) {
+                /* §4.3: dark-current FPN amplitude <= 3/255 -- the option
+                 * is therefore in 1/255 units, not a 0..1 fraction. */
+                int dc = (int)g_dark_current;
+                mrz_phys_srand(seed ^ 0x5bf03635u);
+                for (int i = 0; i < band_w * band_h; ++i) {
+                    int v = (int)gray[i] - dc;
+                    if (v < 0) v = 0;
+                    gray[i] = (uint8_t)v;
+                }
+            }
+        }
+
+        /* S8: downsample (bilinear, filter=true) + JPEG. */
+        if (g_downscale < 0.999f)
+            mrz_phys_downsample(gray, &band_w, &band_h, g_downscale);
+    } else {
     for (int li = 0; li < n_lines; ++li) {
         const char *line = (li == 0) ? l1 : l2;
         int len = (int)strlen(line);
@@ -290,6 +426,8 @@ int main(int argc, char **argv) {
             }
         }
     }
+    }   /* end of the legacy (phys=0) rendering branch */
+
     /* Convert grayscale back to RGB. */
     for (int i = 0; i < band_w * band_h; ++i) {
         img->pixels[i*3 + 0] = gray[i];

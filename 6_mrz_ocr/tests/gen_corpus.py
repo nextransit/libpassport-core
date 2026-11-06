@@ -272,8 +272,52 @@ VARIANTS_DEGRADED = [
 ]
 
 
+def physical_params(seed: int, v: tuple, phys: bool) -> list[str]:
+    """The §4.3 S4..S8 parameters for one image (deterministic).
+
+    Derived from the record's own noise seed so the corpus stays
+    reproducible.  Ranges follow outline §4.3:
+      S4 illum >= 40 for at least 30% of the images (handled by the
+         variant table), 2D highlight clipped at 245
+      S6 gaussian blur with an explicit sigma (kernel size alone is
+         meaningless), motion blur 3..9 px at +-15 deg with p=20%
+      S7 additive gaussian sigma 1..6/255, dark current <= 3/255,
+         salt&pepper p <= 0.05
+      S8 downsample 0.6..1.0 with filter=true, JPEG Q 60..95 with p=50%
+    """
+    if not phys:
+        return []
+    import random as _r
+    rnd = _r.Random(seed)
+    scale, hgap, vgap, skew, noise, rot, blur, illum, invert = v
+    out = ["phys=1"]
+    # S6: explicit sigma (the legacy 'blur' pass count maps to it)
+    sigma = (0.0, 0.7, 1.2)[min(2, blur)]
+    if sigma > 0:
+        out.append(f"blur-sigma={sigma + rnd.uniform(-0.15, 0.15):.2f}")
+    # S6: motion blur (p=20%)
+    if rnd.random() < 0.2:
+        out.append(f"motion-len={rnd.randint(3, 9)}")
+        out.append(f"motion-deg={rnd.uniform(-15.0, 15.0):.1f}")
+    # S7: sensor noise
+    if noise > 0:
+        out.append(f"noise-gauss={1.0 + 5.0 * rnd.random():.2f}")
+    if rnd.random() < 0.3:
+        out.append(f"dark-current={rnd.randint(0, 3)}")
+    # S3: guilloche (procedural; real slices do not exist yet)
+    if rnd.random() < 0.3:
+        out.append(f"guilloche={rnd.uniform(0.2, 0.6):.2f}")
+    # S8: downsample + JPEG
+    if rnd.random() < 0.5:
+        out.append(f"downscale={rnd.uniform(0.6, 1.0):.2f}")
+    if rnd.random() < 0.5:
+        out.append(f"jpeg={rnd.randint(60, 95)}")
+    return out
+
+
 def render(out_dir: Path, name: str, l1: str, l2: str, v: tuple,
-           noise_seed: int, font: str = "bitmap", aa: bool = False) -> Path:
+           noise_seed: int, font: str = "bitmap", aa: bool = False,
+           phys: bool = False) -> Path:
     scale, hgap, vgap, skew, noise, rot, blur, illum, invert = v
     p = out_dir / f"{name}.ppm"
     cmd = [str(GEN), str(p), l1, l2,
@@ -291,6 +335,7 @@ def render(out_dir: Path, name: str, l1: str, l2: str, v: tuple,
         cmd.append("font=ocrb")
     if aa:
         cmd.append("aa=1")
+    cmd.extend(physical_params(noise_seed, v, phys))
     subprocess.check_call(cmd, stdout=subprocess.DEVNULL,
                           stderr=subprocess.DEVNULL)
     return p
@@ -309,6 +354,12 @@ def main() -> int:
                     help="override the number of random records")
     ap.add_argument("--aa", action="store_true",
                     help="anti-aliased strokes (grey edges, like a scan)")
+    ap.add_argument("--physical", action="store_true",
+                    help="render with the outline §4.1/§4.3 physical "
+                         "pipeline: 8-bit coverage glyphs, real ink/paper "
+                         "grey, guilloche, clipped light field, geometry "
+                         "BEFORE the blur, gaussian+motion blur, sensor "
+                         "noise, downsample+JPEG")
     ap.add_argument("--font", choices=("bitmap", "ocrb"), default="bitmap",
                     help="glyph shapes: bitmap = the hand-simplified bank "
                          "in src/template.c (historical default), ocrb = the "
@@ -343,7 +394,8 @@ def main() -> int:
         i += 1
         name = f"img_{i:04d}_{pair_tag}_v{var_idx}"
         noise_seed = a.seed * 100000 + i * 7919
-        render(out_dir, name, l1, l2, v, noise_seed, a.font, a.aa)
+        render(out_dir, name, l1, l2, v, noise_seed, a.font, a.aa,
+               phys=a.physical)
         scale, hgap, vgap, skew, noise, rot, blur, illum, invert = v
         records.append({
             "id": name, "profile": profile,
@@ -401,6 +453,7 @@ def main() -> int:
                                "font": a.font,
                                "aa": bool(a.aa),
                                "plausible": not a.legacy_random,
+                               "physical": bool(a.physical),
                                "count": len(records),
                                "records": records}, indent=2))
     n_clean = sum(1 for r in records if r["profile"] == "clean")
