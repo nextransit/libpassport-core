@@ -73,7 +73,12 @@ def run(tool: Path, ppm: Path) -> dict:
 
 
 def tier_ok(rec: dict, line: int) -> bool:
-    """A/B (or untiered) labels are trusted; tier C is not."""
+    """A/B (or untiered) TD3 labels are trusted; tier C is not.
+
+    Tier S (a complete CS/CD single line document) is not a TD3 line and
+    is therefore kept out of the TD3 metrics as well; it is reported on
+    its own so the two document families never contaminate each other.
+    """
     t = rec.get("l1_tier" if line == 1 else "l2_tier") or rec.get("tier") or ""
     return t in ("A", "B", "")
 
@@ -141,6 +146,7 @@ def main() -> int:
         r = dict(scored[pick])
         r.update(id=name, located=True, gt1=l1, gt2=l2,
                  band=cands[pick][0], rect=list(cands[pick][1]),
+                 l1_tier=rec.get("l1_tier") or rec.get("tier") or "",
                  l1_ok=tier_ok(rec, 1), l2_ok=tier_ok(rec, 2))
         rows.append(r)
 
@@ -186,6 +192,18 @@ def main() -> int:
     both_ok = sum(1 for r in both
                   if r["line1"] == r["gt1"] and r["line2"] == r["gt2"])
     print(f"both : exact {both_ok}/{len(both)}")
+    cscd = [r for r in sel if r.get("l1_tier") == "S"]
+    if cscd:
+        c_ok = sum(1 for r in cscd if (r.get("line1") or "") == (r.get("gt1") or ""))
+        c_ch = sum(1 for r in cscd
+                   for a, b in zip(r.get("gt1") or "", r.get("line1") or "")
+                   if a == b)
+        c_tot = sum(len(r.get("gt1") or "") for r in cscd)
+        print(f"CS/CD single line: exact {c_ok}/{len(cscd)}  "
+              f"char {c_ch}/{c_tot} = {c_ch/c_tot if c_tot else 0:.4f}")
+        for r in cscd:
+            flag = "OK" if (r.get("line1") or "") == (r.get("gt1") or "") else "--"
+            print(f"    {flag} {r['id']}: {r.get('line1') or ''}")
     layouts = {}
     for r in sel:
         layouts[r.get("layout", "?")] = layouts.get(r.get("layout", "?"), 0) + 1

@@ -12,9 +12,14 @@ corrected row can never silently count as trusted truth:
                       = B   line is 44 characters but an ICAO 7-3-1 check
                             digit does not match -> the text is used, the
                             row is reported as suspect
-                      = C   line is not a 44 character TD3 line (CS/CD
-                            single line of 30 characters, or a truncated
-                            43 character line) -> not counted at all
+                      = S   line is a complete CS/CD single line document
+                            of 30 characters (birth and expiry check
+                            digits verified) -> reported on its own, never
+                            folded into the TD3 character accuracy
+                      = C   line is not a 44 character TD3 line (a
+                            truncated 43 character line, or the empty
+                            second line of a CS/CD document) -> not counted
+                            at all
 
 Usage:
     python3 tests/build_gt_from_xlsx.py
@@ -86,6 +91,47 @@ def line1_tier(line1: str) -> str:
     return "A"
 
 
+def cscd_line_tier(line: str) -> str:
+    """Tier of a CS/CD (Mainland travel permit) single machine readable row.
+
+    Those documents carry one 30 character row instead of the two 44
+    character TD3 rows:
+
+        [0:3]   CSC / CDL          document family + country code
+        [3:12]  document number     9 characters, no check digit
+        [12]    '<'
+        [13:19] date of birth       6 digits
+        [19]    check digit          ICAO 7-3-1 over [13:19]
+        [20]    '<'
+        [21:27] date of expiry       6 digits
+        [27]    check digit          ICAO 7-3-1 over [21:27]
+        [28]    '<'
+        [29]    composite check digit
+
+    The birth and expiry check digits follow the usual ICAO 7-3-1 cycle
+    (verified on every CS/CD sample in the sheet).  The trailing composite
+    digit does not: no field set and weight cycle reproduces it across the
+    samples, so it is carried verbatim but never treated as verified.
+
+    Tier "S" marks such a row as a complete, structurally verified single
+    line document.  It is not a TD3 line, so it is reported on its own and
+    never folded into the TD3 character accuracy.
+    """
+    if len(line) != 30:
+        return ""
+    if line[0:2] not in ("CS", "CD"):
+        return ""
+    if line[12] != "<" or line[20] != "<" or line[28] != "<":
+        return ""
+    if any(ch not in WEIGHT for ch in line):
+        return ""
+    if check_digit(line[13:19]) != line[19]:
+        return ""
+    if check_digit(line[21:27]) != line[27]:
+        return ""
+    return "S"
+
+
 def line2_tier(line2: str) -> str:
     if len(line2) != 44:
         return "C"
@@ -145,14 +191,21 @@ def main() -> int:
                     "l1": l1,
                     "l2": l2,
                     "tier": "C",
-                    "l1_tier": line1_tier(l1),
+                    "l1_tier": cscd_line_tier(l1) or line1_tier(l1),
                     "l2_tier": line2_tier(l2),
                 }
                 break
     for folder in OUTPUTS:
         for name, rec in buckets[folder].items():
-            order = {"A": 0, "B": 1, "C": 2}
-            rec["tier"] = max((rec["l1_tier"], rec["l2_tier"]), key=lambda t: order[t])
+            order = {"A": 0, "B": 1, "S": 2, "C": 3}
+            if rec["l1_tier"] == "S":
+                # Single line CS/CD document: the 30 character row is the
+                # whole machine readable zone, there is no second line to
+                # score, so the record keeps the single line tier.
+                rec["tier"] = "S"
+            else:
+                rec["tier"] = max((rec["l1_tier"], rec["l2_tier"]),
+                                  key=lambda t: order[t])
 
     if missing:
         print(f"warning: {len(missing)} sheet rows have no image on disk: "
@@ -167,7 +220,9 @@ def main() -> int:
                          f"GT对比) by tests/build_gt_from_xlsx.py. "
                          f"Source folder: {folder}/. Tiers are derived: A = "
                          f"44 char line with matching ICAO 7-3-1 check digits, "
-                         f"B = 44 char line with a suspect check digit, C = not "
+                         f"B = 44 char line with a suspect check digit, "
+                         f"S = complete CS/CD single line document of 30 "
+                         f"characters (reported separately), C = not "
                          f"a 44 char TD3 line (excluded from the metrics)."),
             "gt": gt,
         }

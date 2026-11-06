@@ -210,6 +210,45 @@ def main(argv=None):
                     "pad": pad, "band_h": band_bot - band_top,
                     "scale": scale,
                 }
+        else:
+            band_raw = ocr.get("band", "")
+            lines_raw = ocr.get("lines", "")
+            crop = ocr.get("crop") or {}
+            if band_raw and lines_raw:
+                try:
+                    bx, by, bw, bh = (int(float(x)) for x in band_raw.split())
+                    l1y, l1h, l2y, l2h = (int(float(x)) for x in lines_raw.split())
+                    cy = int(crop.get("y", 0))
+                    band_y_abs = cy + by
+                    ny0a = max(0, band_y_abs + l1y)
+                    ny1a = min(H, band_y_abs + l1y + l1h)
+                    ny0b = max(0, band_y_abs + l2y)
+                    ny1b = min(H, band_y_abs + l2y + l2h)
+                    band_top = max(0, band_y_abs)
+                    band_bot = min(H, band_y_abs + bh)
+                    margin = 20
+                    ctx_top = max(0, band_top - margin)
+                    ctx_bot = min(H, band_bot + margin)
+                    band_crop = rgb[ctx_top:ctx_bot, :].copy()
+                    if band_crop.size > 0:
+                        _draw_h_line(band_crop, ny0a - ctx_top, (255, 0, 0), "L1 top")
+                        _draw_h_line(band_crop, ny1a - ctx_top, (255, 0, 0), "L1 bot")
+                        _draw_h_line(band_crop, ny0b - ctx_top, (0, 0, 255), "L2 top")
+                        _draw_h_line(band_crop, ny1b - ctx_top, (0, 0, 255), "L2 bot")
+                        _draw_h_line(band_crop, band_top - ctx_top, (0, 255, 0), "band top")
+                        _draw_h_line(band_crop, band_bot - ctx_top, (0, 255, 0), "band bot")
+                        band_big = cv2.resize(band_crop, None, fx=2.0, fy=2.0,
+                                              interpolation=cv2.INTER_LINEAR)
+                        band_png = f"review_bands/{name}.png"
+                        cv2.imwrite(str(args.out.parent / band_png),
+                                    cv2.cvtColor(band_big, cv2.COLOR_RGB2BGR))
+                        band_info = {
+                            "y0": ny0a, "y1": ny1b, "h": ny1b - ny0a,
+                            "l1_h": l1h, "l2_h": l2h, "gap": ny0b - ny1a,
+                            "pad": 0, "band_h": bh, "scale": 1,
+                        }
+                except Exception:
+                    pass
 
         # GT 对比
         gt = gt_map.get(name)

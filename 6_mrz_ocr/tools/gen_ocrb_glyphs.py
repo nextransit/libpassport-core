@@ -181,6 +181,10 @@ def preview(bank: dict[str, list[int]]) -> None:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--font", help="OCR-B TrueType path")
+    ap.add_argument("--coverage", action="store_true",
+                    help="also emit the 8-bit coverage bank "
+                         "(tools/ocrb_glyphs_aa.h) for the §4.1 font-level "
+                         "antialiasing path")
     ap.add_argument("--preview", action="store_true", help="ascii art only")
     a = ap.parse_args()
 

@@ -121,6 +121,7 @@ def run_one(tool: Path, image: Path, env_extra: dict | None = None) -> dict:
             "conf1": int(out.get("result.conf1", "0") or 0),
             "conf2": int(out.get("result.conf2", "0") or 0),
             "band":  out.get("band.x band.y band.w band.h", ""),
+            "lines": out.get("result.line1y line1h line2y line2h", ""),
             "ms":    ms,
             "err":   r.stderr.strip() if r.returncode != 0 else ""}
 
@@ -161,6 +162,9 @@ def run_batch_paddle(images: list[tuple[str, Path]]) -> dict:
             cur = {"ok": v.strip() == "OK", "err": "",
                    "line1": "", "line2": "",
                    "conf1": 0, "conf2": 0, "band": "", "ms": 0.0}
+        elif key == "result.line1y line1h line2y line2h":
+            if cur is not None:
+                cur["lines"] = v.strip()
         elif key.startswith("result."):
             if cur is not None:
                 cur[key[len("result."):]] = v.strip()
@@ -213,6 +217,9 @@ def run_batch_indra(images: list[tuple[str, Path]]) -> dict:
                 cur = {"ok": False, "err": "", "line1": "", "line2": "",
                        "conf1": 0, "conf2": 0, "band": "", "ms": 0.0}
             cur["ok"] = v.strip() == "OK"
+        elif key == "result.line1y line1h line2y line2h":
+            if cur is not None:
+                cur["lines"] = v.strip()
         elif key.startswith("result."):
             if cur is not None:
                 cur[key[len("result."):]] = v.strip()

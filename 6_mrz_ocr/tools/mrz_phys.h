@@ -84,8 +84,13 @@ static void mrz_phys_draw_glyph(uint8_t *img, int W, int H, int ox, int oy,
                     int eff = cov * f / 255;
                     if (!eff) continue;
                     int paper = img[yy * W + xx];
-                    /* coverage * ink density -> ink darkness */
-                    int dark = (eff * ink) / 255;
+                    /* Alpha blend: a pixel covered by fraction c of the
+                     * stroke shows c * (paper - ink) of ink darkness.
+                     * Scaling the INK VALUE by the coverage (the obvious
+                     * shortcut) is wrong whenever the ink is not black:
+                     * it washes the glyphs out. */
+                    int dark = (eff * (paper - ink)) / 255;
+                    if (dark < 0) dark = 0;
                     int v = paper - dark;
                     if (v < 0) v = 0;
                     img[yy * W + xx] = (uint8_t)v;

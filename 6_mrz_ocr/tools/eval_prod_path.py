@@ -66,9 +66,13 @@ _PAIRS = [
     ("U", "V"), ("U", "O"), ("V", "Y"), ("Q", "O"),
     ("T", "I"), ("T", "7"), ("X", "K"),
     # measured on real photos (tools/collect_confusions.py)
-    ("0", "1"),  # n=9
-    ("L", "P"),  # n=6
-    ("A", "N"),  # n=5
+    ("0", "8"),  # n=18
+    ("C", "E"),  # n=7
+    ("0", "1"),  # n=7
+    ("8", "M"),  # n=6
+    ("G", "O"),  # n=6
+    ("H", "J"),  # n=5
+    ("0", "9"),  # n=5
 ]
 # END GENERATED CONFUSION PAIRS
 

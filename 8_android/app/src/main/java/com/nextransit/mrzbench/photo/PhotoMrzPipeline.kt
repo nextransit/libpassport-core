@@ -181,8 +181,14 @@ object PhotoMrzPipeline {
      * factors on the restore pair; 0.70 = the shipped framing, implicit).
      * Only tried when the primary framing fails decode+shape+ICAO; see
      * [processFast] and 10_ocr_research/band_candidates_product_port.md.
+     *
+     * The Python-side mrz_band.py tries 9 candidates (3 locators × multi
+     * pad) and reaches 49/61 on assets/pic; the device with only 2 pad
+     * alternates reached 3/64.  Adding 1.15/0.85/1.55 gives the restore
+     * pair more vertical framing chances before falling back, each gated
+     * by FRAMING_MIN_BUDGET_MS so the p95 stays bounded.
      */
-    private val FRAME_PAD_ALTERNATES = doubleArrayOf(1.35, 0.45)
+    private val FRAME_PAD_ALTERNATES = doubleArrayOf(1.35, 0.45, 1.15, 0.85, 1.55)
 
     /**
      * Minimum remaining budget (ms) for one framing candidate.  A
@@ -1601,9 +1607,13 @@ object PhotoMrzPipeline {
         "U" to "V", "U" to "O", "V" to "Y", "Q" to "O",
         "T" to "I", "T" to "7", "X" to "K",
         // measured on real photos (tools/collect_confusions.py)
-        "0" to "1",  // n=9
-        "L" to "P",  // n=6
-        "A" to "N",  // n=5
+        "0" to "8",  // n=18
+        "C" to "E",  // n=7
+        "0" to "1",  // n=7
+        "8" to "M",  // n=6
+        "G" to "O",  // n=6
+        "H" to "J",  // n=5
+        "0" to "9",  // n=5
 
 // END GENERATED CONFUSION PAIRS
     ).flatMap { (a, b) ->
