@@ -8,7 +8,7 @@
 | 唯一验收真值 | `10_ocr_research/gt_review_loop.xlsx`（"GT对比" sheet 的 GT line1 / GT line2） |
 | 约束基线 | `AGENTS.md`（TD3 零退化红线、98% / 95%、fuse ≥ 2.0 张/秒） |
 | 强制流程 | `AGENTS.md`「模型训练与识别 Skill 强制使用」→ 入口 `.workbuddy-ai/skills/ai-research-skills-mrz/SKILL.md`；路由见附录 C。**本文 §7 / §8 及后续任何训练方案修订均受其约束** |
-| 关联实测 | `eval_corpus_v2_1105.md`、`eval_by_algorithm_1104.md`、`6_mrz_ocr/docs/CNN-OPTIMIZATION.md`、`6_mrz_ocr/docs/deep-beam.md` |
+| 关联实测 | `eval_corpus_v2_1105.md`、`eval_by_algorithm_1104.md`、`6_mrz_ocr/docs/CNN-OPTIMIZATION.md`、`6_mrz_ocr/docs/deep-beam.md`、`band_candidates_product_port.md`（2026-11-06 落地验证：候选自选预算闸门与 Exact/P95 同源归因） |
 | 文档定位 | 本文整合灰度训练主张、补充建议与代码评审结论。凡标注「评审修订」的条款，均为基于本仓库实测数据对原主张的修正，**优先级高于原表述** |
 
 ---
@@ -426,12 +426,43 @@ S8 下采样（双线性，filter=true）+ JPEG 压缩
 12. **A/B 协议必须写明 CRNN 的特征一致性步骤**：改 line2 权重后 CRNN 通道直接失效
     （实测两臂都崩到 0/47，line2 l2_acc 5.35%）—— CRNN 头绑定 line2 CNN 的 conv 特征，
     换权重必须重导特征 + 重训 CRNN，否则该通道不能当门禁。
-13. **§7.3 字段级面板已落地**：`6_mrz_ocr/tools/field_accuracy.py`（用本仓库
+13. （2026-11-06 追记）**渲染 A/B（§6.4）实测被前置阻塞**：物理流水线已落地
+    （`mrz_phys.h` + `phys=1` + `--physical`，像素合规 12→108 灰级），但发布前置
+    （band 定位+行切分+二值化）在物理语料上 exact 仅 **1/300**（OK 率 97%、垃圾 67/300、
+    dump cell 整字空白）—— §0 #4「同一套标定」的实测证明。**"语料 exact ≥90%" 非训练可解**；
+    训练侧杠杆全部实测完毕（先验类 5 负 + `--pn-weight` 驳回 + 语料 v3 中性 + 渲染 A/B 阻塞）。
+    唯一真实杠杆 = **C 前置对真实灰度的重标定**（独立立项，整体上线）。
+    切片导出两代失败与最终方案见 `ab_protocol_render_1106.md`：
+    几何切片违反 §5 契约（自训语料上 1.25%）；dump+位置标签（`export_corpus_slices_pos.py`）
+    为正解。1380 语料合规 review：14 条款 8 不符 3 部分 0 达标
+    （`corpus_compliance_review_1106.md`）。
+14. **§7.3 字段级面板已落地**：`6_mrz_ocr/tools/field_accuracy.py`（用本仓库
     `check_digit_of` 的 0-based 边界，与 C 端校验位 DFS 同一套定义）。
     114 张真实照片实测（cnn，逐格错 2.73%）：个人号/可选区 4.61%（最差多数字段区间）、
     个人号校验位 11.21%、签发国 6.36%。**但该区 37 个字母错有 30 个来自 Photo/ 的
     6 张机位照（同一证件，该区错 36.90%；其余 41 张仅 1.74%）** —— 任何以该区为靶心的
     干预都必须按证件分开报告，否则等于对一份证件做记忆。
+14. **评审修订（2026-11-06）：§0 结论 3 的 band 层优先级，须与「预算闸门」捆绑**。
+    桌面 GUI 产品路径把 `mrz_band` 候选自选全量上线（无闸门）后，正式 50 张
+    bench 实测 official 整链 `mean/median/p95 = 197.8/179.8/377.3 ms`、
+    **0/50 满足 <100 ms**，而 fuse 引擎本身仅 ~15 ms，候选搜索独占 185~237 ms；
+    三引擎 raw GT 在开关候选搜索前后**完全相同**（cnn 37/47、crnn 28/47、
+    fuse 37/47）⇒ 候选选择只吃时间、不改变识别结果。补上两阶段一致性早停
+    （`tests/gui.py` 的 `MRZ_BAND_PICK_GATE=1`，单变量 A/B）后
+    `99.3/64.8/215.8 ms`、<100 ms 升到 35/50，准确率零退化、fallback=0、
+    `test_postproc` 147/147、`test_mrz` 89/89。
+    **但 P95 仍未达标**：剩余 15 张 ≥100 ms 里 9 张是 FAIL，10 张 FAIL 里仅
+    1 张走快路径；`Photo/3..8` 六张全部 FAIL 且 129.5~445.8 ms，正是 §8.1 的
+    宽 band / 暗区黑边行分割错位样本。⇒ **耗时缺口与 Exact 缺口同源，治本在
+    `mrz_geom.c::mrz_ocr_split_lines` 与 `_rst_native_mrz_band` 的垂直裁剪交互，
+    而非继续压缩候选预算**（压缩只会把失败藏起来）。
+    另记负结果：`MRZ_BAND_PICK_PAR=8` 使 P95 215.8→270.6 ms 并出现 528 ms 离群，
+    禁止以增大并发度当作无损优化。详见
+    `10_ocr_research/band_candidates_product_port.md`「2026-11-06 落地验证」与
+    `.workbuddy-ai/memory/2026-11-06.md` §25。
+    **对本文排期的影响**：P0 的 band 定位改造仍优先于 P4 灰度 A/B，但必须自带
+    预算闸门；本文 §6.2 的 fuse ≥2.0 张/秒红线在「整链墙钟」口径下尚未达成
+    （单引擎口径 ~10-15 ms 已达），计时口径仍待书面裁决（§11 第 7 条）。
 
 ---
 
