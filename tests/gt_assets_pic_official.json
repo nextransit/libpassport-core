@@ -1,5 +1,5 @@
 {
- "_comment": "Official ground truth rebuilt from 10_ocr_research/gt_review_loop.xlsx (sheet GT对比) by tests/build_gt_from_xlsx.py. Source folder: assets/pic/. Tiers are derived: A = 44 char line with matching ICAO 7-3-1 check digits, B = 44 char line with a suspect check digit, C = not a 44 char TD3 line (excluded from the metrics).",
+ "_comment": "Official ground truth rebuilt from 10_ocr_research/gt_review_loop.xlsx (sheet GT对比) by tests/build_gt_from_xlsx.py. Source folder: assets/pic/. Tiers are derived: A = 44 char line with matching ICAO 7-3-1 check digits, B = 44 char line with a suspect check digit, S = complete CS/CD single line document of 30 characters (reported separately), C = not a 44 char TD3 line (excluded from the metrics).",
  "gt": {
   "08806d29a6268e1f_0003.jpg": {
    "label": "assets/pic/08806d29a6268e1f_0003.jpg",
@@ -37,8 +37,8 @@
    "label": "assets/pic/1c6acd092dee7031_0222.png",
    "l1": "CDL000000007<2508197<8208031<6",
    "l2": "",
-   "tier": "C",
-   "l1_tier": "C",
+   "tier": "S",
+   "l1_tier": "S",
    "l2_tier": "C"
   },
   "1cce0f3fc387c893_0001.jpg": {
@@ -100,10 +100,10 @@
   "3f5bb54276c6b754_0110.png": {
    "label": "assets/pic/3f5bb54276c6b754_0110.png",
    "l1": "PPLIESPECIMEN<<SOPHIA<<<<<<<<<<<<<<<<<<<<<<<",
-   "l2": "PP00000000LIE9001011F3602025<<<<<<<<<<<<<<8",
-   "tier": "C",
+   "l2": "PP00000000LIE9001011F3602025<<<<<<<<<<<<<<<8",
+   "tier": "B",
    "l1_tier": "A",
-   "l2_tier": "C"
+   "l2_tier": "B"
   },
   "4023a0d69dbd6cf7_0120.jpg": {
    "label": "assets/pic/4023a0d69dbd6cf7_0120.jpg",
@@ -205,9 +205,9 @@
    "label": "assets/pic/6dafa3b35c792d06_0039.png",
    "l1": "P<MRTABDELLAHI<MAHFOUDH<<MOHAMMED<<<<<<<<<<<",
    "l2": "ABI234567<5MRT7511287M1511143123456789<<<<14",
-   "tier": "A",
+   "tier": "B",
    "l1_tier": "A",
-   "l2_tier": "A"
+   "l2_tier": "B"
   },
   "7294ad26ea8d95e0_0010.jpg": {
    "label": "assets/pic/7294ad26ea8d95e0_0010.jpg",
@@ -285,9 +285,9 @@
    "label": "assets/pic/90b464ea218a9909_0001.jpg",
    "l1": "P<SYCSAMPLE<<ORDINARY<<<<<<<<<<<<<<<<<<<<<<<",
    "l2": "NS000004<7SYC8601137F3203101<<<<<<<<<<<<<<00",
-   "tier": "C",
+   "tier": "A",
    "l1_tier": "A",
-   "l2_tier": "C"
+   "l2_tier": "A"
   },
   "927cd546b5a8111d_0108.jpg": {
    "label": "assets/pic/927cd546b5a8111d_0108.jpg",

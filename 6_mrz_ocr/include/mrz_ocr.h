@@ -48,6 +48,8 @@ typedef struct {
     int             line1_avg_conf;
     int             line2_avg_conf;
     int             band_x, band_y, band_w, band_h; /* located MRZ band */
+    int             line1_y, line1_h; /* line 1 rect within band (split_lines) */
+    int             line2_y, line2_h; /* line 2 rect within band (0 if single) */
     /* Ambiguity of the line-2 reading.
      *
      * A checksum-valid line is NOT automatically the right one: a 'B'

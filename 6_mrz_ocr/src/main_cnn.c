@@ -86,6 +86,8 @@ static int run_one_cnn(const char *path) {
     printf("result.issuersusp : %d\n", r.line1_issuer_suspect);
     printf("band.x band.y band.w band.h : %d %d %d %d\n",
            r.band_x, r.band_y, r.band_w, r.band_h);
+    printf("result.line1y line1h line2y line2h : %d %d %d %d\n",
+           r.line1_y, r.line1_h, r.line2_y, r.line2_h);
     /* Document layout: TD3 (2x44 passport) vs CS/CD (1x30 travel permit)
      * vs TD1 (3x30 back).  Callers need this to know how many characters
      * each line is supposed to carry -- a 30-character reading compared

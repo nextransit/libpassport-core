@@ -1,5 +1,5 @@
 {
- "_comment": "Official ground truth rebuilt from 10_ocr_research/gt_review_loop.xlsx (sheet GT对比) by tests/build_gt_from_xlsx.py. Source folder: tmp/PassPortPhoto/. Tiers are derived: A = 44 char line with matching ICAO 7-3-1 check digits, B = 44 char line with a suspect check digit, C = not a 44 char TD3 line (excluded from the metrics).",
+ "_comment": "Official ground truth rebuilt from 10_ocr_research/gt_review_loop.xlsx (sheet GT对比) by tests/build_gt_from_xlsx.py. Source folder: tmp/PassPortPhoto/. Tiers are derived: A = 44 char line with matching ICAO 7-3-1 check digits, B = 44 char line with a suspect check digit, S = complete CS/CD single line document of 30 characters (reported separately), C = not a 44 char TD3 line (excluded from the metrics).",
  "gt": {
   "2026-9-29-A.jpg": {
    "label": "tmp/PassPortPhoto/2026-9-29-A.jpg",
@@ -333,24 +333,24 @@
    "label": "tmp/PassPortPhoto/2026-9-30-I.jpg",
    "l1": "CSC733210936<2711209<8612261<8",
    "l2": "",
-   "tier": "C",
-   "l1_tier": "C",
+   "tier": "S",
+   "l1_tier": "S",
    "l2_tier": "C"
   },
   "2026-9-30-J.jpg": {
    "label": "tmp/PassPortPhoto/2026-9-30-J.jpg",
    "l1": "CSC482624408<2610106<7410024<0",
    "l2": "",
-   "tier": "C",
-   "l1_tier": "C",
+   "tier": "S",
+   "l1_tier": "S",
    "l2_tier": "C"
   },
   "2026-9-30-K.jpg": {
    "label": "tmp/PassPortPhoto/2026-9-30-K.jpg",
    "l1": "CSC495643597<2610265<8706216<0",
    "l2": "",
-   "tier": "C",
-   "l1_tier": "C",
+   "tier": "S",
+   "l1_tier": "S",
    "l2_tier": "C"
   }
  }

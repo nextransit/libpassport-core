@@ -57,6 +57,54 @@ def check_digit(s: str) -> str:
     return str(total % 10)
 
 
+def cscd_bad_checks(line: str) -> list:
+    """Names of the CS/CD single row check digits that do not match.
+
+    A CS/CD (Mainland travel permit) document carries one 30 character row
+    instead of the two 44 character TD3 rows:
+
+        [0:2]   "CS" / "CD"
+        [2:11]  document number, 9 characters (the country code letter is
+                the first of them)
+        [11]    check digit of the document number
+        [12]    '<'
+        [13:19] date of birth, 6 digits
+        [19]    check digit
+        [20]    '<'
+        [21:27] date of expiry, 6 digits
+        [27]    check digit
+        [28]    '<'
+        [29]    composite check digit over [2:12] + [13:20] + [21:28]
+
+    All four check digits follow the ordinary ICAO 7-3-1 cycle (verified
+    on every CS/CD sample of the truth sheet).
+    """
+    if len(line) != 30:
+        return ["length"]
+    bad = []
+    if line[0:2] not in ("CS", "CD"):
+        bad.append("prefix")
+    if line[12] != "<" or line[20] != "<" or line[28] != "<":
+        bad.append("separators")
+    if any(ch not in _WEIGHT for ch in line):
+        bad.append("charset")
+    if check_digit(line[2:11]) != line[11]:
+        bad.append("document_number")
+    if check_digit(line[13:19]) != line[19]:
+        bad.append("birth_date")
+    if check_digit(line[21:27]) != line[27]:
+        bad.append("expiry_date")
+    composite = line[2:12] + line[13:20] + line[21:28]
+    if check_digit(composite) != line[29]:
+        bad.append("composite")
+    return bad
+
+
+def cscd_struct_ok(line: str) -> bool:
+    """True for a complete CS/CD row: shape plus every check digit."""
+    return not cscd_bad_checks(line)
+
+
 def line2_bad_checks(line2: str) -> list:
     """Names of the TD3 line2 check digits that do not match."""
     if len(line2) != 44:
@@ -149,7 +197,8 @@ def text_row_groups(gray: np.ndarray, thr: int | None = None,
     return groups
 
 
-def sensitive_band_rows(rgb: Image.Image, min_seg: int = 20, min_h: int = 6):
+def sensitive_band_rows(rgb: Image.Image, min_seg: int = 20, min_h: int = 6,
+                        max_ink_per_px: float = 40.0):
     """Rows of the bottom-most pair of text lines, in native pixels.
 
     The two locators above both need a clear MRZ; on a photo of a passport
@@ -157,13 +206,18 @@ def sensitive_band_rows(rgb: Image.Image, min_seg: int = 20, min_h: int = 6):
     is only ~15 px high and neither of them finds it.  The MRZ is always the
     last thing on the page, so the bottom-most two text lines are a usable
     fallback.  Returns (y0a, y1a, y0b, y1b, x0a, x1a, x0b, x1b) or None.
+
+    A card photo often has a solid metal edge or a printed strip just below
+    the MRZ (ink density ~50-200/px vs ~10/px for a genuine text row); such
+    rows are filtered out so the bottom-most pair stays on the MRZ.
     """
     try:
         gray = np.asarray(rgb.convert("L"))
     except Exception:
         return None
     groups = [g for g in text_row_groups(gray, min_seg=min_seg)
-              if g[1] - g[0] + 1 >= min_h]
+              if g[1] - g[0] + 1 >= min_h
+              and g[3] / (g[1] - g[0] + 1) <= max_ink_per_px]
     if len(groups) < 2:
         return None
     a, b = groups[-2], groups[-1]
@@ -258,12 +312,20 @@ def candidate_score(result: dict):
 
     A line2 that is not 44 characters long is treated as fully broken --
     an empty or short line carries no check-digit information at all.
+    The one exception is a CS/CD travel permit: it has a single 30
+    character row, the reading lands in line1 and there is no second line
+    at all.  Scoring such a candidate as broken made it lose against a
+    garbage 44 character TD3 read, so CS/CD rows are scored with their own
+    four check digits instead.
     """
+    line1 = result.get("line1") or ""
     line2 = result.get("line2") or ""
-    if len(line2) != 44:
-        ck = 10
-    else:
+    if len(line2) == 44:
         ck = len(line2_bad_checks(line2))
+    elif len(line1) == 30:
+        ck = len(cscd_bad_checks(line1))
+    else:
+        ck = 10
     conf = int(result.get("conf1") or 0) + int(result.get("conf2") or 0)
     return (ck, -conf)
 

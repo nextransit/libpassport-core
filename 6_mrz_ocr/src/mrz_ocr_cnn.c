@@ -334,17 +334,40 @@ int mrz_ocr_line1_issuer_suspect(const char *line1) {
  * characters that the CNN confuses with visually similar digits
  * (D↔6, B↔0, A↔3, M↔H) in the personal-number field.  With K=3
  * the correct character was sometimes absent from the candidate list
- * and no amount of beam depth could rescue it. */
+ * and no amount of beam depth could rescue it.
+ *
+ * The effective K is capped at TOPK_MAX, the compile-time bound of the
+ * per-column arrays.  MRZ_OCR_CAND_K (1..TOPK_MAX) lowers or raises it
+ * at runtime so the candidate width can be A/B measured without a
+ * rebuild; the default stays 5 because a wider list multiplies the
+ * beam's leaf count by the branching factor.
+ */
+#define TOPK_MAX 10
 #define TOPK 5
-typedef struct { int cand[TOPK]; float p[TOPK]; } top3_t;
+typedef struct { int cand[TOPK_MAX]; float p[TOPK_MAX]; } top3_t;
+
+/* Effective candidate width, read once from the environment. */
+static int mrz_topk(void) {
+    static int k = -1;
+    if (k < 0) {
+        const char *e = getenv("MRZ_OCR_CAND_K");
+        k = TOPK;
+        if (e && e[0]) {
+            int v = atoi(e);
+            if (v >= 1 && v <= TOPK_MAX) k = v;
+        }
+    }
+    return k;
+}
 
 static void top3_of(const float *probs, int allow[37], top3_t *t) {
-    for (int k = 0; k < TOPK; ++k) { t->cand[k] = -1; t->p[k] = -1.0f; }
+    const int K = mrz_topk();
+    for (int k = 0; k < TOPK_MAX; ++k) { t->cand[k] = -1; t->p[k] = -1.0f; }
     for (int o = 0; o < 37; ++o) {
         if (allow[o] == 0) continue;
         float p = probs[o];
         /* insertion sort into the top-K array (descending) */
-        int k = TOPK - 1;
+        int k = K - 1;
         if (p > t->p[k]) {
             t->p[k] = p; t->cand[k] = o;
             while (k > 0 && t->p[k] > t->p[k-1]) {
@@ -356,9 +379,9 @@ static void top3_of(const float *probs, int allow[37], top3_t *t) {
     }
     int lt = mrz_ocr_glyph_index('<');
     if (t->cand[0] < 0) {
-        for (int k = 0; k < TOPK; ++k) { t->cand[k] = lt; t->p[k] = 0.0f; }
+        for (int k = 0; k < K; ++k) { t->cand[k] = lt; t->p[k] = 0.0f; }
     } else {
-        for (int k = 1; k < TOPK; ++k) {
+        for (int k = 1; k < K; ++k) {
             if (t->cand[k] < 0) { t->cand[k] = t->cand[0]; t->p[k] = 0.0f; }
         }
     }
@@ -589,8 +612,8 @@ typedef struct {
     char alt[64];
     unsigned char gate[MRZ_DIAG_CHARS];
     unsigned char ch[MRZ_DIAG_CHARS];
-    int cand[MRZ_DIAG_CHARS][TOPK];
-    float p[MRZ_DIAG_CHARS][TOPK];
+    int cand[MRZ_DIAG_CHARS][TOPK_MAX];
+    float p[MRZ_DIAG_CHARS][TOPK_MAX];
     float ink[MRZ_DIAG_CHARS];
 } mrz_diag_line_t;
 
@@ -716,7 +739,7 @@ static void mrz_diag_write(const mrz_ocr_result_t *out) {
         for (int c = 0; c < n; ++c) {
             if (c) fputc(',', f);
             fprintf(f, "{\"i\":%d,\"top\":[", c);
-            for (int k = 0; k < TOPK; ++k) {
+            for (int k = 0; k < mrz_topk(); ++k) {
                 if (k) fputc(',', f);
                 int g = d->cand[c][k];
                 if (g >= 0 && g < 37) {
@@ -1658,7 +1681,7 @@ static double mrz_candidate_logprob(const char *line, const top3_t *t3) {
     for (int c = 0; c < 44; ++c) {
         int g = mrz_ocr_glyph_index(line[c]);
         float p = 0.0f;
-        for (int k = 0; k < TOPK; ++k)
+        for (int k = 0; k < mrz_topk(); ++k)
             if (t3[c].cand[k] == g) { p = t3[c].p[k]; break; }
         if (p <= 1e-6f) p = 1e-6f;
         s += log((double)p);
@@ -1814,7 +1837,7 @@ typedef struct {
      * node, i.e. ~31 million logf calls for the ~560k nodes of the two
      * searches (winner + runner-up).  Now both tables are built once per
      * search and every node is O(1). */
-    double lp[44][TOPK];   /* log-probability of each candidate        */
+    double lp[44][TOPK_MAX]; /* log-probability of each candidate      */
     double opt_suffix[45]; /* optimistic bound from column k onwards    */
     /* Incremental five-segment checksum state (see mrz_cd_state). */
     mrz_cd_state cd;
@@ -1956,7 +1979,7 @@ static void mrz_beam_recurse(mrz_beam_ctx *ctx, int k, int used,
         wide_cols = (e && e[0]) ? atoi(e) : 14;
         if (wide_cols < 0) wide_cols = 0;
     }
-    int max_alts = (k < wide_cols) ? (TOPK - 1) : 1;
+    int max_alts = (k < wide_cols) ? (mrz_topk() - 1) : 1;
     for (int j = 1; used < ctx->depth && j <= max_alts; ++j) {
         int g = t->cand[j];
         if (g < 0) continue;
@@ -2003,7 +2026,7 @@ static void mrz_beam_search(const char *base, const top3_t *t3,
     for (int i = 0; i < ncols; ++i) {
         int c = cols[i];
         const top3_t *t = &t3[c];
-        for (int j = 0; j < TOPK; ++j)
+        for (int j = 0; j < mrz_topk(); ++j)
             ctx.lp[c][j] = mrz_beam_lp(t, j);
     }
     {
@@ -2012,7 +2035,7 @@ static void mrz_beam_search(const char *base, const top3_t *t3,
             int c = cols[i];
             const top3_t *t = &t3[c];
             double best = 0.0;
-            for (int j = 1; j < TOPK; ++j) {
+            for (int j = 1; j < mrz_topk(); ++j) {
                 if (t->cand[j] < 0) continue;
                 if (j > 1 && t->cand[j] == t->cand[1]) continue;
                 if (t->cand[j] == t->cand[0]) continue;
@@ -2032,6 +2055,317 @@ static void mrz_beam_search(const char *base, const top3_t *t3,
         fprintf(stderr, "BEAM base=%s (%.3f) -> best=%s (%.3f) cols=%d\n",
                 work, _s0, ctx.best, ctx.best_score, ncols);
 }
+
+/* ---- field-scoped checksum search ----
+ *
+ * WHY THIS EXISTS
+ *
+ * The beam above changes at most MRZ_BEAM_DEPTH columns and picks the
+ * columns it may change by ASCENDING top-2 probability margin.  A cell
+ * the network is CONFIDENTLY wrong about has a huge margin, so it sorts
+ * to the very end of that list and is never searched.  Measured on the
+ * real corpus: the truth sits at rank 2 in the classifier's ordering
+ * yet the column's margin puts it far outside the searched set.  That
+ * is why widening TOPK (5 -> 10) or the beam depth (4 -> 12) or the
+ * column budget (14 -> 44) changed nothing: the bottleneck is the
+ * COLUMN CHOICE, not the candidate width.
+ *
+ * The check digits localise the error far better than the margin does.
+ * Line 2 carries five independent check digits:
+ *
+ *     doc        cols 0..8   check at 9
+ *     birth      cols 13..18 check at 19
+ *     expiry     cols 21..26 check at 27
+ *     personal   cols 28..41 check at 42
+ *     composite  the four fields above, check at 43
+ *
+ * When exactly one field violates its own check digit, the error is
+ * inside that field, and the field can be replaced WHOLE: there is no
+ * depth limit, and the columns are chosen by the check digit rather
+ * than by the margin.
+ *
+ * KEY PROPERTY: the check digit is DERIVED from the field body, never
+ * enumerated.  For every candidate body the implied digit is computed,
+ * so the decoder only has to win on the FIELD, not on the individual
+ * character.  This is what lets it repair a cell the classifier is
+ * confidently wrong about.
+ *
+ * COST.  The field is at most 14 columns wide.  The search is a
+ * beam-pruned walk over that field's columns with the field's own
+ * check digit as the constraint, so the cost is bounded by
+ * (field width) x (beam width) x (branching) -- a few thousand nodes,
+ * which is the same order as the existing beam's winner pass.
+ */
+
+/* The four line-2 fields: name, body start, body end, check-digit column. */
+static const int MRZ_FLD_BODY[4][2] = {
+    {0, 9}, {13, 19}, {21, 27}, {28, 42}
+};
+static const int MRZ_FLD_CD[4] = {9, 19, 27, 42};
+
+typedef struct {
+    double score;
+    char   body[16];
+    int    digit;     /* the check digit the body implies */
+    int    comp;      /* the field SEGMENT's contribution to the composite
+                       * digit -- the body AND the derived check digit,
+                       * because the composite covers both */
+} mrz_field_sol;
+
+/* ---- composite check digit layout ----
+ *
+ * The composite digit at column 43 covers columns 0..9, 13..19 and
+ * 21..42 -- 39 characters -- and its 7/3/1 weights restart over THAT
+ * sequence, so a column's composite weight is NOT its field-local
+ * weight.  Getting this wrong silently produces plausible-looking
+ * garbage, so the index map is spelled out explicitly. */
+static int mrz_comp_index(int c) {
+    if (c <= 9)  return c;
+    if (c <= 19) return c - 3;
+    return c - 4;
+}
+static int mrz_comp_weight(int c) {
+    static const int wtab[3] = {7, 3, 1};
+    return wtab[mrz_comp_index(c) % 3];
+}
+
+/* One DP entry: a partial field body plus the two residues that
+ * determine every continuation.
+ *
+ *   own  -- the field's OWN weighted sum mod 10 (this IS the check
+ *           digit the body implies; it is DERIVED, never enumerated)
+ *   comp -- the body's contribution to the composite sum mod 10
+ *
+ * Two prefixes with the same (own, comp) pair have exactly the same
+ * set of continuations, so keeping only the higher-scoring one is
+ * exact -- there is no beam pruning and no approximation.
+ *
+ * 10 x 10 = 100 states, so the whole field is solved in
+ * (columns x 100 x candidates) transitions -- nanoseconds. */
+typedef struct {
+    double score;
+    int    own;
+    int    comp;
+    char   body[16];
+} mrz_field_dp;
+
+
+/* Does the greedy reading violate this field's own check digit? */
+static int mrz_field_cd_bad(const char *l2, int f) {
+    char buf[16];
+    int start = MRZ_FLD_BODY[f][0], end = MRZ_FLD_BODY[f][1];
+    int n = end - start;
+    if (n > 15) n = 15;
+    memcpy(buf, l2 + start, n); buf[n] = 0;
+    if (l2[MRZ_FLD_CD[f]] < '0' || l2[MRZ_FLD_CD[f]] > '9') return 1;
+    return check_digit_of(buf, n) != (l2[MRZ_FLD_CD[f]] - '0');
+}
+
+/* Which field does column c belong to, and where is its body?
+ * Returns -1 for columns that are not inside a check-digit-protected
+ * field (nationality, sex and the two tail check digits are not). */
+static int mrz_field_of_col(int c) {
+    for (int f = 0; f < 4; ++f)
+        if (c >= MRZ_FLD_BODY[f][0] && c < MRZ_FLD_BODY[f][1]) return f;
+    return -1;
+}
+
+/* Recompute a field's own check digit from its body and write it back.
+ * The digit is DERIVED, never enumerated -- this is what lets the
+ * repair accept a substitution without searching over digits. */
+static void mrz_derive_cd(char *l2, int f) {
+    char buf[16];
+    int start = MRZ_FLD_BODY[f][0], end = MRZ_FLD_BODY[f][1];
+    int n = end - start;
+    if (n > 15) n = 15;
+    memcpy(buf, l2 + start, (size_t)n); buf[n] = 0;
+    l2[MRZ_FLD_CD[f]] = (char)('0' + check_digit_of(buf, n));
+}
+
+/* SINGLE-CHARACTER REPAIR.
+ *
+ * For every column, try every alternative class.  After the
+ * substitution the affected field's check digit is DERIVED from the
+ * field body, and the composite digit is derived as well; the result
+ * is kept only if the whole line then satisfies ALL FIVE check digits.
+ *
+ * This is the criterion the probability-scored searches lack: the
+ * truth's characters can have probability ~0.000 and still be the
+ * only reading that makes the check digits close.
+ *
+ * `out` receives the best repair (highest log-probability among the
+ * checksum-consistent ones).  Returns 1 when a repair was found. */
+static int mrz_single_repair(const top3_t *t3, const char *base,
+                             char *out, double *out_score) {
+    int found = 0;
+    double best = -1e300;
+    char bestline[45];
+
+    for (int c = 0; c < 44; ++c) {
+        int f = mrz_field_of_col(c);
+        if (f < 0) continue;
+        for (int j = 0; j < mrz_topk(); ++j) {
+            int g = t3[c].cand[j];
+            if (g < 0) continue;
+            char ch = MRZ_OCR_GLYPHS[g].ch;
+            if (ch == base[c]) continue;
+            char cand[45];
+            memcpy(cand, base, 45);
+            cand[c] = ch;
+            /* Derive the affected field's check digit, and the
+             * composite digit, from the modified bodies. */
+            mrz_derive_cd(cand, f);
+            if (cand[43] < '0' || cand[43] > '9') {
+                char comp[41];
+                memcpy(comp, cand, 10);
+                memcpy(comp + 10, cand + 13, 7);
+                memcpy(comp + 17, cand + 21, 22);
+                comp[39] = 0;
+                cand[43] = (char)('0' + check_digit_of(comp, 39));
+            }
+            if (!line2_checksum_ok(cand)) continue;
+            double sc = mrz_candidate_logprob(cand, t3);
+            if (sc > best) {
+                best = sc;
+                memcpy(bestline, cand, 45);
+                found = 1;
+            }
+        }
+    }
+    if (found) {
+        memcpy(out, bestline, 45);
+        *out_score = best;
+    }
+    return found;
+}
+
+/* Composite contribution of a field SEGMENT (body + its own check
+ * digit), i.e. columns start..end inclusive, modulo 10. */
+static int mrz_comp_seg(const char *l2, int start, int end) {
+    int sum = 0;
+    for (int c = start; c <= end; ++c)
+        sum += mrz_cd_value(l2[c]) * mrz_comp_weight(c);
+    return sum % 10;
+}
+
+/* Does the composite digit at column 43 agree with the four field
+ * segments? */
+static int mrz_composite_ok(const char *l2) {
+    int sum = 0;
+    for (int f = 0; f < 4; ++f)
+        sum = (sum + mrz_comp_seg(l2, MRZ_FLD_BODY[f][0],
+                                 MRZ_FLD_BODY[f][1])) % 10;
+    if (l2[43] < '0' || l2[43] > '9') return 0;
+    return sum == (l2[43] - '0');
+}
+
+/* Solve one field EXACTLY with a dynamic program over the two
+ * residues that constrain it.
+ *
+ * The field body determines (a) the field's OWN check digit and (b) the
+ * field's contribution to the composite check digit.  Both are residues
+ * mod 10, so a partial body is fully characterised by the pair
+ * (own, comp) -- 100 states.
+ *
+ * Two prefixes with the same (own, comp) have IDENTICAL sets of
+ * continuations, so keeping only the better-scoring one loses nothing.
+ * The DP is therefore EXACT, not a beam: it finds the true
+ * maximum-likelihood body under both constraints.
+ *
+ * The previous implementation used a beam of 8192 states with an
+ * insertion sort -- O(n^2) in the number of states and tens of
+ * megabytes of struct copying per decode.  On the device that was the
+ * difference between a few milliseconds and a stall, and it also made
+ * the result depend on an arbitrary width.  The DP has a fixed 100-entry
+ * state table and a bounded cost of (columns x 100 x candidates).
+ *
+ * `out` receives the solutions ordered by score descending.  Returns
+ * the number written. */
+static int mrz_field_solve(const top3_t *t3, int f,
+                           mrz_field_sol *out, int out_max) {
+    static const int wtab[3] = {7, 3, 1};
+    int start = MRZ_FLD_BODY[f][0], end = MRZ_FLD_BODY[f][1];
+    int ncol = end - start;
+    int written = 0;
+    if (ncol > 15) ncol = 15;
+
+    /* The state table is indexed DIRECTLY by the residue pair
+     * (own, comp) -> own * 10 + comp, so there is no side index and no
+     * chance of the two drifting apart. */
+    static mrz_field_dp cur[100], nxt[100];
+    int live[100];
+    int nlive = 0;
+
+    for (int i = 0; i < 100; ++i) cur[i].score = -1e300;
+    cur[0].score = 0.0;
+    cur[0].own = 0;
+    cur[0].comp = 0;
+    cur[0].body[0] = 0;
+    live[nlive++] = 0;   /* own 0, comp 0 */
+
+    for (int k = 0; k < ncol; ++k) {
+        int c = start + k;
+        int w = wtab[k % 3];          /* field-local weight */
+        int cw = mrz_comp_weight(c);  /* composite weight */
+        for (int i = 0; i < 100; ++i) nxt[i].score = -1e300;
+        for (int li = 0; li < nlive; ++li) {
+            const mrz_field_dp *st = &cur[live[li]];
+            /* every candidate class of this column is an option */
+            for (int j = 0; j < mrz_topk(); ++j) {
+                int g = t3[c].cand[j];
+                if (g < 0) continue;
+                if (j > 1 && g == t3[c].cand[1]) continue;  /* duplicate */
+                char ch = MRZ_OCR_GLYPHS[g].ch;
+                int v = mrz_cd_value(ch);
+                int no = (st->own + v * w) % 10;
+                int nc = (st->comp + v * cw) % 10;
+                int ni = no * 10 + nc;
+                double sc = st->score + mrz_beam_lp(&t3[c], j);
+                if (sc > nxt[ni].score) {
+                    nxt[ni].score = sc;
+                    nxt[ni].own = no;
+                    nxt[ni].comp = nc;
+                    memcpy(nxt[ni].body, st->body, (size_t)k);
+                    nxt[ni].body[k] = ch;
+                }
+            }
+        }
+        /* collect the live states of the next level */
+        int nlive_next = 0;
+        for (int i = 0; i < 100; ++i)
+            if (nxt[i].score > -1e299) live[nlive_next++] = i;
+        for (int i = 0; i < 100; ++i) cur[i] = nxt[i];
+        nlive = nlive_next;
+        if (nlive == 0) return 0;
+    }
+
+    /* The survivors, best first.
+     *
+     * The composite digit covers the field body AND the field's own
+     * check-digit column, so the segment's composite contribution is
+     * the body's contribution plus the DERIVED digit's contribution.
+     * The derived digit is only known here, at the end of the field,
+     * which is exactly why the composite residue has to be carried
+     * through the DP rather than computed afterwards. */
+    int cdw = mrz_comp_weight(MRZ_FLD_CD[f]);
+    while (nlive > 0 && written < out_max) {
+        int best = 0;
+        double bs = cur[live[0]].score;
+        for (int j = 1; j < nlive; ++j)
+            if (cur[live[j]].score > bs) { bs = cur[live[j]].score; best = j; }
+        const mrz_field_dp *d = &cur[live[best]];
+        out[written].score = d->score;
+        out[written].digit = d->own;
+        out[written].comp  = (d->comp + d->own * cdw) % 10;
+        memcpy(out[written].body, d->body, (size_t)ncol);
+        out[written].body[ncol] = 0;
+        written++;
+        for (int j = best; j + 1 < nlive; ++j) live[j] = live[j + 1];
+        nlive--;
+    }
+    return written;
+}
+
 
 /* ---- whole-line decode: syntax mask + protections + checksum beam ----
  * `probs` holds n rows of softmaxed class probabilities (possibly
@@ -2147,14 +2481,14 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
         fill_allow(allow, line_idx, c);
         top3_of(probs + c * CNN_OUT, allow, &t3[c]);
         if (dg && c < MRZ_DIAG_CHARS) {
-            for (int k = 0; k < TOPK; ++k) {
+            for (int k = 0; k < mrz_topk(); ++k) {
                 dg->cand[c][k] = t3[c].cand[k];
                 dg->p[c][k] = t3[c].p[k];
             }
         }
         if (dbg) {
             fprintf(stderr, "TOPK L%d c%02d:", line_idx, c);
-            for (int k = 0; k < TOPK; ++k)
+            for (int k = 0; k < mrz_topk(); ++k)
                 fprintf(stderr, " %c(%.3f)", MRZ_OCR_GLYPHS[t3[c].cand[k]].ch, t3[c].p[k]);
             fprintf(stderr, "\n");
         }
@@ -2277,9 +2611,9 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
             double best_lp = -1e300;
             char best3[3];
             int found = 0;
-            for (int a = 0; a < TOPK; ++a) {
-                for (int b = 0; b < TOPK; ++b) {
-                    for (int c = 0; c < TOPK; ++c) {
+            for (int a = 0; a < mrz_topk(); ++a) {
+                for (int b = 0; b < mrz_topk(); ++b) {
+                    for (int c = 0; c < mrz_topk(); ++c) {
                         char cand[3] = {
                             MRZ_OCR_GLYPHS[t3[2].cand[a]].ch,
                             MRZ_OCR_GLYPHS[t3[3].cand[b]].ch,
@@ -2367,6 +2701,204 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
              * the checksum -- so the incumbent starts below any
              * reachable delta. */
             double best_score = -1e300;
+
+            /* (e) FIELD-SCOPED checksum search, run FIRST on the greedy
+             * decode.
+             *
+             * The beam below can only change a few columns and picks
+             * them by ascending top-2 margin, so a cell the network is
+             * CONFIDENTLY wrong about is never searched.  The check
+             * digits localise the error far better: a field whose OWN
+             * check digit fails holds the error, and that field can be
+             * replaced whole -- no depth limit, and the columns are
+             * chosen by the check digit rather than by the margin.
+             *
+             * The repaired field's check digit is DERIVED from the
+             * field body, never enumerated: the decoder only has to win
+             * on the FIELD, not on the individual character.
+             *
+             * The result competes with the beam on the full-line
+             * log-probability, so it can only win if it is actually the
+             * more likely reading.
+             *
+             * MRZ_OCR_FIELD_SEARCH=0 disables it (A/B). */
+            static int fld_enabled = -1;
+            if (fld_enabled < 0) {
+                const char *e = getenv("MRZ_OCR_FIELD_SEARCH");
+                fld_enabled = !(e && e[0] == '1' && e[1] == 0);
+            }
+            char fld_best[45];
+            double fld_score = -1e300;
+            int fld_have = 0;
+            if (fld_enabled) {
+                /* Locate the fields whose OWN check digit fails.  Each
+                 * failing field holds an error, and the fields are
+                 * independent (a personal-number error does not break
+                 * the document-number check digit), so the failing
+                 * fields are exactly the places where the reading is
+                 * suspect.
+                 *
+                 * REPAIR IS SEQUENTIAL.  For each failing field the DP
+                 * solves that field exactly (see mrz_field_solve), the
+                 * field's own check digit is DERIVED from the body, and
+                 * the repaired line is then re-validated against ALL
+                 * five check digits.  A repair that does not produce a
+                 * fully valid line is discarded, so the field search
+                 * can never introduce a checksum-invalid reading.
+                 *
+                 * The key property is that the decoder does not have to
+                 * win on the individual CHARACTER -- only on the FIELD.
+                 * That is what lets it repair a cell the classifier is
+                 * confidently wrong about, which the margin-based beam
+                 * can never do. */
+                /* JOINT DP OVER THE FAILING FIELDS.
+                 *
+                 * The fields are coupled only through the composite
+                 * digit, which covers all four field segments.  So the
+                 * joint problem is a DP whose state is the accumulated
+                 * composite residue -- 10 states.  For each failing
+                 * field the exact per-field solutions (see
+                 * mrz_field_solve) are combined, and only the
+                 * combinations whose composite residue matches the
+                 * printed composite digit are kept.
+                 *
+                 * The composite digit at column 43 is the CONSTRAINT,
+                 * not a variable: it is what the document says, and the
+                 * field bodies have to agree with it.  When it is not a
+                 * digit there is no constraint and the derived value is
+                 * written instead.
+                 *
+                 * The check digits are DERIVED from the field bodies,
+                 * never enumerated, so the decoder only has to win on
+                 * the FIELD, not on the individual character.  That is
+                 * what lets it repair a cell the classifier is
+                 * confidently wrong about -- which the margin-based
+                 * beam can never do, because a confident error sorts
+                 * to the very end of the beam's candidate list. */
+                static mrz_field_sol sols[4][128];
+                int nsols[4];
+                int nbad = 0;
+                for (int f = 0; f < 4; ++f) {
+                    nsols[f] = 0;
+                    /* UNCONDITIONAL FIELD SEARCH.
+                     *
+                     * Solving every field (not only the ones whose
+                     * check digit fails) is what catches a field that
+                     * is misread yet still satisfies its own check
+                     * digit -- the wrong characters simply happen to
+                     * weigh to the same sum.  The result is still safe:
+                     * the candidate must satisfy ALL five check digits
+                     * and must be MORE LIKELY than the incumbent, so
+                     * the decoder can only get better.
+                     *
+                     * The cost is bounded: four fields x 100 DP states
+                     * x the candidate width. */
+                    nsols[f] = mrz_field_solve(t3, f, sols[f], 128);
+                    if (nsols[f] > 0) nbad++;
+                }
+                if (nbad > 0) {                    /* The composite target: the printed digit. */
+                    int target = (dest[43] >= '0' && dest[43] <= '9')
+                               ? (dest[43] - '0') : -1;
+                    /* The composite residue contributed by the fields
+                     * that are NOT being repaired. */
+                    int fixed_comp = 0;
+                    /* DP over the accumulated composite residue.
+                     * state[r] = best (score, choice per field) with
+                     * accumulated residue r. */
+                    double dscore[10];
+                    int    dpick[10][4];
+                    for (int r = 0; r < 10; ++r) dscore[r] = -1e300;
+                    dscore[0] = 0.0;
+                    for (int f = 0; f < 4; ++f) dpick[0][f] = -1;
+                    for (int f = 0; f < 4; ++f) {
+                        if (nsols[f] == 0) continue;
+                        double ndscore[10];
+                        int    ndpick[10][4];
+                        for (int r = 0; r < 10; ++r) {
+                            ndscore[r] = -1e300;
+                            for (int q = 0; q < 4; ++q) ndpick[r][q] = -1;
+                        }
+                        for (int r = 0; r < 10; ++r) {
+                            if (dscore[r] <= -1e299) continue;
+                            for (int i = 0; i < nsols[f]; ++i) {
+                                int nr = (r + sols[f][i].comp) % 10;
+                                double sc = dscore[r] + sols[f][i].score;
+                                if (sc > ndscore[nr]) {
+                                    ndscore[nr] = sc;
+                                    for (int q = 0; q < 4; ++q) ndpick[nr][q] = dpick[r][q];
+                                    ndpick[nr][f] = i;
+                                }
+                            }
+                        }
+                        for (int r = 0; r < 10; ++r) {
+                            dscore[r] = ndscore[r];
+                            for (int q = 0; q < 4; ++q) dpick[r][q] = ndpick[r][q];
+                        }
+                    }
+                    /* Pick the state that satisfies the composite. */
+                    int best_r = -1;
+                    double best = -1e300;
+                    for (int r = 0; r < 10; ++r) {
+                        if (dscore[r] <= -1e299) continue;
+                        if (target >= 0 && (r + fixed_comp) % 10 != target) continue;
+                        if (dscore[r] > best) { best = dscore[r]; best_r = r; }
+                    }                    if (best_r >= 0) {
+                        char cand[45];
+                        memcpy(cand, dest, 45);
+                        for (int f = 0; f < 4; ++f) {
+                            int i = dpick[best_r][f];
+                            if (i < 0) continue;
+                            int fstart = MRZ_FLD_BODY[f][0];
+                            int fn = MRZ_FLD_BODY[f][1] - fstart;
+                            memcpy(cand + fstart, sols[f][i].body, (size_t)fn);
+                            cand[MRZ_FLD_CD[f]] = (char)('0' + sols[f][i].digit);
+                        }
+                        if (target < 0) {
+                            /* No printed composite digit: derive it. */
+                            char comp[41];
+                            memcpy(comp, cand, 10);
+                            memcpy(comp + 10, cand + 13, 7);
+                            memcpy(comp + 17, cand + 21, 22);
+                            comp[39] = 0;
+                            cand[43] = (char)('0' + check_digit_of(comp, 39));
+                        }
+                        if (line2_checksum_ok(cand)) {
+                            double sc = mrz_candidate_logprob(cand, t3);
+                            if (sc > fld_score) {
+                                fld_score = sc;
+                                memcpy(fld_best, cand, 45);
+                                fld_have = 1;
+                            }
+                        }
+                    }
+                }
+            }
+
+            /* SINGLE-CHARACTER REPAIR, competing with the field
+             * search and the beam on the full-line log-probability.
+             *
+             * It is the only one of the three that can use the check
+             * digits as a FILTER rather than a score, which is what
+             * lets it find a reading whose characters have near-zero
+             * probability but whose check digits close. */
+            {
+                static int sr_enabled = -1;
+                if (sr_enabled < 0) {
+                    const char *e = getenv("MRZ_OCR_SINGLE_REPAIR");
+                    sr_enabled = !(e && e[0] == '1' && e[1] == 0);
+                }
+                if (sr_enabled && !fld_have) {
+                    char sr[45];
+                    double sr_score = -1e300;
+                    if (mrz_single_repair(t3, dest, sr, &sr_score)) {
+                        if (sr_score > fld_score) {
+                            fld_score = sr_score;
+                            memcpy(fld_best, sr, 45);
+                            fld_have = 1;
+                        }
+                    }
+                }
+            }
 
             int idxs[44]; float marg[44]; int picks = 0;
             for (int c = 0; c < 44; ++c) {
@@ -2463,12 +2995,51 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
              * found a checksum-valid reading.  When it found none
              * (the greedy decode is kept, which may be invalid) the
              * result is left exactly as it was. */
-            if (best_score > -1e299) {
+            if (best_score <= -1e299 && fld_have) {
+                /* The beam found NOTHING, but the field search found a
+                 * fully checksum-valid reading.  Take it -- a valid
+                 * reading always beats an invalid one, regardless of
+                 * the probability comparison. */
+                memcpy(dest, fld_best, 44);
+                if (dg)
+                    for (int c = 0; c < 44; ++c)
+                        if (dest[c] != pre_beam[c]) dg->gate[c] |= 8;
+                if (n < 44) dest[n] = '\0'; else dest[44] = '\0';
+                best_score = fld_score - mrz_candidate_logprob(pre_beam, t3);
+            } else if (best_score > -1e299) {
                 memcpy(dest, best, 44);
                 if (dg)
                     for (int c = 0; c < 44; ++c)
                         if (dest[c] != pre_beam[c]) dg->gate[c] |= 8;
                 if (n < 44) dest[n] = '\0'; else dest[44] = '\0';
+
+                /* COMPETITION WITH THE FIELD SEARCH.
+                 *
+                 * The beam scores its leaves as a DELTA against the
+                 * greedy decode, so its score is not directly
+                 * comparable to the field search's absolute
+                 * log-probability.  Convert: the beam's absolute score
+                 * is the greedy line's absolute score plus the delta.
+                 *
+                 * The field search wins only if it is genuinely the
+                 * more likely reading, so enabling it can never make
+                 * the decoder produce a worse line than the beam
+                 * alone. */
+                if (fld_have) {
+                    double greedy_abs = mrz_candidate_logprob(pre_beam, t3);
+                    double beam_abs = greedy_abs + best_score;
+                    if (fld_score > beam_abs) {
+                        memcpy(dest, fld_best, 44);
+                        if (dg)
+                            for (int c = 0; c < 44; ++c)
+                                if (dest[c] != pre_beam[c]) dg->gate[c] |= 8;
+                        if (n < 44) dest[n] = '\0'; else dest[44] = '\0';
+                        /* Keep the delta-space score consistent with
+                         * the line now in dest, so the runner-up margin
+                         * below is measured against the winner. */
+                        best_score = fld_score - greedy_abs;
+                    }
+                }
                 /* A runner-up within the margin means the reading is a
                  * near coin flip between two checksum-valid candidates.
                  * Report it: a wrong-but-checksum-valid line is
@@ -3841,6 +4412,10 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
             g_diag.line[1].y = lines[1].y; g_diag.line[1].h = lines[1].h;
         }
     }
+    out->line1_y = lines[0].y; out->line1_h = lines[0].h;
+    if (split_n > 1) {
+        out->line2_y = lines[1].y; out->line2_h = lines[1].h;
+    }
     {   /* MRZ_OCR_LINES=1: report the band and the line boxes, plus their
          * height ratio -- the quantity that decides whether the splitter
          * found two MRZ rows or a decoration row plus one. */
@@ -3935,6 +4510,24 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
         line_models_env && line_models_env[0] && strcmp(line_models_env, "0") != 0;
     net0 = use_line_models ? &g_mrz_scratch_cnn_line1 : &g_mrz_scratch_cnn_template;
     net1 = use_line_models ? &g_mrz_scratch_cnn_line2 : &g_mrz_scratch_cnn_template;
+    /* A CS/CD permit carries a single 30-cell data row, not a TD3 line 1.
+     * The line-1 head is trained on 44-cell name rows; feeding it a permit
+     * row costs most of the checksum digits (2026-9-30-I: conf 17 garbage
+     * with the line-1 head).  A/B on the same crop (GT CSC733...):
+     *   template -> CDF733210936<2711209<8649664<6 conf 74  (7 chars off)
+     *   line2    -> CSC733210936<2711209<8612341<8 conf 86  (2 chars off)
+     * so the line-2 head (trained on alpha-num data rows) is the default;
+     * keep the env override for A/B. */
+    if (g_doc_layout == MRZ_LAYOUT_SINGLE_LINE_30) {
+        const char *cscd_net_env = getenv("MRZ_OCR_CSCD_NET");
+        if (cscd_net_env && strcmp(cscd_net_env, "template") == 0) {
+            net0 = &g_mrz_scratch_cnn_template;
+        } else if (cscd_net_env && strcmp(cscd_net_env, "line1") == 0) {
+            /* keep the line-1 head */
+        } else {
+            net0 = &g_mrz_scratch_cnn_line2;
+        }
+    }
     {
         const char *tta_env = getenv("MRZ_OCR_TTA");
         int tta = (tta_env && tta_env[0] && strcmp(tta_env, "0") != 0);

@@ -1026,19 +1026,30 @@ def _hyp_rank(result):
 
 
 def _rst_cscd_struct_ok(line):
-    """Structural validation of a 30-character CS/CD travel permit row.
+    """Structural and checksum validation of a 30-character CS/CD row.
 
-    ICAO 9303 does not define this layout (it is a regional document
-    family) and its check digits are NOT the 7-3-1 cycle: an
-    exhaustive search over every field split of a real permit
-    (assets/pic/1c6acd092dee7031_0222.png) found no split consistent
-    with 7-3-1, so no checksum rule is applied here rather than
-    guessing one.
+    A CS/CD (Mainland travel permit) document carries one 30 character row
+    instead of the two 44 character TD3 rows:
 
-    What IS reliable is the shape: 'CS'/'CD' prefix, 30 characters of
-    [A-Z0-9<], and the three fixed filler positions at 12, 20 and 28
-    that separate document number / date of birth / date of expiry.
-    Those fillers are printed literally by every CS/CD document."""
+        [0:2]   "CS" / "CD"
+        [2:11]  document number, 9 characters (the country code letter is
+                 the first of them)
+        [11]    check digit of the document number
+        [12]    '<'
+        [13:19] date of birth, 6 digits
+        [19]    check digit
+        [20]    '<'
+        [21:27] date of expiry, 6 digits
+        [27]    check digit
+        [28]    '<'
+        [29]    composite check digit over [2:12] + [13:20] + [21:28]
+
+    All four check digits follow the ordinary ICAO 7-3-1 cycle; this was
+    verified on every CS/CD sample of the truth sheet (the document
+    number starts at index 2, which is what made the composite look
+    unreproducible in an earlier round).  The shape is checked as well:
+    'CS'/'CD' prefix, 30 characters of [A-Z0-9<] and the three fixed
+    filler positions at 12, 20 and 28."""
     if not line or len(line) != 30:
         return False
     if line[:2] not in ("CS", "CD"):
@@ -1046,7 +1057,23 @@ def _rst_cscd_struct_ok(line):
     if any(c not in set("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<")
            for c in line):
         return False
-    return line[12] == "<" and line[20] == "<" and line[28] == "<"
+    if not (line[12] == "<" and line[20] == "<" and line[28] == "<"):
+        return False
+    try:
+        checksum_dir = ROOT / "6_1_PaddleOCR"
+        if str(checksum_dir) not in sys.path:
+            sys.path.insert(0, str(checksum_dir))
+        from mrz_checksum import compute_check_digit
+    except Exception:
+        return True
+    if compute_check_digit(line[2:11]) != line[11]:
+        return False
+    if compute_check_digit(line[13:19]) != line[19]:
+        return False
+    if compute_check_digit(line[21:27]) != line[27]:
+        return False
+    composite = line[2:12] + line[13:20] + line[21:28]
+    return compute_check_digit(composite) == line[29]
 
 
 def _rst_prepare_indra():
@@ -2918,9 +2945,21 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         if getattr(self, "_gt_map_cache", None) is not None:
             return self._gt_map_cache
         m = {}
+        p = ROOT / "10_ocr_research" / "gt_review_loop.xlsx"
+        # JSON 缓存：openpyxl 首次 import + xlsx 解析 ~200ms（其中
+        # import openpyxl 128ms），读 JSON ~5ms。xlsx 更新后按 mtime
+        # 自动失效重建。单张首识别耗时 204ms→~50ms 即此。
+        cache_p = p.with_suffix(".json")
+        try:
+            if p.exists() and cache_p.exists() \
+                    and os.path.getmtime(cache_p) >= os.path.getmtime(p):
+                m = json.loads(cache_p.read_text(encoding="utf-8"))
+                self._gt_map_cache = m
+                return m
+        except Exception:
+            pass
         try:
             import openpyxl
-            p = ROOT / "10_ocr_research" / "gt_review_loop.xlsx"
             if p.exists():
                 wb = openpyxl.load_workbook(str(p), read_only=True, data_only=True)
                 ws = wb["GT对比"]
@@ -2931,6 +2970,11 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                     if fn:
                         m[fn] = (gt1, gt2)
                 wb.close()
+        except Exception:
+            pass
+        try:
+            cache_p.write_text(json.dumps(m, ensure_ascii=False),
+                               encoding="utf-8")
         except Exception:
             pass
         self._gt_map_cache = m
@@ -4220,6 +4264,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                     "decode_ok": _rst_decode_ok(decoded),
                     "conf1": int(kv.get("result.conf1", "0") or 0),
                     "conf2": int(kv.get("result.conf2", "0") or 0),
+                    "band": kv.get("band.x band.y band.w band.h", ""),
+                    "lines": kv.get("result.line1y line1h line2y line2h", ""),
                     "repair": [],
                     "candidates": "",
                     "raw": stdout.strip(),
@@ -5392,6 +5438,30 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             if _hyp_rank(hyp_c) > _hyp_rank(result):
                 result = hyp_c
                 result["sensitive_fallback"] = True
+        # Hypothesis D: the page is upside down.  The 180° flip fallback
+        # at the top only fires when the locator finds NOTHING in the
+        # original orientation, but an inverted CS/CD permit is usually
+        # mis-detected as a thin noise row at the page bottom, so the flip
+        # never happens and the band ends up empty
+        # (tmp/PassPortPhoto/2026-9-30-J.jpg).  When no hypothesis read
+        # the page, retry it flipped.
+        if not _rotated180 and not result.get("verified"):
+            _read_any = any((e.get("line1") or e.get("line2"))
+                            for e in (result.get("engines") or []))
+            if not _read_any or _flip_hint:
+                try:
+                    rgb_f = _cv2.flip(rgb_pre, -1)
+                    work_f, scale_f = load(rgb_f, max_side=1250)
+                    st_f = detect_structure(_gray(work_f))
+                    if st_f.get("mrz_pair") or st_f.get("mrz_single"):
+                        hyp_d = self._ocr_photo_hypothesis(path, rgb_f, work_f,
+                                                           st_f, None, methods,
+                                                           strict=strict)
+                        if _hyp_rank(hyp_d) > _hyp_rank(result):
+                            result = hyp_d
+                            result["rotated180_fallback"] = True
+                except Exception:
+                    pass
         out.update(result)
         if _rotated180:
             _H, _W = rgb.shape[:2]
@@ -5432,17 +5502,49 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         Candidates: the historical crop, the page-bottom clamped crop,
         and the shared candidate set from 6_mrz_ocr/tools/mrz_band.py
         (fast_pair / restore pairs at several paddings / the sensitive
-        bottom-rows scan).  A checksum-valid line 2 wins; the search
-        stops at the first valid candidate, so the common case costs one
-        extra C run.
+        bottom-rows scan).
+
+        Every candidate is read and only checksum-valid readings are
+        kept; among those the one most crops agree on wins (see
+        MRZ_BAND_PICK_ALL / MRZ_BAND_PICK_VOTE below).  The checksum is
+        blind to a single wrong-but-plausible document number, so the
+        historical crop cannot be trusted just because it validates.
         """
         import os as _os
         if _os.environ.get("MRZ_BAND_PICK", "1") != "1":
             return band, crop
-        # MRZ_BAND_PICK_ALL=1: score every candidate, not just the
-        # alternatives, and let the confidence decide.  Costs one more
-        # candidate set build per photo (~15 ms).
-        _all = _os.environ.get("MRZ_BAND_PICK_ALL", "0") == "1"
+        # MRZ_BAND_PICK_ALL: score every candidate, not just the
+        # alternatives, and let the readings decide.  Costs one more
+        # candidate set build per photo (~15 ms).  The historical crop
+        # alone cannot be trusted: a band that sits one character off can
+        # still produce a checksum-valid line 2 (the composite rescue
+        # rewrites the last two digits), and on
+        # tmp/PassPortPhoto/2026-9-29-U it read a checksum-valid but
+        # wrong document number while six alternative crops agreed on the
+        # truth.  Stopping at the first valid candidate lost three of the
+        # fifty photos (U, W, AJ).
+        #
+        # MRZ_BAND_PICK_VOTE: among the checksum-valid candidates pick by
+        # agreement (how many crops read the same row) instead of by
+        # confidence alone.  Confidence across different crops is noisy --
+        # on 2026-9-29-U the truth won by a single conf point -- whereas
+        # eight crops of the same rows agree exactly.
+        _all = _os.environ.get("MRZ_BAND_PICK_ALL", "1") == "1"
+        _vote = _os.environ.get("MRZ_BAND_PICK_VOTE", "1") == "1"
+        # MRZ_BAND_PICK_GATE: two-stage agreement gate (default on).
+        # ALL=1+VOTE=1 scores ~12 candidate crops on EVERY photo, which
+        # measured 185-237 ms of the 205 ms product-path wall time while
+        # the fuse engine itself takes only ~15 ms.  On most photos the
+        # alternatives cannot change the vote: when the historical crop
+        # is checksum-valid AND one independent crop reads byte-identical
+        # lines, every further candidate can only add an agreeing vote.
+        # Stop there (one extra band rebuild + one resident C run, ~12 ms).
+        # A disagreement or an invalid primary means the rows are
+        # marginal, so the full vote still runs -- that is what keeps
+        # 2026-9-29-U / -W / 2026-9-30-AJ from regressing.
+        # MRZ_BAND_PICK_GATE=0 restores the un-gated ALL=1 path verbatim
+        # for single-variable A/B.
+        _gate = _os.environ.get("MRZ_BAND_PICK_GATE", "1") == "1"
         try:
             import sys as _sys
             from pathlib import Path as _P
@@ -5482,7 +5584,16 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             _slots.put((_t, getattr(_t, "scratch", None)))
 
         def _check(_arr):
-            """Read one candidate band; returns (result, ck, line2)."""
+            """Read one candidate band; returns (result, ck, line1, line2, cscd).
+
+            A CS/CD travel permit row is a SINGLE 30-character row, so
+            its reading lands in result.line1 and result.line2 stays
+            empty.  Scoring it by line2 alone marked every candidate
+            invalid (len != 44) and the search kept the historical crop
+            -- which is why assets/pic/1c6acd092dee7031_0222.png read
+            back empty in the product path even though a different crop
+            reads a well-formed row.
+            """
             _slot = _slots.get()
             try:
                 _tool_r, _pp = _slot
@@ -5491,10 +5602,17 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 _Image.fromarray(_arr).save(_pp, format="PPM")
                 _out, _err = _tool_r.run(_pp)
                 _res = _mb.parse_result(_mb.parse_kv(_out or ""))
+                _line1 = _res.get("line1") or ""
                 _line2 = _res.get("line2") or ""
-                _ck = (10 if len(_line2) != 44
-                       else len(_mb.line2_bad_checks(_line2)))
-                return _res, _ck, _line2
+                _cscd = False
+                if len(_line2) == 44:
+                    _ck = len(_mb.line2_bad_checks(_line2))
+                elif len(_line1) == 30:
+                    _cscd = True
+                    _ck = 0 if _rst_cscd_struct_ok(_line1) else 1
+                else:
+                    _ck = 10
+                return _res, _ck, _line1, _line2, _cscd
             finally:
                 _slots.put(_slot)
 
@@ -5516,38 +5634,65 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             # detector and the bottom-row scan on the same image).
             if crop is not None:
                 try:
-                    _res, _ck, _line2 = _check(band)
+                    _res, _ck, _line1, _line2, _cscd = _check(band)
                 except Exception:
                     # An unreadable historical crop is not a reason to
                     # give up: the alternative candidates are still
                     # worth a look.
-                    _ck, _line2 = 10, ""
+                    _ck, _line1, _line2, _cscd = 10, "", "", False
                 else:
                     try:
                         _conf = (float(_res.get("conf1") or 0)
                                  + float(_res.get("conf2") or 0))
                     except (TypeError, ValueError):
                         _conf = 0.0
-                    _log("primary", _ck, _line2, _conf)
-                    if _ck == 0 and not _all:
+                    _log("primary", _ck, _line2 or _line1, _conf)
+                    if _ck == 0 and not _all and not _cscd:
                         # The historical crop reads a checksum-valid
                         # line 2: keep it.  This is the common case and
                         # costs exactly one extra C run.
-                        #
-                        # MRZ_BAND_PICK_ALL=1 compares the historical crop
-                        # against every alternative instead of stopping at
-                        # the first checksum-valid reading.  The check
-                        # digit cannot tell a good reading from a lucky
-                        # one (the composite rescue rewrites the last two
-                        # digits), so the historical crop can be
-                        # checksum-valid and still wrong.
                         return band, crop
+                    # The historical crop is kept as a scored candidate:
+                    # it is the reference the alternatives have to beat,
+                    # and re-reading it below would cost another C run.
+                    _scored.append(
+                        ("primary",
+                         (crop["x"], crop["y"],
+                          crop["x"] + crop["w"], crop["y"] + crop["h"]),
+                         band, _ck, _conf, _cscd, _line1, _line2))
+                    # Two-stage agreement gate.  The primary reading has
+                    # already been paid for, so this costs one extra band
+                    # rebuild (~11 ms) plus one resident C run (~1 ms),
+                    # instead of the full ~12-candidate vote (~200 ms).
+                    # An independent crop of the same rows reading exactly
+                    # the same two lines is strong evidence that the band
+                    # is settled; further candidates can only agree.  Any
+                    # mismatch, invalid primary, CS/CD row or exception
+                    # deliberately falls through to the full vote.
+                    if (_gate and _all and _vote and _ck == 0
+                            and not _cscd):
+                        try:
+                            _gb, _gc = self._rst_native_mrz_band(
+                                rgb, pair, scale,
+                                source_bottom=source_bottom,
+                                single=is_single, pad_override=20,
+                                x_range=((sens_rect[0], sens_rect[2])
+                                         if sens_rect else None))
+                            if _gc and _gb is not None and _gb.size:
+                                _gr, _gck, _g1, _g2, _gcs = _check(_gb)
+                                if _g1 == _line1 and _g2 == _line2:
+                                    _log("gate", _gck,
+                                         _line2 or _line1, _conf)
+                                    return band, crop
+                        except Exception:
+                            pass
             cands = []
-            if _all and crop is not None:
-                cands.append(("primary",
-                              (crop["x"], crop["y"],
-                               crop["x"] + crop["w"], crop["y"] + crop["h"]),
-                              band))
+            # A CS/CD single row is printed over a guilloche background.
+            # The historical crop gets that background removed before it
+            # is handed to the engines (see _ocr_photo_hypothesis), so the
+            # alternative crops have to be cleaned the same way -- a raw
+            # crop makes the row splitter read the background instead of
+            # the row, and the engine then returns nothing at all.
             if source_bottom is not None:
                 try:
                     _b2, _c2 = self._rst_native_mrz_band(
@@ -5612,7 +5757,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                     _batch_scored = []
                     for _fut, (_kind, _rect, _arr) in zip(_futs, _batch):
                         try:
-                            _res, _ck, _line2 = _fut.result()
+                            _res, _ck, _line1, _line2, _cscd = _fut.result()
                         except Exception:
                             continue
                         try:
@@ -5620,27 +5765,63 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                                      + float(_res.get("conf2") or 0))
                         except (TypeError, ValueError):
                             _conf = 0.0
-                        _log(_kind, _ck, _line2, _conf)
+                        _log(_kind, _ck, _line2 or _line1, _conf)
                         _batch_scored.append(
-                            (_kind, _rect, _arr, _ck, _conf))
+                            (_kind, _rect, _arr, _ck, _conf, _cscd,
+                             _line1, _line2))
                     _scored.extend(_batch_scored)
-                    if any(s[3] == 0 for s in _batch_scored):
+                    if (not _all
+                            and any(s[3] == 0 and not s[5]
+                                    for s in _batch_scored)):
                         # A checksum-valid line 2 wins; the search stops.
+                        # A CS/CD row does not stop it: its shape carries
+                        # no check digit, so every candidate of that
+                        # family has to be compared.
+                        # MRZ_BAND_PICK_ALL=1 scores every candidate, so
+                        # it must not stop at the first valid one either.
                         break
         except Exception:
             pass
-        # The historical crop failed the check-digit test.  Fall back to
-        # the best alternative: "checksum valid" alone is too weak (a
-        # wrong band can decode by luck), so rank the alternatives by
-        # confidence and keep the historical order as the tie break
-        # (the page-bottom clamp comes before the shared candidate set).
+        # Keep only the candidates that read a checksum-valid line: a
+        # wrong band can decode by luck, so "valid" alone is not enough.
         _alts = [s for s in _scored if s[3] == 0]
         if not _alts:
             return band, crop
-        _kind, _rect, _arr, _ck, _conf = max(
-            _alts, key=lambda s: (s[4], -_prio.get(s[0], 2)))
+        if _vote and len(_alts) > 1:
+            # Agreement beats confidence: crops that are off by a pixel
+            # read the same row, so the reading with the most backers is
+            # the one the splitter actually settled on.  Confidences are
+            # still summed as the tie break, and the candidate order
+            # (historical crop first) settles a full tie.
+            _groups = {}
+            for _s in _alts:
+                _row = _s[7] if _s[7] else _s[6]
+                _g = _groups.setdefault(_row, {"n": 0, "conf": 0.0,
+                                               "items": []})
+                _g["n"] += 1
+                _g["conf"] += _s[4]
+                _g["items"].append(_s)
+            _best = max(_groups.values(),
+                        key=lambda g: (g["n"], g["conf"]))
+            _pairs = {}
+            for _s in _best["items"]:
+                _pairs[(_s[6], _s[7])] = _pairs.get((_s[6], _s[7]), 0) + 1
+            _best_pair = max(_pairs, key=lambda p: (_pairs[p],))
+            _kind, _rect, _arr, _ck, _conf, _cscd, _l1, _l2 = max(
+                (s for s in _best["items"]
+                 if (s[6], s[7]) == _best_pair),
+                key=lambda s: (s[4], -_prio.get(s[0], 2)))
+        else:
+            # Confidence decides; the historical order is the tie break
+            # (the page-bottom clamp comes before the shared candidate
+            # set).
+            _kind, _rect, _arr, _ck, _conf, _cscd, _l1, _l2 = max(
+                _alts, key=lambda s: (s[4], -_prio.get(s[0], 2)))
         if _rect is None:
             return band, crop
+        if _os.environ.get("MRZ_BAND_PICK_DEBUG"):
+            print(f"[band-pick] chose {_kind} ck={_ck} conf={_conf:.0f} "
+                  f"shape={_arr.shape} {_l2 or _l1}")
         return _arr, {"x": _rect[0], "y": _rect[1],
                       "w": _rect[2] - _rect[0], "h": _rect[3] - _rect[1]}
 
@@ -5979,6 +6160,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                       "conf2": best.get("conf2", 0),
                       "ok": bool(best.get("engine_ok")),
                       "band": best.get("band", ""),
+                      "lines": best.get("lines", ""),
                       "crop": native_crop,
                       "upscale": 1,
                       "pair_orig": pair_orig,
@@ -6428,6 +6610,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 "total_ms": total_ms,
                 "pair_orig": ocr.get("pair_orig"),
                 "line_quads": ocr.get("line_quads"),
+                "lines": ocr.get("lines"),
                 "crop_rect": crop,
                 "upscale": ocr.get("upscale", 1) or 1,
             }
@@ -6973,15 +7156,40 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                              (_dx1, la1d), (_dx0, la1d)], "LINE1")]
                 else:
                     _, y0, _, y1 = mrz_box
-                    if line2:
-                        mid_y = (y0 + y1) // 2
-                        line_quads = [
-                            ([(_dx0, y0), (_dx1, y0), (_dx1, mid_y), (_dx0, mid_y)], "LINE1"),
-                            ([(_dx0, mid_y), (_dx1, mid_y), (_dx1, y1), (_dx0, y1)], "LINE2"),
-                        ]
-                    else:
-                        line_quads = [(
-                            [(_dx0, y0), (_dx1, y0), (_dx1, y1), (_dx0, y1)], "LINE1")]
+                    _lines_raw = pm_box.get("lines", "")
+                    _got_lines = False
+                    if _lines_raw:
+                        try:
+                            _l1y, _l1h, _l2y, _l2h = (
+                                int(float(x)) for x in _lines_raw.split())
+                            if upscale > 1:
+                                _l1y //= upscale; _l1h //= upscale
+                                _l2y //= upscale; _l2h //= upscale
+                            la0d = max(0, min(int(y0 + _l1y * _sy), dh))
+                            la1d = max(0, min(int(y0 + (_l1y + _l1h) * _sy), dh))
+                            if line2 and _l2h > 0:
+                                lb0d = max(0, min(int(y0 + _l2y * _sy), dh))
+                                lb1d = max(0, min(int(y0 + (_l2y + _l2h) * _sy), dh))
+                                line_quads = [
+                                    ([(_dx0, la0d), (_dx1, la0d), (_dx1, la1d), (_dx0, la1d)], "LINE1"),
+                                    ([(_dx0, lb0d), (_dx1, lb0d), (_dx1, lb1d), (_dx0, lb1d)], "LINE2"),
+                                ]
+                            else:
+                                line_quads = [(
+                                    [(_dx0, la0d), (_dx1, la0d), (_dx1, la1d), (_dx0, la1d)], "LINE1")]
+                            _got_lines = True
+                        except Exception:
+                            pass
+                    if not _got_lines:
+                        if line2:
+                            mid_y = (y0 + y1) // 2
+                            line_quads = [
+                                ([(_dx0, y0), (_dx1, y0), (_dx1, mid_y), (_dx0, mid_y)], "LINE1"),
+                                ([(_dx0, mid_y), (_dx1, mid_y), (_dx1, y1), (_dx0, y1)], "LINE2"),
+                            ]
+                        else:
+                            line_quads = [(
+                                [(_dx0, y0), (_dx1, y0), (_dx1, y1), (_dx0, y1)], "LINE1")]
             _red = (255, 0, 0, 255)
             _blue = (0, 0, 255, 255)
             _green = (0, 255, 0, 255)
@@ -7535,6 +7743,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                     "pair_orig": _ocr_data.get("pair_orig"),
                     "crop_rect": _ocr_data.get("crop"),
                     "line_quads": _ocr_data.get("line_quads"),
+                    "lines": _ocr_data.get("lines"),
                 }
                 self._update_preview_image()
             except Exception as e:
