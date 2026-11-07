@@ -88,6 +88,11 @@ ap.add_argument("--class-weight", action="store_true",
 ap.add_argument("--holdout-photos", type=int, default=0,
                 help="hold out N whole photographs from the real half and\n"
                      "validate on them (the only leak-free real signal)")
+ap.add_argument("--holdout-files", default="",
+                help="comma-separated photograph names to hold out, "
+                     "overriding --holdout-photos. Use this when the "
+                     "corpus contains shots of the same document: a "
+                     "random split can leak the answer.")
 ap.add_argument("--balance-real", action="store_true",
                 help="sample the real half per class to remove the\n"
                      "frequency prior (e.g. 223 real '0' vs 1 real 'O').\n"
@@ -256,6 +261,28 @@ rng_h = random.Random(args.seed + 991)
 rng_h.shuffle(uniq_photos)
 n_hold = min(args.holdout_photos, max(0, len(uniq_photos) - 1))
 hold_set = set(uniq_photos[:n_hold])
+# An explicit holdout list beats a random pick: the corpus contains
+# photographs of the SAME document (byte-identical files, or a second
+# shot of the same passport page).  A random split can put one of them in
+# the training half and its twin in the holdout half, which leaks the
+# answer and makes the holdout accuracy meaningless.  `--holdout-files`
+# names the photographs that must be held out; everything else trains.
+if args.holdout_files:
+    wanted = {s.strip() for s in args.holdout_files.split(",") if s.strip()}
+    # Match on the stem, so "IMG_1792133000_003" selects the file whose
+    # meta name is "IMG_1792133000_003.jpg".
+    stems = {w.rsplit(".", 1)[0] for w in wanted}
+    matched = {p for p in uniq_photos
+               if p in wanted or Path(p).name in wanted
+               or Path(p).stem in stems
+               or any(w in p for w in wanted)}
+    if not matched:
+        raise SystemExit(f"--holdout-files {sorted(wanted)} matched no "
+                         f"photograph in the real half; available: "
+                         f"{uniq_photos[:8]}")
+    hold_set = matched
+    n_hold = len(hold_set)
+    print(f"explicit holdout: {n_hold} photos {sorted(hold_set)}", flush=True)
 hold_idx = [i for i, ph in enumerate(photo_of) if ph in hold_set]
 train_idx = [i for i, ph in enumerate(photo_of) if ph not in hold_set]
 if n_hold:

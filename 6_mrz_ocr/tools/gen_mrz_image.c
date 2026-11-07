@@ -391,9 +391,20 @@ int main(int argc, char **argv) {
             }
         }
 
-        /* S8: downsample (bilinear, filter=true) + JPEG. */
-        if (g_downscale < 0.999f)
+        /* S8: downsample (bilinear, filter=true).  The gray buffer AND
+         * the output image must shrink together: the RGB conversion below
+         * walks band_w*band_h pixels and face_image_save_ppm writes
+         * img->width x img->height -- leaving them out of sync wrote the
+         * downscaled content into the top-left corner of an
+         * original-size PPM and left the rest as uninitialized memory
+         * (measured: a whole corpus with a black lower half).
+         * The JPEG half of S8 is applied by gen_corpus.py (PIL round
+         * trip) -- this binary has no libjpeg. */
+        if (g_downscale < 0.999f) {
             mrz_phys_downsample(gray, &band_w, &band_h, g_downscale);
+            img->width = band_w;
+            img->height = band_h;
+        }
     } else {
     for (int li = 0; li < n_lines; ++li) {
         const char *line = (li == 0) ? l1 : l2;

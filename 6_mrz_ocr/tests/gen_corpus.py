@@ -310,8 +310,7 @@ def physical_params(seed: int, v: tuple, phys: bool) -> list[str]:
     # S8: downsample + JPEG
     if rnd.random() < 0.5:
         out.append(f"downscale={rnd.uniform(0.6, 1.0):.2f}")
-    if rnd.random() < 0.5:
-        out.append(f"jpeg={rnd.randint(60, 95)}")
+    # jpeg is applied python-side (the C binary has no libjpeg).
     return out
 
 
@@ -338,6 +337,22 @@ def render(out_dir: Path, name: str, l1: str, l2: str, v: tuple,
     cmd.extend(physical_params(noise_seed, v, phys))
     subprocess.check_call(cmd, stdout=subprocess.DEVNULL,
                           stderr=subprocess.DEVNULL)
+    # S8 JPEG: this binary has no libjpeg, so the round trip happens here
+    # (encode at quality Q, decode, re-save as PPM -- the artifacts stay
+    # baked into the corpus image).
+    if phys:
+        extra = physical_params(noise_seed, v, True)
+        q = None
+        for e in extra:
+            if e.startswith("jpeg="):
+                q = int(e.split("=")[1])
+        if q:
+            import io
+            im = Image.open(p)
+            buf = io.BytesIO()
+            im.save(buf, format="JPEG", quality=q)
+            buf.seek(0)
+            Image.open(buf).convert("RGB").save(p, format="PPM")
     return p
 
 

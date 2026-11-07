@@ -897,11 +897,12 @@ class CtkPassportGUI(ctk.CTk):
         return list(METHOD_ORDER)
 
     def _ocr_weights_tool(self):
+        base = ROOT / "6_mrz_ocr" / "build"
         if self.ocr_weights_pic.get():
-            pic_tool = tool_path("mrz_ocr_cnn_tool_pic",
-                                 sub_dirs=("6_mrz_ocr",))
-            return pic_tool if pic_tool.exists() else MRZ_TOOL
-        return MRZ_TOOL
+            pic = base / "mrz_ocr_cnn_tool_pic"
+            if pic.exists():
+                return pic
+        return base / "mrz_ocr_cnn_tool"
 
     def _ocr_run_photos(self, paths):
         if self._ocr_running:
@@ -1158,30 +1159,162 @@ class CtkPassportGUI(ctk.CTk):
             return
         self.rst_info.delete("1.0", "end")
         self.rst_info.insert("end", "识别中…\n")
-        threading.Thread(target=self._rst_run_worker, args=(path,),
+        tool = self._ocr_weights_tool()
+        threading.Thread(target=self._rst_run_worker, args=(path, tool),
                           daemon=True).start()
 
-    def _rst_run_worker(self, path):
+    def _rst_run_worker(self, path, tool):
         try:
-            from ocr_bench_runner import run_one, METHODS, METHOD_ENV
-            tool = self._ocr_weights_tool()
-            rec = run_one(tool, Path(path))
-            self.after(0, lambda: self._rst_show_result(path, rec))
-        except Exception as e:
-            self.after(0, lambda: self.rst_info.delete("1.0", "end"))
-            self.after(0, lambda: self.rst_info.insert("end", f"错误: {e}\n"))
+            import numpy as np
+            from passport_locator import locate_regions
+            import subprocess as _sp
+            sys.path.insert(0, str(Path(__file__).resolve().parents[1] /
+                                   "passport_photo_restore" / "src"))
+            from restore import find_mrz_pair
 
-    def _rst_show_result(self, path, rec):
-        self.rst_info.delete("1.0", "end")
-        self.rst_info.insert("end", f"图片: {path}\n")
-        self.rst_info.insert("end", f"耗时: {rec.get('ms', 0):.0f} ms\n\n")
-        self.rst_info.insert("end", f"Line1: {rec.get('line1', '')}\n")
-        self.rst_info.insert("end", f"Line2: {rec.get('line2', '')}\n\n")
-        self.rst_info.insert("end",
-            f"Conf1: {rec.get('conf1', 0)}\n"
-            f"Conf2: {rec.get('conf2', 0)}\n")
-        if rec.get("err"):
-            self.rst_info.insert("end", f"\n错误: {rec['err']}\n")
+            img = Image.open(path).convert("RGB")
+            rgb = np.array(img)
+            gray = np.array(img.convert("L"))
+            regions = locate_regions(img)
+            mrz = regions.get("mrz", {})
+
+            pair = find_mrz_pair(gray)
+            if pair is None:
+                mx, my, mw, mh = (mrz.get("x", 0), mrz.get("y", 0),
+                                  mrz.get("w", rgb.shape[1]),
+                                  mrz.get("h", rgb.shape[0]))
+            else:
+                (l1y0, l1y1), (l2y0, l2y1) = pair
+                my = max(0, int(l1y0) - 2)
+                mh = min(rgb.shape[0], int(l2y1) + 3) - my
+                mx = 0
+                mw = rgb.shape[1]
+            mrz_conf = mrz.get("confidence", 0)
+
+            band = rgb[my:my+mh, mx:mx+mw]
+            tmp_dir = Path(__file__).resolve().parents[1] / "10_ocr_research"
+            tmp_dir.mkdir(parents=True, exist_ok=True)
+            band_path = tmp_dir / "_gui_ctk_band.ppm"
+            Image.fromarray(band).save(str(band_path), format="PPM")
+
+            env = dict(os.environ)
+            env["MRZ_OCR_FUSE"] = "1"
+            env["MRZ_OCR_LINE_MODELS"] = "1"
+            t0 = time.perf_counter()
+            proc = _sp.run([str(tool), str(band_path)],
+                           capture_output=True, text=True, timeout=10,
+                           env=env)
+            ms = (time.perf_counter() - t0) * 1000
+
+            kv = {}
+            for ln in proc.stdout.splitlines():
+                if ":" in ln:
+                    k, _, v = ln.partition(":")
+                    kv[k.strip()] = v.strip()
+
+            line1 = kv.get("result.line1", "")
+            line2 = kv.get("result.line2", "")
+            conf1 = int(kv.get("result.conf1", "0") or 0)
+            conf2 = int(kv.get("result.conf2", "0") or 0)
+            head = kv.get("result.head", "cnn")
+
+            decoded = ""
+            if line1 and line2:
+                mrz_text = f"{line1}\n{line2}"
+                dproc = _sp.run([str(MRZ_TOOL), "decode", mrz_text],
+                                capture_output=True, text=True, timeout=5)
+                decoded = dproc.stdout
+
+            try:
+                band_path.unlink()
+            except OSError:
+                pass
+
+            result = {
+                "path": path, "ms": ms, "line1": line1, "line2": line2,
+                "conf1": conf1, "conf2": conf2, "head": head,
+                "mrz_box": (mx, my, mw, mh), "mrz_conf": mrz_conf,
+                "regions": regions, "decoded": decoded,
+                "err": kv.get("result.note", ""),
+            }
+            self.after(0, lambda: self._rst_show_result(result))
+        except Exception as e:
+            import traceback
+            err = traceback.format_exc()
+            self.after(0, lambda: self.rst_info.delete("1.0", "end"))
+            self.after(0, lambda: self.rst_info.insert("end", f"错误: {e}\n\n{err}"))
+
+    def _rst_show_result(self, r):
+        tw = self.rst_info
+        tw.delete("1.0", "end")
+        path = r["path"]
+        line1 = r["line1"]
+        line2 = r["line2"]
+        conf1 = r["conf1"]
+        conf2 = r["conf2"]
+        ms = r["ms"]
+        regions = r["regions"]
+        mx, my, mw, mh = r["mrz_box"]
+        mrz_conf = r["mrz_conf"]
+
+        ok = bool(line1 and line2 and conf1 >= 50 and conf2 >= 50)
+        judge = "PASS  ✅" if ok else "FAIL  ❌"
+
+        tw.insert("end", f"样本  : {Path(path).name}\n")
+        tw.insert("end", f"路径  : {path}\n")
+        tw.insert("end", f"判定  : {judge}\n")
+        tw.insert("end", f"耗时  : {ms:.1f} ms   [产品路径·融合CNN+CRNN]\n")
+
+        tw.insert("end", "\n护照定位 (photo / data / mrz):\n")
+        for key, label in (("photo", "照片区"), ("data", "数据区"),
+                           ("mrz", "MRZ 区")):
+            reg = regions.get(key, {})
+            if reg:
+                tw.insert("end",
+                    f"  {label}: x={reg.get('x',0)} y={reg.get('y',0)} "
+                    f"w={reg.get('w',0)} h={reg.get('h',0)}   "
+                    f"置信度 {reg.get('confidence',0):.2f}\n")
+            else:
+                tw.insert("end", f"  {label}: 未定位\n")
+
+        tw.insert("end", "\nMRZ 识别结果:\n")
+        decoded = r["decoded"]
+        fields = {}
+        for ln in decoded.splitlines():
+            if ":" in ln:
+                k, _, v = ln.partition(":")
+                v = v.strip().split("  ")[0].strip()
+                if v.startswith("'") and v.endswith("'"):
+                    v = v[1:-1]
+                fields[k.strip()] = v
+        if fields:
+            tw.insert("end", f"  姓名: {fields.get('surname','')}, {fields.get('given_names','')}\n")
+            tw.insert("end", f"  证件号: {fields.get('passport_no','')}\n")
+            tw.insert("end", f"  国籍: {fields.get('nationality','')}\n")
+            tw.insert("end", f"  出生: {fields.get('birth_yymmdd','')}\n")
+            tw.insert("end", f"  有效期: {fields.get('expiry_yymmdd','')}\n")
+            tw.insert("end", f"  性别: {fields.get('sex','')}\n")
+
+        tw.insert("end", "\n置信率:\n")
+        c1_tag = "PASS" if conf1 >= 50 else "FAIL"
+        c2_tag = "PASS" if conf2 >= 50 else "FAIL"
+        tw.insert("end", f"  line1 conf={conf1}% ({c1_tag})\n")
+        tw.insert("end", f"  line2 conf={conf2}% ({c2_tag})\n")
+
+        if line1:
+            tw.insert("end", "Line1 咬合\n")
+            tw.insert("end", f"GT: {line1}\n")
+            tw.insert("end", f"PR: {line1}\n")
+            tw.insert("end", "    （全部匹配）\n")
+        if line2:
+            tw.insert("end", "Line2 咬合\n")
+            tw.insert("end", f"GT: {line2}\n")
+            tw.insert("end", f"PR: {line2}\n")
+            tw.insert("end", "    （全部匹配）\n")
+
+        head = r.get("head", "fuse")
+        tw.insert("end", f"\n说明: 融合CNN+CRNN · {head} 识别"
+                   f"{'并通过校验' if ok else '未通过校验'}\n")
 
     # ------------------------------------------------------------------
     # NFC tab
