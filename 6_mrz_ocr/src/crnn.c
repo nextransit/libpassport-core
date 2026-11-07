@@ -1,21 +1,20 @@
 #include "crnn.h"
+/* Each weight set ships its OWN CRNN head, trained on that set's CNN
+ * features (features come out of the line head, not out of a shared
+ * trunk).  Reusing the passport head in the pic binary was measured as
+ * a silent failure (§21.3: a head scoring 28% while `fuse == cnn` hid
+ * it), so the pic variant carried none until now -- selecting
+ * "CRNN序列"/"融合CNN+CRNN" silently ran the plain CNN head there. */
+#if defined(MRZ_WEIGHTS_SET_PIC)
+#include "crnn_weights_pic.h"
+#else
 #include "crnn_weights.h"
+#endif
 #include <math.h>
 #include <string.h>
 
 int crnn_weights_available(void) {
-#if defined(MRZ_WEIGHTS_SET_PIC)
-    /* The CRNN head is trained on the CNN features of ONE weight set --
-     * features come out of the line head, not out of a shared trunk.  The
-     * assets/pic variant ships no CRNN of its own, and reusing the
-     * passport one would reproduce exactly the silent failure documented
-     * in the §21.3 note (a head scoring 28% while `fuse == cnn` hid it).
-     * Reporting "unavailable" makes the caller fall back to the CNN path
-     * instead of quietly decoding noise. */
-    return 0;
-#else
     return MRZ_CRNN_WEIGHTS_AVAILABLE;
-#endif
 }
 
 /* Load one direction's GRU weights.  The forward and backward halves of
