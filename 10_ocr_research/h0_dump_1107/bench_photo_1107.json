@@ -1,0 +1,623 @@
+{
+ "generated_at": "2026-11-07T16:05:25",
+ "elapsed_s": 1.488,
+ "resident": true,
+ "preload_ms": 1330.323,
+ "tesseract_fallback": false,
+ "methods": [
+  "cnn",
+  "crnn",
+  "fuse"
+ ],
+ "official": {
+  "photos": 6,
+  "grades": {
+   "FAIL": 6
+  },
+  "verified": 6,
+  "ms_mean": 157.84598634733507,
+  "ms_median": 121.28412490710616,
+  "ms_p95": 362.9996250383556,
+  "engines": {
+   "cnn": {
+    "runs": 0,
+    "decode": 0,
+    "fallback": 0,
+    "ms": []
+   },
+   "crnn": {
+    "runs": 0,
+    "decode": 0,
+    "fallback": 0,
+    "ms": []
+   },
+   "fuse": {
+    "runs": 6,
+    "decode": 6,
+    "fallback": 0,
+    "ms": [
+     16.420874977484345,
+     15.216416912153363,
+     14.753750059753656,
+     14.157667057588696,
+     9.726624935865402,
+     14.27250006236136
+    ]
+   }
+  }
+ },
+ "raw": {
+  "cnn": {
+   "total": 6,
+   "located": 6,
+   "ran": 6,
+   "decode": 6,
+   "shaped": 0,
+   "fail": 0,
+   "skip": 0,
+   "no_pair": 0,
+   "fallback": 0,
+   "ms": [
+    14.850375009700656,
+    14.206874999217689,
+    13.629124965518713,
+    13.099082978442311,
+    9.711500024423003,
+    12.897250009700656
+   ],
+   "gt_total": 6,
+   "gt_exact": 0,
+   "gt_bad": 0,
+   "acc1": [
+    0.9545454545454546,
+    0.9545454545454546,
+    0.9545454545454546,
+    0.9545454545454546,
+    0.8863636363636364,
+    0.9772727272727273
+   ],
+   "acc2": [
+    0.8181818181818182,
+    0.8181818181818182,
+    0.8181818181818182,
+    0.8181818181818182,
+    0.8409090909090909,
+    0.7727272727272727
+   ]
+  },
+  "crnn": {
+   "total": 6,
+   "located": 6,
+   "ran": 6,
+   "decode": 6,
+   "shaped": 0,
+   "fail": 0,
+   "skip": 0,
+   "no_pair": 0,
+   "fallback": 0,
+   "ms": [
+    14.42124997265637,
+    13.974541914649308,
+    14.011249993927777,
+    13.120000017806888,
+    10.982458014041185,
+    13.89525004196912
+   ],
+   "gt_total": 6,
+   "gt_exact": 0,
+   "gt_bad": 0,
+   "acc1": [
+    0.8409090909090909,
+    0.8409090909090909,
+    0.8409090909090909,
+    0.8409090909090909,
+    0.7272727272727273,
+    0.8636363636363636
+   ],
+   "acc2": [
+    0.7272727272727273,
+    0.7272727272727273,
+    0.7272727272727273,
+    0.7272727272727273,
+    0.6136363636363636,
+    0.6363636363636364
+   ]
+  },
+  "fuse": {
+   "total": 6,
+   "located": 6,
+   "ran": 6,
+   "decode": 6,
+   "shaped": 0,
+   "fail": 0,
+   "skip": 0,
+   "no_pair": 0,
+   "fallback": 0,
+   "ms": [
+    13.8754160143435,
+    16.588916070759296,
+    13.675333000719547,
+    12.536457972601056,
+    10.060083004646003,
+    13.084666919894516
+   ],
+   "gt_total": 6,
+   "gt_exact": 0,
+   "gt_bad": 0,
+   "acc1": [
+    0.9545454545454546,
+    0.9545454545454546,
+    0.9545454545454546,
+    0.9545454545454546,
+    0.8863636363636364,
+    0.9772727272727273
+   ],
+   "acc2": [
+    0.8181818181818182,
+    0.8181818181818182,
+    0.8181818181818182,
+    0.8181818181818182,
+    0.8409090909090909,
+    0.7727272727272727
+   ]
+  }
+ },
+ "records": [
+  {
+   "label": "Photo/3/IMG_1792133000_003.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/Photo/3/IMG_1792133000_003.jpg",
+   "pair": true,
+   "official": {
+    "grade": "FAIL",
+    "verified": true,
+    "ms": 151.98620897717774,
+    "wall_ms": 152.63179200701416,
+    "reason": "融合CNN+CRNN 识别并通过校验",
+    "chosen": "fuse",
+    "line1": "PBCHNHIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "EE20H26535CHN7410024M2808303LMNOMBKE80EBA910",
+    "engines": [
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 94,
+      "conf2": 98,
+      "backend": "",
+      "error": "",
+      "ms": 16.420874977484345
+     }
+    ]
+   },
+   "gt": {
+    "line1": "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970"
+   },
+   "raw": {
+    "cnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "PBCHNHIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "EE20H26535CHN7410024M2808303LMNOMBKE80EBA910",
+     "conf1": 94,
+     "conf2": 98,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 14.850375009700656
+    },
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CYPAAA<<LIBIR<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "EE50Z26532CHN7410024M2808303LMBGMB<GRNPPQM78",
+     "conf1": 89,
+     "conf2": 73,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 14.42124997265637
+    },
+    "fuse": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "PBCHNHIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "EE20H26535CHN7410024M2808303LMNOMBKE80EBA910",
+     "conf1": 94,
+     "conf2": 98,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 13.8754160143435
+    }
+   }
+  },
+  {
+   "label": "Photo/4/IMG_1792133002_004.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/Photo/4/IMG_1792133002_004.jpg",
+   "pair": true,
+   "official": {
+    "grade": "FAIL",
+    "verified": true,
+    "ms": 122.2285000840202,
+    "wall_ms": 122.42166697978973,
+    "reason": "融合CNN+CRNN 识别并通过校验",
+    "chosen": "fuse",
+    "line1": "PBCHNHIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "EE20H26535CHN7410024M2808303LMNOMBKE80EBA910",
+    "engines": [
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 94,
+      "conf2": 98,
+      "backend": "",
+      "error": "",
+      "ms": 15.216416912153363
+     }
+    ]
+   },
+   "gt": {
+    "line1": "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970"
+   },
+   "raw": {
+    "cnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "PBCHNHIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "EE20H26535CHN7410024M2808303LMNOMBKE80EBA910",
+     "conf1": 94,
+     "conf2": 98,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 14.206874999217689
+    },
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CYPAAA<<LIBIR<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "EE50Z26532CHN7410024M2808303LMBGMB<GRNPPQM78",
+     "conf1": 89,
+     "conf2": 73,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 13.974541914649308
+    },
+    "fuse": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "PBCHNHIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "EE20H26535CHN7410024M2808303LMNOMBKE80EBA910",
+     "conf1": 94,
+     "conf2": 98,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 16.588916070759296
+    }
+   }
+  },
+  {
+   "label": "Photo/5/IMG_1792133232_005.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/Photo/5/IMG_1792133232_005.jpg",
+   "pair": true,
+   "official": {
+    "grade": "FAIL",
+    "verified": true,
+    "ms": 121.28412490710616,
+    "wall_ms": 121.46141694393009,
+    "reason": "融合CNN+CRNN 识别并通过校验",
+    "chosen": "fuse",
+    "line1": "PBCHNHIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "EE20H26535CHN7410024M2808303LMNOMBKE80EBA910",
+    "engines": [
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 94,
+      "conf2": 98,
+      "backend": "",
+      "error": "",
+      "ms": 14.753750059753656
+     }
+    ]
+   },
+   "gt": {
+    "line1": "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970"
+   },
+   "raw": {
+    "cnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "PBCHNHIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "EE20H26535CHN7410024M2808303LMNOMBKE80EBA910",
+     "conf1": 94,
+     "conf2": 98,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 13.629124965518713
+    },
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CYPAAA<<LIBIR<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "EE50Z26532CHN7410024M2808303LMBGMB<GRNPPQM78",
+     "conf1": 89,
+     "conf2": 73,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 14.011249993927777
+    },
+    "fuse": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "PBCHNHIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "EE20H26535CHN7410024M2808303LMNOMBKE80EBA910",
+     "conf1": 94,
+     "conf2": 98,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 13.675333000719547
+    }
+   }
+  },
+  {
+   "label": "Photo/6/IMG_1792133581_006.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/Photo/6/IMG_1792133581_006.jpg",
+   "pair": true,
+   "official": {
+    "grade": "FAIL",
+    "verified": true,
+    "ms": 119.93074999190867,
+    "wall_ms": 120.0979589484632,
+    "reason": "融合CNN+CRNN 识别并通过校验",
+    "chosen": "fuse",
+    "line1": "PBCHNHIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "EE20H26535CHN7410024M2808303LMNOMBKE80EBA910",
+    "engines": [
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 94,
+      "conf2": 98,
+      "backend": "",
+      "error": "",
+      "ms": 14.157667057588696
+     }
+    ]
+   },
+   "gt": {
+    "line1": "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970"
+   },
+   "raw": {
+    "cnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "PBCHNHIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "EE20H26535CHN7410024M2808303LMNOMBKE80EBA910",
+     "conf1": 94,
+     "conf2": 98,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 13.099082978442311
+    },
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CYPAAA<<LIBIR<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "EE50Z26532CHN7410024M2808303LMBGMB<GRNPPQM78",
+     "conf1": 89,
+     "conf2": 73,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 13.120000017806888
+    },
+    "fuse": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "PBCHNHIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "EE20H26535CHN7410024M2808303LMNOMBKE80EBA910",
+     "conf1": 94,
+     "conf2": 98,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 12.536457972601056
+    }
+   }
+  },
+  {
+   "label": "Photo/7/IMG_1792133649_007.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/Photo/7/IMG_1792133649_007.jpg",
+   "pair": true,
+   "official": {
+    "grade": "FAIL",
+    "verified": true,
+    "ms": 68.64670908544213,
+    "wall_ms": 68.81058390717953,
+    "reason": "融合CNN+CRNN 识别并通过校验",
+    "chosen": "fuse",
+    "line1": "PQCHNHIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "EE20426536CHN7410024M2808303LMN0MBKEM00M8920",
+    "engines": [
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 94,
+      "conf2": 96,
+      "backend": "",
+      "error": "",
+      "ms": 9.726624935865402
+     }
+    ]
+   },
+   "gt": {
+    "line1": "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970"
+   },
+   "raw": {
+    "cnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "POCHC<FA<<UCMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "EE20426536EHH7410024M2808303LMNGMBKO8DDB6370",
+     "conf1": 89,
+     "conf2": 95,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 9.711500024423003
+    },
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<XXX<A<<<<<AA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E196426514CHN7410024M2808303LRHGRDKG8JBSCO74",
+     "conf1": 83,
+     "conf2": 70,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 10.982458014041185
+    },
+    "fuse": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "POCHC<FA<<UCMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "EE20426536EHH7410024M2808303LMNGMBKO8DDB6370",
+     "conf1": 89,
+     "conf2": 95,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 10.060083004646003
+    }
+   }
+  },
+  {
+   "label": "Photo/8/IMG_1792133682_008.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/Photo/8/IMG_1792133682_008.jpg",
+   "pair": true,
+   "official": {
+    "grade": "FAIL",
+    "verified": true,
+    "ms": 362.9996250383556,
+    "wall_ms": 363.18058404140174,
+    "reason": "融合CNN+CRNN 识别并通过校验",
+    "chosen": "fuse",
+    "line1": "POCHNHIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "EE20626336CHN7410024M2808303LMNGMBKCM0B8A918",
+    "engines": [
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 96,
+      "conf2": 94,
+      "backend": "",
+      "error": "",
+      "ms": 14.27250006236136
+     }
+    ]
+   },
+   "gt": {
+    "line1": "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970"
+   },
+   "raw": {
+    "cnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "POCHNHIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E220626536CHN7410024M2808303LMNGMBKE80BA8918",
+     "conf1": 96,
+     "conf2": 98,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 12.897250009700656
+    },
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNAAA<<LAMZM<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E520Z28732CHN7410024M2808303LMRGRBK6RNSSQQ28",
+     "conf1": 90,
+     "conf2": 71,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 13.89525004196912
+    },
+    "fuse": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "POCHNHIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E220626536CHN7410024M2808303LMNGMBKE80BA8918",
+     "conf1": 96,
+     "conf2": 98,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 13.084666919894516
+    }
+   }
+  }
+ ]
+}

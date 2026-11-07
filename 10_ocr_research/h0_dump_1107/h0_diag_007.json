@@ -1,0 +1,17 @@
+{
+ "version":1,
+ "status":-4,
+ "status_name":"ERR_BAD_LINES",
+ "image":{"w":640,"h":480},
+ "band":{"x":0,"y":140,"w":640,"h":340,"proc_w":1144,"proc_h":608,"upscale":1.788},
+ "skew_deg":0.1000,
+ "line1":"",
+ "line2":"",
+ "lines":[
+  {"index":0,"y":411,"h":45,"grid_ok":0,"seg_score":-1,"nchars":1,"nrun":0,"medw":0,"cell":0,"win_w":0,"Lmin":0,"Lmax":0,"L0":0,"Lfit":0.000,"pitch":0.000,"phase":0.000,"cost":0,"int_pitch":0.00,"int_cost":0,"frac_pitch":0.00,"frac_cost":0,"guard":0.00,"conf_avg":0,"ambiguous":0,"alt_margin":0,"alt":"","chars":[{"i":0,"top":[["0",0.0000],["0",0.0000],["0",0.0000],["0",0.0000],["0",0.0000]],"ink":0.0,"gate":0,"final":"<"}]},
+  {"index":1,"y":414,"h":42,"grid_ok":0,"seg_score":0,"nchars":0,"nrun":0,"medw":0,"cell":0,"win_w":0,"Lmin":0,"Lmax":0,"L0":0,"Lfit":0.000,"pitch":0.000,"phase":0.000,"cost":0,"int_pitch":0.00,"int_cost":0,"frac_pitch":0.00,"frac_cost":0,"guard":0.00,"conf_avg":0,"ambiguous":0,"alt_margin":0,"alt":"","chars":[]}
+ ],
+ "checksums":{"passport":{"expected":-1,"actual":-1,"ok":false},"birth":{"expected":-1,"actual":-1,"ok":false},"expiry":{"expected":-1,"actual":-1,"ok":false},"personal":{"expected":-1,"actual":-1,"ok":false},"composite":{"expected":-1,"actual":-1,"ok":false}},
+ "flags":{"struct_ok":0,"nat_suspect":0,"country_mismatch":0,"issuer_suspect":0},
+ "timing_ms":{"gray":0.50,"band":7.47,"resample":0.00,"decode":0.00}
+}
