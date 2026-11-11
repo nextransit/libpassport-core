@@ -3742,6 +3742,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         as PhotoMrzPipeline.nativeBand).
         """
         H, W = rgb.shape[:2]
+        import cv2 as _cv2_g
         nominal = min(100, max(10, int(round(W * 0.08))))
         xpad_l, xpad_r = _rst_adaptive_xpad(rgb, pair, scale, nominal)
         if x_range is not None:
@@ -3763,7 +3764,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         # 仅对高分辨率图片（W>=1000，即 passport 级别）应用，pic 低分辨率
         # 图片 pair 边界已较紧，扩展会引入上方噪声导致退化。
         if not single and W >= 1000:
-            _gray_full = rgb.mean(axis=2) if rgb.ndim == 3 else rgb
+            _gray_full = (_cv2_g.cvtColor(rgb, _cv2_g.COLOR_RGB2GRAY)
+                          if rgb.ndim == 3 else rgb)
             _ink_thr = max(3, int(W * 0.05))
             _max_exp = max(3, int(heights[0] * 0.5))
             _exp = 0
@@ -3806,7 +3808,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         if band.size > 0 and band.shape[0] > 4:
             _bw = band.shape[1]
             _bh = band.shape[0]
-            _gray = band.mean(axis=2) if band.ndim == 3 else band
+            _gray = (_cv2_g.cvtColor(band, _cv2_g.COLOR_RGB2GRAY)
+                     if band.ndim == 3 else band)
             _dark_thr = int(_bw * 0.90)
             while _bh > 4 and (_gray[_bh - 1] < 128).sum() >= _dark_thr:
                 _bh -= 1
@@ -3815,7 +3818,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 crop_rect["h"] = _bh
         if band.size > 0 and single and band.shape[0] > 8:
             _bw = band.shape[1]
-            _gray = band.mean(axis=2) if band.ndim == 3 else band
+            _gray = (_cv2_g.cvtColor(band, _cv2_g.COLOR_RGB2GRAY)
+                     if band.ndim == 3 else band)
             _sparse_thr = max(3, int(_bw * 0.01))
             _top = 0
             while _top < band.shape[0] - 4 and (_gray[_top] < 128).sum() < _sparse_thr:
