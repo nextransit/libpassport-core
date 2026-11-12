@@ -6358,6 +6358,11 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                         f"{_arb_info.get('repair_edits', 0)} 处")
         except Exception:
             pass
+        if (len(l1) >= 2 and l1[0] == 'P' and l1[1] != '<'
+                and best.get("conf1", 0) < 90):
+            l1 = 'A' + l1[1:]
+            best = dict(best)
+            best["line1"] = l1
         (a0, a1), (b0, b1) = pair
         pair_orig = ((a0 / scale, a1 / scale),
                      (b0 / scale, b1 / scale))
