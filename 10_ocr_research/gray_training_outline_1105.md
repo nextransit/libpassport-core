@@ -8,7 +8,7 @@
 | 唯一验收真值 | `10_ocr_research/gt_review_loop.xlsx`（"GT对比" sheet 的 GT line1 / GT line2） |
 | 约束基线 | `AGENTS.md`（TD3 零退化红线、98% / 95%、fuse ≥ 2.0 张/秒） |
 | 强制流程 | `AGENTS.md`「模型训练与识别 Skill 强制使用」→ 入口 `.workbuddy-ai/skills/ai-research-skills-mrz/SKILL.md`；路由见附录 C。**本文 §7 / §8 及后续任何训练方案修订均受其约束** |
-| 关联实测 | `eval_corpus_v2_1105.md`、`eval_by_algorithm_1104.md`、`6_mrz_ocr/docs/CNN-OPTIMIZATION.md`、`6_mrz_ocr/docs/deep-beam.md`、`band_candidates_product_port.md`（2026-11-06 落地验证：候选自选预算闸门与 Exact/P95 同源归因） |
+| 关联实测 | `eval_corpus_v2_1105.md`、`eval_by_algorithm_1104.md`、`6_mrz_ocr/docs/CNN-OPTIMIZATION.md`、`6_mrz_ocr/docs/deep-beam.md`、`band_candidates_product_port.md`（2026-11-06 落地验证：候选自选预算闸门与 Exact/P95 同源归因）、`c_prereq_recalibration_1107.md`（2026-11-07：C 前置重标定立项与五要素） |
 | 文档定位 | 本文整合灰度训练主张、补充建议与代码评审结论。凡标注「评审修订」的条款，均为基于本仓库实测数据对原主张的修正，**优先级高于原表述** |
 
 ---
@@ -79,7 +79,7 @@
 
 **结论**：`aa:true` 提供的是「二值掩膜 → 模糊 → 边缘覆盖率」，不是 §4.1 要求的字体级抗锯齿，更不是 §4.3 的物理成像灰度。用户所见与原主张 §3.1 / §3.4 / §3.5 的批评一致；同时也说明 **`corpus_eval` 这一准二值冻结集不能充当 §6.1 的四级 Test Bench**，其上的准确率（`eval_corpus_v2_1105.md` 的 corpus_eval_v2 full 73.47%/74.93%）不度量真实反光/底纹/模糊鲁棒性。
 
-**验收基线冲突（评审发现，须先裁决）**：`gt_review_loop.xlsx` 生成于 2026-10-29 14:23，各引擎逐字符仅 40.66%~74.24%，全部低于 98%/95%；而 `eval_corpus_v2_1105.md:169-176` 记载 passport l1 41/41（100.00%）、both 40/41 达标，pic l1 57/63、l2 52/59、both 49/59 **未达标**，速率 17.9 张/秒达标。二者口径与批次不同，不可直接比较。另 `AGENTS.md:52` 规定生产权重 `0ab2131`，而 1105 发布配置为 `40951c5`。**实施前须由人工确认唯一有效基线。**
+**验收基线冲突（评审发现，2026-11-05/07 已裁决）**：`gt_review_loop.xlsx` 生成于 2026-10-29 14:23，各引擎逐字符仅 40.66%~74.24%，全部低于 98%/95%；而 `eval_corpus_v2_1105.md:169-176` 记载 passport l1 41/41（100.00%）、both 40/41 达标，pic l1 57/63、l2 52/59、both 49/59 **未达标**，速率 17.9 张/秒达标。二者口径与批次不同，不可直接比较。旧 `AGENTS.md` 曾规定生产权重 `0ab2131`，1105 发布配置为 `40951c5`；**人工签字裁决以 `gt_review_loop.xlsx` 与 `40951c5` 为唯一有效基线，`AGENTS.md` 已于 2026-11-07 同步。**
 
 ---
 
@@ -155,7 +155,7 @@ S8 下采样（双线性，filter=true）+ JPEG 压缩
 **处置：条件采纳。**
 
 - **优先采用离线数据增强**：随机仿射、透视、弹性形变作为 S5 阶段注入训练语料，收益/成本比最高，不增加端侧算子。
-- **STN 列为后续研究项，不纳入本期**：本引擎为纯 C 端侧实现（`mrz_ocr_cnn.c` / `cnn.c`），新增 STN 会引入算子与耗时，直接威胁 fuse ≥ 2.0 张/秒红线，且与「生产使用 `0ab2131` 权重」冲突。上线前须先提交独立耗时评估。
+- **STN 列为后续研究项，不纳入本期**：本引擎为纯 C 端侧实现（`mrz_ocr_cnn.c` / `cnn.c`），新增 STN 会引入算子与耗时，直接威胁 fuse ≥ 2.0 张/秒红线，且与「生产使用 `40951c5` 权重」冲突。上线前须先提交独立耗时评估。
 - **弹性形变幅度上限**：`α ≤ 字符宽度的 5–10%`。MRZ 解码依赖固定 44×2 / 30×1 的等宽几何切分（`segment_line_grid`），过度形变会破坏切片定位，使训练与推理的字符网格不一致。
 - **同步面**：任何几何退化必须同步验证 `mrz_ocr_split_lines`、`mrz_classify_layout`、`decode_row` 的 ink gate 与 TD3 回退；`mrz_ocr_cnn.c:869-873` 已明确窗口宽度、权重、ink gate 是同一标定，几何改动不可单独上线。
 
@@ -398,13 +398,13 @@ S8 下采样（双线性，filter=true）+ JPEG 压缩
 
 ## 11. 未决事项
 
-1. `gt_review_loop.xlsx`（2026-10-29，40~74%）与 `eval_corpus_v2_1105.md`（passport 100%、pic 未达标）何者为验收口径？
-2. 生产权重基线是 `AGENTS.md` 规定的 `0ab2131`，还是 1105 报告发布的 `40951c5`？
+1. ~~`gt_review_loop.xlsx`（2026-10-29，40~74%）与 `eval_corpus_v2_1105.md`（passport 100%、pic 未达标）何者为验收口径？~~ **已裁决（2026-11-05，见 #11）**：唯一真值 `gt_review_loop.xlsx` 的 `GT对比` sheet；10-29 批次读数被取代。
+2. ~~生产权重基线是 `AGENTS.md` 规定的 `0ab2131`，还是 1105 报告发布的 `40951c5`？~~ **已裁决并同步（2026-11-05 / 2026-11-07）**：生产权重基准 = `40951c5`；`AGENTS.md` TD3 红线已于 2026-11-07 改为 `40951c5`，旧 `0ab2131` 不再作为现行基线。
 3. `real-frac` 以 `AGENTS.md` 的 pic 0.70 为准，还是 1105 重训实际使用的 0.5？主链路 0.30 是否需要废弃？
 4. 前景/背景灰度区间采用原主张 `[20,110]/[180,245]`，还是 CS/CD 现有 `[13,51]/[204,242]`？须由 P4 的 A/B 裁决。
 5. `<→K` / `<→X` 是否纳入难例与考核，取决于基线混淆矩阵计数。
 6. 分类链路是否移除 Otsu/Sauvola，需独立立项，本期不做。
-7. 「Exact 率 95%」指 line / both / full match 哪一个？分母是否含 band-fail 与空输出？真值用 `gt_review_loop.xlsx` 还是官方 GT json？（§7.2）
+7. ~~「Exact 率 95%」指 line / both / full match 哪一个？分母是否含 band-fail 与空输出？真值用 `gt_review_loop.xlsx` 还是官方 GT json？~~ **已书面裁决（2026-11-07，见 `AGENTS.md`「计时、Exact 与权重口径裁决」）**：项目不存在「Exact 95%」硬门槛；内部 `exact ≥45/47` 采用 both exact（分母 47，3 张 GT 非 44/44 记 `bad3`）；line exact / full match / cksum valid 分列；唯一真值 `gt_review_loop.xlsx`；产品计时以整链 `algorithm_ms` 为准，<100 ms 看 P95，速率看 mean。（§7.2）
 8. 是否引入训练期语法约束 Loss？与已上线的推理期 syntax mask + 校验位 DFS 是否构成重复约束、会否推高 false accept？（§7.1 / §8.3）
 9. 字段级准确率以 ICAO 9303 标准边界还是本仓库 `check_digit_of` 的 0-based 边界为准？本节暂按后者，需人工确认。（§7.3）
 10. ~~`--pn-weight` 是否从默认关闭改为启用、取何值？~~ **已裁决（2026-11-05）**：
@@ -432,6 +432,8 @@ S8 下采样（双线性，filter=true）+ JPEG 压缩
     dump cell 整字空白）—— §0 #4「同一套标定」的实测证明。**"语料 exact ≥90%" 非训练可解**；
     训练侧杠杆全部实测完毕（先验类 5 负 + `--pn-weight` 驳回 + 语料 v3 中性 + 渲染 A/B 阻塞）。
     唯一真实杠杆 = **C 前置对真实灰度的重标定**（独立立项，整体上线）。
+    **2026-11-07 已立项**：见 `10_ocr_research/c_prereq_recalibration_1107.md`；
+    本轮只做只读协调与协议冻结，未改 C 源码、未启动重训。
     切片导出两代失败与最终方案见 `ab_protocol_render_1106.md`：
     几何切片违反 §5 契约（自训语料上 1.25%）；dump+位置标签（`export_corpus_slices_pos.py`）
     为正解。1380 语料合规 review：14 条款 8 不符 3 部分 0 达标
@@ -442,7 +444,7 @@ S8 下采样（双线性，filter=true）+ JPEG 压缩
     个人号校验位 11.21%、签发国 6.36%。**但该区 37 个字母错有 30 个来自 Photo/ 的
     6 张机位照（同一证件，该区错 36.90%；其余 41 张仅 1.74%）** —— 任何以该区为靶心的
     干预都必须按证件分开报告，否则等于对一份证件做记忆。
-14. **评审修订（2026-11-06）：§0 结论 3 的 band 层优先级，须与「预算闸门」捆绑**。
+15. **评审修订（2026-11-06）：§0 结论 3 的 band 层优先级，须与「预算闸门」捆绑**。
     桌面 GUI 产品路径把 `mrz_band` 候选自选全量上线（无闸门）后，正式 50 张
     bench 实测 official 整链 `mean/median/p95 = 197.8/179.8/377.3 ms`、
     **0/50 满足 <100 ms**，而 fuse 引擎本身仅 ~15 ms，候选搜索独占 185~237 ms；
@@ -454,15 +456,25 @@ S8 下采样（双线性，filter=true）+ JPEG 压缩
     **但 P95 仍未达标**：剩余 15 张 ≥100 ms 里 9 张是 FAIL，10 张 FAIL 里仅
     1 张走快路径；`Photo/3..8` 六张全部 FAIL 且 129.5~445.8 ms，正是 §8.1 的
     宽 band / 暗区黑边行分割错位样本。⇒ **耗时缺口与 Exact 缺口同源，治本在
-    `mrz_geom.c::mrz_ocr_split_lines` 与 `_rst_native_mrz_band` 的垂直裁剪交互，
-    而非继续压缩候选预算**（压缩只会把失败藏起来）。
+    `6_mrz_ocr/src/mrz_ocr.c:273` 的 `mrz_ocr_split_lines` 与
+    `tests/gui.py:3723` 的 `_rst_native_mrz_band` 垂直裁剪交互，
+    而非继续压缩候选预算**（压缩只会把失败藏起来）。早前把 splitter 记在
+    `mrz_geom.c` 属路径误记，2026-11-07 已纠正。
     另记负结果：`MRZ_BAND_PICK_PAR=8` 使 P95 215.8→270.6 ms 并出现 528 ms 离群，
     禁止以增大并发度当作无损优化。详见
     `10_ocr_research/band_candidates_product_port.md`「2026-11-06 落地验证」与
-    `.workbuddy-ai/memory/2026-11-06.md` §25。
+    `.workbuddy-ai/memory/2026-11-06.md` §7 补记（原 §24/§25 曾被覆盖）。
     **对本文排期的影响**：P0 的 band 定位改造仍优先于 P4 灰度 A/B，但必须自带
     预算闸门；本文 §6.2 的 fuse ≥2.0 张/秒红线在「整链墙钟」口径下尚未达成
-    （单引擎口径 ~10-15 ms 已达），计时口径仍待书面裁决（§11 第 7 条）。
+    （单引擎口径 ~10-15 ms 已达）。计时/Exact 口径已于 2026-11-07 书面裁决，
+    见 `AGENTS.md`「计时、Exact 与权重口径裁决」及本文 §11 第 7 条。
+16. **立项与交接（2026-11-07，用户批准 1+2+3 之 ①）**：C 前置重标定已独立立项，
+    见 `10_ocr_research/c_prereq_recalibration_1107.md`。只读协调确认
+    `6_mrz_ocr/src` / `include` 工作区干净；旧记录中的「并行会话在改 `mrz_ocr_cnn.c`」
+    仍需实施前复核。方案按强制 skill 五要素给出上游方法论、架构兼容判定、
+    单变量 A/B（前置 + 对应整体重训权重为原子臂）、翻车清单核对与红线影响评估。
+    **本轮不改 C 源码、不重训、不跑新 A/B**；正式实施任务保持 pending。
+    同批书面裁决（1+2+3 之 ②）已写入 `AGENTS.md`，权重红线同步为 `40951c5`。
 
 ---
 

@@ -2,6 +2,20 @@
 
 Corpus: 1380 images (660 realistic). Metrics: char accuracy over all lines; full = both lines exact; cksum = line2 passes all 5 ICAO check digits.
 
+> **口径标识（2026-11-07 补）**：本文件当前数值对应 `6_mrz_ocr/metrics_history.md`
+> 的 **2026-11-05 23:24** 一次 `data/corpus_eval` 跑批（旧 1380 张准二值语料，含 660
+> `realistic`），**不是** `10_ocr_research/gt_review_loop.xlsx` 验收集，也不是 plausible v2
+> 语料。该旧语料含随机国家码 / 非法日期，与 ICAO syntax mask + 校验位 DFS 冲突，
+> 见 `10_ocr_research/corpus_eval_data_curing_1106.md` 与
+> `10_ocr_research/corpus_compliance_review_1106.md`；因此表里 cnn `full match 0.00%`
+> 主要反映**语料内容 / 解码先验冲突**，不是生产权重崩坏，不得用于宣称达标或回退。
+> `metrics_history.md` 的 23:24 两行**未记录 `w=` 权重指纹**，不能倒推当时权重集；
+> 现行生产基线按 `AGENTS.md` 为 `40951c5`，当前工作区三个权重头 sha256 前缀为
+> `crnn_weights.h d8c6624e…` / `cnn_weights_line1.h 49f9fb50…` /
+> `cnn_weights_line2.h 4c6df06f…`（仅标识当前工作区，非 23:24 运行指纹）。
+> 分口径报告须同时列出 line exact / both exact / full match / cksum valid；
+> `cksum valid` 不是 Exact，产品路径计时以整链 `algorithm_ms` 为准（见 `AGENTS.md`）。
+
 ## Overall
 
 | method | pipeline OK | ms p50 | line1 acc | line2 acc | full match | cksum valid |

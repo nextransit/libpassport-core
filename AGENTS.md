@@ -29,6 +29,25 @@
 
 产品路径（fuse）速率门槛: ≥ 2.0 张/秒
 
+### 计时、Exact 与权重口径裁决（2026-11-07）
+
+口径不统一会让「达标」结论互相矛盾。以下为唯一口径，评审与批测报告须同时列出各项，
+**不得只报有利的那一项**：
+
+| 项 | 裁决 |
+|---|---|
+| 唯一硬门槛 | 仍是上表**逐字符** passport ≥98% / pic ≥95%。**不存在「Exact 95%」门槛**（`gray_training_outline_1105.md` §7.2） |
+| Exact（项目内部目标） | `exact ≥ 45/47` 采用 **both exact**（两行逐字符全等）；分母 47 = 50 张中 3 张 GT 非 44/44 记 `bad3`。line exact / full match / cksum valid **分列报告，禁止互相替代**（cksum valid 不是 Exact） |
+| 产品路径计时 | 以 `_ocr_photo_engines` 的 `algorithm_ms`（整链墙钟：读图 → 结构检测 → band 定位 → 候选 → 引擎 → 解码）为**验收口径**；单引擎 `ms`（~10–15 ms）仅作诊断，**不得用于宣称达标** |
+| 速率 | `≥ 2.0 张/秒` 按整链 **mean** 换算 |
+| 单次延迟 | 用户硬约束「单次 <100 ms」按整链 **P95** 判定；与速率门槛并列，互不替代 |
+| 唯一真值 | `10_ocr_research/gt_review_loop.xlsx` 的 `GT对比` sheet；`tests/*.json` 与 `10_ocr_research/gt_review_loop.json` 均为缓存/派生，**不得作为验收依据** |
+| 权重基准 | 见下方 TD3 红线：`40951c5` |
+
+依据：`gray_training_outline_1105.md` §11 #11（2026-11-05 人工签字）、§7.2、§6.2；
+2026-11-06 桌面 50 张正式 bench（整链 mean 99.3 ms / P95 215.8 ms / <100 ms 仅 35/50，
+单引擎 ~10–15 ms）。**当前整链 P95 未达标，不得以单引擎耗时或 mean 换算速率宣称达标。**
+
 ### 工作流程
 
 ```
@@ -62,8 +81,9 @@
 1. 先用入口 skill §3 的架构事实过滤通用建议——本项目是**固定 44/30 网格 + 37 类逐字符
    Cross-Entropy** 架构，非 CTC/Seq2Seq；约束解码（ICAO syntax mask + line-2 校验位 DFS）、
    字段位置加权 Loss、CosineAnnealingLR 均已实现，不得当作待新增项。Loss / 评估指标口径见
-   `10_ocr_research/gray_training_outline_1105.md` §7，Exact 率瓶颈流程见 §8；其中「Exact 95%」
-   尚无对应门槛，须先按 §7.2 书面裁决口径才可作为验收目标。
+   `10_ocr_research/gray_training_outline_1105.md` §7，Exact 率瓶颈流程见 §8。**「Exact 95%」
+   已于 2026-11-07 书面裁决：项目无此硬门槛，内部 `exact ≥45/47` 采用 both exact；
+   计时、Exact、真值与权重口径统一见上文「计时、Exact 与权重口径裁决」。**
 2. 训练/识别改动必须做**单变量 A/B**，并对照入口 skill §5 的已实测翻车清单
    （`--balance-real` 37/41→28/41、`--class-weight` 40/41→32/41、`--class-boost` 40/41→39/41、
    局部归一化 45.0%→37.9%），已失败方案不得重复。
@@ -77,7 +97,7 @@
 - 分类器不确定时默认走 TD3 路径 (2×44)
 - `FAST_NATIVE_MAX_WIDTH` 必须保持 1600
 - `fastPair` 降采样必须用双线性 (filter=true)
-- 生产使用 `0ab2131` 版本权重
+- 生产使用 `40951c5` 版本权重（2026-11-05 人工签字基线，取代旧 `0ab2131` 读数；三个权重头须整体一致，禁止新旧混用）
 - pic L1 模型训练应保持 real-frac 0.70
 
 ### CS/CD 港澳台通行证支持

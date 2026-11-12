@@ -100,8 +100,12 @@ GATE=1 的 15 张 ≥100 ms 中 **9 张是 FAIL**；10 张 FAIL 里仅
 129.5~445.8 ms，`Photo/8` 单张 `_ocr_pick_band` 就占 456.7 ms。
 这些正是早前定位的**宽 band + 顶部暗区/黑边导致行分割把 line1 定到暗区**的样本。
 ⇒ 继续压缩候选预算只会把失败藏起来；正确路径是
-`6_mrz_ocr/src/mrz_geom.c::mrz_ocr_split_lines` 与 `_rst_native_mrz_band`
-的垂直裁剪交互。**本文 §3 的 Kotlin 设计仍待设备验证，且必须带上预算闸门。**
+`6_mrz_ocr/src/mrz_ocr.c:273` 的 `mrz_ocr_split_lines`（调用点
+`6_mrz_ocr/src/mrz_ocr_cnn.c:4047-4080`）与 `tests/gui.py:3723` 的
+`_rst_native_mrz_band` 垂直裁剪交互。**本文 §3 的 Kotlin 设计仍待设备验证，
+且必须带上预算闸门。** 路径修订见
+`10_ocr_research/c_prereq_recalibration_1107.md` §2.1：早前记成
+`mrz_geom.c::mrz_ocr_split_lines` 属误记。
 
 ### 门禁与红线（按项目强制 skill 五要素核对）
 
