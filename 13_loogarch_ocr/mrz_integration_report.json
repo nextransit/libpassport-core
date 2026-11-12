@@ -84,7 +84,7 @@
    "ok": true,
    "line1": "P<CHNZHOU<<YUANSU<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E639O21058CHN7005059F3110153O50Z68SZOB1I0074",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": "TD3_44",
    "cksum": 0
@@ -92,7 +92,7 @@
   "B": {
    "line1": "P<CHNZHOU<<YUANSU<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E639O21058CHN7005059F3110153O50Z68SZOB1I0074",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -100,7 +100,7 @@
   "C": {
    "line1": "P<CHNZHOU<<YUANSU<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E639O21058CHN7005059F3110153O50Z68SZOB1I0074",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -160,7 +160,7 @@
    "ok": true,
    "line1": "P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E454243381CHN0703013F4211172S63108B6Z6637626",
-   "conf1": 100,
+   "conf1": 99,
    "conf2": 99,
    "layout": "TD3_44",
    "cksum": 0
@@ -168,7 +168,7 @@
   "B": {
    "line1": "P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E454243381CHN0703013F4211172S63108B6Z6637626",
-   "conf1": 100,
+   "conf1": 99,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -176,7 +176,7 @@
   "C": {
    "line1": "P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E454243381CHN0703013F4211172S63108B6Z6637626",
-   "conf1": 100,
+   "conf1": 99,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -236,7 +236,7 @@
    "ok": true,
    "line1": "P<CHNDING<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E505029416CHN6806178M2604114L2Y8F2Z01K4IF010",
-   "conf1": 100,
+   "conf1": 98,
    "conf2": 99,
    "layout": "TD3_44",
    "cksum": 0
@@ -244,7 +244,7 @@
   "B": {
    "line1": "P<CHNDING<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E505029416CHN6806178M2604114L2Y8F2Z01K4IF010",
-   "conf1": 100,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -252,7 +252,7 @@
   "C": {
    "line1": "P<CHNDING<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E505029416CHN6806178M2604114L2Y8F2Z01K4IF010",
-   "conf1": 100,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -274,7 +274,7 @@
    "ok": true,
    "line1": "P<CHNDING<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E505029416CHN6806178M2604114L2Y8F2ZO1K4IF034",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": "TD3_44",
    "cksum": 0
@@ -282,7 +282,7 @@
   "B": {
    "line1": "P<CHNDING<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E505029416CHN6806178M2604114L2Y8F2ZO1K4IF034",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -290,7 +290,7 @@
   "C": {
    "line1": "P<CHNDING<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E505029416CHN6806178M2604114L2Y8F2ZO1K4IF034",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -312,7 +312,7 @@
    "ok": true,
    "line1": "P<CHNGE<<MOHUA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E592235158CHN6905163M30012716GOB6I2258S28846",
-   "conf1": 100,
+   "conf1": 99,
    "conf2": 99,
    "layout": "TD3_44",
    "cksum": 0
@@ -320,7 +320,7 @@
   "B": {
    "line1": "P<CHNGE<<MOHUA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E592235158CHN6905163M30012716GOB6I2258S28846",
-   "conf1": 100,
+   "conf1": 99,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -328,7 +328,7 @@
   "C": {
    "line1": "P<CHNGE<<MOHUA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E592235158CHN6905163M30012716GOB6I2258S28846",
-   "conf1": 100,
+   "conf1": 99,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -350,7 +350,7 @@
    "ok": true,
    "line1": "P<CHNGE<<SUDONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E062480684CHN8201113F251225501S8IBBG51B52Z66",
-   "conf1": 100,
+   "conf1": 99,
    "conf2": 99,
    "layout": "TD3_44",
    "cksum": 0
@@ -388,7 +388,7 @@
    "ok": true,
    "line1": "P<CHNGUO<<LURU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E916769I46CHN6008248M240122126QZG26600S16132",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": "TD3_44",
    "cksum": 0
@@ -396,7 +396,7 @@
   "B": {
    "line1": "P<CHNGUO<<LURU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E916769I46CHN6008248M240122126QZG26600S16132",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -404,7 +404,7 @@
   "C": {
    "line1": "P<CHNGUO<<LURU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E916769I46CHN6008248M240122126QZG26600S16132",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -426,7 +426,7 @@
    "ok": true,
    "line1": "P<CHNGU<<YINGYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E665282843CHN8807054M2810216001Z032II9808660",
-   "conf1": 100,
+   "conf1": 99,
    "conf2": 99,
    "layout": "TD3_44",
    "cksum": 0
@@ -434,7 +434,7 @@
   "B": {
    "line1": "P<CHNGU<<YINGYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E665282843CHN8807054M2810216001Z032II9808660",
-   "conf1": 100,
+   "conf1": 99,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -442,7 +442,7 @@
   "C": {
    "line1": "P<CHNGU<<YINGYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E665282843CHN8807054M2810216001Z032II9808660",
-   "conf1": 100,
+   "conf1": 99,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -464,7 +464,7 @@
    "ok": true,
    "line1": "P<CHNGU<<YUYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E096730195CHN8410021M300821488S61022S7Z59328",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": "TD3_44",
    "cksum": 0
@@ -472,7 +472,7 @@
   "B": {
    "line1": "P<CHNGU<<YUYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E096730195CHN8410021M300821488S61022S7Z59328",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -480,7 +480,7 @@
   "C": {
    "line1": "P<CHNGU<<YUYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E096730195CHN8410021M300821488S61022S7Z59328",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -578,7 +578,7 @@
    "ok": true,
    "line1": "P<CHNWU<<FANGYAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E766622355CHN0011293F2604181Y861DEUSDLKZG542",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": "TD3_44",
    "cksum": 0
@@ -586,7 +586,7 @@
   "B": {
    "line1": "P<CHNWU<<FANGYAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E766622355CHN0011293F2604181Y861DEUSDLKZG542",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -594,7 +594,7 @@
   "C": {
    "line1": "P<CHNWU<<FANGYAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E766622355CHN0011293F2604181Y861DEUSDLKZG542",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -692,7 +692,7 @@
    "ok": true,
    "line1": "P<CHNYUAN<<YOUSUI<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E62588I562CHN9505209F3503269OIZI5Z52O12IS504",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": "TD3_44",
    "cksum": 0
@@ -700,7 +700,7 @@
   "B": {
    "line1": "P<CHNYUAN<<YOUSUI<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E62588I562CHN9505209F3503269OIZI5Z52O12IS504",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -708,7 +708,7 @@
   "C": {
    "line1": "P<CHNYUAN<<YOUSUI<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E62588I562CHN9505209F3503269OIZI5Z52O12IS504",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -730,7 +730,7 @@
    "ok": true,
    "line1": "P<CHNYUAN<<YUESUI<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E0755268S1CHN9004012M27090195GI5BBISB85B1O26",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": "TD3_44",
    "cksum": 0
@@ -738,7 +738,7 @@
   "B": {
    "line1": "P<CHNYUAN<<YUESUI<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E0755268S1CHN9004012M27090195GI5BBISB85B1O26",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -746,7 +746,7 @@
   "C": {
    "line1": "P<CHNYUAN<<YUESUI<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E0755268S1CHN9004012M27090195GI5BBISB85B1O26",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -768,24 +768,24 @@
    "ok": true,
    "line1": "P<CHNYUE<<YUESHU<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E158193223CHN7807091M2505233356G5111BO7S6134",
-   "conf1": 99,
-   "conf2": 99,
+   "conf1": 98,
+   "conf2": 98,
    "layout": "TD3_44",
    "cksum": 0
   },
   "B": {
    "line1": "P<CHNYUE<<YUESHU<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E158193223CHN7807091M2505233356G5111BO7S6134",
-   "conf1": 99,
-   "conf2": 99,
+   "conf1": 98,
+   "conf2": 98,
    "layout": 2,
    "status": 0
   },
   "C": {
    "line1": "P<CHNYUE<<YUESHU<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E158193223CHN7807091M2505233356G5111BO7S6134",
-   "conf1": 99,
-   "conf2": 99,
+   "conf1": 98,
+   "conf2": 98,
    "layout": 2,
    "status": 0
   },
@@ -805,7 +805,7 @@
   "A": {
    "ok": true,
    "line1": "P<CHNYUN<<PUYING<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
-   "line2": "E048156G62CHN6209285F3512252O85OZIGTG2581G50",
+   "line2": "E048156G62CHN6209285F3512252O85OZ1GZG258IG50",
    "conf1": 99,
    "conf2": 99,
    "layout": "TD3_44",
@@ -813,7 +813,7 @@
   },
   "B": {
    "line1": "P<CHNYUN<<PUYING<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
-   "line2": "E048156G62CHN6209285F3512252O85OZIGTG2581G50",
+   "line2": "E048156G62CHN6209285F3512252O85OZ1GZG258IG50",
    "conf1": 99,
    "conf2": 99,
    "layout": 2,
@@ -821,7 +821,7 @@
   },
   "C": {
    "line1": "P<CHNYUN<<PUYING<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
-   "line2": "E048156G62CHN6209285F3512252O85OZIGTG2581G50",
+   "line2": "E048156G62CHN6209285F3512252O85OZ1GZG258IG50",
    "conf1": 99,
    "conf2": 99,
    "layout": 2,
@@ -831,9 +831,9 @@
   "a_eq_c": true,
   "b_eq_c": true,
   "a_l1": 44,
-  "a_l2": 41,
+  "a_l2": 44,
   "b_l1": 44,
-  "b_l2": 41
+  "b_l2": 44
  },
  {
   "id": "2026-9-30-A.jpg",
@@ -844,7 +844,7 @@
    "ok": true,
    "line1": "POCHNRAO<<MEINA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E821973372CHN8612261F2607078MIMEMDMEMEMIA944",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": "TD3_44",
    "cksum": 0
@@ -852,7 +852,7 @@
   "B": {
    "line1": "POCHNRAO<<MEINA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E821973372CHN8612261F2607078MIMEMDMEMEMIA944",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -860,7 +860,7 @@
   "C": {
    "line1": "POCHNRAO<<MEINA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E821973372CHN8612261F2607078MIMEMDMEMEMIA944",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -920,7 +920,7 @@
    "ok": true,
    "line1": "P<CHNBAO<<YUEYA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E602701156CHN6901084F2808222Q75OWNC9HSVEJZ42",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": "TD3_44",
    "cksum": 0
@@ -928,7 +928,7 @@
   "B": {
    "line1": "P<CHNBAO<<YUEYA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E602701156CHN6901084F2808222Q75OWNC9HSVEJZ42",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -936,7 +936,7 @@
   "C": {
    "line1": "P<CHNBAO<<YUEYA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E602701156CHN6901084F2808222Q75OWNC9HSVEJZ42",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -958,7 +958,7 @@
    "ok": true,
    "line1": "P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E141543482CHN6011103M3206261OMU9FH60NPJJ7G24",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": "TD3_44",
    "cksum": 0
@@ -966,7 +966,7 @@
   "B": {
    "line1": "P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E141543482CHN6011103M3206261OMU9FH60NPJJ7G24",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -974,7 +974,7 @@
   "C": {
    "line1": "P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E141543482CHN6011103M3206261OMU9FH60NPJJ7G24",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -996,7 +996,7 @@
    "ok": true,
    "line1": "P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E141543482CHN6011103M3206261OMU9FH60NPJJ7G24",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": "TD3_44",
    "cksum": 0
@@ -1004,7 +1004,7 @@
   "B": {
    "line1": "P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E141543482CHN6011103M3206261OMU9FH60NPJJ7G24",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -1012,7 +1012,7 @@
   "C": {
    "line1": "P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E141543482CHN6011103M3206261OMU9FH60NPJJ7G24",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -1032,35 +1032,35 @@
   "gt2": "E277194572CHN9601189F30052246MN1TZC2X4MC4X60",
   "A": {
    "ok": true,
-   "line1": "A<LHP<<I<<AANNH<N<<C<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line1": "P<CHNCAI<<FANGMENG<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E277194572CHN9601189F30052246MN1TZC2X4MC4X60",
-   "conf1": 91,
+   "conf1": 98,
    "conf2": 99,
    "layout": "TD3_44",
    "cksum": 0
   },
   "B": {
-   "line1": "A<CYP<<I<<AANNH<N<<C<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line1": "P<CHNCAI<<FANGMENG<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E277194572CHN9601189F30052246MN1TZC2X4MC4X60",
-   "conf1": 93,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
   },
   "C": {
-   "line1": "A<CYP<<I<<AANNH<N<<C<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line1": "P<CHNCAI<<FANGMENG<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E277194572CHN9601189F30052246MN1TZC2X4MC4X60",
-   "conf1": 93,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
   },
-  "a_eq_b": false,
-  "a_eq_c": false,
+  "a_eq_b": true,
+  "a_eq_c": true,
   "b_eq_c": true,
-  "a_l1": 33,
+  "a_l1": 44,
   "a_l2": 44,
-  "b_l1": 33,
+  "b_l1": 44,
   "b_l2": 44
  },
  {
@@ -1072,7 +1072,7 @@
    "ok": true,
    "line1": "P<CHNCHANG<<NI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E309178198CHN9612202F2702261G3JPA90J2I<K6Z66",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": "TD3_44",
    "cksum": 0
@@ -1080,7 +1080,7 @@
   "B": {
    "line1": "P<CHNCHANG<<NI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E309178198CHN9612202F2702261G3JPA90J2I<K6Z66",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -1088,7 +1088,7 @@
   "C": {
    "line1": "P<CHNCHANG<<NI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E309178198CHN9612202F2702261G3JPA90J2I<K6Z66",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -1110,7 +1110,7 @@
    "ok": true,
    "line1": "P<CHNCHEN<<DAJUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E646452438CHN0211196M3203075FIJJWA3L90ZU0054",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": "TD3_44",
    "cksum": 0
@@ -1118,7 +1118,7 @@
   "B": {
    "line1": "P<CHNCHEN<<DAJUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E646452438CHN0211196M3203075FIJJWA3L90ZU0054",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -1126,7 +1126,7 @@
   "C": {
    "line1": "P<CHNCHEN<<DAJUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E646452438CHN0211196M3203075FIJJWA3L90ZU0054",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -1148,7 +1148,7 @@
    "ok": true,
    "line1": "P<CHNCONG<<YINGXIAO<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E066908744CHN9303298F3411263TWW9ZQLBES7OS062",
-   "conf1": 99,
+   "conf1": 97,
    "conf2": 99,
    "layout": "TD3_44",
    "cksum": 0
@@ -1156,7 +1156,7 @@
   "B": {
    "line1": "P<CHNCONG<<YINGXIAO<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E066908744CHN9303298F3411263TWW9ZQLBES7OS062",
-   "conf1": 99,
+   "conf1": 97,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -1164,7 +1164,7 @@
   "C": {
    "line1": "P<CHNCONG<<YINGXIAO<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E066908744CHN9303298F3411263TWW9ZQLBES7OS062",
-   "conf1": 99,
+   "conf1": 97,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -1186,7 +1186,7 @@
    "ok": true,
    "line1": "P<CHNCUI<<LIYI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E581043494CHN7012299F3110201S1UBJ2E<3D3PLJ56",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": "TD3_44",
    "cksum": 0
@@ -1194,7 +1194,7 @@
   "B": {
    "line1": "P<CHNCUI<<LIYI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E581043494CHN7012299F3110201S1UBJ2E<3D3PLJ56",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -1202,7 +1202,7 @@
   "C": {
    "line1": "P<CHNCUI<<LIYI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E581043494CHN7012299F3110201S1UBJ2E<3D3PLJ56",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -1224,7 +1224,7 @@
    "ok": true,
    "line1": "P<CHNDAI<<XIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E996968603CHN0205089M3208184OK1U4WCP4K4E7L42",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": "TD3_44",
    "cksum": 0
@@ -1232,7 +1232,7 @@
   "B": {
    "line1": "P<CHNDAI<<XIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E996968603CHN0205089M3208184OK1U4WCP4K4E7L42",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -1240,7 +1240,7 @@
   "C": {
    "line1": "P<CHNDAI<<XIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E996968603CHN0205089M3208184OK1U4WCP4K4E7L42",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -1261,25 +1261,25 @@
   "A": {
    "ok": true,
    "line1": "P<CHNDING<<HANGYAN<<<<<<<<<<<<<<<<<<<<<<<<<<",
-   "line2": "E818572393CHN6603171M2702157FWS91S8GQ4H16188",
-   "conf1": 99,
-   "conf2": 99,
+   "line2": "E818572393CHN6603171M2702157FHS9IS8GQWHI6I88",
+   "conf1": 98,
+   "conf2": 98,
    "layout": "TD3_44",
    "cksum": 0
   },
   "B": {
    "line1": "P<CHNDING<<HANGYAN<<<<<<<<<<<<<<<<<<<<<<<<<<",
-   "line2": "E818572393CHN6603171M2702157FWS91S8GQ4H16188",
-   "conf1": 99,
-   "conf2": 99,
+   "line2": "E818572393CHN6603171M2702157FHS9IS8GQWHI6I88",
+   "conf1": 98,
+   "conf2": 98,
    "layout": 2,
    "status": 0
   },
   "C": {
    "line1": "P<CHNDING<<HANGYAN<<<<<<<<<<<<<<<<<<<<<<<<<<",
-   "line2": "E818572393CHN6603171M2702157FWS91S8GQ4H16188",
-   "conf1": 99,
-   "conf2": 99,
+   "line2": "E818572393CHN6603171M2702157FHS9IS8GQWHI6I88",
+   "conf1": 98,
+   "conf2": 98,
    "layout": 2,
    "status": 0
   },
@@ -1287,9 +1287,9 @@
   "a_eq_c": true,
   "b_eq_c": true,
   "a_l1": 44,
-  "a_l2": 39,
+  "a_l2": 44,
   "b_l1": 44,
-  "b_l2": 39
+  "b_l2": 44
  },
  {
   "id": "2026-9-30-B.jpg",
@@ -1300,7 +1300,7 @@
    "ok": true,
    "line1": "POCHNHU<<HAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E187424516CHN8706216M2406086LKPKOFLA<<<<A936",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": "TD3_44",
    "cksum": 0
@@ -1308,7 +1308,7 @@
   "B": {
    "line1": "POCHNHU<<HAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E187424516CHN8706216M2406086LKPKOFLA<<<<A936",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -1316,7 +1316,7 @@
   "C": {
    "line1": "POCHNHU<<HAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E187424516CHN8706216M2406086LKPKOFLA<<<<A936",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -1338,7 +1338,7 @@
    "ok": true,
    "line1": "P<AUSRICHARDS<<KEIRA<JAYNE<<<<<<<<<<<<<<<<<<",
    "line2": "N7368155<2AUS8703226F2306186<12078730W<<<<68",
-   "conf1": 100,
+   "conf1": 98,
    "conf2": 99,
    "layout": "TD3_44",
    "cksum": 0
@@ -1346,7 +1346,7 @@
   "B": {
    "line1": "P<AUSRICHARDS<<KEIRA<JAYNE<<<<<<<<<<<<<<<<<<",
    "line2": "N7368155<2AUS8703226F2306186<12078730W<<<<68",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -1354,7 +1354,7 @@
   "C": {
    "line1": "P<AUSRICHARDS<<KEIRA<JAYNE<<<<<<<<<<<<<<<<<<",
    "line2": "N7368155<2AUS8703226F2306186<12078730W<<<<68",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -1376,7 +1376,7 @@
    "ok": true,
    "line1": "AKCHNZHOU<<QIANG<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "KE00345952CHN9207156M2912095A911<611158<<<14",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": "TD3_44",
    "cksum": 0
@@ -1384,7 +1384,7 @@
   "B": {
    "line1": "AKCHNZHOU<<QIANG<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "KE00345952CHN9207156M2912095A911<611158<<<14",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -1392,7 +1392,7 @@
   "C": {
    "line1": "AKCHNZHOU<<QIANG<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "KE00345952CHN9207156M2912095A911<611158<<<14",
-   "conf1": 99,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -1414,7 +1414,7 @@
    "ok": true,
    "line1": "POCHNZHANG<<WANWEN<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E662323994CHN9009121F2601113NFMFMNPBMOMEA976",
-   "conf1": 100,
+   "conf1": 98,
    "conf2": 99,
    "layout": "TD3_44",
    "cksum": 0
@@ -1422,7 +1422,7 @@
   "B": {
    "line1": "POCHNZHANG<<WANWEN<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E662323994CHN9009121F2601113NFMFMNPBMOMEA976",
-   "conf1": 100,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -1430,7 +1430,7 @@
   "C": {
    "line1": "POCHNZHANG<<WANWEN<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "E662323994CHN9009121F2601113NFMFMNPBMOMEA976",
-   "conf1": 100,
+   "conf1": 98,
    "conf2": 99,
    "layout": 2,
    "status": 0
@@ -1451,35 +1451,35 @@
   "A": {
    "ok": true,
    "line1": "PMCHNYAN<<ZHE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
-   "line2": "<000000000CHN9801060M2406190O6MGNFNH<<<<3E98",
+   "line2": "A000000000CHN9801060M2406190ODMGNFNM<<<<A998",
    "conf1": 99,
-   "conf2": 97,
+   "conf2": 99,
    "layout": "TD3_44",
    "cksum": 0
   },
   "B": {
    "line1": "PMCHNYAN<<ZHE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
-   "line2": "A000000000CHN9801060M2406190O6MGNFNH<<<<3E98",
+   "line2": "A000000000CHN9801060M2406190ODMGNFNM<<<<A998",
    "conf1": 99,
-   "conf2": 97,
+   "conf2": 99,
    "layout": 2,
    "status": 0
   },
   "C": {
    "line1": "PMCHNYAN<<ZHE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
-   "line2": "A000000000CHN9801060M2406190O6MGNFNH<<<<3E98",
+   "line2": "A000000000CHN9801060M2406190ODMGNFNM<<<<A998",
    "conf1": 99,
-   "conf2": 97,
+   "conf2": 99,
    "layout": 2,
    "status": 0
   },
-  "a_eq_b": false,
-  "a_eq_c": false,
+  "a_eq_b": true,
+  "a_eq_c": true,
   "b_eq_c": true,
   "a_l1": 44,
-  "a_l2": 39,
+  "a_l2": 44,
   "b_l1": 44,
-  "b_l2": 40
+  "b_l2": 44
  },
  {
   "id": "2026-9-30-G.jpg",
@@ -1490,34 +1490,34 @@
    "ok": true,
    "line1": "P<CHNSUN<<HAI<HUA<<<<<<<<<<<<<<<<<<<<<<<<<<<",
    "line2": "H224724969CHN0907246M2808185<S3054553<<<<<90",
-   "conf1": 99,
-   "conf2": 97,
+   "conf1": 98,
+   "conf2": 99,
    "layout": "TD3_44",
    "cksum": 0
   },
   "B": {
    "line1": "P<CHNSUN<<HAI<HUA<<<<<<<<<<<<<<<<<<<<<<<<<<<",
-   "line2": "6224724962CHN0907246M2808185<S3054553<1<<<20",
-   "conf1": 99,
-   "conf2": 96,
+   "line2": "H224724969CHN0907246M2808185<S3054553<<<<<90",
+   "conf1": 98,
+   "conf2": 99,
    "layout": 2,
    "status": 0
   },
   "C": {
    "line1": "P<CHNSUN<<HAI<HUA<<<<<<<<<<<<<<<<<<<<<<<<<<<",
-   "line2": "6224724962CHN0907246M2808185<S3054553<1<<<20",
-   "conf1": 99,
-   "conf2": 96,
+   "line2": "H224724969CHN0907246M2808185<S3054553<<<<<90",
+   "conf1": 98,
+   "conf2": 99,
    "layout": 2,
    "status": 0
   },
-  "a_eq_b": false,
-  "a_eq_c": false,
+  "a_eq_b": true,
+  "a_eq_c": true,
   "b_eq_c": true,
   "a_l1": 44,
   "a_l2": 44,
   "b_l1": 44,
-  "b_l2": 40
+  "b_l2": 44
  },
  {
   "id": "2026-9-30-H.jpg",
@@ -1526,36 +1526,36 @@
   "gt2": "KE90003518CHN9707014F2912268A911<121101<<<72",
   "A": {
    "ok": true,
-   "line1": "IWXXAADXA<<<IHEA<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
-   "line2": "EE9000X538CHN9707014F2912268A911<12110433E22",
-   "conf1": 95,
-   "conf2": 94,
+   "line1": "AKCHNYANG<<ZHEN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "KE90003518CHN9707014F2912268A911<1211018ZE22",
+   "conf1": 98,
+   "conf2": 96,
    "layout": "TD3_44",
    "cksum": 0
   },
   "B": {
-   "line1": "AWXXAADXA<<<IHEA<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
-   "line2": "EE90003538CHN9707014F2912268A911<121101EEE10",
-   "conf1": 95,
-   "conf2": 94,
+   "line1": "AKCHNYANG<<ZHEN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "KE90003518CHN9707014F2912268A911<1211018ZE22",
+   "conf1": 98,
+   "conf2": 96,
    "layout": 2,
    "status": 0
   },
   "C": {
-   "line1": "AWXXAADXA<<<IHEA<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
-   "line2": "EE90003538CHN9707014F2912268A911<121101EEE10",
-   "conf1": 95,
-   "conf2": 94,
+   "line1": "AKCHNYANG<<ZHEN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "line2": "KE90003518CHN9707014F2912268A911<1211018ZE22",
+   "conf1": 98,
+   "conf2": 96,
    "layout": 2,
    "status": 0
   },
-  "a_eq_b": false,
-  "a_eq_c": false,
+  "a_eq_b": true,
+  "a_eq_c": true,
   "b_eq_c": true,
-  "a_l1": 30,
-  "a_l2": 36,
-  "b_l1": 31,
-  "b_l2": 37
+  "a_l1": 44,
+  "a_l2": 40,
+  "b_l1": 44,
+  "b_l2": 40
  },
  {
   "id": "2026-9-30-I.jpg",
@@ -1564,31 +1564,31 @@
   "gt2": "",
   "A": {
    "ok": true,
-   "line1": "CDCU33333704<7810720<8961119<9",
+   "line1": "CSS222322318<7211221<9266022<8",
    "line2": "",
-   "conf1": 9,
+   "conf1": 44,
    "conf2": 0,
    "layout": "CS_CD_30",
    "cksum": 0
   },
   "B": {
-   "line1": "CDCU33000000<0000000<0900000<0",
+   "line1": "CSS222322318<7211221<9266022<8",
    "line2": "",
-   "conf1": 9,
+   "conf1": 44,
    "conf2": 0,
    "layout": 1,
    "status": 0
   },
   "C": {
-   "line1": "CDCU33000000<0000000<0900000<0",
+   "line1": "CSS222322318<7211221<9266022<8",
    "line2": "",
-   "conf1": 9,
+   "conf1": 44,
    "conf2": 0,
    "layout": 1,
    "status": 0
   },
-  "a_eq_b": false,
-  "a_eq_c": false,
+  "a_eq_b": true,
+  "a_eq_c": true,
   "b_eq_c": true,
   "a_l1": 0,
   "a_l2": 0,
@@ -1640,31 +1640,31 @@
   "gt2": "",
   "A": {
    "ok": true,
-   "line1": "CSCG99609197<2000269<8706216<0",
+   "line1": "CSC495643597<2610265<8706216<0",
    "line2": "",
-   "conf1": 36,
+   "conf1": 89,
    "conf2": 0,
    "layout": "CS_CD_30",
    "cksum": 0
   },
   "B": {
-   "line1": "CSCG90090107<2000200<8000200<0",
+   "line1": "CSC495643597<2610265<8706216<0",
    "line2": "",
-   "conf1": 36,
+   "conf1": 89,
    "conf2": 0,
    "layout": 1,
    "status": 0
   },
   "C": {
-   "line1": "CSCG90090107<2000200<8000200<0",
+   "line1": "CSC495643597<2610265<8706216<0",
    "line2": "",
-   "conf1": 36,
+   "conf1": 89,
    "conf2": 0,
    "layout": 1,
    "status": 0
   },
-  "a_eq_b": false,
-  "a_eq_c": false,
+  "a_eq_b": true,
+  "a_eq_c": true,
   "b_eq_c": true,
   "a_l1": 0,
   "a_l2": 0,

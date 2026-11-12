@@ -123,6 +123,7 @@ LINE1_WEIGHTS = {
     "fuse": 0.9,
     "indra": 0.7,
     "indra_fullpage": 0.5,
+    "easyocr": 1.0,
     "crnn": 0.3,
     "traditional": 0.2,
 }
@@ -133,10 +134,30 @@ LINE2_WEIGHTS = {
     "tesseract": 0.8,
     "indra": 0.7,
     "indra_fullpage": 0.5,
+    "easyocr": 1.0,
     "crnn": 0.3,
     "traditional": 0.2,
 }
 DEFAULT_WEIGHTS = 0.5
+
+# Engine family mapping: engines in the same family share the same
+# underlying model or detection pipeline, so they tend to make the
+# same errors.  When counting weighted support for a candidate reading,
+# only the STRONGEST engine from each family contributes -- this
+# prevents a family from dominating the vote by running many variants
+# of the same algorithm (cnn + fuse + crnn all share the same C model
+# and make the same errors on band-position failures).
+_ENGINE_FAMILIES = {
+    "traditional": "C",
+    "cnn": "C",
+    "crnn": "C",
+    "fuse": "C",
+    "paddle": "paddle",
+    "tesseract": "tesseract",
+    "indra": "indra",
+    "indra_fullpage": "indra",
+    "easyocr": "easyocr",
+}
 
 # ICAO 9303-4 7-3-1 check digits: (field start, field end) with the
 # check digit sitting right after the field.
@@ -175,8 +196,54 @@ def line2_checksum_ok(line2: str) -> bool:
         return False
 
 
+def _family_adjusted_votes(pairs, weights):
+    """Compute family-adjusted weighted votes for a set of (method, value) pairs.
+
+    Returns {value: total_weight} where the total for each value is the
+    sum over families of the MAXIMUM weight in that family that produced
+    the value.  This prevents a family from dominating the vote by
+    running many variants of the same algorithm: only the strongest
+    engine in each family contributes for each distinct value.
+
+    Example: cnn(1.0) and fuse(0.9) both read 'X' (same C-family
+    error), easyocr(1.0) reads 'Y'.  Without family adjustment,
+    votes = {'X': 1.9, 'Y': 1.0} and X wins.  With adjustment,
+    C-family contributes max(1.0, 0.9)=1.0 for 'X', easyocr-family
+    contributes 1.0 for 'Y', so votes = {'X': 1.0, 'Y': 1.0} -- a tie.
+    """
+    family_best = {}
+    for method, value in pairs:
+        family = _ENGINE_FAMILIES.get(method, method)
+        w = weights.get(method, DEFAULT_WEIGHTS)
+        d = family_best.setdefault(family, {})
+        if value not in d or w > d[value]:
+            d[value] = w
+    result = {}
+    for d in family_best.values():
+        for value, w in d.items():
+            result[value] = result.get(value, 0.0) + w
+    return result
+
+
+# Marker character for contested consensus positions (where two or more
+# characters have equal family-adjusted weight).  Such positions are
+# neutral -- they do not favour any family -- and _distance() skips them
+# so they do not bias the consensus-distance tie-break in _select_line1/2.
+_CONTESTED = "\0"
+
+
 def _weighted_consensus(lines, weights) -> str:
     """Per-position weighted majority vote over the given candidate lines.
+
+    Uses family-adjusted voting: at each position, only the strongest
+    engine from each family contributes its weight for each distinct
+    character, preventing same-family engines from double-counting.
+
+    When two characters have equal family-adjusted weight at a position,
+    the position is marked as _CONTESTED (\\0) instead of arbitrarily
+    picking one.  This ensures the consensus does not systematically
+    favour whichever family happens to be first in the result list,
+    which would bias the consensus-distance tie-break downstream.
 
     `lines` is a list of (method, text) pairs.  The length of the
     consensus is the length of the LONGEST text, not the length of the
@@ -187,23 +254,35 @@ def _weighted_consensus(lines, weights) -> str:
     length = max((len(text) for _, text in lines), default=0)
     out = []
     for i in range(length):
-        votes = {}
-        for method, text in lines:
-            if i < len(text):
-                votes[text[i]] = votes.get(text[i], 0.0) + \
-                    weights.get(method, DEFAULT_WEIGHTS)
-        if not votes:
+        pairs = [(method, text[i])
+                 for method, text in lines
+                 if i < len(text)]
+        if not pairs:
             break
-        out.append(max(votes.items(), key=lambda kv: kv[1])[0])
+        votes = _family_adjusted_votes(pairs, weights)
+        max_w = max(votes.values())
+        top = [v for v, w in votes.items() if abs(w - max_w) < 1e-9]
+        if len(top) == 1:
+            out.append(top[0])
+        else:
+            out.append(_CONTESTED)
     return "".join(out)
 
 
 def _distance(a: str, b: str) -> int:
-    """Number of positions where two readings differ."""
+    """Number of positions where two readings differ.
+
+    Positions marked _CONTESTED in either string are skipped: they
+    represent positions where the consensus could not decide between
+    equally-weighted characters, so counting them would bias the
+    distance toward whichever family happened to be first.
+    """
     length = max(len(a), len(b))
     return sum(1 for i in range(length)
                if (a[i] if i < len(a) else "_") !=
-                  (b[i] if i < len(b) else "_"))
+                  (b[i] if i < len(b) else "_")
+               and (a[i] if i < len(a) else "_") != _CONTESTED
+               and (b[i] if i < len(b) else "_") != _CONTESTED)
 
 
 def _method_of(result) -> str:
@@ -281,19 +360,50 @@ def _weight_of(result, weights) -> float:
     return weights.get(_method_of(result), DEFAULT_WEIGHTS)
 
 
-def _candidate_support(pool, field, weights):
-    """Map each distinct reading in the pool to its weighted support.
+def _family_adjusted_conf(engines, conf_field, weights):
+    """Family-adjusted confidence for a candidate reading.
 
-    Returns {reading: (weight, [results that produced it])}.
+    For each engine family, only the strongest engine (by weight) that
+    produced this reading contributes its confidence.  This mirrors the
+    family adjustment on weights: cnn+fuse in the same C-family only
+    contribute the stronger one's confidence, not the sum.
+
+    Returns the sum over families of the per-family max confidence.
+    """
+    family_best_conf = {}
+    for r in engines:
+        method = _method_of(r)
+        family = _ENGINE_FAMILIES.get(method, method)
+        w = weights.get(method, DEFAULT_WEIGHTS)
+        conf = r.get(conf_field) or 0
+        if family not in family_best_conf or w > family_best_conf[family][0]:
+            family_best_conf[family] = (w, conf)
+    return sum(conf for _, conf in family_best_conf.values())
+
+
+def _candidate_support(pool, field, weights):
+    """Map each distinct reading in the pool to its family-adjusted support.
+
+    Returns {reading: (weight, family_conf, [results that produced it])}.
+
+    - weight: family-adjusted (each family contributes only its strongest
+      engine's weight).
+    - family_conf: family-adjusted confidence (each family contributes
+      only its strongest engine's confidence).  Used as a tie-breaker
+      when weights are equal.
     """
     agg = {}
     for r in pool:
         text = r.get(field) or ""
         if not text:
             continue
-        entry = agg.setdefault(text, [0.0, []])
-        entry[0] += _weight_of(r, weights)
-        entry[1].append(r)
+        agg.setdefault(text, [0.0, 0.0, []])[2].append(r)
+    conf_field = "conf1" if field == "line1" else "conf2"
+    for text, entry in agg.items():
+        pairs = [(_method_of(r), text) for r in entry[2]]
+        votes = _family_adjusted_votes(pairs, weights)
+        entry[0] = votes.get(text, 0.0)
+        entry[1] = _family_adjusted_conf(entry[2], conf_field, weights)
     return agg
 
 
@@ -302,8 +412,8 @@ def _select_line1(pool, weights):
 
     Line 1 has no check digit, so there is no arithmetic to arbitrate
     with; the only evidence is how many engines read the same line.
-    The most-supported reading wins, ties broken by the weighted
-    consensus distance and then by confidence.
+    The most-supported reading wins, ties broken by family-adjusted
+    confidence, then by consensus distance.
     """
     agg = _candidate_support(pool, "line1", weights)
     if not agg:
@@ -311,10 +421,10 @@ def _select_line1(pool, weights):
     consensus = _weighted_consensus(
         [(_method_of(r), r.get("line1") or "") for r in pool], weights)
     best = None
-    for text, (weight, engines) in agg.items():
+    for text, (weight, family_conf, engines) in agg.items():
         key = (weight,
-               -_distance(text, consensus),
-               sum((r.get("conf1") or 0) for r in engines))
+               family_conf,
+               -_distance(text, consensus))
         if best is None or key > best[0]:
             best = (key, text)
     return best[1], consensus
@@ -328,6 +438,9 @@ def _select_line2(pool, weights):
     pool on the fields the check digits CANNOT vouch for (the
     nationality and the sex -- see tools/checksum_nullspace.py) is the
     one to trust.
+
+    Tie-break order: consensus distance, then family-adjusted weight,
+    then family-adjusted confidence.
     """
     agg = _candidate_support(pool, "line2", weights)
     if not agg:
@@ -335,10 +448,10 @@ def _select_line2(pool, weights):
     consensus = _weighted_consensus(
         [(_method_of(r), r.get("line2") or "") for r in pool], weights)
     best = None
-    for text, (weight, engines) in agg.items():
+    for text, (weight, family_conf, engines) in agg.items():
         key = (-_distance(text, consensus),
                weight,
-               sum((r.get("conf2") or 0) for r in engines))
+               family_conf)
         if best is None or key > best[0]:
             best = (key, text)
     return best[1], consensus

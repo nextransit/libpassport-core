@@ -22,10 +22,25 @@
   Adam + CosineAnnealingLR 已实现，实际 lr 0.02 / 0.01 / 3e-3（**不是 1e-4**）。
 - `AGENTS.md` 的硬门槛是**逐字符** passport ≥98% / pic ≥95%，fuse ≥2.0 张/秒，TD3 零退化；
   **没有「Exact 95%」门槛**。line exact / both exact / full match / cksum valid 四种口径分母不同，
-  字段级准确率未实现，口径须先裁决。
+  字段级准确率未实现；口径已于 **2026-11-07 书面裁决**，见下节。
 - 「约束解码把 Exact 95%→99%+」已被 `6_mrz_ocr/docs/deep-beam.md:91-98` 驳回：
   full match 仅 59.57%→64.42%，cksum valid 72.68%→96.09%；`:82-85` 证明真值不在 top-k
   候选集时搜索无法恢复。Exact 上界由定位/分类决定。
+
+## 口径与基线裁决（2026-11-07，`AGENTS.md`）
+
+- 生产权重基准 **`40951c5`**（人工签字），取代旧 `0ab2131`；三个权重头整体一致，禁止新旧混用。
+- 唯一验收真值 `10_ocr_research/gt_review_loop.xlsx` 的 `GT对比` sheet；`tests/*.json` 与
+  `gt_review_loop.json` 均为缓存/派生，不作验收依据。
+- 内部 `exact ≥45/47` = **both exact**，分母 47（50 张中 3 张 GT 非 44/44 记 `bad3`）；
+  line exact / full match / cksum valid 分列，`cksum valid` 不是 Exact。
+- 产品计时以 `_ocr_photo_engines` 的整链 `algorithm_ms` 为验收口径；`≥2.0 张/秒` 按 mean，
+  用户硬约束「单次 <100 ms」按 P95；单引擎 ~10–15 ms 仅诊断。
+- HEAD `e0fe137` 的 `pic 4.7%→42%` 已归档于
+  `10_ocr_research/device_pic_42pct_evidence_1107.md`：新值 `both exact 21/50`，旧值 `3/64`，
+  **不同分母/图集/配置，不能相减或宣称达标**；pic ≥95% 仍未达成。
+- C 前置重标定立项见 `10_ocr_research/c_prereq_recalibration_1107.md`；真实 splitter 在
+  `6_mrz_ocr/src/mrz_ocr.c:273`（不是 `mrz_geom.c`）。本轮只立项/交接，未改 C 源码、未重训。
 
 ## 图像层次（勿再混淆）
 

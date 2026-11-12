@@ -16,6 +16,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <pthread.h>
+#include <time.h>
 
 #ifdef LOOGARCH_OCR_WITH_MRZ
 #include "mrz_ocr.h"
@@ -408,6 +409,51 @@ static int png_decode_stub(const uint8_t* data, int data_size, uint8_t** out_rgb
 
 /* ===================== MRZ CNN engine integration ===================== */
 
+/* ---- optional per-stage timing: LOOGARCH_OCR_TIMING=1 ----
+ * One line per loogarch_ocr_process() on stderr (and appended to
+ * LOOGARCH_OCR_TIMING_FILE when that env var is set):
+ *   [loogarch-timing] total=..ms convert=..ms prep=..ms recog=..ms size=WxH fmt=N
+ * convert: pixel-format extraction (+ gray->rgb expand on Y-only path)
+ * prep:    BGR byte swap at the engine entry (color path only)
+ * recog:   face_image alloc + copy + mrz_ocr_recognise_* (band locate
+ *          + CNN/CRNN heads)
+ */
+static int loog_timing_on(void)
+{
+    static int cached = -1;
+    if (cached < 0) {
+        const char* e = getenv("LOOGARCH_OCR_TIMING");
+        cached = (e != NULL && e[0] != '\0' && e[0] != '0') ? 1 : 0;
+    }
+    return cached;
+}
+
+static double loog_now_ms(void)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (double)ts.tv_sec * 1000.0 + (double)ts.tv_nsec / 1000000.0;
+}
+
+static void loog_emit_timing(double total, double convert, double prep,
+                             double recog, int w, int h, int fmt)
+{
+    char line[256];
+    snprintf(line, sizeof(line),
+             "[loogarch-timing] total=%.1fms convert=%.1fms prep=%.1fms "
+             "recog=%.1fms size=%dx%d fmt=%d\n",
+             total, convert, prep, recog, w, h, fmt);
+    fputs(line, stderr);
+    const char* path = getenv("LOOGARCH_OCR_TIMING_FILE");
+    if (path != NULL && path[0] != '\0') {
+        FILE* f = fopen(path, "a");
+        if (f != NULL) {
+            fputs(line, f);
+            fclose(f);
+        }
+    }
+}
+
 #ifdef LOOGARCH_OCR_WITH_MRZ
 /* The MRZ engine is not thread-safe: the CNN scratchpad and the
  * dual-line worker are shared statics.  One lock around the whole
@@ -425,13 +471,20 @@ static pthread_mutex_t g_mrz_mutex = PTHREAD_MUTEX_INITIALIZER;
  * the CRNN sequence head over the same features, combined in log space
  * with a confidence gate.  On a 3-fold grouped cross-validation over
  * the 41 real photos it was the only variant that beat the plain CNN
- * (22/41 exact vs 21/41, 96.90% vs 96.78% character accuracy). */
+ * (22/41 exact vs 21/41, 96.90% vs 96.78% character accuracy).
+ *
+ * t_prep / t_recog (optional out, may be NULL) receive milliseconds for
+ * the BGR swap and for alloc+copy+recognise respectively. */
 static void run_mrz_engine(uint8_t* rgb, int w, int h, int is_bgr,
                            int use_fuse, int use_par,
-                           loogarch_ocr_result_t* result)
+                           loogarch_ocr_result_t* result,
+                           double* t_prep, double* t_recog)
 {
     static int mrz_inited = 0;
     pthread_mutex_lock(&g_mrz_mutex);
+
+    if (t_prep) *t_prep = 0.0;
+    if (t_recog) *t_recog = 0.0;
 
     if (!mrz_inited) {
         mrz_ocr_init();
@@ -444,7 +497,11 @@ static void run_mrz_engine(uint8_t* rgb, int w, int h, int is_bgr,
     /* The fusion needs both heads, so the CRNN-only switch must stay
      * off -- mrz_ocr_recognise_fuse() manages it itself. */
     setenv("MRZ_OCR_CRNN", "0", 1);
+    /* One switch for both layers: the engine then prints its own
+     * gray/band/resample/decode breakdown on stderr as well. */
+    if (loog_timing_on()) setenv("MRZ_OCR_TIMING", "1", 1);
 
+    double tp0 = loog_now_ms();
     if (is_bgr) {
         for (int i = 0; i < w * h; i++) {
             uint8_t tmp = rgb[i * 3 + 0];
@@ -452,7 +509,10 @@ static void run_mrz_engine(uint8_t* rgb, int w, int h, int is_bgr,
             rgb[i * 3 + 2] = tmp;
         }
     }
+    double tp1 = loog_now_ms();
+    if (t_prep) *t_prep = tp1 - tp0;
 
+    double tr0 = tp1;
     face_image_t *img = face_image_new(w, h);
     if (!img) { result->status = -1; pthread_mutex_unlock(&g_mrz_mutex); return; }
     memcpy(img->pixels, rgb, (size_t)w * h * 3);
@@ -466,6 +526,7 @@ static void run_mrz_engine(uint8_t* rgb, int w, int h, int is_bgr,
         s = mrz_ocr_recognise_cnn(img, &r);
     }
     face_image_free(img);
+    if (t_recog) *t_recog = loog_now_ms() - tr0;
 
     result->status = (int)s;
     strncpy(result->line1, r.line1, 63);
@@ -500,6 +561,10 @@ static loogarch_ocr_result_t process_ocr(void* handle, const uint8_t* buffer, in
     (void)roi_y;
     (void)roi_w;
     (void)roi_h;
+
+    int timing = loog_timing_on();
+    double t_start = timing ? loog_now_ms() : 0.0;
+    double t_conv = 0.0, t_prep = 0.0, t_recog = 0.0;
 
     loogarch_ocr_internal_t* internal = (loogarch_ocr_internal_t*)handle;
     int gray_only = internal ? internal->gray_only : 0;
@@ -605,11 +670,15 @@ static loogarch_ocr_result_t process_ocr(void* handle, const uint8_t* buffer, in
                     gray_rgb[i * 3 + 1] = gray[i];
                     gray_rgb[i * 3 + 2] = gray[i];
                 }
+                if (timing) t_conv = loog_now_ms() - t_start;
                 run_mrz_engine(gray_rgb, effective_w, effective_h, 0,
-                               use_fuse, use_par, &result);
+                               use_fuse, use_par, &result,
+                               timing ? &t_prep : NULL,
+                               timing ? &t_recog : NULL);
                 free(gray_rgb);
             }
         }
+        if (timing && t_conv == 0.0) t_conv = loog_now_ms() - t_start;
 #else
         char* text_buf = (char*)malloc(80);
         if (text_buf) {
@@ -621,6 +690,9 @@ static loogarch_ocr_result_t process_ocr(void* handle, const uint8_t* buffer, in
         }
 #endif
 
+        if (timing)
+            loog_emit_timing(loog_now_ms() - t_start, t_conv, t_prep,
+                             t_recog, effective_w, effective_h, format);
         free(gray);
         return result;
     }
@@ -686,8 +758,12 @@ static loogarch_ocr_result_t process_ocr(void* handle, const uint8_t* buffer, in
             return result;
     }
 
+    if (timing) t_conv = loog_now_ms() - t_start;
+
 #ifdef LOOGARCH_OCR_WITH_MRZ
-    run_mrz_engine(rgb, effective_w, effective_h, 1, use_fuse, use_par, &result);
+    run_mrz_engine(rgb, effective_w, effective_h, 1, use_fuse, use_par, &result,
+                   timing ? &t_prep : NULL,
+                   timing ? &t_recog : NULL);
 #else
     char* text_buf = (char*)malloc(64);
     if (text_buf) {
@@ -699,6 +775,9 @@ static loogarch_ocr_result_t process_ocr(void* handle, const uint8_t* buffer, in
     }
 #endif
 
+    if (timing)
+        loog_emit_timing(loog_now_ms() - t_start, t_conv, t_prep,
+                         t_recog, effective_w, effective_h, format);
     free(rgb);
     return result;
 }
