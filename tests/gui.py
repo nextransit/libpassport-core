@@ -752,6 +752,8 @@ def _rst_decode_ok(completed):
 
 def _rst_decode_candidates(line1s, line2s):
     """Return the first OCR candidate accepted by the real decoder."""
+    if not line2s:
+        line2s = [(0, 0, 0, "", "", "")]
     for line1 in line1s:
         for _n, _len_delta, _start, line2, report, raw in line2s:
             decoded = subprocess.run(
@@ -4043,7 +4045,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             methods = [m for m in methods if m in FAST_TIER]
             if not methods:
                 methods = list(_fast_tier())
-        if _fast_strict() or strict:
+        if (_fast_strict() or strict) and not (pair and pair[0] == pair[1]):
             allow_tesseract_fallback = False
 
         # CS/CD 单行 MRZ: 跳过不支持单行格式的引擎
@@ -4513,10 +4515,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                     result["alt2"] = _alt2
                     result["ambiguous2"] = _amb2
                 needs_rescue = (
-                    not cscd_reading
-                    and (not result["decode_ok"]
-                         or result["conf1"] < 80
-                         or (result["line2"] and result["conf2"] < 80))
+                    not result["decode_ok"]
+                    or result["conf1"] < 80
+                    or (result["line2"] and result["conf2"] < 80)
                 )
                 if (method in ("traditional", "cnn", "crnn", "fuse", "paddle")
                         and needs_rescue
@@ -4532,7 +4533,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                             or (result["line1"], result["line2"])
                             != (fixed1, fixed2)
                         )
-                        if mismatch:
+                        if mismatch and (fixed1 or fixed2):
                             raw_status = kv.get("result.ok", "").strip()
                             if not result["engine_ok"]:
                                 reason = (
@@ -6183,8 +6184,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             results, _ms = self._rst_run_ocr_methods(
                 rgb, pair, scale, band_path, methods,
                 native_band=native_band, source_path=path,
-                allow_tesseract_fallback=(False if (_fast_strict() or strict)
-                                          else is_cscd),
+                allow_tesseract_fallback=is_cscd,
                 resident=bool(getattr(self, "_rst_resident", False)),
                 strict=strict)
         finally:
