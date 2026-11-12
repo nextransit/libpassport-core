@@ -172,30 +172,32 @@ def get_bandpick_tool(tool=None):
     return get_bandpick_tools(tool, 1)[0]
 
 
-def get_bandpick_tools(tool=None, count=4):
+def get_bandpick_tools(tool=None, count=4, crnn=True):
     """`count` resident band-check tools, for parallel candidate checks.
 
     The candidate crops are independent, so the search can run them
     concurrently; the tool speaks one image per line over one pipe, so
     each concurrent check needs its own process.  The first tool is the
     same slot get_bandpick_tool returns.
+
+    crnn: when True the bandpick tool runs the CRNN head (matching the
+    production path for TD3).  When False it runs the CNN head (for
+    CS/CD single-line, where CRNN is untrained).
     """
     count = max(1, int(count or 1))
     binary = _cnn_binary(tool)
     out = []
     with _POOL_LOCK:
-        env = _tool_env(MRZ_OCR_CRNN="0", MRZ_OCR_FUSE="0",
-                        MRZ_OCR_PAR="1")
+        env = _tool_env(MRZ_OCR_CRNN="1" if crnn else "0",
+                        MRZ_OCR_FUSE="0", MRZ_OCR_PAR="1")
+        slot = "bandpick" if crnn else "bandpick_cnn"
         for i in range(count):
-            key = (str(binary), "bandpick", i)
+            key = (str(binary), slot, i)
             pooled = _POOL.get(key)
             if pooled is None:
                 pooled = ResidentTool([binary, "--serve"], env)
-                # One scratch file per tool, kept for the life of the
-                # process: creating and deleting one per candidate cost
-                # ~1.5 ms each, on every photo.
                 pooled.scratch = str(Path(tempfile.gettempdir()) /
-                                     f"_mrz_bandpick_{os.getpid()}_{i}.ppm")
+                                     f"_mrz_{slot}_{os.getpid()}_{i}.ppm")
                 _POOL[key] = pooled
             out.append(pooled)
     return out
@@ -232,6 +234,45 @@ def get_crnn_module():
 
 _PADDLE_MODULE = None
 _PADDLE_LOCK = threading.Lock()
+
+
+_EASYOCR_READER = None
+_EASYOCR_LOCK = threading.Lock()
+
+_EASYOCR_MRZ_READER = None
+_EASYOCR_MRZ_LOCK = threading.Lock()
+
+
+def get_easyocr_mrz_reader():
+    """Load EasyOCR with custom MRZ model and keep it resident.
+
+    Uses the fine-tuned custom_mrz network (VGG+BiLSTM+CTC, 37 chars,
+    imgH=32 imgW=440) trained on synthetic OCR-B MRZ strips.
+    """
+    global _EASYOCR_MRZ_READER
+    with _EASYOCR_MRZ_LOCK:
+        if _EASYOCR_MRZ_READER is None:
+            import easyocr
+            _EASYOCR_MRZ_READER = easyocr.Reader(
+                ['en'], recog_network='custom_mrz',
+                detector=False, gpu=False, verbose=False
+            )
+        return _EASYOCR_MRZ_READER
+
+
+def get_easyocr_reader():
+    """Load EasyOCR once and keep the model resident.
+
+    EasyOCR's model load (~2 s on first import) dominates per-photo
+    cost if re-imported; keeping the Reader object resident leaves
+    only the inference cost.
+    """
+    global _EASYOCR_READER
+    with _EASYOCR_LOCK:
+        if _EASYOCR_READER is None:
+            import easyocr
+            _EASYOCR_READER = easyocr.Reader(['en'], gpu=False, verbose=False)
+        return _EASYOCR_READER
 
 
 def get_paddle_module():
@@ -292,6 +333,7 @@ def warmup_all(gui_module=None):
     get_bandpick_tool()
     crnn = get_crnn_module()
     get_paddle_module()
+    get_easyocr_reader()
     band = _warmup_band()
     try:
         get_traditional_tool().run(str(band))
@@ -300,6 +342,8 @@ def warmup_all(gui_module=None):
         get_crnn_c_tool().run(str(band))
         get_bandpick_tool().run(str(band))
         crnn.read_band(str(band))
+        get_easyocr_reader().readtext(
+            str(band), detail=0, paragraph=False)
     except Exception:
         # Warm-up failures are not fatal: the engines report their own
         # errors during the real run.
