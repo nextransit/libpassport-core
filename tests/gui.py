@@ -7618,11 +7618,6 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         if not sel:
             return
         name = sel[0]
-        # Avoid re-running if the same row is clicked twice in a row.
-        last = getattr(self, "_ocr_last_one", None)
-        if last == name:
-            return
-        self._ocr_last_one = name
         self.ocr_run_btn.configure(state="disabled")
         # Render the image immediately so the right pane shows
         # something while we wait for the worker.
