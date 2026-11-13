@@ -8,6 +8,7 @@ extern "C" {
 #endif
 
 #define CRNN_STEPS 44
+#define CRNN_STEPS_CSCD 30
 #define CRNN_FEATURES CNN_FLAT
 #define CRNN_HIDDEN 32
 #define CRNN_OUT CNN_OUT
@@ -74,10 +75,14 @@ void crnn_init(crnn_seq_t *net);
 typedef struct {
     crnn_seq_t line1;
     crnn_seq_t line2;
+    crnn_seq_t cscd;
 } crnn_pair_t;
 
 void crnn_pair_init(crnn_pair_t *pair);
+void crnn_cscd_init(crnn_seq_t *net);
 void crnn_forward_line(const crnn_pair_t *pair, int line_idx,
+                       const float *features, int steps, float *probs);
+void crnn_forward_cscd(const crnn_seq_t *net,
                        const float *features, int steps, float *probs);
 
 #ifdef __cplusplus

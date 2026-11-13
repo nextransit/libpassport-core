@@ -4059,13 +4059,12 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 pass
             else:
                 methods = [m for m in methods
-                           if m not in ("paddle", "indra", "fuse", "crnn")]
+                           if m not in ("paddle", "indra")]
                 if not methods:
                     # 严格极速模式绝不退回 Tesseract：CS/CD 单行交给本机
                     # C 引擎如实输出，读不出就报失败。
-                    # CRNN 未训练 CS/CD 30字符格式，conf≈4 等同随机猜测，
-                    # 因此 CS/CD 单行回退到 CNN（CNN 对 30 字符行有合理识别）。
-                    methods = ["cnn"] if _fast_strict() else ["tesseract"]
+                    # CSCD CRNN head 已训练 30 字符格式，crnn/fuse 可用。
+                    methods = ["crnn"] if _fast_strict() else ["cnn", "crnn"]
 
         tool_paths = {
             "traditional": ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_tool",
@@ -5709,7 +5708,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         import os as _os
         if _os.environ.get("MRZ_BAND_PICK", "1") != "1":
             return band, crop
-        # CS/CD 单行格式：CRNN 未训练 30 字符格式，bandpick 用 CNN 评估。
+        # CS/CD 单行格式：CSCD CRNN head 已训练 30 字符格式，bandpick 用 CRNN 评估。
         # TD3 双行格式：bandpick 用 CRNN 评估，与生产路径一致。
         _is_cscd = is_single or (pair and pair[0] == pair[1])
         # MRZ_BAND_PICK_ALL: score every candidate, not just the
@@ -5771,7 +5770,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             # Never fan out wider than the machine: extra C processes on a
             # small box just fight over the same cores.
             _n_par = max(1, min(_n_par, os.cpu_count() or 1))
-            _tools = get_bandpick_tools(_tool, _n_par, crnn=not _is_cscd)
+            _tools = get_bandpick_tools(_tool, _n_par, crnn=True)
         except Exception:
             return band, crop
         import queue as _queue

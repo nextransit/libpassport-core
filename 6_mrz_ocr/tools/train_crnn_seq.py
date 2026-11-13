@@ -1,25 +1,19 @@
 #!/usr/bin/env python3
-"""Train the fixed-44-step CRNN sequence head and export C weights.
+"""Train the CRNN sequence head and export C weights.
 
-Input: an .npz produced by tools/export_crnn_features.py with
-  features (N, 2, 44, 96) float32, labels (N, 2, 44) int64.
+TD3 mode (default, --steps 44):
+  Input: an .npz with features (N, 2, 44, 96), labels (N, 2, 44).
+  Trains two heads (line1, line2) and exports crnn_weights.h.
+
+CS/CD mode (--steps 30):
+  Input: an .npz with features (N, 1, 30, 96), labels (N, 1, 30).
+  Trains one head and exports crnn_weights_cscd.h.
 
 Model (must stay numerically aligned with src/crnn.c):
   Linear(96->32) + ReLU
-  -> + learned position embedding (44 x 32)
+  -> + learned position embedding (steps x 32)
   -> bidirectional GRU(32->32)   (forward and backward each 32 wide)
   -> Linear(64->37)
-
-Why bidirectional + position embedding: on a strictly held-out split
-(train on pic_scan1, evaluate on pic_scan2/3, identical features for
-both heads) the previous single-direction GRU reached 81.5% character
-accuracy on MRZ line 1; the bidirectional head with position embedding
-reached 86.6%.  A MRZ row is a fixed 44-slot layout, so letting the
-head know the slot index and see both neighbours helps.
-
-Validation is BY IMAGE, never by row, so a line never leaks across the
-split.  The export writes include/src/crnn_weights.h with
-MRZ_CRNN_WEIGHTS_AVAILABLE 1.
 """
 from __future__ import annotations
 import argparse
@@ -29,7 +23,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-FEATURES, HIDDEN, CLASSES, STEPS = 96, 32, 37, 44
+FEATURES, HIDDEN, CLASSES = 96, 32, 37
 CTX = 2 * HIDDEN
 
 
@@ -44,12 +38,13 @@ class CrnnSeq(nn.Module):
                  sometimes wins.
     """
 
-    def __init__(self, arch: str = "bi"):
+    def __init__(self, arch: str = "bi", steps: int = 44):
         super().__init__()
         self.arch = arch
+        self.steps = steps
         bidir = (arch == "bi")
         self.proj = nn.Linear(FEATURES, HIDDEN)
-        self.pos = nn.Embedding(STEPS, HIDDEN) if bidir else None
+        self.pos = nn.Embedding(steps, HIDDEN) if bidir else None
         self.gru = nn.GRU(HIDDEN, HIDDEN, batch_first=True, bidirectional=bidir)
         self.out = nn.Linear(CTX if bidir else HIDDEN, CLASSES)
 
@@ -89,7 +84,9 @@ def _gate_blocks(w_ih, w_hh, b_ih, b_hh, suffix, out):
 
 
 def export_header(model: CrnnSeq, path: Path, prefix: str = "CRNN",
-                  mode: str = "write") -> None:
+                  mode: str = "write",
+                  header_guard: str = "MRZ_OCR_CRNN_WEIGHTS_H",
+                  avail_macro: str = "MRZ_CRNN_WEIGHTS_AVAILABLE") -> None:
     """Emit the C weight arrays for one sequence head.
 
     mode="write"  -> create/replace the file with the guard + this head.
@@ -99,8 +96,8 @@ def export_header(model: CrnnSeq, path: Path, prefix: str = "CRNN",
     text = ""
     if mode == "write":
         text = (
-            "#ifndef MRZ_OCR_CRNN_WEIGHTS_H\n#define MRZ_OCR_CRNN_WEIGHTS_H\n"
-            "#define MRZ_CRNN_WEIGHTS_AVAILABLE 1\n"
+            f"#ifndef {header_guard}\n#define {header_guard}\n"
+            f"#define {avail_macro} 1\n"
         )
 
     def put(name: str, arr) -> None:
@@ -144,7 +141,7 @@ def export_header(model: CrnnSeq, path: Path, prefix: str = "CRNN",
             f.write(text)
 
 
-def train_one(X, Y, epochs, batch, lr, seed, weight_decay=1e-4, arch="bi"):
+def train_one(X, Y, epochs, batch, lr, seed, weight_decay=1e-4, arch="bi", steps=44):
     """Train a single sequence head. Returns (model, best_val_char_acc)."""
     torch.manual_seed(seed)
     n = len(X)
@@ -155,7 +152,7 @@ def train_one(X, Y, epochs, batch, lr, seed, weight_decay=1e-4, arch="bi"):
     Xtr, Ytr = X[tr_idx], Y[tr_idx]
     Xva, Yva = (X[val_idx], Y[val_idx]) if len(val_idx) else (None, None)
 
-    model = CrnnSeq(arch)
+    model = CrnnSeq(arch, steps=steps)
     opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=epochs)
     loss_fn = nn.CrossEntropyLoss()
@@ -176,12 +173,12 @@ def train_one(X, Y, epochs, batch, lr, seed, weight_decay=1e-4, arch="bi"):
             correct += int((logits.argmax(-1) == Ytr[b]).sum())
         sched.step()
         msg = (f"  epoch {ep+1}/{epochs} loss={total/len(Xtr):.4f} "
-               f"char_acc={correct/(len(Xtr)*STEPS):.4f}")
+               f"char_acc={correct/(len(Xtr)*steps):.4f}")
         if Xva is not None:
             model.eval()
             with torch.no_grad():
                 lg = model(Xva)
-                va = int((lg.argmax(-1) == Yva).sum()) / (len(Xva) * STEPS)
+                va = int((lg.argmax(-1) == Yva).sum()) / (len(Xva) * steps)
             msg += f" val_char_acc={va:.4f}"
             if va > best:
                 best = va
@@ -199,43 +196,28 @@ def main() -> int:
     ap.add_argument("--extra-repeat", type=int, default=1,
                     help="oversample the extra (real) data N times")
     ap.add_argument("--synth-subsample", type=int, default=0,
-                    help="keep only N synthetic rows (0 = keep all). The "
-                         "synthetic corpus is rendered with a different "
-                         "glyph/ink distribution than the real photos, so "
-                         "a large synthetic share can dominate the head "
-                         "and hurt real-photo generalisation.")
-    ap.add_argument("--synth-seed", type=int, default=0,
-                    help="seed for the synthetic subsample")
-    ap.add_argument("--synth-scale", type=float, default=1.0,
-                    help="multiply the synthetic features by this factor. The "
-                         "synthetic glyphs are inked denser than the real "
-                         "photos produce, so the two domains differ in "
-                         "feature magnitude as well as in shape.")
+                    help="keep only N synthetic rows (0 = keep all)")
+    ap.add_argument("--synth-seed", type=int, default=0)
+    ap.add_argument("--synth-scale", type=float, default=1.0)
     ap.add_argument("--val", default="")
     ap.add_argument("--out", required=True)
     ap.add_argument("--epochs", type=int, default=40)
     ap.add_argument("--batch", type=int, default=128)
     ap.add_argument("--lr", type=float, default=3e-3)
     ap.add_argument("--seed", type=int, default=7)
-    ap.add_argument("--arch", choices=("bi", "uni"), default="bi",
-                    help="sequence head: bidirectional GRU with position "
-                         "embedding (bi) or single-direction GRU (uni)")
-    ap.add_argument("--weight-decay", type=float, default=1e-4,
-                    help="AdamW weight decay. The real-domain corpus is "
-                         "tiny (41 photos), so the head overfits it unless "
-                         "this is raised; measured on the held-out split, "
-                         "0.3 beat 1e-4 by ~8 accuracy points.")
+    ap.add_argument("--arch", choices=("bi", "uni"), default="bi")
+    ap.add_argument("--weight-decay", type=float, default=1e-4)
+    ap.add_argument("--steps", type=int, default=44,
+                    help="sequence length: 44 for TD3 (default), 30 for CS/CD")
     args = ap.parse_args()
+
+    steps = args.steps
+    is_cscd = (steps == 30)
 
     np.random.seed(args.seed)
     tr = np.load(args.train)
-    # Feature fingerprint: which tool binary produced these features.
-    # Stamped into the emitted header so eval scripts can refuse a
-    # weights/tool mismatch (front-end rebuilds silently change the conv
-    # features -- the 10-28 "CRNN 0/41" incident).
     tool_md5 = str(tr["tool_md5"]) if "tool_md5" in tr.files else "unknown"
     if tool_md5 and len(tool_md5) == 32:
-        # Prefer the feature-scoped fingerprint when the npz carries one.
         from weight_fingerprint import feature_fingerprint as _fp
         tool_md5 = _fp()
     tool_path = str(tr["tool_path"]) if "tool_path" in tr.files else "unknown"
@@ -254,10 +236,6 @@ def main() -> int:
         print(f"synthetic feature scale: {args.synth_scale}", flush=True)
     X = torch.from_numpy(feats.astype("float32"))
     Y = torch.from_numpy(labels.astype("int64"))
-    # Real-domain samples are far fewer than the synthetic corpus, so they
-    # are oversampled. Mixing them in is what keeps the sequence head from
-    # overfitting to synthetic band geometry: the CRNN's gain depends on the
-    # 44-cell grid being aligned, and real photos crop/split differently.
     for path in args.extra:
         ex = np.load(path)
         exX = torch.from_numpy(ex["features"].astype("float32"))
@@ -267,35 +245,48 @@ def main() -> int:
             Y = torch.cat([Y, exY])
         print(f"mixed real domain: +{len(exX) * max(1, args.extra_repeat)} rows "
               f"from {path}", flush=True)
-    # (N, 2, 44, 96) -> per-line (N, 44, 96). The CNN front-end uses a
-    # DIFFERENT convolution weight set for MRZ line 1 and line 2, so the
-    # feature distributions differ and the sequence head must be trained
-    # per line.
-    print("training line 1 head:", flush=True)
-    m1, a1 = train_one(X[:, 0], Y[:, 0], args.epochs, args.batch, args.lr,
-                       args.seed, args.weight_decay, args.arch)
-    print("training line 2 head:", flush=True)
-    m2, a2 = train_one(X[:, 1], Y[:, 1], args.epochs, args.batch, args.lr,
-                       args.seed + 1, args.weight_decay, args.arch)
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
-    export_header(m1, out, "CRNN1", mode="write")
-    export_header(m2, out, "CRNN2", mode="append")
-    with out.open("a") as f:
-        f.write("#endif\n")
-    # Feature provenance goes into the header as a comment so the shipped
-    # weights are self-describing; eval scripts parse MRZ_CRNN_FEATURE_MD5
-    # back out and compare it against the tool binary under test.
-    prov = (f"/* feature provenance: MRZ_CRNN_FEATURE_MD5={tool_md5} "
-            f"tool={Path(tool_path).name if tool_path != 'unknown' else 'unknown'} "
-            f"trained={__import__('datetime').date.today().isoformat()} */\n")
-    body = out.read_text()
-    marker = "#define MRZ_CRNN_WEIGHTS_AVAILABLE 1\n"
-    body = body.replace(marker, marker + prov, 1)
-    out.write_text(body)
-    print(f"exported {out} line1_val={a1:.4f} line2_val={a2:.4f}")
-    print(f"  header fingerprint: MRZ_CRNN_FEATURE_MD5={tool_md5}")
+
+    if is_cscd:
+        print("training CS/CD single-line head:", flush=True)
+        m1, a1 = train_one(X[:, 0], Y[:, 0], args.epochs, args.batch, args.lr,
+                           args.seed, args.weight_decay, args.arch, steps=steps)
+        export_header(m1, out, "CRNN_CSCD", mode="write",
+                      header_guard="MRZ_OCR_CRNN_WEIGHTS_CSCD_H",
+                      avail_macro="MRZ_CRNN_CSCD_WEIGHTS_AVAILABLE")
+        with out.open("a") as f:
+            f.write("#endif\n")
+        prov = (f"/* feature provenance: MRZ_CRNN_FEATURE_MD5={tool_md5} "
+                f"tool={Path(tool_path).name if tool_path != 'unknown' else 'unknown'} "
+                f"trained={__import__('datetime').date.today().isoformat()} steps={steps} */\n")
+        body = out.read_text()
+        marker = "#define MRZ_CRNN_CSCD_WEIGHTS_AVAILABLE 1\n"
+        body = body.replace(marker, marker + prov, 1)
+        out.write_text(body)
+        print(f"exported {out} cscd_val={a1:.4f}")
+        print(f"  header fingerprint: MRZ_CRNN_FEATURE_MD5={tool_md5}")
+    else:
+        print("training line 1 head:", flush=True)
+        m1, a1 = train_one(X[:, 0], Y[:, 0], args.epochs, args.batch, args.lr,
+                           args.seed, args.weight_decay, args.arch, steps=steps)
+        print("training line 2 head:", flush=True)
+        m2, a2 = train_one(X[:, 1], Y[:, 1], args.epochs, args.batch, args.lr,
+                           args.seed + 1, args.weight_decay, args.arch, steps=steps)
+        export_header(m1, out, "CRNN1", mode="write")
+        export_header(m2, out, "CRNN2", mode="append")
+        with out.open("a") as f:
+            f.write("#endif\n")
+        prov = (f"/* feature provenance: MRZ_CRNN_FEATURE_MD5={tool_md5} "
+                f"tool={Path(tool_path).name if tool_path != 'unknown' else 'unknown'} "
+                f"trained={__import__('datetime').date.today().isoformat()} */\n")
+        body = out.read_text()
+        marker = "#define MRZ_CRNN_WEIGHTS_AVAILABLE 1\n"
+        body = body.replace(marker, marker + prov, 1)
+        out.write_text(body)
+        print(f"exported {out} line1_val={a1:.4f} line2_val={a2:.4f}")
+        print(f"  header fingerprint: MRZ_CRNN_FEATURE_MD5={tool_md5}")
     return 0
 
 

@@ -10,6 +10,7 @@
 #else
 #include "crnn_weights.h"
 #endif
+#include "crnn_weights_cscd.h"
 #include <math.h>
 #include <string.h>
 
@@ -98,6 +99,46 @@ void crnn_pair_init(crnn_pair_t *pair) {
                   CRNN2_WHB, CRNN2_UHB, CRNN2_BH_INB, CRNN2_BH_HNB);
     memcpy(pair->line2.out_w, CRNN2_OUT_W, sizeof(pair->line2.out_w));
     memcpy(pair->line2.out_b, CRNN2_OUT_B, sizeof(pair->line2.out_b));
+#endif
+    crnn_cscd_init(&pair->cscd);
+}
+
+void crnn_cscd_init(crnn_seq_t *net) {
+    if (!net) return;
+    memset(net, 0, sizeof(*net));
+#if defined(MRZ_CRNN_CSCD_WEIGHTS_AVAILABLE) && MRZ_CRNN_CSCD_WEIGHTS_AVAILABLE
+    /* pos_w for CSCD is only CRNN_STEPS_CSCD * CRNN_HIDDEN floats,
+     * not CRNN_STEPS * CRNN_HIDDEN, so we cannot use crnn_load_dir()
+     * which copies sizeof(net->pos_w) bytes. */
+    memcpy(net->proj_w, CRNN_CSCD_PROJ_W, sizeof(net->proj_w));
+    memcpy(net->proj_b, CRNN_CSCD_PROJ_B, sizeof(net->proj_b));
+    memcpy(net->pos_w, CRNN_CSCD_POS_W,
+           CRNN_STEPS_CSCD * CRNN_HIDDEN * sizeof(float));
+    /* Forward direction. */
+    memcpy(net->wz, CRNN_CSCD_WZ, sizeof(net->wz));
+    memcpy(net->uz, CRNN_CSCD_UZ, sizeof(net->uz));
+    memcpy(net->bz, CRNN_CSCD_BZ, sizeof(net->bz));
+    memcpy(net->wr, CRNN_CSCD_WR, sizeof(net->wr));
+    memcpy(net->ur, CRNN_CSCD_UR, sizeof(net->ur));
+    memcpy(net->br, CRNN_CSCD_BR, sizeof(net->br));
+    memcpy(net->wh, CRNN_CSCD_WH, sizeof(net->wh));
+    memcpy(net->uh, CRNN_CSCD_UH, sizeof(net->uh));
+    memcpy(net->bh_in, CRNN_CSCD_BH_IN, sizeof(net->bh_in));
+    memcpy(net->bh_hn, CRNN_CSCD_BH_HN, sizeof(net->bh_hn));
+    /* Backward direction. */
+    memcpy(net->wzb, CRNN_CSCD_WZB, sizeof(net->wzb));
+    memcpy(net->uzb, CRNN_CSCD_UZB, sizeof(net->uzb));
+    memcpy(net->bzb, CRNN_CSCD_BZB, sizeof(net->bzb));
+    memcpy(net->wrb, CRNN_CSCD_WRB, sizeof(net->wrb));
+    memcpy(net->urb, CRNN_CSCD_URB, sizeof(net->urb));
+    memcpy(net->brb, CRNN_CSCD_BRB, sizeof(net->brb));
+    memcpy(net->whb, CRNN_CSCD_WHB, sizeof(net->whb));
+    memcpy(net->uhb, CRNN_CSCD_UHB, sizeof(net->uhb));
+    memcpy(net->bh_inb, CRNN_CSCD_BH_INB, sizeof(net->bh_inb));
+    memcpy(net->bh_hnb, CRNN_CSCD_BH_HNB, sizeof(net->bh_hnb));
+    /* Classifier. */
+    memcpy(net->out_w, CRNN_CSCD_OUT_W, sizeof(net->out_w));
+    memcpy(net->out_b, CRNN_CSCD_OUT_B, sizeof(net->out_b));
 #endif
 }
 
@@ -220,4 +261,9 @@ void crnn_forward_line(const crnn_pair_t *pair, int line_idx,
     if (!pair) return;
     crnn_forward_net(line_idx == 0 ? &pair->line1 : &pair->line2,
                      features, steps, probs);
+}
+
+void crnn_forward_cscd(const crnn_seq_t *net,
+                       const float *features, int steps, float *probs) {
+    crnn_forward_net(net, features, steps, probs);
 }

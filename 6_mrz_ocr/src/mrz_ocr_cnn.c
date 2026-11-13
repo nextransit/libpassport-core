@@ -392,6 +392,15 @@ static void top3_of(const float *probs, int allow[37], top3_t *t) {
  * fill_allow and decode_row to switch between TD3 and CS/CD masks. */
 static mrz_doc_layout_t g_doc_layout = MRZ_LAYOUT_TD3_DOUBLE_44;
 
+static void crnn_forward_dispatch(const crnn_pair_t *pair, int line_idx,
+                                  const float *features, int steps,
+                                  float *probs) {
+    if (g_doc_layout == MRZ_LAYOUT_SINGLE_LINE_30)
+        crnn_forward_cscd(&pair->cscd, features, steps, probs);
+    else
+        crnn_forward_line(pair, line_idx, features, steps, probs);
+}
+
 static void fill_allow(int allow[37], int line_idx, int col) {
     int d0 = mrz_ocr_glyph_index('0');
     int a0 = mrz_ocr_glyph_index('A');
@@ -3373,7 +3382,7 @@ static void mrz_row_classify(mrz_line1_job_t *j) {
          * where its runner-up disagrees. */
         cnn_fc_batch(j->net, j->feats, j->nchars, j->probs);
         if (j->seq_probs)
-            crnn_forward_line(&g_mrz_scratch_crnn, j->line_idx, j->feats,
+            crnn_forward_dispatch(&g_mrz_scratch_crnn, j->line_idx, j->feats,
                               j->nchars, j->seq_probs);
     } else if (j->use_fuse) {
         /* Legacy in-place probability fusion (MRZ_OCR_FUSE_MODE=probs),
@@ -3381,13 +3390,13 @@ static void mrz_row_classify(mrz_line1_job_t *j) {
         cnn_fc_batch(j->net, j->feats, j->nchars, j->probs);
         float *seq = j->seq_probs;
         if (seq) {
-            crnn_forward_line(&g_mrz_scratch_crnn, j->line_idx, j->feats,
+            crnn_forward_dispatch(&g_mrz_scratch_crnn, j->line_idx, j->feats,
                               j->nchars, seq);
             mrz_fuse_probs(j->probs, seq, j->nchars, j->fuse_alpha,
                            j->fuse_gate, j->fuse_ratio);
         }
     } else if (j->use_seq) {
-        crnn_forward_line(&g_mrz_scratch_crnn, j->line_idx, j->feats,
+        crnn_forward_dispatch(&g_mrz_scratch_crnn, j->line_idx, j->feats,
                           j->nchars, j->probs);
     } else {
         cnn_fc_batch(j->net, j->feats, j->nchars, j->probs);
@@ -3434,13 +3443,13 @@ static void mrz_line1_run(mrz_line1_job_t *j) {
                 cnn_fc_batch(j->net, j->feats, j->nchars, j->probs);
                 float *seq = j->seq_probs;
                 if (seq) {
-                    crnn_forward_line(&g_mrz_scratch_crnn, j->line_idx, j->feats,
+                    crnn_forward_dispatch(&g_mrz_scratch_crnn, j->line_idx, j->feats,
                                       j->nchars, seq);
                     mrz_fuse_probs(j->probs, seq, j->nchars, j->fuse_alpha,
                                    j->fuse_gate, j->fuse_ratio);
                 }
             } else if (j->use_seq) {
-                crnn_forward_line(&g_mrz_scratch_crnn, j->line_idx, j->feats,
+                crnn_forward_dispatch(&g_mrz_scratch_crnn, j->line_idx, j->feats,
                                   j->nchars, j->probs);
             } else {
                 cnn_fc_batch(j->net, j->feats, j->nchars, j->probs);
@@ -4959,7 +4968,7 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                     cnn_fc_batch(line_net, feats, nchars, probs);
                     float *seq = (float *)mrz_scratch_probs(44 * CNN_OUT);
                     if (!seq) { status = MRZ_OCR_ERR_LOAD; goto cleanup; }
-                    crnn_forward_line(&g_mrz_scratch_crnn, li, feats, nchars, seq);
+                    crnn_forward_dispatch(&g_mrz_scratch_crnn, li, feats, nchars, seq);
                     if (fuse_arb) {
                         /* Arbitration mode: keep the CNN probs pure for
                          * the decode; the sequence verdict is handed to
@@ -4974,7 +4983,7 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                      * contract so the downstream ICAO/checksum logic is
                      * unchanged. One head per MRZ line because the CNN
                      * front-end already uses line-specific conv weights. */
-                    crnn_forward_line(&g_mrz_scratch_crnn, li, feats, nchars, probs);
+                    crnn_forward_dispatch(&g_mrz_scratch_crnn, li, feats, nchars, probs);
                 } else {
                     cnn_fc_batch(line_net, feats, nchars, probs);
                 }
@@ -4998,13 +5007,13 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                                 /* legacy probs mode: fuse per shift */
                                 float *seq = (float *)mrz_scratch_probs(44 * CNN_OUT);
                                 if (!seq) { status = MRZ_OCR_ERR_LOAD; goto cleanup; }
-                                crnn_forward_line(&g_mrz_scratch_crnn, li, feats, nchars, seq);
+                                crnn_forward_dispatch(&g_mrz_scratch_crnn, li, feats, nchars, seq);
                                 mrz_fuse_probs(probs, seq, nchars, fuse_alpha, fuse_gate, fuse_ratio);
                             }
                             /* arb mode: TTA-averages the CNN probs only;
                              * seq_arb keeps the BASE CRNN verdict (same
                              * policy as the worker TTA path). */
-                        } else if (use_crnn) crnn_forward_line(&g_mrz_scratch_crnn, li, feats, nchars, probs);
+                        } else if (use_crnn) crnn_forward_dispatch(&g_mrz_scratch_crnn, li, feats, nchars, probs);
                         else cnn_fc_batch(line_net, feats, nchars, probs);
                         for (int c = 0; c < nchars; ++c)
                             for (int o = 0; o < CNN_OUT; ++o)
