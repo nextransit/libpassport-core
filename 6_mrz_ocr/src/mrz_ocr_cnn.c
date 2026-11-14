@@ -3240,6 +3240,146 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
         }
     }
 
+    if (g_doc_layout == MRZ_LAYOUT_SINGLE_LINE_30 && total == 30) {
+        static int cscd_cd_enabled = -1;
+        if (cscd_cd_enabled < 0) {
+            const char *e = getenv("MRZ_OCR_NO_CSCD_CD_RESCUE");
+            cscd_cd_enabled = !(e && e[0] == '1' && e[1] == 0);
+        }
+        if (cscd_cd_enabled
+            && dest[11] >= '0' && dest[11] <= '9'
+            && dest[19] >= '0' && dest[19] <= '9'
+            && dest[27] >= '0' && dest[27] <= '9') {
+            char buf[25];
+            memcpy(buf, dest + 2, 9); buf[9] = 0;
+            int ok11 = (check_digit_of(buf, 9) == (dest[11] - '0'));
+            memcpy(buf, dest + 13, 6); buf[6] = 0;
+            int ok19 = (check_digit_of(buf, 6) == (dest[19] - '0'));
+            memcpy(buf, dest + 21, 6); buf[6] = 0;
+            int ok27 = (check_digit_of(buf, 6) == (dest[27] - '0'));
+            if (ok11 && ok19 && ok27) {
+                if (dest[29] == '<') {
+                    char comp[25];
+                    memcpy(comp,      dest + 2,  10);
+                    memcpy(comp + 10, dest + 13,  7);
+                    memcpy(comp + 17, dest + 21,  7);
+                    comp[24] = 0;
+                    dest[29] = '0' + check_digit_of(comp, 24);
+                    if (dg) dg->gate[29] |= 16;
+                }
+            }
+        }
+    }
+
+    if (g_doc_layout == MRZ_LAYOUT_SINGLE_LINE_30 && total == 30) {
+        static int cscd_fld_enabled = -1;
+        if (cscd_fld_enabled < 0) {
+            const char *e = getenv("MRZ_OCR_CSCD_FLD");
+            cscd_fld_enabled = (e && e[0] == '1' && e[1] == 0);
+        }
+        if (cscd_fld_enabled) {
+            static const int wtab_cscd[3] = {7, 3, 1};
+            /* CS/CD field-scoped checksum repair.
+             *
+             * Three independent fields with check digits:
+             *   doc_no:  cols 2-10 (9 chars) -> CK at col 11
+             *   birth:   cols 13-18 (6 chars) -> CK at col 19
+             *   expiry:  cols 21-26 (6 chars) -> CK at col 27
+             *
+             * For each field whose check digit fails, search the top-K
+             * candidates per column using DP over the checksum residue
+             * (10 states), keeping the highest-log-prob combination that
+             * makes the field's check digit pass. The check digit itself
+             * is DERIVED from the field body, never enumerated.
+             *
+             * The composite CK at col 29 is then recomputed from the
+             * (possibly repaired) fields. */
+            struct { int body_start, body_len, ck_pos; } fields[3] = {
+                { 2, 9, 11 },   /* doc_no: issuing_state(2) + doc_no(7) */
+                { 13, 6, 19 },  /* birth_date */
+                { 21, 6, 27 },  /* expiry_date */
+            };
+            for (int fi = 0; fi < 3; ++fi) {
+                int bs = fields[fi].body_start;
+                int bl = fields[fi].body_len;
+                int ck = fields[fi].ck_pos;
+                if (dest[ck] < '0' || dest[ck] > '9') continue;
+                int target_ck = dest[ck] - '0';
+                /* Check if the current reading already passes */
+                char buf[10];
+                memcpy(buf, dest + bs, bl); buf[bl] = 0;
+                if (check_digit_of(buf, bl) == target_ck) continue;
+                /* DP over checksum residue: state[r] = best log-prob
+                 * with accumulated residue r. */
+                double dscore[10];
+                int dpick[10][9];
+                for (int r = 0; r < 10; ++r) {
+                    dscore[r] = -1e300;
+                    for (int q = 0; q < bl; ++q) dpick[r][q] = -1;
+                }
+                dscore[0] = 0.0;
+                for (int col = 0; col < bl; ++col) {
+                    int abs_pos = bs + col;
+                    double ndscore[10];
+                    int ndpick[10][9];
+                    for (int r = 0; r < 10; ++r) {
+                        ndscore[r] = -1e300;
+                        for (int q = 0; q < bl; ++q) ndpick[r][q] = -1;
+                    }
+                    for (int r = 0; r < 10; ++r) {
+                        if (dscore[r] <= -1e299) continue;
+                        for (int k = 0; k < mrz_topk(); ++k) {
+                            char ch = MRZ_OCR_GLYPHS[t3[abs_pos].cand[k]].ch;
+                            int v;
+                            if (ch >= '0' && ch <= '9') v = ch - '0';
+                            else if (ch >= 'A' && ch <= 'Z') v = ch - 'A' + 10;
+                            else v = 0;
+                            int nr = (r + v * wtab_cscd[col % 3]) % 10;
+                            double sc = dscore[r] + mrz_beam_lp(&t3[abs_pos], k);
+                            if (sc > ndscore[nr]) {
+                                ndscore[nr] = sc;
+                                for (int q = 0; q < col; ++q) ndpick[r][q] = dpick[r][q];
+                                ndpick[nr][col] = k;
+                            }
+                        }
+                    }
+                    for (int r = 0; r < 10; ++r) {
+                        dscore[r] = ndscore[r];
+                        for (int q = 0; q < bl; ++q) dpick[r][q] = ndpick[r][q];
+                    }
+                }
+                /* Pick the state matching the target check digit */
+                if (dscore[target_ck] > -1e299) {
+                    for (int col = 0; col < bl; ++col) {
+                        int abs_pos = bs + col;
+                        int k = dpick[target_ck][col];
+                        if (k >= 0) {
+                            dest[abs_pos] = MRZ_OCR_GLYPHS[t3[abs_pos].cand[k]].ch;
+                            if (dg) dg->gate[abs_pos] |= 32;
+                        }
+                    }
+                    /* Derive the check digit from the repaired body */
+                    memcpy(buf, dest + bs, bl); buf[bl] = 0;
+                    dest[ck] = '0' + check_digit_of(buf, bl);
+                    if (dg) dg->gate[ck] |= 32;
+                }
+            }
+            /* Recompute composite CK at col 29 */
+            if (dest[29] >= '0' && dest[29] <= '9') {
+                char comp[25];
+                memcpy(comp,      dest + 2,  10);
+                memcpy(comp + 10, dest + 13,  7);
+                memcpy(comp + 17, dest + 21,  7);
+                comp[24] = 0;
+                int expected = check_digit_of(comp, 24);
+                if ((dest[29] - '0') != expected) {
+                    dest[29] = '0' + expected;
+                    if (dg) dg->gate[29] |= 32;
+                }
+            }
+        }
+    }
+
     int sum = 0;
     for (int c = 0; c < total; ++c)
         sum += (int)((t3[c].p[0] > 0 ? t3[c].p[0] : 0.0f) * 100);
