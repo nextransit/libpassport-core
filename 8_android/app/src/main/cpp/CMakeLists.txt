@@ -41,6 +41,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -DNDEBUG -O2 -ffp-contract=off -fvisibility=hidden")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -DNDEBUG -O2 -ffp-contract=off -fvisibility=hidden")
 
+# Enable NEON for armeabi-v7a (arm64-v8a has NEON by default).
+if(ANDROID_ABI STREQUAL "armeabi-v7a")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mfpu=neon -D__ARM_NEON")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon -D__ARM_NEON")
+endif()
+
 # Re-use the exact source from the host project so the CNN weights and
 # geometric heuristics stay in lock-step with bench_results.json.
 set(ROOT_PASSPORT ${CMAKE_CURRENT_SOURCE_DIR}/../../../../..)
@@ -89,6 +95,7 @@ set(MRZ_WEIGHT_HEADERS
     ${MRZ_DIR}/src/cnn_weights_line1.h
     ${MRZ_DIR}/src/cnn_weights_line2.h
     ${MRZ_DIR}/src/crnn_weights.h
+    ${MRZ_DIR}/src/crnn_weights_cscd.h
     ${MRZ_DIR}/src/cnn_weights.h)
 set_property(TARGET mrz_ocr APPEND PROPERTY
              OBJECT_DEPENDS ${MRZ_WEIGHT_HEADERS})
@@ -131,7 +138,8 @@ set_source_files_properties(${MRZ_PIC_SOURCES} PROPERTIES COMPILE_OPTIONS "-fvis
 target_link_libraries(mrz_ocr_pic PUBLIC face m log)
 set(MRZ_WEIGHT_HEADERS_PIC
     ${MRZ_DIR}/src/cnn_weights_line1_pic.h
-    ${MRZ_DIR}/src/cnn_weights_line2_pic.h)
+    ${MRZ_DIR}/src/cnn_weights_line2_pic.h
+    ${MRZ_DIR}/src/crnn_weights_cscd.h)
 set_property(TARGET mrz_ocr_pic APPEND PROPERTY
              OBJECT_DEPENDS ${MRZ_WEIGHT_HEADERS_PIC})
 

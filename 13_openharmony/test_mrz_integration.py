@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-test_mrz_integration.py - 验证 loogarch_ocr MRZ 集成正确性
+test_mrz_integration.py - 验证 ohocr MRZ 集成正确性
 
 对每张 PassPortPhoto:
   路径A (CLI 参照):  RGB → locate_band → mrz_ocr_cnn_tool → MRZ_A
-  路径B (Y-only 库): RGB → loogarch_ocr(gray=1, RGB888) → MRZ_B
-  路径C (Color 库):  RGB → loogarch_ocr(RGB888, 无 gray) → MRZ_C
+  路径B (Y-only 库): RGB → ohocr(gray=1, RGB888) → MRZ_B
+  路径C (Color 库):  RGB → ohocr(RGB888, 无 gray) → MRZ_C
 
 验证 B==A (Y-only 等价) 且 C==A (Color 等价)
 """
@@ -26,14 +26,14 @@ from eval_weight_sets import run
 
 GT = ROOT / "tests/gt_photo_passport_official.json"
 TOOL = ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_cnn_tool"
-LIB = ROOT / "13_loogarch_ocr" / "libloogarch_ocr_mrz.so"
-LIB_OPT = ROOT / "13_loogarch_ocr" / "libloogarch_ocr_mrz_optimized.so"
+LIB = ROOT / "13_openharmony" / "libohocr_mrz.so"
+LIB_OPT = ROOT / "13_openharmony" / "libohocr_mrz_optimized.so"
 PAD = 10
 
-RGB888 = 6  # LOOGARCH_PIXEL_FORMAT_RGB888 (NV21=0,NV12=1,I420=2,I422=3,I444=4,ARGB=5,RGB888=6)
+RGB888 = 6  # OHOCR_PIXEL_FORMAT_RGB888 (NV21=0,NV12=1,I420=2,I422=3,I444=4,ARGB=5,RGB888=6)
 
 
-class LoogarchOcrResult(ctypes.Structure):
+class OhocrResult(ctypes.Structure):
     _fields_ = [
         ("text", ctypes.c_void_p),
         ("confidence", ctypes.c_int),
@@ -55,14 +55,14 @@ class LoogarchOcrResult(ctypes.Structure):
 
 def load_lib(path):
     lib = ctypes.CDLL(str(path))
-    lib.loogarch_ocr_init.restype = ctypes.c_void_p
-    lib.loogarch_ocr_init.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_char_p]
-    lib.loogarch_ocr_process.restype = LoogarchOcrResult
-    lib.loogarch_ocr_process.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8),
+    lib.ohocr_init.restype = ctypes.c_void_p
+    lib.ohocr_init.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_char_p]
+    lib.ohocr_process.restype = OhocrResult
+    lib.ohocr_process.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8),
                                          ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int]
-    lib.loogarch_ocr_cleanup.restype = None
-    lib.loogarch_ocr_cleanup.argtypes = [ctypes.c_void_p]
-    lib.loogarch_ocr_get_version.restype = ctypes.c_char_p
+    lib.ohocr_cleanup.restype = None
+    lib.ohocr_cleanup.argtypes = [ctypes.c_void_p]
+    lib.ohocr_get_version.restype = ctypes.c_char_p
     return lib
 
 
@@ -76,11 +76,11 @@ def run_lib_path(lib, rgb_img, gray_only):
     arr = np.ascontiguousarray(np.array(band, dtype=np.uint8))
     buf = arr.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
     opts = b"gray=1" if gray_only else b""
-    handle = lib.loogarch_ocr_init(RGB888, w, h, opts)
+    handle = lib.ohocr_init(RGB888, w, h, opts)
     if not handle:
         return None
-    res = lib.loogarch_ocr_process(handle, buf, 0, 0, 0, 0)
-    lib.loogarch_ocr_cleanup(handle)
+    res = lib.ohocr_process(handle, buf, 0, 0, 0, 0)
+    lib.ohocr_cleanup(handle)
     return {
         "line1": res.line1.decode("ascii", errors="replace"),
         "line2": res.line2.decode("ascii", errors="replace"),
@@ -123,8 +123,8 @@ def main():
 
     lib = load_lib(LIB)
     lib_opt = load_lib(LIB_OPT)
-    print(f"lib version: {lib.loogarch_ocr_get_version().decode()}")
-    print(f"lib_opt version: {lib_opt.loogarch_ocr_get_version().decode()}")
+    print(f"lib version: {lib.ohocr_get_version().decode()}")
+    print(f"lib_opt version: {lib_opt.ohocr_get_version().decode()}")
 
     rows = []
     print("=" * 120)
@@ -209,7 +209,7 @@ def main():
     print(f"  B (lib Y-only):")
     print(f"    line1 {b_l1}/{tot_l1} = {b_l1/tot_l1:.4f}  line2 {b_l2}/{tot_l2} = {b_l2/tot_l2:.4f}  both-exact {b_both}/{n}")
 
-    out_json = ROOT / "13_loogarch_ocr" / "mrz_integration_report.json"
+    out_json = ROOT / "13_openharmony" / "mrz_integration_report.json"
     out_json.write_text(json.dumps(rows, ensure_ascii=False, indent=1))
     print(f"\n  detailed JSON: {out_json}")
 

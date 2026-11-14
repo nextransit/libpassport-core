@@ -136,7 +136,7 @@ def main():
           f"both-exact {b_both}/{len(located)}")
     print(f"  tool={TOOL.name}")
 
-    out_json = ROOT / "13_loogarch_ocr" / "yonly_report.json"
+    out_json = ROOT / "13_openharmony" / "yonly_report.json"
     out_json.write_text(json.dumps(rows, ensure_ascii=False, indent=1))
     print(f"\n  detailed JSON: {out_json}")
     return 1 if mismatch else 0

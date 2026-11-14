@@ -1,6 +1,6 @@
-# loogarch OCR 库项目验收标准
+# OpenHarmony OCR 库项目验收标准
 
-> 平台：OpenHarmony（loogarch）桌面版 · 语言：C/C++ · 输入：图像 buffer（NV21 / NV12 / I420 / I422 / I444 / YUYV / ARGB8888 / RGB888 / RGB565 / MJPEG / JPEG / PNG）
+> 平台：OpenHarmony（loongarch + arm64）桌面版 · 语言：C/C++ · 输入：图像 buffer（NV21 / NV12 / I420 / I422 / I444 / YUYV / ARGB8888 / RGB888 / RGB565 / MJPEG / JPEG / PNG）
 
 ## 一、出生日期（YYMMDD）跨世纪判断规则
 

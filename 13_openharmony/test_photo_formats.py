@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-test_photo_formats.py - 用真实 PassPortPhoto 图片验证 loogarch_ocr 格式转换正确性
+test_photo_formats.py - 用真实 PassPortPhoto 图片验证 ohocr 格式转换正确性
 
 流程: PassPortPhoto(JPG) -> PIL 解码 RGB -> 编码成 YUYV/NV21/MJPEG/ARGB/RGB888
-      -> 喂给 libloogarch_ocr.so (color + gray=1) -> 验证维度/格式/不崩溃
+      -> 喂给 libohocr.so (color + gray=1) -> 验证维度/格式/不崩溃
       + Y 平面闭环自检: RGB->YUYV 编码的 Y 字节 == BT.601 luma
 """
 import ctypes
@@ -20,7 +20,7 @@ LIBC = ctypes.CDLL(None)
 LIBC.free.argtypes = [ctypes.c_void_p]
 LIBC.free.restype = None
 
-# 像素格式枚举 (loogarch_ocr.h)
+# 像素格式枚举 (ohocr.h)
 FMT = {
     "NV21": 0, "NV12": 1, "I420": 2, "I422": 3, "I444": 4,
     "ARGB8888": 5, "RGB888": 6, "RGB565": 7, "JPEG": 8, "PNG": 9,
@@ -40,14 +40,14 @@ class OcrResult(ctypes.Structure):
 
 def load_lib(path):
     lib = ctypes.CDLL(path)
-    lib.loogarch_ocr_init.restype = ctypes.c_void_p
-    lib.loogarch_ocr_init.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_char_p]
-    lib.loogarch_ocr_process.restype = OcrResult
-    lib.loogarch_ocr_process.argtypes = [
+    lib.ohocr_init.restype = ctypes.c_void_p
+    lib.ohocr_init.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_char_p]
+    lib.ohocr_process.restype = OcrResult
+    lib.ohocr_process.argtypes = [
         ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int
     ]
-    lib.loogarch_ocr_cleanup.argtypes = [ctypes.c_void_p]
-    lib.loogarch_ocr_get_version.restype = ctypes.c_char_p
+    lib.ohocr_cleanup.argtypes = [ctypes.c_void_p]
+    lib.ohocr_get_version.restype = ctypes.c_char_p
     return lib
 
 
@@ -92,11 +92,11 @@ def rgb_to_mjpeg(rgb, w, h):
 
 
 def run_one(lib, fmt_id, fmt_name, buf, w, h, gray):
-    handle = lib.loogarch_ocr_init(fmt_id, w, h, b"gray=1" if gray else None)
+    handle = lib.ohocr_init(fmt_id, w, h, b"gray=1" if gray else None)
     if not handle:
         return False, "init NULL"
-    res = lib.loogarch_ocr_process(handle, buf, 0, 0, 0, 0)
-    lib.loogarch_ocr_cleanup(handle)
+    res = lib.ohocr_process(handle, buf, 0, 0, 0, 0)
+    lib.ohocr_cleanup(handle)
     txt = ""
     if res.text:
         txt = ctypes.string_at(res.text).decode("utf-8", "replace")
@@ -113,9 +113,9 @@ def run_one(lib, fmt_id, fmt_name, buf, w, h, gray):
 
 
 def main():
-    lib_path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, "libloogarch_ocr.so")
+    lib_path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, "libohocr.so")
     lib = load_lib(lib_path)
-    print(f"lib: {os.path.basename(lib_path)}  version: {lib.loogarch_ocr_get_version().decode()}")
+    print(f"lib: {os.path.basename(lib_path)}  version: {lib.ohocr_get_version().decode()}")
 
     photos = sorted(glob.glob(os.path.join(PHOTO_DIR, "*.jpg")))
     if not photos:

@@ -1,46 +1,61 @@
 /*
- * loogarch_ocr_optimized.c - Optimized OCR for loongarch/OpenHarmony desktop
+ * ohocr_optimized.c - Optimized OCR for OpenHarmony desktop
  *
  * Camera format support: NV21, NV12, I420, I422, I444, YUYV,
  *                        ARGB8888, RGB888, RGB565, MJPEG, JPEG, PNG
  * Y-only fast path: extract luma plane directly, skip chroma conversion.
  *
- * loongarch-specific optimizations:
+ * Architecture-specific optimizations:
  * - Loop unrolling for in-order execution pipeline
- * - 16-byte alignment for L1 cache line efficiency
+ * - Cache-line alignment for L1 efficiency
  * - Bit-shift optimization for x/2 (UV subsampling)
- * - Cache-friendly data layouts for loongarch L1/L2 hierarchy
+ * - Cache-friendly data layouts for L1/L2 hierarchy
  * - Reduced branch pressure for sequential execution
+ *
+ * LoongArch: 16-byte L1 cache line, in-order pipeline benefits from
+ *            manual loop unrolling and reduced branch pressure.
+ * ARM64:     64-byte L1 cache line, out-of-order pipeline; unrolling
+ *            is neutral but alignment to 64 bytes avoids partial-line
+ *            fetches on NEON loads.
  */
 
-#include "loogarch_ocr.h"
+#include "ohocr.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
 #include <pthread.h>
 
-#ifdef LOOGARCH_OCR_WITH_MRZ
+#ifdef OHOCR_WITH_MRZ
 #include "mrz_ocr.h"
 #include "face.h"
 #endif
 
-/* loongarch internal structure */
+/* internal structure */
 typedef struct {
-    loogarch_pixel_format_t format;
+    ohocr_pixel_format_t format;
     int width;
     int height;
-    int stride;           /* Row stride, aligned to 16 bytes */
+    int stride;           /* Row stride, aligned to cache line */
     int gray_only;        /* Y-only fast path */
     int use_fuse;         /* 1 = fused engine (CNN head + CRNN head) */
     int use_par;          /* 1 = dual-line parallel decode */
     const uint8_t* y_data;
     const uint8_t* u_data;
     const uint8_t* v_data;
-} loogarch_ocr_internal_opt_t;
+} ohocr_internal_opt_t;
 
-/* Align pointer to 16 bytes for loongarch L1 cache lines */
-#define ALIGN16(p) ((uint8_t*)(((uintptr_t)(p) + 15) & ~(uintptr_t)15))
+/* Cache-line alignment: LoongArch L1 = 16 bytes, ARM64 L1 = 64 bytes */
+#if defined(__aarch64__)
+#define ALIGN_CACHE(p) ((uint8_t*)(((uintptr_t)(p) + 63) & ~(uintptr_t)63))
+#define CACHE_LINE 64
+#elif defined(__loongarch64)
+#define ALIGN_CACHE(p) ((uint8_t*)(((uintptr_t)(p) + 15) & ~(uintptr_t)15))
+#define CACHE_LINE 16
+#else
+#define ALIGN_CACHE(p) ((uint8_t*)(((uintptr_t)(p) + 15) & ~(uintptr_t)15))
+#define CACHE_LINE 16
+#endif
 
 /* ===================== Y-only (luma) extraction ===================== */
 
@@ -545,7 +560,7 @@ static int png_decode_stub(const uint8_t* data, int data_size, uint8_t** out_rgb
 
 /* ===================== MRZ CNN engine integration ===================== */
 
-#ifdef LOOGARCH_OCR_WITH_MRZ
+#ifdef OHOCR_WITH_MRZ
 /* The MRZ engine is not thread-safe: the CNN scratchpad and the
  * dual-line worker are shared statics.  One lock around the whole
  * recognition keeps the library usable from the camera thread and
@@ -565,7 +580,7 @@ static pthread_mutex_t g_mrz_mutex = PTHREAD_MUTEX_INITIALIZER;
  * (22/41 exact vs 21/41, 96.90% vs 96.78% character accuracy). */
 static void run_mrz_engine(uint8_t* rgb, int w, int h, int is_bgr,
                            int use_fuse, int use_par,
-                           loogarch_ocr_result_t* result)
+                           ohocr_result_t* result)
 {
     static int mrz_inited = 0;
     pthread_mutex_lock(&g_mrz_mutex);
@@ -627,18 +642,18 @@ static void run_mrz_engine(uint8_t* rgb, int w, int h, int is_bgr,
 
     pthread_mutex_unlock(&g_mrz_mutex);
 }
-#endif /* LOOGARCH_OCR_WITH_MRZ */
+#endif /* OHOCR_WITH_MRZ */
 
 /* ===================== OCR processing ===================== */
 
-static loogarch_ocr_result_t process_ocr_optimized(void* handle, const uint8_t* buffer, int format, int width, int height, int roi_x, int roi_y, int roi_w, int roi_h)
+static ohocr_result_t process_ocr_optimized(void* handle, const uint8_t* buffer, int format, int width, int height, int roi_x, int roi_y, int roi_w, int roi_h)
 {
     (void)roi_x;
     (void)roi_y;
     (void)roi_w;
     (void)roi_h;
 
-    loogarch_ocr_internal_opt_t* internal = (loogarch_ocr_internal_opt_t*)handle;
+    ohocr_internal_opt_t* internal = (ohocr_internal_opt_t*)handle;
     int gray_only = internal ? internal->gray_only : 0;
     int use_fuse = internal ? internal->use_fuse : 0;
     int use_par  = internal ? internal->use_par : 0;
@@ -647,11 +662,11 @@ static loogarch_ocr_result_t process_ocr_optimized(void* handle, const uint8_t* 
      * Y-only path is the only correct one for it -- regardless of what
      * the caller asked for.  The camera on the loongarch device hands
      * out GRAY frames, so this is the normal production path there. */
-    if (format == LOOGARCH_PIXEL_FORMAT_GRAY) {
+    if (format == OHOCR_PIXEL_FORMAT_GRAY) {
         gray_only = 1;
     }
 
-    loogarch_ocr_result_t result;
+    ohocr_result_t result;
     result.text = NULL;
     result.confidence = 0;
     result.width = width;
@@ -680,33 +695,33 @@ static loogarch_ocr_result_t process_ocr_optimized(void* handle, const uint8_t* 
         }
 
         switch (format) {
-            case LOOGARCH_PIXEL_FORMAT_NV21:
-            case LOOGARCH_PIXEL_FORMAT_NV12:
-            case LOOGARCH_PIXEL_FORMAT_I420:
-            case LOOGARCH_PIXEL_FORMAT_I422:
-            case LOOGARCH_PIXEL_FORMAT_I444:
+            case OHOCR_PIXEL_FORMAT_NV21:
+            case OHOCR_PIXEL_FORMAT_NV12:
+            case OHOCR_PIXEL_FORMAT_I420:
+            case OHOCR_PIXEL_FORMAT_I422:
+            case OHOCR_PIXEL_FORMAT_I444:
                 planar_extract_y_opt(buffer, width, height, width, gray);
                 break;
-            case LOOGARCH_PIXEL_FORMAT_YUYV:
+            case OHOCR_PIXEL_FORMAT_YUYV:
                 yuyv_extract_y_opt(buffer, width, height, width * 2, gray);
                 break;
-            case LOOGARCH_PIXEL_FORMAT_ARGB8888:
+            case OHOCR_PIXEL_FORMAT_ARGB8888:
                 argb8888_to_gray_opt(buffer, width, height, width * 4, gray);
                 break;
-            case LOOGARCH_PIXEL_FORMAT_RGB888:
+            case OHOCR_PIXEL_FORMAT_RGB888:
                 rgb888_to_gray_opt(buffer, width, height, width * 3, gray);
                 break;
-            case LOOGARCH_PIXEL_FORMAT_RGB565:
+            case OHOCR_PIXEL_FORMAT_RGB565:
                 rgb565_to_gray_opt(buffer, width, height, width * 2, gray);
                 break;
-            case LOOGARCH_PIXEL_FORMAT_GRAY:
+            case OHOCR_PIXEL_FORMAT_GRAY:
                 /* Already single-plane luma: copy it out, nothing to
                  * convert.  This is what the loongarch v4l2 camera
                  * delivers (CAMERA_PIXEL_FORMAT_GRAY). */
                 planar_extract_y_opt(buffer, width, height, width, gray);
                 break;
-            case LOOGARCH_PIXEL_FORMAT_JPEG:
-            case LOOGARCH_PIXEL_FORMAT_MJPEG: {
+            case OHOCR_PIXEL_FORMAT_JPEG:
+            case OHOCR_PIXEL_FORMAT_MJPEG: {
                 uint8_t* decoded = NULL;
                 if (jpeg_decode_gray_stub(buffer, width, &decoded, &effective_w, &effective_h) == 0) {
                     free(gray); gray = decoded;
@@ -715,7 +730,7 @@ static loogarch_ocr_result_t process_ocr_optimized(void* handle, const uint8_t* 
                 }
                 break;
             }
-            case LOOGARCH_PIXEL_FORMAT_PNG: {
+            case OHOCR_PIXEL_FORMAT_PNG: {
                 uint8_t* decoded = NULL;
                 if (png_decode_gray_stub(buffer, width, &decoded, &effective_w, &effective_h) == 0) {
                     free(gray); gray = decoded;
@@ -731,7 +746,7 @@ static loogarch_ocr_result_t process_ocr_optimized(void* handle, const uint8_t* 
                 return result;
         }
 
-#ifdef LOOGARCH_OCR_WITH_MRZ
+#ifdef OHOCR_WITH_MRZ
         {
             size_t n = (size_t)effective_w * effective_h;
             uint8_t* gray_rgb = (uint8_t*)malloc(n * 3);
@@ -750,7 +765,7 @@ static loogarch_ocr_result_t process_ocr_optimized(void* handle, const uint8_t* 
         char* text_buf = (char*)malloc(96);
         if (text_buf) {
             snprintf(text_buf, 96,
-                     "loogarch OH OCR-optimized Y-only: %dx%d format=%d",
+                     "ohocr-optimized Y-only: %dx%d format=%d",
                      effective_w, effective_h, format);
             result.text = text_buf;
             result.confidence = 65;
@@ -769,35 +784,35 @@ static loogarch_ocr_result_t process_ocr_optimized(void* handle, const uint8_t* 
     }
 
     switch (format) {
-        case LOOGARCH_PIXEL_FORMAT_NV21:
+        case OHOCR_PIXEL_FORMAT_NV21:
             nv21_to_rgb888_optimized(buffer, effective_w, effective_h, effective_w, rgb);
             break;
-        case LOOGARCH_PIXEL_FORMAT_NV12:
+        case OHOCR_PIXEL_FORMAT_NV12:
             nv12_to_rgb888_optimized(buffer, effective_w, effective_h, effective_w, rgb);
             break;
-        case LOOGARCH_PIXEL_FORMAT_I420:
+        case OHOCR_PIXEL_FORMAT_I420:
             i420_to_rgb888_optimized(buffer, effective_w, effective_h, effective_w, rgb);
             break;
-        case LOOGARCH_PIXEL_FORMAT_I422:
+        case OHOCR_PIXEL_FORMAT_I422:
             i422_to_rgb888_optimized(buffer, effective_w, effective_h, effective_w, rgb);
             break;
-        case LOOGARCH_PIXEL_FORMAT_I444:
+        case OHOCR_PIXEL_FORMAT_I444:
             i444_to_rgb888_optimized(buffer, effective_w, effective_h, effective_w, rgb);
             break;
-        case LOOGARCH_PIXEL_FORMAT_YUYV:
+        case OHOCR_PIXEL_FORMAT_YUYV:
             yuyv_to_rgb888_optimized(buffer, effective_w, effective_h, effective_w * 2, rgb);
             break;
-        case LOOGARCH_PIXEL_FORMAT_ARGB8888:
+        case OHOCR_PIXEL_FORMAT_ARGB8888:
             argb8888_to_rgb888_optimized(buffer, effective_w, effective_h, effective_w * 4, rgb);
             break;
-        case LOOGARCH_PIXEL_FORMAT_RGB888:
+        case OHOCR_PIXEL_FORMAT_RGB888:
             rgb888_to_bgr888_optimized(buffer, effective_w, effective_h, effective_w * 3, rgb);
             break;
-        case LOOGARCH_PIXEL_FORMAT_RGB565:
+        case OHOCR_PIXEL_FORMAT_RGB565:
             rgb565_to_rgb888_optimized(buffer, effective_w, effective_h, effective_w * 2, rgb);
             break;
-        case LOOGARCH_PIXEL_FORMAT_JPEG:
-        case LOOGARCH_PIXEL_FORMAT_MJPEG: {
+        case OHOCR_PIXEL_FORMAT_JPEG:
+        case OHOCR_PIXEL_FORMAT_MJPEG: {
             uint8_t* decoded = NULL;
             if (jpeg_decode_stub(buffer, width, &decoded, &effective_w, &effective_h) == 0) {
                 free(rgb); rgb = decoded;
@@ -806,7 +821,7 @@ static loogarch_ocr_result_t process_ocr_optimized(void* handle, const uint8_t* 
             }
             break;
         }
-        case LOOGARCH_PIXEL_FORMAT_PNG: {
+        case OHOCR_PIXEL_FORMAT_PNG: {
             uint8_t* decoded = NULL;
             if (png_decode_stub(buffer, width, &decoded, &effective_w, &effective_h) == 0) {
                 free(rgb); rgb = decoded;
@@ -822,13 +837,13 @@ static loogarch_ocr_result_t process_ocr_optimized(void* handle, const uint8_t* 
             return result;
     }
 
-#ifdef LOOGARCH_OCR_WITH_MRZ
+#ifdef OHOCR_WITH_MRZ
     run_mrz_engine(rgb, effective_w, effective_h, 1, use_fuse, use_par, &result);
 #else
     char* text_buf = (char*)malloc(64);
     if (text_buf) {
         snprintf(text_buf, 64,
-                 "loogarch OH OCR-optimized: %dx%d format=%d",
+                 "ohocr-optimized: %dx%d format=%d",
                  effective_w, effective_h, format);
         result.text = text_buf;
         result.confidence = 55;
@@ -841,15 +856,15 @@ static loogarch_ocr_result_t process_ocr_optimized(void* handle, const uint8_t* 
 
 /* ===================== Public API ===================== */
 
-void* loogarch_ocr_init(loogarch_pixel_format_t format, int width, int height, const char* options)
+void* ohocr_init(ohocr_pixel_format_t format, int width, int height, const char* options)
 {
-    loogarch_ocr_internal_opt_t* internal = (loogarch_ocr_internal_opt_t*)
-                                        malloc(sizeof(loogarch_ocr_internal_opt_t));
+    ohocr_internal_opt_t* internal = (ohocr_internal_opt_t*)
+                                        malloc(sizeof(ohocr_internal_opt_t));
     if (internal == NULL) return NULL;
     internal->format = format;
     internal->width = width;
     internal->height = height;
-    internal->stride = (width + 15) & ~15;  /* Align stride to 16 bytes for L1 */
+    internal->stride = (width + (CACHE_LINE - 1)) & ~(CACHE_LINE - 1);  /* Align stride to cache line */
     internal->gray_only = (options != NULL && strstr(options, "gray=1") != NULL) ? 1 : 0;
     /* The fused engine is the shipped one: it is the only variant that
      * beat the plain per-character CNN on the held-out photo set.  It
@@ -864,12 +879,12 @@ void* loogarch_ocr_init(loogarch_pixel_format_t format, int width, int height, c
     return (void*)internal;
 }
 
-loogarch_ocr_result_t loogarch_ocr_process(void* handle, const uint8_t* buffer,
+ohocr_result_t ohocr_process(void* handle, const uint8_t* buffer,
                                            int roi_x, int roi_y, int roi_w, int roi_h)
 {
-    loogarch_ocr_internal_opt_t* internal = (loogarch_ocr_internal_opt_t*)handle;
+    ohocr_internal_opt_t* internal = (ohocr_internal_opt_t*)handle;
     if (internal == NULL || buffer == NULL) {
-        loogarch_ocr_result_t result;
+        ohocr_result_t result;
         result.text = strdup("Invalid handle or buffer");
         result.confidence = 0;
         result.width = 0; result.height = 0; result.format = internal ? internal->format : 0;
@@ -887,12 +902,12 @@ loogarch_ocr_result_t loogarch_ocr_process(void* handle, const uint8_t* buffer,
                                    effective_x, effective_y, effective_w, effective_h);
 }
 
-uint8_t* loogarch_ocr_extract_gray_rgb(void* handle, const uint8_t* buffer,
+uint8_t* ohocr_extract_gray_rgb(void* handle, const uint8_t* buffer,
                                        int roi_x, int roi_y, int roi_w, int roi_h)
 {
     (void)roi_x; (void)roi_y; (void)roi_w; (void)roi_h;
 
-    loogarch_ocr_internal_opt_t* internal = (loogarch_ocr_internal_opt_t*)handle;
+    ohocr_internal_opt_t* internal = (ohocr_internal_opt_t*)handle;
     if (internal == NULL || buffer == NULL) return NULL;
 
     int w = internal->width, h = internal->height;
@@ -903,30 +918,30 @@ uint8_t* loogarch_ocr_extract_gray_rgb(void* handle, const uint8_t* buffer,
 
     int dw = w, dh = h;
     switch (internal->format) {
-        case LOOGARCH_PIXEL_FORMAT_NV21:
-        case LOOGARCH_PIXEL_FORMAT_NV12:
-        case LOOGARCH_PIXEL_FORMAT_I420:
-        case LOOGARCH_PIXEL_FORMAT_I422:
-        case LOOGARCH_PIXEL_FORMAT_I444:
+        case OHOCR_PIXEL_FORMAT_NV21:
+        case OHOCR_PIXEL_FORMAT_NV12:
+        case OHOCR_PIXEL_FORMAT_I420:
+        case OHOCR_PIXEL_FORMAT_I422:
+        case OHOCR_PIXEL_FORMAT_I444:
             planar_extract_y_opt(buffer, w, h, w, y);
             break;
-        case LOOGARCH_PIXEL_FORMAT_YUYV:
+        case OHOCR_PIXEL_FORMAT_YUYV:
             yuyv_extract_y_opt(buffer, w, h, w * 2, y);
             break;
-        case LOOGARCH_PIXEL_FORMAT_ARGB8888:
+        case OHOCR_PIXEL_FORMAT_ARGB8888:
             argb8888_to_gray_opt(buffer, w, h, w * 4, y);
             break;
-        case LOOGARCH_PIXEL_FORMAT_RGB888:
+        case OHOCR_PIXEL_FORMAT_RGB888:
             rgb888_to_gray_opt(buffer, w, h, w * 3, y);
             break;
-        case LOOGARCH_PIXEL_FORMAT_RGB565:
+        case OHOCR_PIXEL_FORMAT_RGB565:
             rgb565_to_gray_opt(buffer, w, h, w * 2, y);
             break;
-        case LOOGARCH_PIXEL_FORMAT_GRAY:
+        case OHOCR_PIXEL_FORMAT_GRAY:
             planar_extract_y_opt(buffer, w, h, w, y);
             break;
-        case LOOGARCH_PIXEL_FORMAT_JPEG:
-        case LOOGARCH_PIXEL_FORMAT_MJPEG: {
+        case OHOCR_PIXEL_FORMAT_JPEG:
+        case OHOCR_PIXEL_FORMAT_MJPEG: {
             uint8_t* dec = NULL;
             if (jpeg_decode_gray_stub(buffer, w, &dec, &dw, &dh) == 0) {
                 free(y); y = dec;
@@ -935,7 +950,7 @@ uint8_t* loogarch_ocr_extract_gray_rgb(void* handle, const uint8_t* buffer,
             }
             break;
         }
-        case LOOGARCH_PIXEL_FORMAT_PNG: {
+        case OHOCR_PIXEL_FORMAT_PNG: {
             uint8_t* dec = NULL;
             if (png_decode_gray_stub(buffer, w, &dec, &dw, &dh) == 0) {
                 free(y); y = dec;
@@ -961,12 +976,12 @@ uint8_t* loogarch_ocr_extract_gray_rgb(void* handle, const uint8_t* buffer,
     return gray_rgb;
 }
 
-void loogarch_ocr_cleanup(void* handle)
+void ohocr_cleanup(void* handle)
 {
     if (handle != NULL) free(handle);
 }
 
-const char* loogarch_ocr_get_version(void)
+const char* ohocr_get_version(void)
 {
-    return "1.1.0-loongarch-optimized";
+    return "2.0.0-openharmony-optimized";
 }

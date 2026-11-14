@@ -93,12 +93,12 @@ static void test_fill_allow_strict(void) {
     EXPECT(allow[mrz_ocr_glyph_index('A')] == 0);
     EXPECT(allow[mrz_ocr_glyph_index('<')] == 0);
 
-    fill_allow(allow, 1, 20);  /* sex: alnum + '<' (relaxed for specimen) */
+    fill_allow(allow, 1, 20);  /* sex: M/F/'<' only (ICAO 9303) */
     EXPECT(allow[mrz_ocr_glyph_index('M')] == 1);
     EXPECT(allow[mrz_ocr_glyph_index('F')] == 1);
     EXPECT(allow[mrz_ocr_glyph_index('<')] == 1);
-    EXPECT(allow[mrz_ocr_glyph_index('K')] == 1);
-    EXPECT(allow[mrz_ocr_glyph_index('0')] == 1);
+    EXPECT(allow[mrz_ocr_glyph_index('K')] == 0);
+    EXPECT(allow[mrz_ocr_glyph_index('0')] == 0);
 
     fill_allow(allow, 1, 14);  /* birth date: digits + '<' + A-Z (relaxed) */
     EXPECT(allow[mrz_ocr_glyph_index('4')] == 1);

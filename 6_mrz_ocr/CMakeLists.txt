@@ -35,7 +35,8 @@ set(MRZ_WEIGHT_HEADERS
     src/cnn_weights.h
     src/cnn_weights_line1.h
     src/cnn_weights_line2.h
-    src/crnn_weights.h)
+    src/crnn_weights.h
+    src/crnn_weights_cscd.h)
 set_property(TARGET mrz_ocr APPEND PROPERTY
              OBJECT_DEPENDS ${MRZ_WEIGHT_HEADERS})
 
@@ -43,7 +44,8 @@ set(MRZ_WEIGHT_HEADERS_PIC
     src/cnn_weights.h
     src/cnn_weights_line1_pic.h
     src/cnn_weights_line2_pic.h
-    src/crnn_weights_pic.h)
+    src/crnn_weights_pic.h
+    src/crnn_weights_cscd.h)
 set_property(TARGET mrz_ocr_pic APPEND PROPERTY
              OBJECT_DEPENDS ${MRZ_WEIGHT_HEADERS_PIC})
 

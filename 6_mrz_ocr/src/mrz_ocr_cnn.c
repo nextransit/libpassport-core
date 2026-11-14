@@ -476,14 +476,15 @@ static void fill_allow(int allow[37], int line_idx, int col) {
     if (line_idx == 0) {
         if (col == 0) {
             /* ICAO 9303 document type: A (alien/ID), C (card/travel
-             * permit), I (ID card), P (passport), V (visa).  Restricting
-             * to P alone silently discards ID cards and travel permits. */
+             * permit), I (ID card), P (passport), V (visa), T (港澳台
+             * 通行证 — non-standard but used in TD3-format rows). */
             for (int i = 0; i < 37; ++i) allow[i] = 0;
             allow[mrz_ocr_glyph_index('A')] = 1;
             allow[mrz_ocr_glyph_index('C')] = 1;
             allow[mrz_ocr_glyph_index('I')] = 1;
             allow[mrz_ocr_glyph_index('P')] = 1;
             allow[mrz_ocr_glyph_index('V')] = 1;
+            allow[mrz_ocr_glyph_index('T')] = 1;
         } else if (col == 1) {
             /* Document type qualifier: '<' (normal P<) or A-Z subtype
              * (PO specimen, PA official, PD diplomatic, etc.).  ICAO
@@ -519,10 +520,11 @@ static void fill_allow(int allow[37], int line_idx, int col) {
                 allow[i] = ((i >= d0 && i <= d0 + 9) || i == lt ||
                             (i >= a0 && i < a0 + 26)) ? 1 : 0;
         } else if (col == 20) {
-            /* Sex: M / F / '<' plus alnum (relaxed for specimen docs). */
-            for (int i = 0; i < 37; ++i)
-                allow[i] = (i >= a0 && i < a0 + 26) ||
-                           (i >= d0 && i <= d0 + 9) || i == lt;
+            /* Sex: M / F / '<' only (ICAO 9303). */
+            for (int i = 0; i < 37; ++i) allow[i] = 0;
+            allow[mrz_ocr_glyph_index('M')] = 1;
+            allow[mrz_ocr_glyph_index('F')] = 1;
+            allow[lt] = 1;
         } else if (col <= 41) {
             /* Personal number: alnum + '<' */
             for (int i = 0; i < 37; ++i)
@@ -1514,6 +1516,13 @@ static int segment_line_grid(const uint8_t *bin, int W, int H,
         int is_frac = fabs(L - round(L)) > 1e-9;
         double c0_min = first_center - (double)cell / 2.0;
         double c0_max = first_center + (double)cell / 2.0;
+        if (L0 > Lfit * 1.15 && left_run + 1 <= right_run) {
+            double alt_first = (double)runs.center[left_run + 1];
+            double alt_min = alt_first - (double)cell / 2.0;
+            if (alt_min < c0_min) c0_min = alt_min;
+            double alt_max = alt_first + (double)cell / 2.0;
+            if (alt_max > c0_max) c0_max = alt_max;
+        }
         int nsteps = (int)((c0_max - c0_min) / PSTEP) + 1;
         for (int si = 0; si < nsteps; ++si) {
             double c0d = c0_min + si * PSTEP;
@@ -2553,11 +2562,19 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
         }
     }
 
-    /* (b) 3-neighbour smoothing: an isolated X/R/T sandwiched between
-     * '<' on both sides is syntactically impossible in ICAO 9303. */
+    /* (b) 3-neighbour smoothing: an isolated letter sandwiched between
+     * '<' on both sides is syntactically impossible in ICAO 9303 filler
+     * zones.  Originally only X/R/T; extended to W/P/U/L/M/H/N/J/O after
+     * confusion analysis on assets/pic showed <→W (22×) and <→P (15×)
+     * as the dominant filler-zone misreads.  GT audit confirmed no
+     * legitimate <X< pattern exists for any of these characters in the
+     * pic corpus. */
     for (int c = 1; c + 1 < total; ++c) {
         if (dest[c-1] == '<' && dest[c+1] == '<' &&
-            (dest[c] == 'X' || dest[c] == 'R' || dest[c] == 'T')) {
+            (dest[c] == 'X' || dest[c] == 'R' || dest[c] == 'T' ||
+             dest[c] == 'W' || dest[c] == 'P' || dest[c] == 'U' ||
+             dest[c] == 'L' || dest[c] == 'M' || dest[c] == 'H' ||
+             dest[c] == 'N' || dest[c] == 'J' || dest[c] == 'O')) {
             dest[c] = '<';
             if (dg) dg->gate[c] |= 2;
         }
@@ -2578,6 +2595,29 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
                 dest[c] = '<';
                 if (dg) dg->gate[c] |= 4;
             }
+    }
+
+    /* (c1b) Line-2 personal-number filler repair: in TD3 line 2 the
+     * personal-number field (cols 28..41) is right-padded with '<' when
+     * the holder has no personal number.  On degraded images the model
+     * sometimes emits a run of identical letters (e.g. 15×'P' in
+     * assets/pic/b7a97ca0..._0164.jpg) where the ground truth is all
+     * '<'.  A run of >=5 identical non-digit, non-'<' characters in
+     * that region is replaced with '<'.  Digits are excluded because
+     * real personal numbers can contain runs like "00000". */
+    if (line_idx == 1 && total >= 42) {
+        for (int c = 28; c <= 41; ++c) {
+            char ch = dest[c];
+            if (ch == '<' || (ch >= '0' && ch <= '9')) continue;
+            int runStart = c;
+            while (c + 1 <= 41 && dest[c + 1] == ch) c++;
+            int runLen = c - runStart + 1;
+            if (runLen >= 5)
+                for (int k = runStart; k <= c; ++k) {
+                    dest[k] = '<';
+                    if (dg) dg->gate[k] |= 8;
+                }
+        }
     }
 
     /* (c2) Line-1 issuing-state repair against the ICAO state registry.
@@ -2647,6 +2687,28 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
                 dest[3] = best3[1];
                 dest[4] = best3[2];
                 if (dg) { dg->gate[2] |= 8; dg->gate[3] |= 8; dg->gate[4] |= 8; }
+            }
+        }
+    }
+
+    /* (c3) 港澳台通行证 type-code repair: when the issuing state
+     * (cols 2-4) is TWN/HKG/MAC and col 0 was read as 'I', the
+     * document is a 港澳台通行证 whose type code is 'T' (non-standard
+     * but used in TD3-format rows).  Only applied when 'T' is in the
+     * top-3 candidates for col 0, so a high-confidence 'I' on a real
+     * ID card is never touched. */
+    if (line_idx == 0 && total == 44 && dest[0] == 'I') {
+        char st[3] = { dest[2], dest[3], dest[4] };
+        if ((st[0]=='T'&&st[1]=='W'&&st[2]=='N') ||
+            (st[0]=='H'&&st[1]=='K'&&st[2]=='G') ||
+            (st[0]=='M'&&st[1]=='A'&&st[2]=='C')) {
+            int t_g = mrz_ocr_glyph_index('T');
+            for (int k = 0; k < mrz_topk(); ++k) {
+                if (t3[0].cand[k] == t_g) {
+                    dest[0] = 'T';
+                    if (dg) dg->gate[0] |= 16;
+                    break;
+                }
             }
         }
     }
@@ -4731,6 +4793,19 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                                               line_h_l[li], chars_l[li], 44);
                 if (dg_line && nchars >= 0) dg_line->nchars = nchars;
                 if (nchars < 30) {
+                    const uint8_t *sauv = mrz_ensure_sauvola(band_gray, bw, bh, layout_bin);
+                    if (sauv) {
+                        for (int y = 0; y < line_h_l[li]; ++y)
+                            memcpy(line_pixels_l[li] + y * bw,
+                                   sauv + (base_l[li] + y) * bw, bw);
+                        nchars = segment_line_grid(line_pixels_l[li], bw,
+                                                  line_h_l[li], chars_l[li], 44, li);
+                        if (nchars <= 0)
+                            nchars = segment_line_cnn(line_pixels_l[li], bw,
+                                                      line_h_l[li], chars_l[li], 44);
+                    }
+                }
+                if (nchars < 30) {
                     status = MRZ_OCR_ERR_BAD_LINES; goto cleanup;
                 }
                 if (nchars > 44) nchars = 44;
@@ -4943,6 +5018,17 @@ mrz_ocr_status_t mrz_ocr_recognise_cnn(const face_image_t *img,
                 if (diag_on) {
                     mrz_diag_line_t *dg_line = mrz_diag_line(li);
                     if (dg_line && nchars >= 0) dg_line->nchars = nchars;
+                }
+                if (nchars < 30) {
+                    const uint8_t *sauv = mrz_ensure_sauvola(band_gray, bw, bh, layout_bin);
+                    if (sauv) {
+                        for (int y = 0; y < line_h; ++y)
+                            memcpy(line_pixels + y * line_w,
+                                   sauv + (base + y) * bw + line_x, line_w);
+                        nchars = segment_line_grid(line_pixels, line_w, line_h, chars, n_cells, li);
+                        if (nchars <= 0)
+                            nchars = segment_line_cnn(line_pixels, line_w, line_h, chars, n_cells);
+                    }
                 }
                 if (nchars < 30) {
                     line_pixels = NULL;

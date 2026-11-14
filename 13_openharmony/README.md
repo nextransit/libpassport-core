@@ -1,4 +1,4 @@
-# loogarch OCR library -- CNN + fused MRZ engine
+# OpenHarmony OCR library -- CNN + fused MRZ engine
 
 The MRZ engine is the CNN head plus the CRNN sequence head fused in log
 space with a confidence gate (`mrz_ocr_recognise_fuse`).  The camera
@@ -9,9 +9,9 @@ v4l2 camera delivers.
 
 ```
 src/                     the library itself
-  loogarch_ocr.h           public API and the pixel format enum
-  loogarch_ocr.c           the library
-  loogarch_ocr_optimized.c the cache-optimised variant
+  ohocr.h           public API and the pixel format enum
+  ohocr.c           the library
+  ohocr_optimized.c the cache-optimised variant
 engine/                  the MRZ engine (CNN head + CRNN head + fusion)
   include/                mrz_ocr.h, cnn.h, crnn.h
   src/                    the engine sources and the exported weights
@@ -35,22 +35,34 @@ Cross build for loongarch64:
 make CROSS=loongarch64-linux-gnu- mrz
 ```
 
+OHOS NDK build for loongarch64:
+
+```bash
+make OHOS_NDK=/path/to/sdk/native ohos
+```
+
+OHOS NDK build for arm64-v8a:
+
+```bash
+make OHOS_NDK=/path/to/sdk/native OHOS_ARCH=arm64 ohos
+```
+
 `make` alone builds the two libraries without the MRZ engine, which
 only serves the pixel format conversion API.
 
 ## Pixel formats
 
-`loogarch_pixel_format_t` covers NV21, NV12, I420, I422, I444, YUYV,
+`ohocr_pixel_format_t` covers NV21, NV12, I420, I422, I444, YUYV,
 ARGB8888, RGB888, RGB565, JPEG, PNG, MJPEG and GRAY.
 
-`LOOGARCH_PIXEL_FORMAT_GRAY` is a single-plane luma buffer, one byte per
+`OHOCR_PIXEL_FORMAT_GRAY` is a single-plane luma buffer, one byte per
 pixel.  A GRAY buffer has no chroma, so it always takes the Y-only
 path, whatever the options say.  This is the format the loongarch v4l2
 camera produces (`CAMERA_PIXEL_FORMAT_GRAY`).
 
 ## Options
 
-`loogarch_ocr_init()` takes a semicolon separated option string:
+`ohocr_init()` takes a semicolon separated option string:
 
 | option | effect |
 |---|---|
@@ -67,17 +79,17 @@ on par with the plain CNN: 38 of 44 readings are identical, and of the
 ## API
 
 ```c
-void* loogarch_ocr_init(loogarch_pixel_format_t format, int w, int h,
+void* ohocr_init(ohocr_pixel_format_t format, int w, int h,
                         const char* options);
-loogarch_ocr_result_t loogarch_ocr_process(void* handle, const uint8_t* buf,
+ohocr_result_t ohocr_process(void* handle, const uint8_t* buf,
                                            int roi_x, int roi_y, int roi_w, int roi_h);
-uint8_t* loogarch_ocr_extract_gray_rgb(void* handle, const uint8_t* buf,
+uint8_t* ohocr_extract_gray_rgb(void* handle, const uint8_t* buf,
                                        int roi_x, int roi_y, int roi_w, int roi_h);
-void loogarch_ocr_cleanup(void* handle);
-const char* loogarch_ocr_get_version(void);
+void ohocr_cleanup(void* handle);
+const char* ohocr_get_version(void);
 ```
 
-`loogarch_ocr_process()` fills `line1`, `line2`, `conf1`, `conf2`, the
+`ohocr_process()` fills `line1`, `line2`, `conf1`, `conf2`, the
 band rectangle, the document layout and the engine status.  `text` is
 malloc'd and the caller frees it.
 

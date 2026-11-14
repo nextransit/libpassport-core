@@ -1,5 +1,5 @@
 /*
- * loogarch_ocr.c - OCR implementation for loongarch/OpenHarmony desktop
+ * ohocr.c - OCR implementation for OpenHarmony desktop
  *
  * Camera format support: NV21, NV12, I420, I422, I444, YUYV,
  *                        ARGB8888, RGB888, RGB565, MJPEG, JPEG, PNG
@@ -10,7 +10,7 @@
  * Licensed under Apache-2.0
  */
 
-#include "loogarch_ocr.h"
+#include "ohocr.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,14 +18,14 @@
 #include <pthread.h>
 #include <time.h>
 
-#ifdef LOOGARCH_OCR_WITH_MRZ
+#ifdef OHOCR_WITH_MRZ
 #include "mrz_ocr.h"
 #include "face.h"
 #endif
 
 /* Forward declarations */
 typedef struct {
-    loogarch_pixel_format_t format;
+    ohocr_pixel_format_t format;
     int width;
     int height;
     int stride;           /* Row stride for aligned access */
@@ -35,7 +35,7 @@ typedef struct {
     const uint8_t* y_data;
     const uint8_t* u_data;
     const uint8_t* v_data;
-} loogarch_ocr_internal_t;
+} ohocr_internal_t;
 
 /* ===================== Y-only (luma) extraction ===================== */
 
@@ -409,10 +409,10 @@ static int png_decode_stub(const uint8_t* data, int data_size, uint8_t** out_rgb
 
 /* ===================== MRZ CNN engine integration ===================== */
 
-/* ---- optional per-stage timing: LOOGARCH_OCR_TIMING=1 ----
- * One line per loogarch_ocr_process() on stderr (and appended to
- * LOOGARCH_OCR_TIMING_FILE when that env var is set):
- *   [loogarch-timing] total=..ms convert=..ms prep=..ms recog=..ms size=WxH fmt=N
+/* ---- optional per-stage timing: OHOCR_TIMING=1 ----
+ * One line per ohocr_process() on stderr (and appended to
+ * OHOCR_TIMING_FILE when that env var is set):
+ *   [ohocr-timing] total=..ms convert=..ms prep=..ms recog=..ms size=WxH fmt=N
  * convert: pixel-format extraction (+ gray->rgb expand on Y-only path)
  * prep:    BGR byte swap at the engine entry (color path only)
  * recog:   face_image alloc + copy + mrz_ocr_recognise_* (band locate
@@ -422,7 +422,7 @@ static int loog_timing_on(void)
 {
     static int cached = -1;
     if (cached < 0) {
-        const char* e = getenv("LOOGARCH_OCR_TIMING");
+        const char* e = getenv("OHOCR_TIMING");
         cached = (e != NULL && e[0] != '\0' && e[0] != '0') ? 1 : 0;
     }
     return cached;
@@ -440,11 +440,11 @@ static void loog_emit_timing(double total, double convert, double prep,
 {
     char line[256];
     snprintf(line, sizeof(line),
-             "[loogarch-timing] total=%.1fms convert=%.1fms prep=%.1fms "
+             "[ohocr-timing] total=%.1fms convert=%.1fms prep=%.1fms "
              "recog=%.1fms size=%dx%d fmt=%d\n",
              total, convert, prep, recog, w, h, fmt);
     fputs(line, stderr);
-    const char* path = getenv("LOOGARCH_OCR_TIMING_FILE");
+    const char* path = getenv("OHOCR_TIMING_FILE");
     if (path != NULL && path[0] != '\0') {
         FILE* f = fopen(path, "a");
         if (f != NULL) {
@@ -454,7 +454,7 @@ static void loog_emit_timing(double total, double convert, double prep,
     }
 }
 
-#ifdef LOOGARCH_OCR_WITH_MRZ
+#ifdef OHOCR_WITH_MRZ
 /* The MRZ engine is not thread-safe: the CNN scratchpad and the
  * dual-line worker are shared statics.  One lock around the whole
  * recognition keeps the library usable from the camera thread and
@@ -477,7 +477,7 @@ static pthread_mutex_t g_mrz_mutex = PTHREAD_MUTEX_INITIALIZER;
  * the BGR swap and for alloc+copy+recognise respectively. */
 static void run_mrz_engine(uint8_t* rgb, int w, int h, int is_bgr,
                            int use_fuse, int use_par,
-                           loogarch_ocr_result_t* result,
+                           ohocr_result_t* result,
                            double* t_prep, double* t_recog)
 {
     static int mrz_inited = 0;
@@ -551,11 +551,11 @@ static void run_mrz_engine(uint8_t* rgb, int w, int h, int is_bgr,
 
     pthread_mutex_unlock(&g_mrz_mutex);
 }
-#endif /* LOOGARCH_OCR_WITH_MRZ */
+#endif /* OHOCR_WITH_MRZ */
 
 /* ===================== OCR processing ===================== */
 
-static loogarch_ocr_result_t process_ocr(void* handle, const uint8_t* buffer, int format, int width, int height, int roi_x, int roi_y, int roi_w, int roi_h)
+static ohocr_result_t process_ocr(void* handle, const uint8_t* buffer, int format, int width, int height, int roi_x, int roi_y, int roi_w, int roi_h)
 {
     (void)roi_x;
     (void)roi_y;
@@ -566,7 +566,7 @@ static loogarch_ocr_result_t process_ocr(void* handle, const uint8_t* buffer, in
     double t_start = timing ? loog_now_ms() : 0.0;
     double t_conv = 0.0, t_prep = 0.0, t_recog = 0.0;
 
-    loogarch_ocr_internal_t* internal = (loogarch_ocr_internal_t*)handle;
+    ohocr_internal_t* internal = (ohocr_internal_t*)handle;
     int gray_only = internal ? internal->gray_only : 0;
     int use_fuse = internal ? internal->use_fuse : 0;
     int use_par  = internal ? internal->use_par : 0;
@@ -575,11 +575,11 @@ static loogarch_ocr_result_t process_ocr(void* handle, const uint8_t* buffer, in
      * Y-only path is the only correct one for it -- regardless of what
      * the caller asked for.  The camera on the loongarch device hands
      * out GRAY frames, so this is the normal production path there. */
-    if (format == LOOGARCH_PIXEL_FORMAT_GRAY) {
+    if (format == OHOCR_PIXEL_FORMAT_GRAY) {
         gray_only = 1;
     }
 
-    loogarch_ocr_result_t result;
+    ohocr_result_t result;
     result.text = NULL;
     result.confidence = 0;
     result.width = width;
@@ -609,33 +609,33 @@ static loogarch_ocr_result_t process_ocr(void* handle, const uint8_t* buffer, in
         }
 
         switch (format) {
-            case LOOGARCH_PIXEL_FORMAT_NV21:
-            case LOOGARCH_PIXEL_FORMAT_NV12:
-            case LOOGARCH_PIXEL_FORMAT_I420:
-            case LOOGARCH_PIXEL_FORMAT_I422:
-            case LOOGARCH_PIXEL_FORMAT_I444:
+            case OHOCR_PIXEL_FORMAT_NV21:
+            case OHOCR_PIXEL_FORMAT_NV12:
+            case OHOCR_PIXEL_FORMAT_I420:
+            case OHOCR_PIXEL_FORMAT_I422:
+            case OHOCR_PIXEL_FORMAT_I444:
                 planar_extract_y(buffer, width, height, width, gray);
                 break;
-            case LOOGARCH_PIXEL_FORMAT_YUYV:
+            case OHOCR_PIXEL_FORMAT_YUYV:
                 yuyv_extract_y(buffer, width, height, width * 2, gray);
                 break;
-            case LOOGARCH_PIXEL_FORMAT_ARGB8888:
+            case OHOCR_PIXEL_FORMAT_ARGB8888:
                 argb8888_to_gray(buffer, width, height, width * 4, gray);
                 break;
-            case LOOGARCH_PIXEL_FORMAT_RGB888:
+            case OHOCR_PIXEL_FORMAT_RGB888:
                 rgb888_to_gray(buffer, width, height, width * 3, gray);
                 break;
-            case LOOGARCH_PIXEL_FORMAT_RGB565:
+            case OHOCR_PIXEL_FORMAT_RGB565:
                 rgb565_to_gray(buffer, width, height, width * 2, gray);
                 break;
-            case LOOGARCH_PIXEL_FORMAT_GRAY:
+            case OHOCR_PIXEL_FORMAT_GRAY:
                 /* Already single-plane luma: copy it out, nothing to
                  * convert.  This is what the loongarch v4l2 camera
                  * delivers (CAMERA_PIXEL_FORMAT_GRAY). */
                 planar_extract_y(buffer, width, height, width, gray);
                 break;
-            case LOOGARCH_PIXEL_FORMAT_JPEG:
-            case LOOGARCH_PIXEL_FORMAT_MJPEG: {
+            case OHOCR_PIXEL_FORMAT_JPEG:
+            case OHOCR_PIXEL_FORMAT_MJPEG: {
                 uint8_t* decoded = NULL;
                 if (jpeg_decode_gray_stub(buffer, width, &decoded, &effective_w, &effective_h) == 0) {
                     free(gray); gray = decoded;
@@ -644,7 +644,7 @@ static loogarch_ocr_result_t process_ocr(void* handle, const uint8_t* buffer, in
                 }
                 break;
             }
-            case LOOGARCH_PIXEL_FORMAT_PNG: {
+            case OHOCR_PIXEL_FORMAT_PNG: {
                 uint8_t* decoded = NULL;
                 if (png_decode_gray_stub(buffer, width, &decoded, &effective_w, &effective_h) == 0) {
                     free(gray); gray = decoded;
@@ -660,7 +660,7 @@ static loogarch_ocr_result_t process_ocr(void* handle, const uint8_t* buffer, in
                 return result;
         }
 
-#ifdef LOOGARCH_OCR_WITH_MRZ
+#ifdef OHOCR_WITH_MRZ
         {
             size_t n = (size_t)effective_w * effective_h;
             uint8_t* gray_rgb = (uint8_t*)malloc(n * 3);
@@ -683,7 +683,7 @@ static loogarch_ocr_result_t process_ocr(void* handle, const uint8_t* buffer, in
         char* text_buf = (char*)malloc(80);
         if (text_buf) {
             snprintf(text_buf, 80,
-                     "loogarch OH OCR Y-only: %dx%d format=%d",
+                     "ohocr Y-only: %dx%d format=%d",
                      effective_w, effective_h, format);
             result.text = text_buf;
             result.confidence = 60;
@@ -705,35 +705,35 @@ static loogarch_ocr_result_t process_ocr(void* handle, const uint8_t* buffer, in
     }
 
     switch (format) {
-        case LOOGARCH_PIXEL_FORMAT_NV21:
+        case OHOCR_PIXEL_FORMAT_NV21:
             nv21_to_rgb888(buffer, width, height, width, rgb);
             break;
-        case LOOGARCH_PIXEL_FORMAT_NV12:
+        case OHOCR_PIXEL_FORMAT_NV12:
             nv12_to_rgb888(buffer, width, height, width, rgb);
             break;
-        case LOOGARCH_PIXEL_FORMAT_I420:
+        case OHOCR_PIXEL_FORMAT_I420:
             i420_to_rgb888(buffer, width, height, width, rgb);
             break;
-        case LOOGARCH_PIXEL_FORMAT_I422:
+        case OHOCR_PIXEL_FORMAT_I422:
             i422_to_rgb888(buffer, width, height, width, rgb);
             break;
-        case LOOGARCH_PIXEL_FORMAT_I444:
+        case OHOCR_PIXEL_FORMAT_I444:
             i444_to_rgb888(buffer, width, height, width, rgb);
             break;
-        case LOOGARCH_PIXEL_FORMAT_YUYV:
+        case OHOCR_PIXEL_FORMAT_YUYV:
             yuyv_to_rgb888(buffer, width, height, width * 2, rgb);
             break;
-        case LOOGARCH_PIXEL_FORMAT_ARGB8888:
+        case OHOCR_PIXEL_FORMAT_ARGB8888:
             argb8888_to_rgb888(buffer, width, height, width * 4, rgb);
             break;
-        case LOOGARCH_PIXEL_FORMAT_RGB888:
+        case OHOCR_PIXEL_FORMAT_RGB888:
             rgb888_to_bgr888(buffer, width, height, width * 3, rgb);
             break;
-        case LOOGARCH_PIXEL_FORMAT_RGB565:
+        case OHOCR_PIXEL_FORMAT_RGB565:
             rgb565_to_rgb888(buffer, width, height, width * 2, rgb);
             break;
-        case LOOGARCH_PIXEL_FORMAT_JPEG:
-        case LOOGARCH_PIXEL_FORMAT_MJPEG: {
+        case OHOCR_PIXEL_FORMAT_JPEG:
+        case OHOCR_PIXEL_FORMAT_MJPEG: {
             uint8_t* decoded = NULL;
             if (jpeg_decode_stub(buffer, width, &decoded, &effective_w, &effective_h) == 0) {
                 free(rgb); rgb = decoded;
@@ -742,7 +742,7 @@ static loogarch_ocr_result_t process_ocr(void* handle, const uint8_t* buffer, in
             }
             break;
         }
-        case LOOGARCH_PIXEL_FORMAT_PNG: {
+        case OHOCR_PIXEL_FORMAT_PNG: {
             uint8_t* decoded = NULL;
             if (png_decode_stub(buffer, width, &decoded, &effective_w, &effective_h) == 0) {
                 free(rgb); rgb = decoded;
@@ -760,7 +760,7 @@ static loogarch_ocr_result_t process_ocr(void* handle, const uint8_t* buffer, in
 
     if (timing) t_conv = loog_now_ms() - t_start;
 
-#ifdef LOOGARCH_OCR_WITH_MRZ
+#ifdef OHOCR_WITH_MRZ
     run_mrz_engine(rgb, effective_w, effective_h, 1, use_fuse, use_par, &result,
                    timing ? &t_prep : NULL,
                    timing ? &t_recog : NULL);
@@ -768,7 +768,7 @@ static loogarch_ocr_result_t process_ocr(void* handle, const uint8_t* buffer, in
     char* text_buf = (char*)malloc(64);
     if (text_buf) {
         snprintf(text_buf, 64,
-                 "loogarch OH OCR result: %dx%d format=%d",
+                 "ohocr result: %dx%d format=%d",
                  effective_w, effective_h, format);
         result.text = text_buf;
         result.confidence = 50;
@@ -784,10 +784,10 @@ static loogarch_ocr_result_t process_ocr(void* handle, const uint8_t* buffer, in
 
 /* ===================== Public API ===================== */
 
-void* loogarch_ocr_init(loogarch_pixel_format_t format, int width, int height, const char* options)
+void* ohocr_init(ohocr_pixel_format_t format, int width, int height, const char* options)
 {
-    loogarch_ocr_internal_t* internal = (loogarch_ocr_internal_t*)
-                                        malloc(sizeof(loogarch_ocr_internal_t));
+    ohocr_internal_t* internal = (ohocr_internal_t*)
+                                        malloc(sizeof(ohocr_internal_t));
     if (internal == NULL) {
         return NULL;
     }
@@ -811,13 +811,13 @@ void* loogarch_ocr_init(loogarch_pixel_format_t format, int width, int height, c
     return (void*)internal;
 }
 
-loogarch_ocr_result_t loogarch_ocr_process(void* handle, const uint8_t* buffer,
+ohocr_result_t ohocr_process(void* handle, const uint8_t* buffer,
                                            int roi_x, int roi_y, int roi_w, int roi_h)
 {
-    loogarch_ocr_internal_t* internal = (loogarch_ocr_internal_t*)handle;
+    ohocr_internal_t* internal = (ohocr_internal_t*)handle;
 
     if (internal == NULL || buffer == NULL) {
-        loogarch_ocr_result_t result;
+        ohocr_result_t result;
         result.text = strdup("Invalid handle or buffer");
         result.confidence = 0;
         result.width = 0;
@@ -840,12 +840,12 @@ loogarch_ocr_result_t loogarch_ocr_process(void* handle, const uint8_t* buffer,
                        effective_x, effective_y, effective_w, effective_h);
 }
 
-uint8_t* loogarch_ocr_extract_gray_rgb(void* handle, const uint8_t* buffer,
+uint8_t* ohocr_extract_gray_rgb(void* handle, const uint8_t* buffer,
                                        int roi_x, int roi_y, int roi_w, int roi_h)
 {
     (void)roi_x; (void)roi_y; (void)roi_w; (void)roi_h;
 
-    loogarch_ocr_internal_t* internal = (loogarch_ocr_internal_t*)handle;
+    ohocr_internal_t* internal = (ohocr_internal_t*)handle;
     if (internal == NULL || buffer == NULL) return NULL;
 
     int w = internal->width, h = internal->height;
@@ -856,30 +856,30 @@ uint8_t* loogarch_ocr_extract_gray_rgb(void* handle, const uint8_t* buffer,
 
     int dw = w, dh = h;
     switch (internal->format) {
-        case LOOGARCH_PIXEL_FORMAT_NV21:
-        case LOOGARCH_PIXEL_FORMAT_NV12:
-        case LOOGARCH_PIXEL_FORMAT_I420:
-        case LOOGARCH_PIXEL_FORMAT_I422:
-        case LOOGARCH_PIXEL_FORMAT_I444:
+        case OHOCR_PIXEL_FORMAT_NV21:
+        case OHOCR_PIXEL_FORMAT_NV12:
+        case OHOCR_PIXEL_FORMAT_I420:
+        case OHOCR_PIXEL_FORMAT_I422:
+        case OHOCR_PIXEL_FORMAT_I444:
             planar_extract_y(buffer, w, h, w, y);
             break;
-        case LOOGARCH_PIXEL_FORMAT_YUYV:
+        case OHOCR_PIXEL_FORMAT_YUYV:
             yuyv_extract_y(buffer, w, h, w * 2, y);
             break;
-        case LOOGARCH_PIXEL_FORMAT_ARGB8888:
+        case OHOCR_PIXEL_FORMAT_ARGB8888:
             argb8888_to_gray(buffer, w, h, w * 4, y);
             break;
-        case LOOGARCH_PIXEL_FORMAT_RGB888:
+        case OHOCR_PIXEL_FORMAT_RGB888:
             rgb888_to_gray(buffer, w, h, w * 3, y);
             break;
-        case LOOGARCH_PIXEL_FORMAT_RGB565:
+        case OHOCR_PIXEL_FORMAT_RGB565:
             rgb565_to_gray(buffer, w, h, w * 2, y);
             break;
-        case LOOGARCH_PIXEL_FORMAT_GRAY:
+        case OHOCR_PIXEL_FORMAT_GRAY:
             planar_extract_y(buffer, w, h, w, y);
             break;
-        case LOOGARCH_PIXEL_FORMAT_JPEG:
-        case LOOGARCH_PIXEL_FORMAT_MJPEG: {
+        case OHOCR_PIXEL_FORMAT_JPEG:
+        case OHOCR_PIXEL_FORMAT_MJPEG: {
             uint8_t* dec = NULL;
             if (jpeg_decode_gray_stub(buffer, w, &dec, &dw, &dh) == 0) {
                 free(y); y = dec;
@@ -888,7 +888,7 @@ uint8_t* loogarch_ocr_extract_gray_rgb(void* handle, const uint8_t* buffer,
             }
             break;
         }
-        case LOOGARCH_PIXEL_FORMAT_PNG: {
+        case OHOCR_PIXEL_FORMAT_PNG: {
             uint8_t* dec = NULL;
             if (png_decode_gray_stub(buffer, w, &dec, &dw, &dh) == 0) {
                 free(y); y = dec;
@@ -914,14 +914,14 @@ uint8_t* loogarch_ocr_extract_gray_rgb(void* handle, const uint8_t* buffer,
     return gray_rgb;
 }
 
-void loogarch_ocr_cleanup(void* handle)
+void ohocr_cleanup(void* handle)
 {
     if (handle != NULL) {
         free(handle);
     }
 }
 
-const char* loogarch_ocr_get_version(void)
+const char* ohocr_get_version(void)
 {
-    return "1.1.0-loongarch";
+    return "2.0.0-openharmony";
 }

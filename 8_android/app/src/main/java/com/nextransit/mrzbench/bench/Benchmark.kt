@@ -17,8 +17,10 @@ class Benchmark(
     private val imagesDirProvider: () -> java.io.File,
 ) {
     enum class Backend(val code: Int, val displayName: String) {
-        TRAD(0, "traditional"),
-        CNN (1, "cnn");
+        TRAD (0, "traditional"),
+        CNN  (1, "cnn"),
+        CRNN (2, "crnn"),
+        FUSE (3, "fuse");
 
         companion object {
             fun of(name: String) = values().firstOrNull { it.displayName == name } ?: CNN

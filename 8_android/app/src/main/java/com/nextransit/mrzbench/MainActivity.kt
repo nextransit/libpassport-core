@@ -21,6 +21,8 @@ import com.nextransit.mrzbench.ui.RunFragment
 import com.nextransit.mrzbench.ui.StreamFragment
 import com.nextransit.mrzbench.ui.CompareFragment
 import com.nextransit.mrzbench.ui.PhotoMrzFragment
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class MainActivity : AppCompatActivity() {
 
@@ -35,6 +37,7 @@ class MainActivity : AppCompatActivity() {
     private val titles = listOf("RUN", "STREAM", "COMPARE", "PHOTO -> MRZ")
 
     private var benchReceiver: BroadcastReceiver? = null
+    private var photoBatchReceiver: BroadcastReceiver? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -86,6 +89,8 @@ class MainActivity : AppCompatActivity() {
                 val backends = when (backend.lowercase()) {
                     "trad", "template" -> listOf(Benchmark.Backend.TRAD)
                     "cnn"              -> listOf(Benchmark.Backend.CNN)
+                    "crnn"             -> listOf(Benchmark.Backend.CRNN)
+                    "fuse"             -> listOf(Benchmark.Backend.FUSE)
                     else               -> listOf(Benchmark.Backend.TRAD, Benchmark.Backend.CNN)
                 }
                 // Also flip the on-screen toggle so the UI matches.
@@ -134,6 +139,42 @@ class MainActivity : AppCompatActivity() {
             registerReceiver(benchReceiver, filter)
         }
 
+        // PHOTO->MRZ batch test driver: allows ADB to trigger a photo
+        // batch test with a specific algorithm and image source without
+        // UI interaction. Results are written to a JSON file in the
+        // external files dir so the host can pull them via adb.
+        //
+        // Usage:
+        //   adb shell am broadcast \
+        //     -a com.nextransit.mrzbench.action.PHOTO_BATCH \
+        //     -p com.nextransit.mrzbench \
+        //     --es method crnn \
+        //     --es source tmp/PassPortPhoto
+        //
+        // method: auto/cnn/crnn/fuse/traditional/tesseract/paddle/indra/mlkit
+        // source: all/assets/pic/Photo/tmp/PassPortPhoto
+        //
+        // Results are written to:
+        //   /storage/emulated/0/Android/data/com.nextransit.mrzbench/files/photo_batch_result.json
+        val photoFilter = IntentFilter("com.nextransit.mrzbench.action.PHOTO_BATCH")
+        photoBatchReceiver = object : BroadcastReceiver() {
+            override fun onReceive(ctx: Context?, intent: Intent?) {
+                val method = intent?.getStringExtra("method") ?: "auto"
+                val source = intent?.getStringExtra("source") ?: "all"
+                Log.i("MrzBench", "PHOTO_BATCH method=$method source=$source")
+                Toast.makeText(this@MainActivity, "PHOTO_BATCH $method/$source", Toast.LENGTH_SHORT).show()
+
+                val photoFrag = fragments[3] as PhotoMrzFragment
+                photoFrag.runBatchFromBroadcast(method, source)
+            }
+        }
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(photoBatchReceiver, photoFilter, Context.RECEIVER_EXPORTED)
+        } else {
+            @Suppress("UnspecifiedRegisterReceiverFlag")
+            registerReceiver(photoBatchReceiver, photoFilter)
+        }
+
         // Push headless-run progress events into the visible fragment
         // (best-effort — the headless run completes regardless of UI).
         setRunStatusSink { s -> runOnUiThread { setStatus(s) } }
@@ -152,6 +193,8 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         benchReceiver?.let { unregisterReceiver(it) }
         benchReceiver = null
+        photoBatchReceiver?.let { unregisterReceiver(it) }
+        photoBatchReceiver = null
         super.onDestroy()
     }
 

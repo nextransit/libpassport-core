@@ -1,5 +1,5 @@
 /*
- * loogarch_ocr.h - OCR library for loongarch/OpenHarmony desktop
+ * ohocr.h - OCR library for OpenHarmony desktop
  *
  * Camera format support: NV21, NV12, I420, I422, I444, YUYV,
  *                        ARGB8888, RGB888, RGB565, MJPEG, JPEG, PNG
@@ -9,8 +9,8 @@
  * Licensed under Apache-2.0
  */
 
-#ifndef LOOGARCH_OCR_H
-#define LOOGARCH_OCR_H
+#ifndef OHOCR_H
+#define OHOCR_H
 
 #include <stdint.h>
 
@@ -22,21 +22,21 @@ extern "C" {
  * Pixel format enumeration for camera compatibility
  */
 typedef enum {
-    LOOGARCH_PIXEL_FORMAT_NV21 = 0,   /* YUV 4:2:0 planar, VU interleaved (camera preview) */
-    LOOGARCH_PIXEL_FORMAT_NV12,       /* YUV 4:2:0 planar, UV interleaved */
-    LOOGARCH_PIXEL_FORMAT_I420,       /* YUV 4:2:0 planar (Y + U + V) */
-    LOOGARCH_PIXEL_FORMAT_I422,       /* YUV 4:2:2 planar */
-    LOOGARCH_PIXEL_FORMAT_I444,       /* YUV 4:4:4 planar */
-    LOOGARCH_PIXEL_FORMAT_ARGB8888,   /* 32-bit ARGB */
-    LOOGARCH_PIXEL_FORMAT_RGB888,     /* 24-bit RGB */
-    LOOGARCH_PIXEL_FORMAT_RGB565,     /* 16-bit RGB565 */
-    LOOGARCH_PIXEL_FORMAT_JPEG,       /* Compressed JPEG data */
-    LOOGARCH_PIXEL_FORMAT_PNG,        /* Compressed PNG data */
-    LOOGARCH_PIXEL_FORMAT_YUYV,       /* Packed YUV 4:2:2 (YUY2), camera format */
-    LOOGARCH_PIXEL_FORMAT_MJPEG,      /* Motion JPEG, camera compressed format */
-    LOOGARCH_PIXEL_FORMAT_GRAY,       /* Single-plane luma, Y only (1 byte/pixel) */
-    LOOGARCH_PIXEL_FORMAT_LAST
-} loogarch_pixel_format_t;
+    OHOCR_PIXEL_FORMAT_NV21 = 0,   /* YUV 4:2:0 planar, VU interleaved (camera preview) */
+    OHOCR_PIXEL_FORMAT_NV12,       /* YUV 4:2:0 planar, UV interleaved */
+    OHOCR_PIXEL_FORMAT_I420,       /* YUV 4:2:0 planar (Y + U + V) */
+    OHOCR_PIXEL_FORMAT_I422,       /* YUV 4:2:2 planar */
+    OHOCR_PIXEL_FORMAT_I444,       /* YUV 4:4:4 planar */
+    OHOCR_PIXEL_FORMAT_ARGB8888,   /* 32-bit ARGB */
+    OHOCR_PIXEL_FORMAT_RGB888,     /* 24-bit RGB */
+    OHOCR_PIXEL_FORMAT_RGB565,     /* 16-bit RGB565 */
+    OHOCR_PIXEL_FORMAT_JPEG,       /* Compressed JPEG data */
+    OHOCR_PIXEL_FORMAT_PNG,        /* Compressed PNG data */
+    OHOCR_PIXEL_FORMAT_YUYV,       /* Packed YUV 4:2:2 (YUY2), camera format */
+    OHOCR_PIXEL_FORMAT_MJPEG,      /* Motion JPEG, camera compressed format */
+    OHOCR_PIXEL_FORMAT_GRAY,       /* Single-plane luma, Y only (1 byte/pixel) */
+    OHOCR_PIXEL_FORMAT_LAST
+} ohocr_pixel_format_t;
 
 /*
  * OCR result structure
@@ -47,7 +47,7 @@ typedef struct {
     int  width;          /* Image width in pixels */
     int  height;         /* Image height in pixels */
     int  format;         /* Input pixel format */
-    /* MRZ-specific fields (filled when compiled with LOOGARCH_OCR_WITH_MRZ).
+    /* MRZ-specific fields (filled when compiled with OHOCR_WITH_MRZ).
      * When the MRZ engine is not compiled in, line1/line2 are empty and
      * status is 0.  layout: 0=unknown, 1=CS/CD single-30, 2=TD3 double-44,
      * 3=TD1 triple-30.  status: 0=OK, negative=mrz_ocr_status_t error. */
@@ -58,7 +58,7 @@ typedef struct {
     int  band_x, band_y, band_w, band_h;
     int  layout;
     int  status;
-} loogarch_ocr_result_t;
+} ohocr_result_t;
 
 /*
  * Initialize OCR with options
@@ -72,20 +72,20 @@ typedef struct {
  *
  * Returns: OCR handle or NULL on failure
  */
-void* loogarch_ocr_init(loogarch_pixel_format_t format, int width, int height, const char* options);
+void* ohocr_init(ohocr_pixel_format_t format, int width, int height, const char* options);
 
 /*
  * Perform OCR on image buffer
- * @handle: OCR handle from loogarch_ocr_init()
+ * @handle: OCR handle from ohocr_init()
  * @buffer: Raw image data buffer
  * @roi_x: Region of interest X offset (0 for full image)
  * @roi_y: Region of interest Y offset (0 for full image)
  * @roi_w: Region of interest width (0 for full width)
  * @roi_h: Region of interest height (0 for full height)
  *
- * Returns: loogarch_ocr_result_t with extracted text and metadata
+ * Returns: ohocr_result_t with extracted text and metadata
  */
-loogarch_ocr_result_t loogarch_ocr_process(void* handle, const uint8_t* buffer,
+ohocr_result_t ohocr_process(void* handle, const uint8_t* buffer,
                                            int roi_x, int roi_y, int roi_w, int roi_h);
 
 /*
@@ -96,22 +96,22 @@ loogarch_ocr_result_t loogarch_ocr_process(void* handle, const uint8_t* buffer,
  *
  * Returns: malloc'd W*H*3 buffer with R==G==B==Y, or NULL on failure.
  */
-uint8_t* loogarch_ocr_extract_gray_rgb(void* handle, const uint8_t* buffer,
+uint8_t* ohocr_extract_gray_rgb(void* handle, const uint8_t* buffer,
                                        int roi_x, int roi_y, int roi_w, int roi_h);
 
 /*
  * Clean up OCR handle
- * @handle: OCR handle from loogarch_ocr_init()
+ * @handle: OCR handle from ohocr_init()
  */
-void loogarch_ocr_cleanup(void* handle);
+void ohocr_cleanup(void* handle);
 
 /*
  * Get OCR version string
  */
-const char* loogarch_ocr_get_version(void);
+const char* ohocr_get_version(void);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* LOOGARCH_OCR_H */
+#endif /* OHOCR_H */

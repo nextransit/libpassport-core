@@ -77,6 +77,24 @@ def _locate_band_bottom(gray, scale, Wd, H):
     if start >= 0:
         runs.append((start, len(dark) - 1))
     if not runs:
+        dark_adaptive = ((rows[:, sx0:sx1:stride] < 100).sum(axis=1)).astype(int)
+        min_ink_ad = max(3, int(sample_w * 0.05))
+        start = -1
+        gap = 0
+        for i in range(len(dark_adaptive)):
+            if dark_adaptive[i] >= min_ink_ad:
+                if start < 0:
+                    start = i
+                gap = 0
+            elif start >= 0:
+                gap += 1
+                if gap > 3:
+                    runs.append((start, i - gap))
+                    start = -1
+                    gap = 0
+        if start >= 0:
+            runs.append((start, len(dark_adaptive) - 1))
+    if not runs:
         return None
     best_pair = None
     for i in range(len(runs) - 1):
@@ -110,6 +128,104 @@ def _locate_band_bottom(gray, scale, Wd, H):
     for run in runs:
         rh = run[1] - run[0] + 1
         if rh < 5 or rh > 120:
+            continue
+        if best_single is None or rh > best_single[1] - best_single[0] + 1:
+            best_single = run
+    if best_single is not None:
+        rh = best_single[1] - best_single[0] + 1
+        pad = max(8, min(25, int(rh * 0.70)))
+        top = max(0, y0 + best_single[0] - pad)
+        bot = min(h, y0 + best_single[1] + pad)
+        bh = int((bot - top) / scale)
+        if bh < 20:
+            return None
+        return (0, int(top / scale), int(Wd), bh)
+    return None
+
+
+def _locate_band_variance(gray, scale, Wd, H):
+    """Variance-based fallback for dark-background images where the
+    dark-pixel-count method (fast_pair / _locate_band_bottom) fails.
+
+    Text rows have high row-wise variance regardless of background
+    brightness, while uniform dark or light regions have low variance.
+    Scans the bottom 45% of the image (wider than _locate_band_bottom's 30%)
+    to cover cases where the MRZ sits above the bottom 30%."""
+    h, w = gray.shape
+    y0 = int(h * 0.55)
+    y1 = min(int(h * 0.98), h)
+    if y1 <= y0 or w < 80:
+        return None
+    sx0 = int(w * 0.05)
+    sx1 = int(w * 0.95)
+    if sx1 - sx0 < 80:
+        return None
+    rows = gray[y0:y1, sx0:sx1]
+    row_std = rows.std(axis=1)
+
+    median_std = float(np.median(row_std))
+    var_thresh = max(median_std + 5, 30)
+
+    runs = []
+    start = -1
+    gap = 0
+    for i in range(len(row_std)):
+        if row_std[i] > var_thresh:
+            if start < 0:
+                start = i
+            gap = 0
+        elif start >= 0:
+            gap += 1
+            if gap > 5:
+                runs.append((start, i - gap))
+                start = -1
+                gap = 0
+    if start >= 0:
+        runs.append((start, len(row_std) - 1))
+
+    runs = [r for r in runs if r[1] - r[0] + 1 >= 8]
+    if not runs:
+        return None
+
+    best_pair = None
+    for i in range(len(runs) - 1):
+        a = runs[i]
+        h1 = a[1] - a[0] + 1
+        if h1 < 10 or h1 > 100:
+            continue
+        for j in range(i + 1, min(len(runs), i + 4)):
+            b = runs[j]
+            h2 = b[1] - b[0] + 1
+            gap_rows = b[0] - a[1] - 1
+            if h2 < 10 or h2 > 100:
+                continue
+            if not (0.35 <= h2 / h1 <= 2.5):
+                continue
+            max_gap = max(12, int(min(h1, h2) * 2 + 4))
+            if gap_rows > max_gap:
+                continue
+            skipped = runs[i + 1:j]
+            if any(r[1] - r[0] + 1 > max(2, min(h1, h2) // 3) for r in skipped):
+                continue
+            if best_pair is None or b[1] > best_pair[1][1]:
+                best_pair = (a, b)
+
+    if best_pair is not None:
+        a, b = best_pair
+        h1 = a[1] - a[0] + 1
+        h2 = b[1] - b[0] + 1
+        pad = max(8, min(25, int(min(h1, h2) * 0.70)))
+        top = max(0, y0 + a[0] - pad)
+        bot = min(h, y0 + b[1] + pad)
+        bh = int((bot - top) / scale)
+        if bh < 30:
+            return None
+        return (0, int(top / scale), int(Wd), bh)
+
+    best_single = None
+    for run in runs:
+        rh = run[1] - run[0] + 1
+        if rh < 10 or rh > 120:
             continue
         if best_single is None or rh > best_single[1] - best_single[0] + 1:
             best_single = run
@@ -195,7 +311,13 @@ def locate_band(rgb: Image.Image, pad_hint: list | None = None):
                     return result
                 return bottom
             return result
-    return _locate_band_bottom(gray, scale, Wd, H)
+    result = _locate_band_bottom(gray, scale, Wd, H)
+    if result is not None and result[3] >= 30:
+        return result
+    var_result = _locate_band_variance(gray, scale, Wd, H)
+    if var_result is not None:
+        return var_result
+    return result
 
 
 def read_feat(path: Path) -> np.ndarray | None:

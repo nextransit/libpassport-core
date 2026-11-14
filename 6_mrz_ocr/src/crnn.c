@@ -1,10 +1,7 @@
 #include "crnn.h"
-/* Each weight set ships its OWN CRNN head, trained on that set's CNN
- * features (features come out of the line head, not out of a shared
- * trunk).  Reusing the passport head in the pic binary was measured as
- * a silent failure (§21.3: a head scoring 28% while `fuse == cnn` hid
- * it), so the pic variant carried none until now -- selecting
- * "CRNN序列"/"融合CNN+CRNN" silently ran the plain CNN head there. */
+#if defined(__ARM_NEON) || defined(__ARM_NEON__)
+#include <arm_neon.h>
+#endif
 #if defined(MRZ_WEIGHTS_SET_PIC)
 #include "crnn_weights_pic.h"
 #else
@@ -173,7 +170,12 @@ static inline float fast_sigmoidf(float x) {
  *
  * PyTorch GRU new-gate: n = tanh(W x + b_in + r * (U h + b_hn)).
  * The reset gate multiplies the WHOLE recurrent term including its
- * bias, so the bias is split into an input part and a recurrent part. */
+ * bias, so the bias is split into an input part and a recurrent part.
+ *
+ * Loop order is i-outer / j-inner so weight access (wz[i*H+j] etc.)
+ * is contiguous in j, enabling NEON 4-way SIMD.  Each j accumulator
+ * still receives terms in i=0,1,...,H-1 order, preserving the same
+ * floating-point accumulation sequence per output. */
 static void crnn_gru_dir(const float *emb, int steps,
                          int reverse,
                          const float *wz, const float *uz, const float *bz,
@@ -186,21 +188,61 @@ static void crnn_gru_dir(const float *emb, int steps,
     for (int k = 0; k < steps; ++k) {
         int t = reverse ? (steps - 1 - k) : k;
         const float *x = emb + t * CRNN_HIDDEN;
-        float z[CRNN_HIDDEN], r[CRNN_HIDDEN], n[CRNN_HIDDEN];
-        /* Fused z/r/n gate loop: load x[i] and h[i] once instead of 3×. */
+        float sz[CRNN_HIDDEN], sr[CRNN_HIDDEN], sn[CRNN_HIDDEN], sh[CRNN_HIDDEN];
         for (int j = 0; j < CRNN_HIDDEN; ++j) {
-            float sz = bz[j], sr = br[j], sn = bh_in[j], sh = bh_hn[j];
-            for (int i = 0; i < CRNN_HIDDEN; ++i) {
-                float xi = x[i], hi = h[i];
-                int base = i * CRNN_HIDDEN + j;
-                sz += xi * wz[base] + hi * uz[base];
-                sr += xi * wr[base] + hi * ur[base];
-                sn += xi * wh[base];
-                sh += hi * uh[base];
+            sz[j] = bz[j]; sr[j] = br[j];
+            sn[j] = bh_in[j]; sh[j] = bh_hn[j];
+        }
+#if defined(__ARM_NEON) || defined(__ARM_NEON__)
+        for (int i = 0; i < CRNN_HIDDEN; ++i) {
+            float xi = x[i], hi = h[i];
+            const float *wz_i = wz + i * CRNN_HIDDEN;
+            const float *uz_i = uz + i * CRNN_HIDDEN;
+            const float *wr_i = wr + i * CRNN_HIDDEN;
+            const float *ur_i = ur + i * CRNN_HIDDEN;
+            const float *wh_i = wh + i * CRNN_HIDDEN;
+            const float *uh_i = uh + i * CRNN_HIDDEN;
+            float32x4_t xiv = vdupq_n_f32(xi);
+            float32x4_t hiv = vdupq_n_f32(hi);
+            for (int j = 0; j < CRNN_HIDDEN; j += 4) {
+                float32x4_t sz_v = vld1q_f32(sz + j);
+                float32x4_t sr_v = vld1q_f32(sr + j);
+                float32x4_t sn_v = vld1q_f32(sn + j);
+                float32x4_t sh_v = vld1q_f32(sh + j);
+                sz_v = vmlaq_f32(sz_v, xiv, vld1q_f32(wz_i + j));
+                sz_v = vmlaq_f32(sz_v, hiv, vld1q_f32(uz_i + j));
+                sr_v = vmlaq_f32(sr_v, xiv, vld1q_f32(wr_i + j));
+                sr_v = vmlaq_f32(sr_v, hiv, vld1q_f32(ur_i + j));
+                sn_v = vmlaq_f32(sn_v, xiv, vld1q_f32(wh_i + j));
+                sh_v = vmlaq_f32(sh_v, hiv, vld1q_f32(uh_i + j));
+                vst1q_f32(sz + j, sz_v);
+                vst1q_f32(sr + j, sr_v);
+                vst1q_f32(sn + j, sn_v);
+                vst1q_f32(sh + j, sh_v);
             }
-            z[j] = sigmoidf_safe(sz);
-            r[j] = sigmoidf_safe(sr);
-            n[j] = tanhf(sn + r[j] * sh);
+        }
+#else
+        for (int i = 0; i < CRNN_HIDDEN; ++i) {
+            float xi = x[i], hi = h[i];
+            const float *wz_i = wz + i * CRNN_HIDDEN;
+            const float *uz_i = uz + i * CRNN_HIDDEN;
+            const float *wr_i = wr + i * CRNN_HIDDEN;
+            const float *ur_i = ur + i * CRNN_HIDDEN;
+            const float *wh_i = wh + i * CRNN_HIDDEN;
+            const float *uh_i = uh + i * CRNN_HIDDEN;
+            for (int j = 0; j < CRNN_HIDDEN; ++j) {
+                sz[j] += xi * wz_i[j] + hi * uz_i[j];
+                sr[j] += xi * wr_i[j] + hi * ur_i[j];
+                sn[j] += xi * wh_i[j];
+                sh[j] += hi * uh_i[j];
+            }
+        }
+#endif
+        float z[CRNN_HIDDEN], r[CRNN_HIDDEN], n[CRNN_HIDDEN];
+        for (int j = 0; j < CRNN_HIDDEN; ++j) {
+            z[j] = sigmoidf_safe(sz[j]);
+            r[j] = sigmoidf_safe(sr[j]);
+            n[j] = tanhf(sn[j] + r[j] * sh[j]);
         }
         for (int j = 0; j < CRNN_HIDDEN; ++j)
             h[j] = (1.0f - z[j]) * n[j] + z[j] * h[j];
@@ -214,16 +256,39 @@ static void crnn_forward_net(const crnn_seq_t *net, const float *features,
     if (!net || !features || !probs || steps <= 0) return;
     if (steps > CRNN_STEPS) steps = CRNN_STEPS;
 
-    /* Project + position embedding. */
+    /* Project + position embedding: proj_w is [CRNN_FEATURES x CRNN_HIDDEN]
+     * stored row-major (i*H+j).  Loop i-outer / j-inner for contiguous
+     * weight access and NEON 4-way parallelism across j. */
     float emb[CRNN_STEPS * CRNN_HIDDEN];
     for (int t = 0; t < steps; ++t) {
         float *e = emb + t * CRNN_HIDDEN;
+        const float *ft = features + t * CRNN_FEATURES;
+#if defined(__ARM_NEON) || defined(__ARM_NEON__)
+        for (int j = 0; j < CRNN_HIDDEN; j += 4)
+            vst1q_f32(e + j, vld1q_f32(net->proj_b + j));
+        for (int i = 0; i < CRNN_FEATURES; ++i) {
+            float32x4_t fi = vdupq_n_f32(ft[i]);
+            const float *wr = net->proj_w + i * CRNN_HIDDEN;
+            for (int j = 0; j < CRNN_HIDDEN; j += 4) {
+                float32x4_t ev = vld1q_f32(e + j);
+                ev = vmlaq_f32(ev, fi, vld1q_f32(wr + j));
+                vst1q_f32(e + j, ev);
+            }
+        }
+        for (int j = 0; j < CRNN_HIDDEN; j += 4) {
+            float32x4_t ev = vld1q_f32(e + j);
+            float32x4_t posv = vld1q_f32(net->pos_w + t * CRNN_HIDDEN + j);
+            ev = vaddq_f32(vmaxq_f32(ev, vdupq_n_f32(0.0f)), posv);
+            vst1q_f32(e + j, ev);
+        }
+#else
         for (int j = 0; j < CRNN_HIDDEN; ++j) {
             float s = net->proj_b[j];
             for (int i = 0; i < CRNN_FEATURES; ++i)
-                s += features[t * CRNN_FEATURES + i] * net->proj_w[i * CRNN_HIDDEN + j];
+                s += ft[i] * net->proj_w[i * CRNN_HIDDEN + j];
             e[j] = (s > 0.0f ? s : 0.0f) + net->pos_w[t * CRNN_HIDDEN + j];
         }
+#endif
     }
 
     float fwd[CRNN_STEPS * CRNN_HIDDEN];
@@ -237,22 +302,72 @@ static void crnn_forward_net(const crnn_seq_t *net, const float *features,
                  net->wrb, net->urb, net->brb,
                  net->whb, net->uhb, net->bh_inb, net->bh_hnb, bwd);
 
+    /* Output classifier: out_w is [CRNN_CTX x CRNN_OUT] stored row-major
+     * (j*OUT+o).  For each timestep, compute logits[o] = out_b[o] +
+     * sum_j fwd[j]*out_w[j*OUT+o] + sum_j bwd[j]*out_w[(H+j)*OUT+o].
+     * Loop j-outer / o-inner for contiguous weight access and NEON. */
     for (int t = 0; t < steps; ++t) {
         float *row = probs + t * CRNN_OUT;
+        const float *fwd_t = fwd + t * CRNN_HIDDEN;
+        const float *bwd_t = bwd + t * CRNN_HIDDEN;
+#if defined(__ARM_NEON) || defined(__ARM_NEON__)
+        int o4 = CRNN_OUT & ~3;
+        float32x4_t logitsv[10];
+        for (int o = 0; o < o4; o += 4) {
+            logitsv[o >> 2] = vld1q_f32(net->out_b + o);
+        }
+        for (int j = 0; j < CRNN_HIDDEN; ++j) {
+            float fv = fwd_t[j];
+            float32x4_t fvv = vdupq_n_f32(fv);
+            const float *w = net->out_w + j * CRNN_OUT;
+            for (int o = 0; o < o4; o += 4) {
+                logitsv[o >> 2] = vmlaq_f32(logitsv[o >> 2], fvv, vld1q_f32(w + o));
+            }
+        }
+        for (int j = 0; j < CRNN_HIDDEN; ++j) {
+            float bv = bwd_t[j];
+            float32x4_t bvv = vdupq_n_f32(bv);
+            const float *w = net->out_w + (CRNN_HIDDEN + j) * CRNN_OUT;
+            for (int o = 0; o < o4; o += 4) {
+                logitsv[o >> 2] = vmlaq_f32(logitsv[o >> 2], bvv, vld1q_f32(w + o));
+            }
+        }
+        float tmp[CRNN_OUT];
+        for (int o = 0; o < o4; o += 4)
+            vst1q_f32(tmp + o, logitsv[o >> 2]);
+        for (int o = o4; o < CRNN_OUT; ++o) {
+            float s = net->out_b[o];
+            for (int j = 0; j < CRNN_HIDDEN; ++j)
+                s += fwd_t[j] * net->out_w[j * CRNN_OUT + o];
+            for (int j = 0; j < CRNN_HIDDEN; ++j)
+                s += bwd_t[j] * net->out_w[(CRNN_HIDDEN + j) * CRNN_OUT + o];
+            tmp[o] = s;
+        }
+        float maxv = -INFINITY;
+        for (int o = 0; o < CRNN_OUT; ++o)
+            if (tmp[o] > maxv) maxv = tmp[o];
+        float total = 0.0f;
+        for (int o = 0; o < CRNN_OUT; ++o) {
+            row[o] = expf(tmp[o] - maxv);
+            total += row[o];
+        }
+        float inv = total > 0.0f ? 1.0f / total : 1.0f;
+        for (int o = 0; o < CRNN_OUT; ++o) row[o] *= inv;
+#else
         float maxv = -INFINITY;
         for (int o = 0; o < CRNN_OUT; ++o) {
             float s = net->out_b[o];
             for (int j = 0; j < CRNN_HIDDEN; ++j)
-                s += fwd[t * CRNN_HIDDEN + j] * net->out_w[j * CRNN_OUT + o];
+                s += fwd_t[j] * net->out_w[j * CRNN_OUT + o];
             for (int j = 0; j < CRNN_HIDDEN; ++j)
-                s += bwd[t * CRNN_HIDDEN + j] *
-                     net->out_w[(CRNN_HIDDEN + j) * CRNN_OUT + o];
+                s += bwd_t[j] * net->out_w[(CRNN_HIDDEN + j) * CRNN_OUT + o];
             row[o] = s;
             if (s > maxv) maxv = s;
         }
         float total = 0.0f;
         for (int o = 0; o < CRNN_OUT; ++o) { row[o] = expf(row[o] - maxv); total += row[o]; }
         for (int o = 0; o < CRNN_OUT; ++o) row[o] /= total > 0.0f ? total : 1.0f;
+#endif
     }
 }
 

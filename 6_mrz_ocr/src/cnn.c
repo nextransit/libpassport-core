@@ -9,6 +9,9 @@
  *   -> fc1(384->64) ReLU -> fc2(64->37)
  */
 #include "cnn.h"
+#if defined(__ARM_NEON) || defined(__ARM_NEON__)
+#include <arm_neon.h>
+#endif
 #include "cnn_weights.h"
 /* Two line-head weight sets ship side by side: the phone-photo passport
  * corpus (tmp/PassPortPhoto, trained through the board labels) and the
@@ -204,17 +207,49 @@ static void conv2_pool2(const cnn_t *net,
                 for (int ci = 0; ci < CNN_C1; ++ci) {
                     const float v = inp[tap][ci];
                     const float *w = wrow + ci * CNN_C2;
+#if defined(__ARM_NEON) || defined(__ARM_NEON__)
+                    float32x4_t vv = vdupq_n_f32(v);
+                    for (int co = 0; co < CNN_C2; co += 4) {
+                        float32x4_t av = vld1q_f32(acc + co);
+                        float32x4_t wv = vld1q_f32(w + co);
+                        av = vmlaq_f32(av, vv, wv);
+                        vst1q_f32(acc + co, av);
+                    }
+#else
                     for (int co = 0; co < CNN_C2; ++co)
                         acc[co] += v * w[co];
+#endif
                 }
             }
+#if defined(__ARM_NEON) || defined(__ARM_NEON__)
+            for (int co = 0; co < CNN_C2; co += 4) {
+                float32x4_t av = vld1q_f32(acc + co);
+                av = vmaxq_f32(av, vdupq_n_f32(0.0f));
+                vst1q_f32(a2[y][x] + co, av);
+            }
+#else
             for (int co = 0; co < CNN_C2; ++co)
                 a2[y][x][co] = acc[co] > 0.0f ? acc[co] : 0.0f;
+#endif
         }
     /* 2x2 pool over 6x16 -> 3x8x16, then 1x1 conv 16->4 (per-pixel
      * linear recombine) giving 3x8x4 = 96 features. Flatten (c,y,x)
      * matching torch flatten(1). */
     float p2[CNN_POOL2_H][CNN_POOL2_W][CNN_C2];
+#if defined(__ARM_NEON) || defined(__ARM_NEON__)
+    for (int y = 0; y < CNN_POOL2_H; ++y)
+        for (int x = 0; x < CNN_POOL2_W; ++x)
+            for (int c = 0; c < CNN_C2; c += 4) {
+                float32x4_t m = vld1q_f32(&a2[y*2][x*2][c]);
+                float32x4_t v0 = vld1q_f32(&a2[y*2][x*2+1][c]);
+                float32x4_t v1 = vld1q_f32(&a2[y*2+1][x*2][c]);
+                float32x4_t v2 = vld1q_f32(&a2[y*2+1][x*2+1][c]);
+                m = vmaxq_f32(m, v0);
+                m = vmaxq_f32(m, v1);
+                m = vmaxq_f32(m, v2);
+                vst1q_f32(&p2[y][x][c], m);
+            }
+#else
     for (int y = 0; y < CNN_POOL2_H; ++y)
         for (int x = 0; x < CNN_POOL2_W; ++x)
             for (int c = 0; c < CNN_C2; ++c) {
@@ -226,6 +261,7 @@ static void conv2_pool2(const cnn_t *net,
                     }
                 p2[y][x][c] = m;
             }
+#endif
     /* 1x1 conv (no activation; folded into fc1 later is fine, but we
      * apply bias + keep it linear so fc can separate). */
     int idx = 0;
@@ -292,27 +328,6 @@ void cnn_row_features_batch(const cnn_t *net,
 void cnn_fc_batch(const cnn_t *net,
                   const float *feat, int rows,
                   float *probs) {
-    /* Both FC layers are accumulated ROW-PARALLEL rather than
-     * feature-serial.
-     *
-     * The previous form computed one (row, output) dot product at a
-     * time, so the accumulation `s += f[i]*w[i]` over i was a serial
-     * floating-point dependency chain: 96 dependent FMAs with ~4-cycle
-     * latency each, i.e. ~380 cycles minimum per cell no matter how wide
-     * the machine is.  Measured 1.77 us per glyph for 8.5 k MACs, which
-     * is 4.8 GMAC/s -- about a fifth of what the same core reaches in
-     * conv2 after the same treatment.
-     *
-     * The 44 rows are independent, so making the ROW the innermost index
-     * turns the chain into a unit-stride vector: `h[j][0..rows-1] +=
-     * featT[i][0..rows-1] * w[j][i]`.  That needs the feature matrix
-     * transposed once (96x44 floats = 17 KB, L1-resident) and h stored
-     * as [unit][row] instead of [row][unit].
-     *
-     * BIT-EXACT: each h[j][r] still starts from its bias and then
-     * receives i = 0,1,2,... in order, and each logit[o][r] receives
-     * j = 0,1,2,... in order.  The row index only selects WHICH
-     * independent accumulator is updated, so no individual sum changes. */
     float featT[CNN_FLAT][CNN_BATCH_MAX];
     for (int r = 0; r < rows; ++r) {
         const float *f = feat + r * CNN_FLAT;
@@ -321,6 +336,81 @@ void cnn_fc_batch(const cnn_t *net,
 
     /* fc1: h[j][r] = b1[j] + sum_i featT[i][r] * w1[j][i], ReLU. */
     float h[CNN_HIDDEN][CNN_BATCH_MAX];
+#if defined(__ARM_NEON) || defined(__ARM_NEON__)
+    int r4 = rows & ~3;
+    for (int j = 0; j < CNN_HIDDEN; ++j) {
+        const float *w = net->fc1_w + j * CNN_FLAT;
+        const float b = net->fc1_b[j];
+        float *hj = h[j];
+        float32x4_t bv = vdupq_n_f32(b);
+        for (int r = 0; r < r4; r += 4)
+            vst1q_f32(hj + r, bv);
+        for (int r = r4; r < rows; ++r)
+            hj[r] = b;
+        for (int i = 0; i < CNN_FLAT; ++i) {
+            const float wi = w[i];
+            const float *fr = featT[i];
+            float32x4_t wiv = vdupq_n_f32(wi);
+            for (int r = 0; r < r4; r += 4) {
+                float32x4_t hv = vld1q_f32(hj + r);
+                float32x4_t fv = vld1q_f32(fr + r);
+                hv = vmlaq_f32(hv, fv, wiv);
+                vst1q_f32(hj + r, hv);
+            }
+            for (int r = r4; r < rows; ++r)
+                hj[r] += fr[r] * wi;
+        }
+        for (int r = 0; r < r4; r += 4) {
+            float32x4_t hv = vld1q_f32(hj + r);
+            hv = vmaxq_f32(hv, vdupq_n_f32(0.0f));
+            vst1q_f32(hj + r, hv);
+        }
+        for (int r = r4; r < rows; ++r)
+            hj[r] = hj[r] > 0.0f ? hj[r] : 0.0f;
+    }
+
+    /* fc2: logits[o][r] = b2[o] + sum_j h[j][r] * w2[o][j]. */
+    float logits[CNN_OUT][CNN_BATCH_MAX];
+    for (int o = 0; o < CNN_OUT; ++o) {
+        const float *w = net->fc2_w + o * CNN_HIDDEN;
+        const float b = net->fc2_b[o];
+        float *lo = logits[o];
+        float32x4_t bv = vdupq_n_f32(b);
+        for (int r = 0; r < r4; r += 4)
+            vst1q_f32(lo + r, bv);
+        for (int r = r4; r < rows; ++r)
+            lo[r] = b;
+        for (int j = 0; j < CNN_HIDDEN; ++j) {
+            const float wj = w[j];
+            const float *hj = h[j];
+            float32x4_t wjv = vdupq_n_f32(wj);
+            for (int r = 0; r < r4; r += 4) {
+                float32x4_t lv = vld1q_f32(lo + r);
+                float32x4_t hv = vld1q_f32(hj + r);
+                lv = vmlaq_f32(lv, hv, wjv);
+                vst1q_f32(lo + r, lv);
+            }
+            for (int r = r4; r < rows; ++r)
+                lo[r] += hj[r] * wj;
+        }
+    }
+
+    /* softmax per row. */
+    for (int r = 0; r < rows; ++r) {
+        float mx = -1e30f;
+        for (int o = 0; o < CNN_OUT; ++o)
+            if (logits[o][r] > mx) mx = logits[o][r];
+        float sum = 0.0f;
+        for (int o = 0; o < CNN_OUT; ++o) {
+            float p = expf(logits[o][r] - mx);
+            probs[r * CNN_OUT + o] = p;
+            sum += p;
+        }
+        float inv_sum = sum > 0 ? 1.0f / sum : 1.0f;
+        for (int o = 0; o < CNN_OUT; ++o)
+            probs[r * CNN_OUT + o] *= inv_sum;
+    }
+#else
     for (int j = 0; j < CNN_HIDDEN; ++j) {
         const float *w = net->fc1_w + j * CNN_FLAT;
         const float b = net->fc1_b[j];
@@ -366,6 +456,7 @@ void cnn_fc_batch(const cnn_t *net,
         for (int o = 0; o < CNN_OUT; ++o)
             probs[r * CNN_OUT + o] *= inv_sum;
     }
+#endif
 }
 
 int cnn_forward(const cnn_t *net,

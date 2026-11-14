@@ -229,6 +229,8 @@ mrz_doc_layout_t mrz_classify_layout(const uint8_t *binaryBottomLine,
              * 44 characters of garbage: assets/pic/1c6acd09..._0222.png
              * measured groups=28 (44 cells need ~44-46 groups, 30 cells
              * ~28-32), e30=3.62 vs e44=5.53 -- both counts favour the
+             * 30-cell hypothesis.
+             *
              * 30-cell hypothesis. */
             int looks44 = (n_groups >= 34) || (energy44 <= energy30);
             if (dxLeft <= maxTol && dw <= bottom->w / 10 && dh <= bH / 2

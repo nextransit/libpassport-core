@@ -465,6 +465,109 @@ class PhotoMrzFragment : Fragment() {
         }
     }
 
+    /**
+     * Broadcast-triggered batch test: allows ADB to run a photo batch
+     * test with a specific algorithm and image source without UI
+     * interaction. Results are written to a JSON file in the external
+     * files dir so the host can pull them via adb.
+     *
+     * Usage:
+     *   adb shell am broadcast \
+     *     -a com.nextransit.mrzbench.action.PHOTO_BATCH \
+     *     -p com.nextransit.mrzbench \
+     *     --es method crnn \
+     *     --es source tmp/PassPortPhoto
+     */
+    fun runBatchFromBroadcast(methodArg: String, sourceArg: String) {
+        method = methodArg
+        batchGroupFilter = sourceArg
+        methodButton.text = "算法: ${photoMethodOptions().find { it.first == method }?.second ?: method}"
+        batchGroup.text = "图片源: ${sourceArg}"
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val allEntries = withContext(Dispatchers.IO) {
+                    PhotoBatchRunner.listAllPhotos(requireContext())
+                }
+                val entries = when (sourceArg) {
+                    "assets/pic" -> allEntries.filter { it.group == "assets/pic" }
+                    "Photo" -> allEntries.filter { it.group == "Photo" }
+                    "tmp/PassPortPhoto" -> allEntries.filter { it.group == "tmp/PassPortPhoto" }
+                    "passport_photo" -> allEntries.filter {
+                        it.group == "tmp/PassPortPhoto" || it.group == "Photo"
+                    }
+                    else -> allEntries
+                }
+                if (entries.isEmpty()) {
+                    android.util.Log.e("MrzBench", "PHOTO_BATCH: no images for source=$sourceArg")
+                    return@launch
+                }
+                android.util.Log.i("MrzBench", "PHOTO_BATCH: starting method=$method entries=${entries.size}")
+                status.text = "批量测试 0/${entries.size}  算法=$method"
+                val summary = withContext(Dispatchers.Default) {
+                    PhotoBatchRunner.run(
+                        requireContext(),
+                        entries,
+                        method,
+                    ) { done, total, _ ->
+                        android.os.Handler(android.os.Looper.getMainLooper()).post {
+                            status.text = "批量测试 $done/$total  算法=$method"
+                        }
+                    }
+                }
+                renderBatchSummary(summary)
+
+                // Write JSON result to external files dir for ADB pull
+                val ext = requireContext().getExternalFilesDir(null)
+                if (ext != null) {
+                    val jsonFile = java.io.File(ext, "photo_batch_result.json")
+                    val json = org.json.JSONObject()
+                    json.put("method", method)
+                    json.put("source", sourceArg)
+                    json.put("total", summary.total)
+                    json.put("pass", summary.pass)
+                    json.put("suspect", summary.suspect)
+                    json.put("fail", summary.fail)
+                    json.put("decoded", summary.decoded)
+                    json.put("gtCount", summary.gtCount)
+                    json.put("l1CharAcc", summary.l1CharAcc)
+                    json.put("l2CharAcc", summary.l2CharAcc)
+                    json.put("exactMatch", summary.exactMatch)
+                    json.put("msP50", summary.msP50)
+                    json.put("msP95", summary.msP95)
+                    val detailsArr = org.json.JSONArray()
+                    summary.results.forEach { r ->
+                        val d = org.json.JSONObject()
+                        d.put("path", r.entry.path)
+                        d.put("verdict", r.verdict.name)
+                        d.put("backend", r.backend)
+                        d.put("ms", r.ms)
+                        d.put("line1", r.line1)
+                        d.put("line2", r.line2)
+                        d.put("decodeOk", r.decodeOk)
+                        d.put("gtLine1", r.gtLine1)
+                        d.put("gtLine2", r.gtLine2)
+                        d.put("l1Correct", r.l1Correct)
+                        d.put("l1Total", r.l1Total)
+                        d.put("l2Correct", r.l2Correct)
+                        d.put("l2Total", r.l2Total)
+                        d.put("error", r.error)
+                        val t = org.json.JSONObject()
+                        r.timings.forEach { (k, v) -> t.put(k, v) }
+                        d.put("timings", t)
+                        detailsArr.put(d)
+                    }
+                    json.put("details", detailsArr)
+                    jsonFile.writeText(json.toString())
+                    android.util.Log.i("MrzBench", "PHOTO_BATCH: results written to ${jsonFile.absolutePath}")
+                }
+            } catch (t: Throwable) {
+                android.util.Log.e("MrzBench", "PHOTO_BATCH failed", t)
+                status.text = "批量测试失败: ${t.message ?: t.javaClass.simpleName}"
+            }
+        }
+    }
+
     private fun renderBatchSummary(summary: PhotoBatchRunner.BatchSummary) {
         val sb = SpannableStringBuilder()
         appendColored(sb, "批量测试结果\n\n", Cyber.neonCyan)
