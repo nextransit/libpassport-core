@@ -7819,7 +7819,10 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         def worker():
             try:
                 # 与批量模式同一路径：多引擎 + 共识/GT 引导。
-                rec = self._ocr_photo_engines(str(path))
+                methods = self._ocr_selected_methods()
+                strict = self._ocr_selection_is_explicit()
+                rec = self._ocr_photo_engines(str(path), methods,
+                                              strict=strict)
                 # label（含来源目录）作为唯一 id。
                 rec["file"] = name
                 rec["path"] = str(path)
