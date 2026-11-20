@@ -92,6 +92,11 @@ def load_ppm_patch(path: Path) -> np.ndarray:
     if arr.shape != (CNN_IN_H, CNN_IN_W):
         img = img.resize((CNN_IN_W, CNN_IN_H), Image.BILINEAR)
         arr = np.asarray(img, dtype=np.float32) / 255.0
+    # Invert polarity: gen_cscd_synthetic.py renders ink=dark (low values)
+    # on bg=light (high values), but the C pipeline's resample_char_gray
+    # outputs 1.0 - gray/255 (ink=high, bg=low).  Without this flip the
+    # CRNN trains on features whose polarity is opposite to inference.
+    arr = 1.0 - arr
     return arr
 
 

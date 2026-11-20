@@ -109,30 +109,34 @@ def _cnn_binary(tool=None):
     return ROOT / "6_mrz_ocr" / "build" / "mrz_ocr_cnn_tool"
 
 
-def get_cnn_tool(fuse=False, tool=None):
+def get_cnn_tool(fuse=False, tool=None, cscd=False):
     """Resident CNN/fuse tool.  `fuse` selects the fused head.
 
     `tool` is the weight-set binary chosen in the GUI (passport vs pic);
     the pool keys on it so switching weight sets cannot reuse a resident
     process that loaded the other set of heads.
+
+    `cscd=True` forces CS/CD (30-char single-line) layout detection,
+    needed because the C tool's auto-detection fails on guilloche-background
+    CS/CD photos.
     """
     binary = _cnn_binary(tool)
-    key = (str(binary), "fuse" if fuse else "cnn")
+    key = (str(binary), "fuse" if fuse else "cnn", "cscd" if cscd else "")
     with _POOL_LOCK:
         pooled = _POOL.get(key)
         if pooled is None:
             env = _tool_env(MRZ_OCR_CRNN="0")
-            # FUSE wins over CRNN inside the C tool, so it must be absent
-            # -- not merely left at whatever the parent process exported.
             env.pop("MRZ_OCR_FUSE", None)
             if fuse:
                 env["MRZ_OCR_FUSE"] = "1"
+            if cscd:
+                env["MRZ_OCR_FORCE_LAYOUT"] = "30"
             pooled = ResidentTool([binary, "--serve"], env)
             _POOL[key] = pooled
         return pooled
 
 
-def get_crnn_c_tool(tool=None):
+def get_crnn_c_tool(tool=None, cscd=False):
     """Resident C tool running the CRNN sequence head (MRZ_OCR_CRNN=1).
 
     The one-shot branch of `_rst_run_ocr_methods` already supported this
@@ -140,14 +144,19 @@ def get_crnn_c_tool(tool=None):
     paid a fresh process start on every photo (measured: P95 107 ms vs
     45 ms for fuse on the 50-photo corpus).  Keeping it resident makes
     `crnn` the same cost as `cnn`/`fuse`, with no fallback involved.
+
+    `cscd=True` forces CS/CD layout detection for guilloche-background
+    photos where auto-detection fails.
     """
     binary = _cnn_binary(tool)
-    key = (str(binary), "crnn")
+    key = (str(binary), "crnn", "cscd" if cscd else "")
     with _POOL_LOCK:
         pooled = _POOL.get(key)
         if pooled is None:
             env = _tool_env(MRZ_OCR_CRNN="1")
             env.pop("MRZ_OCR_FUSE", None)
+            if cscd:
+                env["MRZ_OCR_FORCE_LAYOUT"] = "30"
             pooled = ResidentTool([binary, "--serve"], env)
             _POOL[key] = pooled
         return pooled

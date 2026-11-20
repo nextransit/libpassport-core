@@ -4753,6 +4753,12 @@ static mrz_ocr_status_t mrz_ocr_recognise_cnn_core(const face_image_t *img,
     int line_map[2] = { 0, 1 };
     {
         int bi = split_n - 1;                       /* bottom row */
+        const char *force_layout = getenv("MRZ_OCR_FORCE_LAYOUT");
+        if (force_layout && force_layout[0] == '3' && force_layout[1] == '0') {
+            g_doc_layout = MRZ_LAYOUT_SINGLE_LINE_30;
+        } else if (force_layout && force_layout[0] == '4' && force_layout[1] == '4') {
+            g_doc_layout = MRZ_LAYOUT_TD3_DOUBLE_44;
+        } else {
         /* The layout classifier reads the bottom row's binary.  Try the
          * Otsu binary first (it is what the split just used) and only
          * produce the Sauvola binary when that classification is not a
@@ -4771,6 +4777,7 @@ static mrz_ocr_status_t mrz_ocr_recognise_cnn_core(const face_image_t *img,
                                 + (size_t)lines[bi].y * bw;
             g_doc_layout = mrz_classify_layout(sbot, bw, lines[bi].h, bw,
                                                lines, split_n);
+        }
         }
         if (g_doc_layout == MRZ_LAYOUT_SINGLE_LINE_30) {
             n_lines = 1;

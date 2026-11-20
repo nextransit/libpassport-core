@@ -4056,7 +4056,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             methods = [m for m in methods if m in FAST_TIER]
             if not methods:
                 methods = list(_fast_tier())
-        if (_fast_strict() or strict) and not (pair and pair[0] == pair[1]):
+        if (_fast_strict() or strict):
             allow_tesseract_fallback = False
 
         # CS/CD 单行 MRZ: 跳过不支持单行格式的引擎
@@ -4355,14 +4355,17 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                     from mrz_engine_pool import (
                         get_cnn_tool, get_crnn_c_tool,
                         get_traditional_tool)
+                    _is_cscd = bool(pair and pair[0] == pair[1])
                     if method == "traditional":
                         pool_tool = get_traditional_tool()
                     elif method == "crnn":
-                        pool_tool = get_crnn_c_tool(self._ocr_weights_tool())
+                        pool_tool = get_crnn_c_tool(self._ocr_weights_tool(),
+                                                    cscd=_is_cscd)
                     else:
                         pool_tool = get_cnn_tool(
                             fuse=(method == "fuse"),
-                            tool=self._ocr_weights_tool())
+                            tool=self._ocr_weights_tool(),
+                            cscd=_is_cscd)
                     stdout, stderr = pool_tool.run(str(band_path))
                     returncode = 0 if stdout else 1
                 elif resident and method == "paddle":
@@ -4411,6 +4414,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                     env.pop("MRZ_OCR_FUSE", None)
                     if method == "fuse":
                         env["MRZ_OCR_FUSE"] = "1"
+                    if pair and pair[0] == pair[1]:
+                        env["MRZ_OCR_FORCE_LAYOUT"] = "30"
                     if strict and method in ("cnn", "crnn", "fuse"):
                         # The engine must run the head that was asked
                         # for.  Without this the tool would quietly run
@@ -6309,21 +6314,24 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             _band_clamp = (int(round(work2.shape[0] / scale))
                            if os.environ.get("MRZ_BAND_CLAMP", "0") == "1"
                            else None)
-            native_band, native_crop = self._rst_native_mrz_band(
-                rgb, pair, scale,
-                source_bottom=_band_clamp,
-                single=is_single,
-                pad_override=2 if sens_rect else None,
-                x_range=(sens_rect[0], sens_rect[2]) if sens_rect else None)
-            if is_single or (pair and pair[0] == pair[1]):
-                try:
-                    from restore import remove_guilloche
-                    native_band = remove_guilloche(native_band)
-                except Exception:
-                    pass
-            native_band, native_crop = self._ocr_pick_band(
-                rgb, native_band, native_crop, pair, scale, work2,
-                is_single, sens_rect, source_bottom)
+            if is_single:
+                # CS/CD 单行 MRZ：C 工具的 locate_band() 在薄 band 裁剪上
+                # 失败（CS/CD 行 ink ~9% < 10% 阈值，H>80 时直接 NO_BAND）。
+                # 直接传完整照片，让 C 工具自己做 band detection（已验证：
+                # 完整照片 + MRZ_OCR_FORCE_LAYOUT=30 → 3/3 exact conf=98）。
+                native_band = rgb
+                native_crop = {"x": 0, "y": 0,
+                               "w": rgb.shape[1], "h": rgb.shape[0]}
+            else:
+                native_band, native_crop = self._rst_native_mrz_band(
+                    rgb, pair, scale,
+                    source_bottom=_band_clamp,
+                    single=is_single,
+                    pad_override=2 if sens_rect else None,
+                    x_range=(sens_rect[0], sens_rect[2]) if sens_rect else None)
+                native_band, native_crop = self._ocr_pick_band(
+                    rgb, native_band, native_crop, pair, scale, work2,
+                    is_single, sens_rect, source_bottom)
             needs_file = any(m in ("traditional", "cnn", "crnn", "fuse")
                              for m in methods)
             if needs_file:

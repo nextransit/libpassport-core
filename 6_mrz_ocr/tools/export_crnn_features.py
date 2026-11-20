@@ -104,6 +104,8 @@ def main() -> int:
     env["MRZ_OCR_LINE_MODELS"] = "1" if args.line_models else "0"
     env["MRZ_OCR_CRNN"] = "1" if args.crnn else "0"
     env["MRZ_OCR_PAR"] = "1" if args.parallel else "0"
+    if is_cscd:
+        env["MRZ_OCR_FORCE_LAYOUT"] = "30"
 
     tool_path = Path(args.tool)
     from weight_fingerprint import feature_fingerprint
