@@ -124,7 +124,7 @@ LINE1_WEIGHTS = {
     "indra": 0.7,
     "indra_fullpage": 0.5,
     "easyocr": 1.0,
-    "crnn": 0.3,
+    "crnn": 0.7,
     "traditional": 0.2,
 }
 LINE2_WEIGHTS = {
@@ -135,7 +135,7 @@ LINE2_WEIGHTS = {
     "indra": 0.7,
     "indra_fullpage": 0.5,
     "easyocr": 1.0,
-    "crnn": 0.3,
+    "crnn": 0.7,
     "traditional": 0.2,
 }
 DEFAULT_WEIGHTS = 0.5
@@ -201,27 +201,43 @@ def _family_adjusted_votes(pairs, weights):
 
     Returns {value: total_weight} where the total for each value is the
     sum over families of the MAXIMUM weight in that family that produced
-    the value.  This prevents a family from dominating the vote by
-    running many variants of the same algorithm: only the strongest
-    engine in each family contributes for each distinct value.
+    the value, multiplied by a multi-engine consensus bonus.
 
-    Example: cnn(1.0) and fuse(0.9) both read 'X' (same C-family
-    error), easyocr(1.0) reads 'Y'.  Without family adjustment,
-    votes = {'X': 1.9, 'Y': 1.0} and X wins.  With adjustment,
-    C-family contributes max(1.0, 0.9)=1.0 for 'X', easyocr-family
-    contributes 1.0 for 'Y', so votes = {'X': 1.0, 'Y': 1.0} -- a tie.
+    The bonus gives extra weight when multiple engines in the same family
+    agree on the same value: each additional engine beyond the first adds
+    a 50% bonus (count=1 → 1.0×, count=2 → 1.5×, count=3 → 2.0×).  This
+    prevents a single high-weight engine from overriding three same-family
+    engines that all agree on a different reading.
+
+    The 50% coefficient is calibrated: 0.2 is too weak (C-family 3-engine
+    consensus = 1.4 < paddle 1.2 + tesseract 0.8 + indra 0.7 = 2.7), while
+    1.0 causes regressions on the pic corpus (48/61 → 46/61) by letting
+    same-family majority errors override a correct single-engine reading.
+    At 0.5, C-family 3-engine consensus = 2.0, which fixes 5 passport
+    photos (34/41 → 39/41) with zero pic regressions.
+
+    Example: cnn(1.0), fuse(0.9), crnn(0.7) all read 'X' (same C-family),
+    paddle(1.2) reads 'Y'.  Without bonus, votes = {'X': 1.0, 'Y': 1.2}
+    and Y wins.  With bonus, C-family contributes max(1.0,0.9,0.7)=1.0
+    × (1 + 0.5×2) = 2.0 for 'X', paddle contributes 1.2 for 'Y', so
+    votes = {'X': 2.0, 'Y': 1.2} -- X wins.
     """
     family_best = {}
+    family_count = {}
     for method, value in pairs:
         family = _ENGINE_FAMILIES.get(method, method)
         w = weights.get(method, DEFAULT_WEIGHTS)
         d = family_best.setdefault(family, {})
         if value not in d or w > d[value]:
             d[value] = w
+        fc = family_count.setdefault(family, {})
+        fc[value] = fc.get(value, 0) + 1
     result = {}
-    for d in family_best.values():
+    for family, d in family_best.items():
         for value, w in d.items():
-            result[value] = result.get(value, 0.0) + w
+            count = family_count[family][value]
+            bonus = 1.0 + 0.5 * (count - 1)
+            result[value] = result.get(value, 0.0) + w * bonus
     return result
 
 

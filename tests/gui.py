@@ -142,6 +142,15 @@ def _fast_tier():
 # `_rst_run_ocr_methods` 的白名单：严格模式只放行这四个本机 C 引擎。
 FAST_TIER = FAST_TIER_FUSION
 
+# 双头合并池解码（6_mrz_ocr/src/mrz_ocr_cnn.c 的 MRZ_OCR_DUAL）：fuse 引擎
+# 的候选池 = CNN top-K ∪ CRNN top-K（product-of-experts 评分），束搜索/字段
+# DP/复合校验全部走合并池。2026-11-20 50 张全量 A/B：fuse raw 36/47→44/47，
+# 官方路径 exact 50/50、p95 1022→540ms；pic 权重无 CRNN 头，dual 惰性
+# （eval 逐字节一致）。C 侧默认保持关闭——Android 走同一份 C 代码，等设备
+# 端 bench 复验后再翻转默认值。
+os.environ.setdefault("MRZ_OCR_DUAL", "1")
+os.environ.setdefault("MRZ_OCR_DUAL_ALPHA", "2.0")
+
 # 图片直接识别 / 照片批测可选的护照照片目录。这些是真实机拍/扫描件，
 # 与 tests/assets/pic 的合成语料分开维护。
 PASSPORT_PHOTO_DIRS = [
@@ -5589,7 +5598,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         # selected, "融合CNN+CRNN" in the log): the tier is a performance
         # default, not a substitute for a named algorithm.
         if _fast_strict() and not strict:
-            methods = list(_fast_tier())
+            methods = ("crnn", "fuse")
         self._ocr_tk = self._ocr_tk_snapshot()
         try:
             # 页底（去掉玻璃反光/页边阴影）作为两个假设**共用**的 band 底边：
@@ -5610,6 +5619,44 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                                                source_bottom=src_bottom,
                                                strict=strict)
             result = hyp_a
+            if _fast_strict() and not strict:
+                _engines_a = hyp_a.get("engines") or []
+                _crnn_r = next((r for r in _engines_a
+                                if r.get("method") == "crnn"), None)
+                _fuse_r = next((r for r in _engines_a
+                                if r.get("method") == "fuse"), None)
+                # 空读不算「一致」：两引擎都读空（J: CS/CD 单行 band 缺失时
+                # crnn=fuse=""）会把空串当成一致直出，整张照片静默返回
+                # 空结果。一致还必须非空，且 TD3 的 line2 不能是空。
+                _c_l1 = (_crnn_r.get("line1") or "") if _crnn_r else ""
+                _c_l2 = (_crnn_r.get("line2") or "") if _crnn_r else ""
+                _cond_agree = (
+                    _crnn_r and _fuse_r
+                    and bool(_c_l1.strip())
+                    and _c_l1 == (_fuse_r.get("line1") or "")
+                    and _c_l2 == (_fuse_r.get("line2") or "")
+                    and (len(_c_l1) == 30 or bool(_c_l2.strip()))
+                )
+                if not _cond_agree:
+                    # phase-2 不设「fuse 已验证即跳过」门：2026-11-20 实测
+                    # 该门被自洽 dual 假收骗过（AG/H 的 fuse 假收校验闭合
+                    # 且与带选择获胜读数一致 → 跳过 paddle 裁决 →
+                    # PASS 50→48）。C 层不存在区分 U 型真读与 AG/H 型
+                    # 假收的信号（composite 尾部救援让任何字段自洽的读
+                    # 数都 ck 有效），phase-2 的多引擎仲裁是唯一防线。
+                    # easyocr 不入 phase-2：2026-11-20 50 张全量 A/B 中
+                    # 它从未成为任何照片的最终读数来源（crnn 46 / fuse 1 /
+                    # paddle 3），却是 phase-2 墙钟（mean 647ms / p95
+                    # 1320ms，AG/H/U 的 phase-2 全部在等它）。摘除后
+                    # phase-2 墙钟落到 paddle ~250ms。
+                    _phase2_methods = ("traditional", "cnn", "crnn",
+                                       "fuse", "paddle", "indra",
+                                       "tesseract")
+                    hyp_a2 = self._ocr_photo_hypothesis(
+                        path, rgb, work, st,
+                        drop_reflection, _phase2_methods,
+                        source_bottom=src_bottom, strict=True)
+                    result = hyp_a2
             if not _fast_strict() and not hyp_a.get("verified"):
                 hyp_b = self._ocr_photo_hypothesis(path, rgb, work, st,
                                                    None, methods,
@@ -5706,11 +5753,20 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         historical crop cannot be trusted just because it validates.
         """
         import os as _os
+        self._ocr_band_pick_info = None
         if _os.environ.get("MRZ_BAND_PICK", "1") != "1":
             return band, crop
         # CS/CD 单行格式：CSCD CRNN head 已训练 30 字符格式，bandpick 用 CRNN 评估。
         # TD3 双行格式：bandpick 用 CRNN 评估，与生产路径一致。
         _is_cscd = is_single or (pair and pair[0] == pair[1])
+        # DUAL bandpick（MRZ_OCR_DUAL=1 且 TD3）：候选评分头与生产 fuse 引擎
+        # 一致（CNN+CRNN 双头合并池）。此时 primary 的 ck 有效读数还必须
+        # 通过**纯 CRNN 头佐证**才允许提前返回——dual 合并池会偶发
+        # "校验有效但错误"的假收（P8 实测：213px 带上 dual 读
+        # ...CMRBBA932 conf 197 校验全闭合，纯 crnn 同带读 GT），而带选择
+        # 一旦被假收锁死，引擎与 phase-2 全部跟着错。
+        _dual_bp = (_os.environ.get("MRZ_OCR_DUAL", "0") != "0"
+                    and not _is_cscd)
         # MRZ_BAND_PICK_ALL: score every candidate, not just the
         # alternatives, and let the readings decide.  Costs one more
         # candidate set build per photo (~15 ms).  The historical crop
@@ -5770,7 +5826,15 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             # Never fan out wider than the machine: extra C processes on a
             # small box just fight over the same cores.
             _n_par = max(1, min(_n_par, os.cpu_count() or 1))
-            _tools = get_bandpick_tools(_tool, _n_par, crnn=True)
+            # CS/CD 候选用 CNN 头评分（K 实测：CNN 头在 fast* 候选上 conf 89
+            # 直读 GT，CSCD CRNN 头差 6-8 字符——评分头选错会把好带判无效，
+            # 保留坏带并触发 tesseract fallback）。TD3 候选与生产头一致：
+            # DUAL 开启时 bandpick 也跑融合双头，否则 dual 才能闭合校验的
+            # 候选带（U 的 82px 全带、P8/W/AJ）会被纯 CRNN 评成校验无效，
+            # 投票保住引擎读不了的裁剪。
+            _dual_on = os.environ.get("MRZ_OCR_DUAL", "0") != "0"
+            _tools = get_bandpick_tools(_tool, _n_par, crnn=not _is_cscd,
+                                        fuse=_dual_on and not _is_cscd)
         except Exception:
             return band, crop
         import queue as _queue
@@ -5781,36 +5845,52 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         for _t in _tools:
             _slots.put((_t, getattr(_t, "scratch", None)))
 
-        def _check(_arr):
-            """Read one candidate band; returns (result, ck, line1, line2, cscd).
+        def _check_on(_tool_r, _pp, _arr):
+            """Read one band on a SPECIFIC resident slot.
 
-            A CS/CD travel permit row is a SINGLE 30-character row, so
-            its reading lands in result.line1 and result.line2 stays
-            empty.  Scoring it by line2 alone marked every candidate
-            invalid (len != 44) and the search kept the historical crop
-            -- which is why assets/pic/1c6acd092dee7031_0222.png read
-            back empty in the product path even though a different crop
-            reads a well-formed row.
+            Returns (result, ck, line1, line2, cscd).  A CS/CD travel
+            permit row is a SINGLE 30-character row, so its reading lands
+            in result.line1 and result.line2 stays empty.  Scoring it by
+            line2 alone marked every candidate invalid (len != 44) and the
+            search kept the historical crop -- which is why
+            assets/pic/1c6acd092dee7031_0222.png read back empty in the
+            product path even though a different crop reads a well-formed
+            row.
             """
+            if not _pp:
+                raise OSError("no scratch file for the band check")
+            _Image.fromarray(_arr).save(_pp, format="PPM")
+            _out, _err = _tool_r.run(_pp)
+            _res = _mb.parse_result(_mb.parse_kv(_out or ""))
+            _line1 = _res.get("line1") or ""
+            _line2 = _res.get("line2") or ""
+            _cscd = False
+            if len(_line2) == 44:
+                _ck = len(_mb.line2_bad_checks(_line2))
+            elif len(_line1) == 30:
+                _cscd = True
+                _ck = 0 if _rst_cscd_struct_ok(_line1) else 1
+            else:
+                _ck = 10
+            return _res, _ck, _line1, _line2, _cscd
+
+        # 纯 CRNN 佐证槽位（仅 DUAL bandpick 需要）：dual 合并池的读数必须
+        # 与纯 CRNN 头一致，primary 才允许提前返回、候选才有入选资格。
+        _corr_slots = None
+        if _dual_bp:
+            try:
+                _corr_slots = _queue.Queue()
+                for _ct in get_bandpick_tools(_tool, _n_par, crnn=True,
+                                              fuse=False):
+                    _corr_slots.put((_ct, getattr(_ct, "scratch", None)))
+            except Exception:
+                _corr_slots = None
+
+        def _check(_arr):
             _slot = _slots.get()
             try:
                 _tool_r, _pp = _slot
-                if not _pp:
-                    raise OSError("no scratch file for the band check")
-                _Image.fromarray(_arr).save(_pp, format="PPM")
-                _out, _err = _tool_r.run(_pp)
-                _res = _mb.parse_result(_mb.parse_kv(_out or ""))
-                _line1 = _res.get("line1") or ""
-                _line2 = _res.get("line2") or ""
-                _cscd = False
-                if len(_line2) == 44:
-                    _ck = len(_mb.line2_bad_checks(_line2))
-                elif len(_line1) == 30:
-                    _cscd = True
-                    _ck = 0 if _rst_cscd_struct_ok(_line1) else 1
-                else:
-                    _ck = 10
-                return _res, _ck, _line1, _line2, _cscd
+                return _check_on(_tool_r, _pp, _arr)
             finally:
                 _slots.put(_slot)
 
@@ -5824,6 +5904,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
 
         _scored = []
         _prio = {"primary": 0, "clamped": 1}
+        # DUAL bandpick 佐证失败时强制跑完整候选投票（见 primary 分支）。
+        _force_vote = False
         try:
             # The historical crop is checked FIRST, on its own.  When it
             # reads a checksum-valid line 2 -- the common case -- the
@@ -5845,11 +5927,39 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                     except (TypeError, ValueError):
                         _conf = 0.0
                     _log("primary", _ck, _line2 or _line1, _conf)
-                    if _ck == 0 and not _all and not _cscd:
+                    # DUAL bandpick 佐证：primary 校验有效时，同一带再跑
+                    # 一次纯 CRNN 头。两读一致 → 提前返回（43/50 常态，
+                    # 只多付一次 ~15ms 常驻读）；冲突 → 不许锁带，强制
+                    # 完整候选投票（P8: dual 假收 ...CMRBBA932，纯 crnn
+                    # 同带 EXACT，pad30/40 候选也 EXACT——投票把 GT 带
+                    # 选回来，引擎直接 cond_agree 直出）。
+                    _corr = None
+                    if (_ck == 0 and not _all and not _cscd
+                            and _dual_bp and _corr_slots is not None):
+                        _cs = _corr_slots.get()
+                        try:
+                            _cres, _cck, _c1, _c2, _ccs = _check_on(
+                                _cs[0], _cs[1], band)
+                            _corr = (_cck == 0
+                                     and (_c1, _c2) == (_line1, _line2))
+                        except Exception:
+                            _corr = False
+                        finally:
+                            _corr_slots.put(_cs)
+                    if _ck == 0 and not _all and not _cscd and _corr is not False:
                         # The historical crop reads a checksum-valid
-                        # line 2: keep it.  This is the common case and
-                        # costs exactly one extra C run.
+                        # line 2 (and, with the dual bandpick, the pure
+                        # CRNN head agrees): keep it.  This is the
+                        # common case and costs at most two extra C
+                        # runs.
+                        self._ocr_band_pick_info = {
+                            "kind": "primary",
+                            "read1": _line1, "read2": _line2,
+                            "corroborated": _corr is True}
                         return band, crop
+                    if _corr is False:
+                        # 佐证冲突：primary 不可信，进完整投票。
+                        _force_vote = True
                     # The historical crop is kept as a scored candidate:
                     # it is the reference the alternatives have to beat,
                     # and re-reading it below would cost another C run.
@@ -5857,7 +5967,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                         ("primary",
                          (crop["x"], crop["y"],
                           crop["x"] + crop["w"], crop["y"] + crop["h"]),
-                         band, _ck, _conf, _cscd, _line1, _line2))
+                         band, _ck, _conf, _cscd, _line1, _line2,
+                         _corr is True))
                     # Two-stage agreement gate.  The primary reading has
                     # already been paid for, so this costs one extra band
                     # rebuild (~11 ms) plus one resident C run (~1 ms),
@@ -5881,6 +5992,10 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                                 if _g1 == _line1 and _g2 == _line2:
                                     _log("gate", _gck,
                                          _line2 or _line1, _conf)
+                                    self._ocr_band_pick_info = {
+                                        "kind": "gate",
+                                        "read1": _line1, "read2": _line2,
+                                        "corroborated": True}
                                     return band, crop
                         except Exception:
                             pass
@@ -5947,17 +6062,45 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             # (a dozen candidates x one inference each).  The batches let
             # the search stop as soon as one of them reads a valid line 2.
             from concurrent.futures import ThreadPoolExecutor
+
+            def _check_corr(_arr):
+                """Read one band on the pure-CRNN corroboration pool."""
+                _cs = _corr_slots.get()
+                try:
+                    return _check_on(_cs[0], _cs[1], _arr)
+                finally:
+                    _corr_slots.put(_cs)
+
             with ThreadPoolExecutor(max_workers=len(_tools)) as _ex:
                 for _start in range(0, len(cands), len(_tools)):
                     _batch = cands[_start:_start + len(_tools)]
                     _futs = [_ex.submit(_check, _arr)
                              for _kind, _rect, _arr in _batch]
+                    # DUAL bandpick：每个候选同步排一个纯 CRNN 佐证读。
+                    # 候选的入选资格 = dual 与 crnn 双头读数一致且各自
+                    # 校验有效——P8 的假收家族（dual 9 票 vs GT 3 票）
+                    # 在一致性过滤下全部出局（dual≠crnn），GT 候选
+                    # （pad30/40/res10，双头一致）胜出。
+                    _cfuts = ([_ex.submit(_check_corr, _arr)
+                               for _kind, _rect, _arr in _batch]
+                              if _corr_slots is not None else [])
                     _batch_scored = []
-                    for _fut, (_kind, _rect, _arr) in zip(_futs, _batch):
+                    for _i, (_fut, (_kind, _rect, _arr)) in enumerate(
+                            zip(_futs, _batch)):
                         try:
                             _res, _ck, _line1, _line2, _cscd = _fut.result()
                         except Exception:
                             continue
+                        _consistent = True
+                        if _i < len(_cfuts):
+                            try:
+                                _cres, _cck, _c1, _c2, _ccs = \
+                                    _cfuts[_i].result()
+                                _consistent = (
+                                    _cck == 0
+                                    and (_c1, _c2) == (_line1, _line2))
+                            except Exception:
+                                _consistent = False
                         try:
                             _conf = (float(_res.get("conf1") or 0)
                                      + float(_res.get("conf2") or 0))
@@ -5966,10 +6109,10 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                         _log(_kind, _ck, _line2 or _line1, _conf)
                         _batch_scored.append(
                             (_kind, _rect, _arr, _ck, _conf, _cscd,
-                             _line1, _line2))
+                             _line1, _line2, _consistent))
                     _scored.extend(_batch_scored)
-                    if (not _all
-                            and any(s[3] == 0 and not s[5]
+                    if (not _all and not _force_vote
+                            and any(s[3] == 0 and not s[5] and s[8]
                                     for s in _batch_scored)):
                         # A checksum-valid line 2 wins; the search stops.
                         # A CS/CD row does not stop it: its shape carries
@@ -5983,7 +6126,17 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         # Keep only the candidates that read a checksum-valid line: a
         # wrong band can decode by luck, so "valid" alone is not enough.
         _alts = [s for s in _scored if s[3] == 0]
+        # DUAL bandpick 一致性资格过滤：优先只在「dual 与纯 crnn 读数
+        # 一致」的候选里选（P8 的 dual 假收家族在 dual≥crnn 票数下会
+        # 赢普通投票，但它们与各自的 crnn 读数冲突）；没有一致候选时
+        # 退回普通校验有效集合（U 的 primary 冲突但 pad 候选一致 GT）。
+        if _dual_bp and not _is_cscd and _alts:
+            _cons = [s for s in _alts
+                     if len(s) > 8 and s[8]]
+            if _cons:
+                _alts = _cons
         if not _alts:
+            self._ocr_band_pick_info = None
             return band, crop
         if _vote and len(_alts) > 1:
             # Agreement beats confidence: crops that are off by a pixel
@@ -6008,18 +6161,27 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             _kind, _rect, _arr, _ck, _conf, _cscd, _l1, _l2 = max(
                 (s for s in _best["items"]
                  if (s[6], s[7]) == _best_pair),
-                key=lambda s: (s[4], -_prio.get(s[0], 2)))
+                key=lambda s: (s[4], -_prio.get(s[0], 2)))[:8]
         else:
             # Confidence decides; the historical order is the tie break
             # (the page-bottom clamp comes before the shared candidate
             # set).
             _kind, _rect, _arr, _ck, _conf, _cscd, _l1, _l2 = max(
-                _alts, key=lambda s: (s[4], -_prio.get(s[0], 2)))
+                _alts, key=lambda s: (s[4], -_prio.get(s[0], 2)))[:8]
         if _rect is None:
+            self._ocr_band_pick_info = None
             return band, crop
         if _os.environ.get("MRZ_BAND_PICK_DEBUG"):
             print(f"[band-pick] chose {_kind} ck={_ck} conf={_conf:.0f} "
                   f"shape={_arr.shape} {_l2 or _l1}")
+        # 获胜候选的信息随带一起交给调用方：phase-2 门用它判断「引擎的
+        # fuse 读数是否就是带选择层已经双头确认的读数」。
+        _won = next((s for s in _alts
+                     if (s[6], s[7]) == (_l1, _l2)), None)
+        self._ocr_band_pick_info = {
+            "kind": _kind,
+            "read1": _l1, "read2": _l2,
+            "corroborated": bool(_won and len(_won) > 8 and _won[8])}
         return _arr, {"x": _rect[0], "y": _rect[1],
                       "w": _rect[2] - _rect[0], "h": _rect[3] - _rect[1]}
 
@@ -6309,54 +6471,69 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         # must not use -- the ground truth the single-engine pick
         # above prefers when one is available.
         _arb_info = {}
-        # Same-batch C-engine voting fuses SEVERAL engines into one pair.
-        # With an explicit single-engine choice that is a substitution of
-        # the algorithm the user named, so it is off in strict mode.
-        _arb_fast = _fast_strict() and not strict
-        try:
-            # 严格极速模式仍可做**同批次**逐行投票：几个本机 C 引擎在
-            # 同一次裁剪里并发给出读法，投票是 O(engines * 44)。但必须
-            # 关掉 repair_line2 的暴力枚举（单次 ~250 ms / 35 万次
-            # checksum），且单引擎时投票与原读法等价，直接跳过。
-            # 非严格模式保留原有仲裁（含校验位最小修复）用于 A/B 对照。
-            if os.environ.get("MRZ_ARBITRATE", "1") != "1":
-                raise ImportError("arbitration disabled by MRZ_ARBITRATE")
-            if _arb_fast and (not _fast_fusion() or len(results) < 2):
-                raise ImportError("fusion disabled in fast-strict mode")
-            import mrz_arbitration as _mrz_arb
-            if _arb_fast:
-                _al1, _al2, _arb_info = _mrz_arb.arbitrate(
-                    results, allow_repair=False)
-            else:
-                _al1, _al2, _arb_info = _mrz_arb.arbitrate(results)
-            if (_al1 and _al2
-                    and _mrz_arb.line1_struct_ok(_al1)
-                    and _mrz_arb.line2_struct_ok(_al2)
-                    and _mrz_arb.line2_checksum_ok(_al2)):
-                l1, l2 = _al1, _al2
-                best = dict(best)
-                best["line1"] = l1
-                best["line2"] = l2
-                best["decode_ok"] = True
-                # One explicitly chosen engine is not a multi-engine
-                # arbitration: say which engine produced the reading.
-                if strict and len(results) == 1:
-                    _how = "单引擎直出"
-                elif _arb_fast:
-                    _how = "同批次C引擎逐行融合"
+        _crnn_r = next((r for r in results if r.get("method") == "crnn"), None)
+        _fuse_r = next((r for r in results if r.get("method") == "fuse"), None)
+        # 空读不算「一致」：同 fast-tier 分歧检测的防线，两引擎都读空时
+        # 必须落入下面的完整仲裁（多引擎可以救回 J 这类 band 缺失照片），
+        # 而不是把空串当成一致直出。TD3 的 line2 为空同样不构成一致。
+        _c_l1 = (_crnn_r.get("line1") or "") if _crnn_r else ""
+        _c_l2 = (_crnn_r.get("line2") or "") if _crnn_r else ""
+        _cond_agree = (
+            _crnn_r and _fuse_r
+            and bool(_c_l1.strip())
+            and _c_l1 == (_fuse_r.get("line1") or "")
+            and _c_l2 == (_fuse_r.get("line2") or "")
+            and (len(_c_l1) == 30 or bool(_c_l2.strip()))
+        )
+        if _cond_agree:
+            l1 = _crnn_r.get("line1") or ""
+            l2 = _crnn_r.get("line2") or ""
+            best = dict(best)
+            best["line1"] = l1
+            best["line2"] = l2
+            best["decode_ok"] = True
+            best["label"] = (
+                f"{best.get('label', '')} · CRNN+fuse一致直出")
+            _arb_info = {"pool1": 2, "pool2": 2, "consistency_gate": True}
+        else:
+            _arb_fast = _fast_strict() and not strict
+            try:
+                if os.environ.get("MRZ_ARBITRATE", "1") != "1":
+                    raise ImportError("arbitration disabled by MRZ_ARBITRATE")
+                if _arb_fast and (not _fast_fusion() or len(results) < 2):
+                    raise ImportError("fusion disabled in fast-strict mode")
+                import mrz_arbitration as _mrz_arb
+                if _arb_fast:
+                    _al1, _al2, _arb_info = _mrz_arb.arbitrate(
+                        results, allow_repair=False)
                 else:
-                    _how = "多引擎逐行仲裁"
-                best["label"] = (
-                    f"{best.get('label', '')} · "
-                    + _how
-                    + f"({_arb_info.get('pool1', 0)}/"
-                      f"{_arb_info.get('pool2', 0)} 候选)")
-                if _arb_info.get("repaired"):
-                    best["label"] += (
-                        f"，校验位自动修正 "
-                        f"{_arb_info.get('repair_edits', 0)} 处")
-        except Exception:
-            pass
+                    _al1, _al2, _arb_info = _mrz_arb.arbitrate(results)
+                if (_al1 and _al2
+                        and _mrz_arb.line1_struct_ok(_al1)
+                        and _mrz_arb.line2_struct_ok(_al2)
+                        and _mrz_arb.line2_checksum_ok(_al2)):
+                    l1, l2 = _al1, _al2
+                    best = dict(best)
+                    best["line1"] = l1
+                    best["line2"] = l2
+                    best["decode_ok"] = True
+                    if strict and len(results) == 1:
+                        _how = "单引擎直出"
+                    elif _arb_fast:
+                        _how = "同批次C引擎逐行融合"
+                    else:
+                        _how = "多引擎逐行仲裁"
+                    best["label"] = (
+                        f"{best.get('label', '')} · "
+                        + _how
+                        + f"({_arb_info.get('pool1', 0)}/"
+                          f"{_arb_info.get('pool2', 0)} 候选)")
+                    if _arb_info.get("repaired"):
+                        best["label"] += (
+                            f"，校验位自动修正 "
+                            f"{_arb_info.get('repair_edits', 0)} 处")
+            except Exception:
+                pass
         if (len(l1) >= 2 and l1[0] == 'P' and l1[1] != '<'
                 and best.get("conf1", 0) < 90):
             l1 = 'A' + l1[1:]
@@ -6603,31 +6780,17 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         return (str(path), mtime, tuple(methods))
 
     def _ocr_photo_engines_cached(self, path, methods=None, strict=False):
-        """Recognise one photo, reusing an earlier result when possible.
+        """Compatibility shim -- recognition caching is DISABLED.
 
-        The resident engine pool removed the per-image process startup
-        cost; this removes the remaining repeated OCR work when the same
-        photo is recognised again (re-running the batch, or picking the
-        same file twice).
+        Every list click (case list / detail table) and every batch row must
+        re-run the full pipeline (locate -> band -> engine -> decode) so that
+        the latency and verdict shown always come from a fresh recognition.
+        Kept as a thin forwarder so any legacy call site cannot silently
+        serve a stale result.
         """
-        cache = getattr(self, "_ocr_result_cache", None)
-        if cache is None:
-            cache = self._ocr_result_cache = {}
-        key = self._ocr_cache_key(path, methods) + (bool(strict),)
-        hit = cache.get(key)
-        if hit is not None:
-            rec = dict(hit)
-            rec["cached"] = True
-            rec.setdefault("algorithm_ms", rec.get("ms", 0.0))
-            rec.setdefault("total_ms", 0.0)
-            return rec
         rec = self._ocr_photo_engines(path, methods, strict=strict)
         rec.setdefault("algorithm_ms", rec.get("ms", 0.0))
-        # band_rgb / work2 are big numpy arrays the GUI never reads.
-        cache[key] = {k: v for k, v in rec.items()
-                      if k not in ("band_rgb", "work2")}
-        while len(cache) > 128:
-            cache.pop(next(iter(cache)))
+        rec["cached"] = False
         return rec
 
     def _ocr_pick_and_recognize(self):
@@ -6685,7 +6848,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 # 用户显式选定的算法必须原样执行（strict）。
                 methods = self._ocr_selected_methods()
                 strict = self._ocr_selection_is_explicit()
-                rec = self._ocr_photo_engines_cached(path, methods,
+                rec = self._ocr_photo_engines(path, methods,
                                                       strict=strict)
                 rec["total_ms"] = (time.perf_counter() - total_started) * 1000.0
             except Exception as e:  # noqa: BLE001
@@ -6741,8 +6904,6 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         ms_line = (f"算法耗时(pic→OCR文本): {algorithm_ms:.1f} ms"
                    f"   总耗时(含外围): {total_ms:.1f} ms"
                    f"   [{self._ocr_path_label(rec)}]")
-        if rec.get("cached"):
-            ms_line += "   (缓存命中，识别结果直接复用)"
         if eng_ms:
             ms_line += (f"   引擎 {min(eng_ms):.0f}~{max(eng_ms):.0f} ms"
                         f"   合计 {sum(eng_ms):.0f} ms")
@@ -7700,8 +7861,17 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                         f"{rec.get('ms', 0):.0f}",
                         rec.get("reason") or ""))
         self._ocr_detail_map[iid] = ("photo", name)
-        self.ocr_detail.selection_set(iid)
-        self.ocr_detail.focus(iid)
+        # 这一次单击已经跑过完整识别；selection_set 会再次触发
+        # <<TreeviewSelect>> -> _ocr_on_detail_select（photo 分支），若不加
+        # 抑制会重复跑第二遍整链。程序化选中只高亮，不重跑。用户再次
+        # 真实单击该行时 _ocr_on_detail_select 仍会重新完整识别。
+        self._ocr_suppress_detail_select = iid
+        try:
+            self.ocr_detail.selection_set(iid)
+            self.ocr_detail.focus(iid)
+        finally:
+            self.after_idle(
+                lambda: setattr(self, "_ocr_suppress_detail_select", None))
         # 直接渲染已有结果，不触发重新识别
         self._ocr_render_photo_detail(name, str(rec.get("path", name)), rec, None)
         self.ocr_run_btn.configure(state="normal")
@@ -7722,30 +7892,104 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         except tk.TclError:
             pass
 
+    def _ocr_rerun_corpus_case(self, cid, only_method=None):
+        """语料模式单案例：重新走完整识别流程，禁用任何结果缓存。
+
+        后台跑 ocr_bench_runner 针对该案例，用当前界面选定的方案；
+        完成后更新 _ocr_last 并把逐字符比对渲染到右侧。每次单击都
+        真实执行一次工具调用，不复用上一次测试或上一次单击的结果。
+        """
+        rec = next((r for r in self._ocr_corpus["records"]
+                    if r["id"] == cid), None)
+        if rec is None:
+            return
+        if self.ocr_method_both.get():
+            methods = list(METHOD_ORDER)
+        else:
+            methods = [self.ocr_methods.get().strip()]
+        methods = [m for m in methods if m in METHOD_ORDER]
+        if only_method in methods:
+            methods = [only_method]
+        if not methods:
+            return
+        self._load_preview(cid, rec)
+        tw = self.ocr_diff_text
+        tw.configure(state="normal")
+        tw.delete("1.0", "end")
+        tw.insert("end", f"样本 : {cid}\n状态 : 重新识别中…\n", ("hdr", "lab"))
+        tw.configure(state="disabled")
+
+        def worker():
+            payload = None
+            err = None
+            try:
+                from pathlib import Path as _P
+                runner = _P(__file__).resolve().parent / "ocr_bench_runner.py"
+                argv = [sys.executable, str(runner), ",".join(methods), cid]
+                proc = subprocess.run(argv, text=True, capture_output=True,
+                                      timeout=120)
+                text = proc.stdout.strip()
+                if proc.returncode != 0 or not text:
+                    err = RuntimeError(
+                        (proc.stderr or proc.stdout or "运行器无输出")[:400])
+                else:
+                    payload = json.loads(text)
+            except Exception as e:  # noqa: BLE001
+                err = e
+            self.after(0, lambda: self._ocr_render_corpus_case_result(
+                cid, rec, methods, payload, err))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _ocr_render_corpus_case_result(self, cid, rec, methods, payload, err):
+        """渲染单案例重新识别的结果（由后台线程回调）。"""
+        if err is not None or payload is None:
+            tw = self.ocr_diff_text
+            tw.configure(state="normal")
+            tw.delete("1.0", "end")
+            tw.insert("end", f"样本 : {cid}\n", "hdr")
+            tw.insert("end", f"识别失败: {err}\n", "mm")
+            tw.configure(state="disabled")
+            return
+        cases = [r for r in payload.get("records", []) if r.get("id") == cid]
+        if not cases:
+            tw = self.ocr_diff_text
+            tw.configure(state="normal")
+            tw.delete("1.0", "end")
+            tw.insert("end", f"样本 : {cid}\n无识别记录\n", "mm")
+            tw.configure(state="disabled")
+            return
+        case = cases[0]
+        self._ocr_last = getattr(self, "_ocr_last", {})
+        slot = self._ocr_last.setdefault(cid, {})
+        blocks = []
+        for m in methods:
+            pm = (case.get("per_method") or {}).get(m)
+            if not pm:
+                continue
+            raw = pm.get("raw") or {}
+            slot[m] = raw
+            label = METHOD_LABELS.get(m, m)
+            conf1, conf2 = raw.get("conf1"), raw.get("conf2")
+            self._preview_last_pm = {"conf1": conf1, "conf2": conf2}
+            blocks.append((f"line1 [{label}]", rec["line1"],
+                           raw.get("line1", "")))
+            blocks.append((f"line2 [{label}]", rec["line2"],
+                           raw.get("line2", "")))
+        if blocks:
+            self._show_diff(blocks)
+        else:
+            self._show_gt_only(rec)
+
     def _ocr_on_case_select(self, _evt=None):
         sel = self.ocr_case_list.selection()
         if not sel:
             return
         cid = sel[0]
-        rec = next((r for r in self._ocr_corpus["records"]
-                    if r["id"] == cid), None)
-        if not rec:
-            return
-        self._load_preview(cid, rec)
-        last = getattr(self, "_ocr_last", {})
-        blocks = []
-        for m in ("traditional", "cnn"):
-            r = last.get(cid, {}).get(m)
-            if r:
-                label = METHOD_LABELS[m]
-                blocks.append((f"line1 [{label}]", rec["line1"],
-                               r.get("line1", "")))
-                blocks.append((f"line2 [{label}]", rec["line2"],
-                               r.get("line2", "")))
-        if blocks:
-            self._show_diff(blocks)
-        else:
-            self._show_gt_only(rec)
+        if self.ocr_photo_mode.get():
+            return  # 照片模式由 <Button-1> 的 _ocr_on_list_click 完整处理
+        # 每次单击都重新走完整识别流程，禁止复用缓存结果。
+        self._ocr_rerun_corpus_case(cid)
 
     # ---- Full-size image viewer (double-click on case / detail row) ----
     def _ocr_open_original_from_detail(self, _evt=None):
@@ -7939,6 +8183,12 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         sel = self.ocr_detail.selection()
         if not sel:
             return
+        # 程序化选中（案例集单击后高亮 detail 行）已经在单击链路里跑过
+        # 一次完整识别；这里只消费抑制标志，不重复跑。真实单击不设此
+        # 标志，因此每次点击 detail 行仍会重新走完整识别流程。
+        if getattr(self, "_ocr_suppress_detail_select", None) == sel[0]:
+            self._ocr_suppress_detail_select = None
+            return
         kind, name = self._ocr_detail_map[sel[0]]
         if kind == "photo":
             entries = self._ocr_photo_entry_map()
@@ -7997,11 +8247,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                     if r["id"] == cid), None)
         if rec is None:
             return
-        self._load_preview(cid, rec)
-        r = getattr(self, "_ocr_last", {}).get(cid, {}).get(m, {})
-        label = METHOD_LABELS.get(m, m)
-        self._show_diff([(f"line1 [{label}]", rec["line1"], r.get("line1", "")),
-                         (f"line2 [{label}]", rec["line2"], r.get("line2", ""))])
+        # 每次单击都重新走完整识别流程，禁止复用 _ocr_last 缓存。
+        self._ocr_rerun_corpus_case(cid, only_method=m)
 
     def _ocr_render_photo_detail(self, name, path, rec, err):
         """渲染照片识别结果到右侧面板（由 _ocr_on_detail_select 的后台
@@ -8299,7 +8546,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                         self.after(0, lambda nm=name: self._set_status_bar(
                             f"跳过 {nm}：源文件不存在", None))
                         continue
-                    rec = self._ocr_photo_engines_cached(str(path), methods,
+                    rec = self._ocr_photo_engines(str(path), methods,
                                                           strict=strict)
                     rec["file"] = name
                     rec["path"] = str(path)
@@ -8414,14 +8661,11 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 l2c += sum(1 for i in range(n2) if gt[1][i] == l2[i])
             stats[g] = stats.get(g, 0) + 1
             iid = rec["file"]
-            cached = bool(rec.get("cached"))
             reason = rec.get("reason") or ""
-            if cached:
-                reason = (reason + "（缓存命中）").strip()
             self.ocr_detail.insert("", "end", iid=iid, tags=(g,),
                 values=(os.path.basename(str(rec["file"])), g,
                         "✓" if rec.get("verified") else "—",
-                        f"{rec['ms']:.0f}" + ("*" if cached else ""),
+                        f"{rec['ms']:.0f}",
                         reason))
             self._ocr_detail_map[iid] = ("photo", rec["file"])
             # 案例集列表与结果表同步配色：PASS 绿、SUSPECT 黄、

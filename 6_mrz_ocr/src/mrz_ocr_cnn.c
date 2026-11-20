@@ -344,6 +344,9 @@ int mrz_ocr_line1_issuer_suspect(const char *line1) {
  */
 #define TOPK_MAX 10
 #define TOPK 5
+/* Dual-pool probability floor (MRZ_OCR_DUAL): a head that is absolutely
+ * sure must not zero out a class the other head still rates. */
+#define MRZ_DUAL_EPS 1e-4f
 typedef struct { int cand[TOPK_MAX]; float p[TOPK_MAX]; } top3_t;
 
 /* Effective candidate width, read once from the environment. */
@@ -2495,9 +2498,105 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
     int allow[37];
     static int dbg = -1;
     if (dbg < 0) { const char *e = getenv("MRZ_OCR_TOPK"); dbg = (e && e[0] && strcmp(e,"0")!=0) ? 1 : 0; }
+    /* Dual-head merged candidate pool (MRZ_OCR_DUAL=1, fuse+arb mode).
+     *
+     * The arb path keeps the checksum beam on the PURE CNN probabilities
+     * and lets the CRNN vote only between the beam winner and its
+     * runner-up.  That misses the failure class measured on the 50-photo
+     * passport set (2026-11-20 per-cell top-K audit, _diag_topk_1120.py):
+     *
+     *   Photo/3-8 line1  CNN confidently wrong (c05 H:0.982) where the
+     *                    CRNN holds the truth (J:0.990) -- the pair
+     *                    disagrees and the shipped path falls back to the
+     *                    8-engine rescue (~500-1400 ms).
+     *   2026-9-30-H l2   CNN tail "3E822" -- the CRNN's "<<<72" (the only
+     *                    composite-checksum-valid tail) is NOT in any CNN
+     *                    runner-up, so arb can never reach it.
+     *   2026-9-30-AG l0  GT char at c15 sits at cnn top-1 with 0.43 but
+     *                    the arb tie-break keeps the CRNN's wrong 'A'.
+     *
+     * The merge scores every class as the PRODUCT of the two heads'
+     * probabilities (product-of-experts, renormalised per cell) and
+     * rebuilds the top-K pool from it.  A character one head is sure of
+     * and the other rules out scores near zero; a character both heads
+     * rate survives.  Disagreement cells shrink in margin, so the
+     * ambiguity ordering feeds exactly those columns to the beam and the
+     * field DP first.  All downstream machinery (syntax mask, ink gate,
+     * checksum beam, field search) is UNCHANGED -- only the candidate
+     * source per cell widens, and the checksum test still decides what is
+     * acceptable, so a merged pool cannot manufacture a false accept that
+     * the checksums reject.
+     *
+     * MRZ_OCR_DUAL_ALPHA (default 1.0, range 0..4) exponentiates the CRNN
+     * term: >1 gives the sequence head more voice on cells where the CNN
+     * is confidently wrong (H c39: 1.0 keeps the CNN's '3' at 1e-4 vs the
+     * CRNN's '<' at 6.8e-5; alpha=2 flips it and lets the composite beam
+     * land on the only checksum-valid tail).  The 1e-4 floor on both
+     * terms keeps a head that is ABSOLUTELY sure (prob 1.0) from
+     * zeroing a class the other head likes, which is what makes the
+     * product usable on CS/CD rows where the two heads disagree
+     * wholesale.
+     *
+     * Self-balancing profile: where the CRNN is noisy (the scraped-assets
+     * regime, CNN right on 386/643 disagreement cells) the CNN's high
+     * probability keeps the joint winner; where the CRNN is right
+     * (real photos: CRNN right on 78/105 disagreement cells) the product
+     * flips the cell.  Default OFF -- flip only after the full A/B gate
+     * (passport 50 exact, pic regression, test_postproc/test_mrz). */
+    static int dual = -1;
+    static float dual_alpha = 1.0f;
+    if (dual < 0) {
+        const char *e = getenv("MRZ_OCR_DUAL");
+        dual = (e && e[0] && strcmp(e, "0") != 0) ? 1 : 0;
+        const char *a = getenv("MRZ_OCR_DUAL_ALPHA");
+        if (a && a[0]) {
+            float v = (float)atof(a);
+            if (v >= 0.0f && v <= 4.0f) dual_alpha = v;
+        }
+    }
     for (int c = 0; c < n && c < 44; ++c) {
         fill_allow(allow, line_idx, c);
         top3_of(probs + c * CNN_OUT, allow, &t3[c]);
+        if (dual && seq_probs) {
+            const float *pc = probs + (size_t)c * CNN_OUT;
+            const float *ps = seq_probs + (size_t)c * CNN_OUT;
+            float joint[CNN_OUT];
+            float jsum = 0.0f;
+            for (int o = 0; o < CNN_OUT; ++o) {
+                float a = pc[o] > MRZ_DUAL_EPS ? pc[o] : MRZ_DUAL_EPS;
+                float b = ps[o] > MRZ_DUAL_EPS ? ps[o] : MRZ_DUAL_EPS;
+                float j = (dual_alpha == 1.0f)
+                              ? a * b
+                              : a * powf(b, dual_alpha);
+                joint[o] = j;
+                jsum += j;
+            }
+            if (jsum > 0.0f) {
+                const int K = mrz_topk();
+                for (int k = 0; k < TOPK_MAX; ++k) {
+                    t3[c].cand[k] = -1;
+                    t3[c].p[k] = -1.0f;
+                }
+                for (int o = 0; o < CNN_OUT; ++o) {
+                    if (allow[o] == 0) continue;
+                    float p = joint[o] / jsum;
+                    int k = K - 1;
+                    if (p > t3[c].p[k]) {
+                        t3[c].p[k] = p;
+                        t3[c].cand[k] = o;
+                        while (k > 0 && t3[c].p[k] > t3[c].p[k - 1]) {
+                            float tp = t3[c].p[k];
+                            t3[c].p[k] = t3[c].p[k - 1];
+                            t3[c].p[k - 1] = tp;
+                            int tc2 = t3[c].cand[k];
+                            t3[c].cand[k] = t3[c].cand[k - 1];
+                            t3[c].cand[k - 1] = tc2;
+                            k--;
+                        }
+                    }
+                }
+            }
+        }
         if (dg && c < MRZ_DIAG_CHARS) {
             for (int k = 0; k < mrz_topk(); ++k) {
                 dg->cand[c][k] = t3[c].cand[k];
@@ -3141,7 +3240,7 @@ static void decode_row(const float (*glyphs)[CNN_IN_H][CNN_IN_W],
                  * contract.  On real photos the CRNN was right on 78 of
                  * the 105 disagreement cells vs 27 for the CNN (assets),
                  * so the vote is worth having exactly there. */
-                if (seq_probs && alt[0] && alt_score > -1e299 &&
+                if (!dual && seq_probs && alt[0] && alt_score > -1e299 &&
                     (best_score - alt_score) < relax) {
                     double s_best = 0.0, s_alt = 0.0;
                     int arbdiff = 0, low_conf = 0;

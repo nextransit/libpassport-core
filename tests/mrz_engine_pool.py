@@ -172,7 +172,7 @@ def get_bandpick_tool(tool=None):
     return get_bandpick_tools(tool, 1)[0]
 
 
-def get_bandpick_tools(tool=None, count=4, crnn=True):
+def get_bandpick_tools(tool=None, count=4, crnn=True, fuse=False):
     """`count` resident band-check tools, for parallel candidate checks.
 
     The candidate crops are independent, so the search can run them
@@ -182,15 +182,33 @@ def get_bandpick_tools(tool=None, count=4, crnn=True):
 
     crnn: when True the bandpick tool runs the CRNN head (matching the
     production path for TD3).  When False it runs the CNN head (for
-    CS/CD single-line, where CRNN is untrained).
+    CS/CD single-line, where the CNN line-2 head is the stronger reader
+    -- measured 2026-11-20: on tmp/PassPortPhoto/2026-9-30-K the CNN head
+    reads the GT off the fast* candidate crops with conf 89 while the
+    CSCD CRNN head sits 6-8 characters off, so scoring CS/CD candidates
+    with the CRNN head kept the bad historical crop and forced the
+    tesseract fallback).
+
+    fuse: run the fused CNN+CRNN head in the bandpick slot so candidate
+    scoring sees the same reading the production fuse engine would
+    produce on that crop.  Required for MRZ_OCR_DUAL (the dual-head
+    merged candidate pool): with a pure-CRNN bandpick, a crop whose
+    truth only closes the checksums through the dual pool (U's 82 px
+    full band, P8/W/AJ) is scored checksum-INVALID and the vote keeps a
+    crop the production engine cannot read.  fuse implies crnn; the slot
+    name keys the env, so a fuse-bandpick can never be reused by a
+    crnn-only caller.
     """
     count = max(1, int(count or 1))
+    if fuse:
+        crnn = True
     binary = _cnn_binary(tool)
     out = []
     with _POOL_LOCK:
         env = _tool_env(MRZ_OCR_CRNN="1" if crnn else "0",
-                        MRZ_OCR_FUSE="0", MRZ_OCR_PAR="1")
-        slot = "bandpick" if crnn else "bandpick_cnn"
+                        MRZ_OCR_FUSE="1" if fuse else "0", MRZ_OCR_PAR="1")
+        slot = "bandpick_fuse" if fuse else (
+            "bandpick" if crnn else "bandpick_cnn")
         for i in range(count):
             key = (str(binary), slot, i)
             pooled = _POOL.get(key)
