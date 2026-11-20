@@ -582,6 +582,8 @@ def _rst_tesseract_cscd(rgb, pair, scale):
     band_crop = source.crop((0, max(0, sy0 - pad), W0, min(H0, sy1 + pad)))
     for psm in (7, 6, 3):
         try_text(band_crop, psm, "band")
+        if any(_rst_cscd_struct_ok(c) for c in line_candidates):
+            break
     if not line_candidates:
         try_text(source, 3, "full")
     return line_candidates, [], "\n".join(raw_parts), ""
