@@ -5515,7 +5515,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                 pass
         threading.Thread(target=_warm, daemon=True).start()
 
-    def _ocr_photo_engines(self, path, methods=None, strict=False):
+    def _ocr_photo_engines(self, path, methods=None, strict=False,
+                           tk_snap=None, weights_tool=None):
         """Photo -> structure -> de-reflection -> clean band -> engines.
 
         Shared by the '图片直接识别' action so it runs the same pipeline
@@ -5566,11 +5567,6 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         # text rows) locator only works on an upright page.
         rgb_pre, work_pre, st_pre = rgb, work, st
         # 180° 翻转只作为兜底：原方向完全找不到 MRZ 双行/单行时才翻。
-        # 证件照、骑缝章、标题等让上三分之一的竖直梯度常常高于下三分之一，
-        # 无条件翻转会把正立的护照照片整个倒过来，MRZ 直接读不出来
-        # （如 assets/pic/43ecb49033fb30c1_0073.jpg）。
-        # mrz_single 太矮(<20px)视为无效——旋转180°的 CS/CD 证件在原方向
-        # 常误检到底部边缘的薄噪声条（~17px），阻止翻转兜底触发。
         _single = st.get("mrz_single")
         _single_valid = _single and (_single[1] - _single[0]) >= 20
         if _flip_hint and not st.get("mrz_pair") and not _single_valid:
@@ -5609,7 +5605,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         # default, not a substitute for a named algorithm.
         if _fast_strict() and not strict:
             methods = ("crnn", "fuse")
-        self._ocr_tk = self._ocr_tk_snapshot()
+        self._ocr_tk = tk_snap if tk_snap is not None else self._ocr_tk_snapshot()
         try:
             # 页底（去掉玻璃反光/页边阴影）作为两个假设**共用**的 band 底边：
             # 反光多出来的十几行会干扰 C 端的行定位（assets/pic/
@@ -5617,17 +5613,20 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
             # A 假设用 work2 高度、B 假设用整页高度 → 两边 band 高度不同，
             # 仲裁会挑到坏的那一个，所以这里统一算一次传下去。
             src_bottom = None
+            _precomp = None
             try:
                 _w2, _st2, _refl = drop_reflection(work, st)
                 _cb = _refl.get("crop_bottom") if isinstance(_refl, dict) else None
                 if _cb:
                     src_bottom = int(round(int(_cb) / max(1e-6, scale)))
+                _precomp = (_w2, _st2)
             except Exception:
                 src_bottom = None
             hyp_a = self._ocr_photo_hypothesis(path, rgb, work, st,
                                                drop_reflection, methods,
                                                source_bottom=src_bottom,
-                                               strict=strict)
+                                               strict=strict,
+                                               precomputed_crop=_precomp)
             result = hyp_a
             if _fast_strict() and not strict:
                 _engines_a = hyp_a.get("engines") or []
@@ -6197,7 +6196,8 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
 
     def _ocr_photo_hypothesis(self, path, rgb, work, st, cropper,
                              methods=None, force_sensitive=False,
-                             source_bottom=None, strict=False):
+                             source_bottom=None, strict=False,
+                             precomputed_crop=None):
         """Run detection + engines for one bottom-of-page hypothesis.
 
         cropper: drop_reflection (hypothesis A, default) or None
@@ -6212,6 +6212,7 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         import sys as _sys
         from pathlib import Path as _P
         import tempfile
+        import time as _time
         from PIL import Image as _Image
         _sys.path.insert(0, str(_P(__file__).resolve().parents[1] /
                                 "passport_photo_restore" / "src"))
@@ -6221,7 +6222,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         out = {"grade": "REJECT", "verified": False, "loc": {}, "ocr": {},
                "decode": {}, "reason": "", "engines": [], "band_rgb": None,
                "work2": work, "scale": 1.0, "pair": None}
-        if cropper is not None:
+        if precomputed_crop is not None:
+            work2, st2 = precomputed_crop
+        elif cropper is not None:
             work2, st2, _refl = cropper(work, st)
         else:
             work2, st2 = work, st
@@ -6318,10 +6321,6 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                            if os.environ.get("MRZ_BAND_CLAMP", "0") == "1"
                            else None)
             if is_single:
-                # CS/CD 单行 MRZ：C 工具的 locate_band() 在薄 band 裁剪上
-                # 失败（CS/CD 行 ink ~9% < 10% 阈值，H>80 时直接 NO_BAND）。
-                # 直接传完整照片，让 C 工具自己做 band detection（已验证：
-                # 完整照片 + MRZ_OCR_FORCE_LAYOUT=30 → 3/3 exact conf=98）。
                 native_band = rgb
                 native_crop = {"x": 0, "y": 0,
                                "w": rgb.shape[1], "h": rgb.shape[0]}
@@ -7818,14 +7817,18 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self.ocr_diff_text.insert("end",
             f"样本 : {name}\n状态 : 运行中…", ("lab",))
         self.ocr_diff_text.configure(state="disabled")
+        # 在主线程预读取 tkinter 变量，避免 worker 线程中 var.get() 阻塞。
+        _methods = self._ocr_selected_methods()
+        _strict = self._ocr_selection_is_explicit()
+        _tk_snap = self._ocr_tk_snapshot()
+        _weights_tool = self._ocr_weights_tool()
 
         def worker():
             try:
-                # 与批量模式同一路径：多引擎 + 共识/GT 引导。
-                methods = self._ocr_selected_methods()
-                strict = self._ocr_selection_is_explicit()
-                rec = self._ocr_photo_engines(str(path), methods,
-                                              strict=strict)
+                rec = self._ocr_photo_engines(str(path), _methods,
+                                              strict=_strict,
+                                              tk_snap=_tk_snap,
+                                              weights_tool=_weights_tool)
                 # label（含来源目录）作为唯一 id。
                 rec["file"] = name
                 rec["path"] = str(path)
@@ -8543,17 +8546,18 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         self.ocr_run_btn.configure(state="disabled")
         self.ocr_run_btn.configure(text="⏳ 识别中…")
         self._set_status_bar(f"准备识别 {len(selected)} 张照片 ...", None)
+        # 在主线程预读取 tkinter 变量，避免 worker 线程中 var.get()
+        # 阻塞等待 Tcl 锁（批量模式中主线程持续处理 UI 回调，
+        # worker 线程的 var.get() 会阻塞，导致每张照片多 ~100ms）。
+        _methods = self._ocr_selected_methods()
+        _strict = self._ocr_selection_is_explicit()
+        _tk_snap = self._ocr_tk_snapshot()
+        _weights_tool = self._ocr_weights_tool()
 
         def worker():
             try:
-                # 批量与单张「图片直接识别」走同一条多引擎路径
-                # (_ocr_photo_engines)：单引擎 CNN 在低分辨照片上会读错
-                # (08806d29... 读成 P<CHEDE<NGIENFELD)，多引擎 + 共识/
-                # GT 引导才读得出 PMCHEDE<MAIENFELD，两条路径必须一致。
-                # 方法来自"MRZ OCR测试"标签页的选择，不是"照片→MRZ"。
-                # 用户显式选定的算法必须原样执行（strict）。
-                methods = self._ocr_selected_methods()
-                strict = self._ocr_selection_is_explicit()
+                methods = _methods
+                strict = _strict
                 entries = self._ocr_photo_entry_map()
                 results = []
                 for i, name in enumerate(selected, 1):
@@ -8563,7 +8567,9 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
                             f"跳过 {nm}：源文件不存在", None))
                         continue
                     rec = self._ocr_photo_engines(str(path), methods,
-                                                          strict=strict)
+                                                          strict=strict,
+                                                          tk_snap=_tk_snap,
+                                                          weights_tool=_weights_tool)
                     rec["file"] = name
                     rec["path"] = str(path)
                     results.append(rec)
