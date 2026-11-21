@@ -2811,25 +2811,25 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         ctrl.pack(fill="x", padx=4, pady=(4, 0))
         row1 = ttk.Frame(ctrl); row1.pack(fill="x", padx=8, pady=(6, 2))
         ttk.Label(row1, text="模式:").pack(side="left")
-        self.ocr_photo_mode = tk.BooleanVar(value=False)
+        self.ocr_photo_mode = tk.BooleanVar(value=True)
         ttk.Checkbutton(row1, text="图片直接识别（护照照片）",
                         variable=self.ocr_photo_mode,
                         command=self._ocr_mode_switch).pack(side="left", padx=2)
         ttk.Separator(row1, orient="vertical").pack(side="left",
                                                     fill="y", padx=6)
         ttk.Label(row1, text="方案:").pack(side="left")
-        self.ocr_methods = tk.StringVar(value=",".join(METHOD_ORDER))
+        self.ocr_methods = tk.StringVar(value="crnn")
         # 方案单选改为下拉框：7 个 Radiobutton 一字排开会把右侧过滤器/
         # 动作按钮挤出可视区。Combobox 只占一个控件的宽度。
-        self.ocr_method_pick_var = tk.StringVar(value="全部方案")
+        self.ocr_method_pick_var = tk.StringVar(value=METHOD_LABELS["crnn"])
         self.ocr_method_pick = ttk.Combobox(
-            row1, textvariable=self.ocr_method_pick_var, state="disabled",
+            row1, textvariable=self.ocr_method_pick_var, state="readonly",
             width=14, style="Field.TCombobox",
             values=[METHOD_LABELS[k] for k in METHOD_ORDER])
         self.ocr_method_pick.pack(side="left", padx=2)
         self.ocr_method_pick.bind("<<ComboboxSelected>>",
                                   self._ocr_method_on_pick)
-        self.ocr_method_both = tk.BooleanVar(value=True)
+        self.ocr_method_both = tk.BooleanVar(value=False)
         ttk.Checkbutton(row1, text="同时跑全部方案",
                         variable=self.ocr_method_both,
                         command=self._ocr_method_toggle).pack(side="left", padx=6)
