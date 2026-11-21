@@ -3078,10 +3078,13 @@ class PassportGUI(Window if HAS_TTKB else tk.Tk):
         d_y.pack(side="right", fill="y")
         d_x.pack(side="bottom", fill="x")
 
-        # Load corpus.
+        # Load corpus or photo list depending on the default mode.
         self._ocr_corpus = {"records": []}
         self._ocr_case_order = []
-        self._ocr_load_corpus()
+        if self.ocr_photo_mode.get():
+            self._ocr_mode_switch()
+        else:
+            self._ocr_load_corpus()
         # First call lays out the body while the Tk root is still
         # settling to its real geometry; the second call runs once
         # the window has reached the requested 1280x780 so the
