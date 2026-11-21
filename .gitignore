@@ -81,3 +81,8 @@ tmp/
 # mrz_ocr bench scratch images
 6_mrz_ocr/data/_*.ppm
 14_ultimateMRZ-SDK/
+.workbuddy-ai/
+outputs/
+.codeartsdoer/
+.env.bak*
+.paddle_local_tmp/
