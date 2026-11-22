@@ -161,11 +161,12 @@ class MainActivity : AppCompatActivity() {
             override fun onReceive(ctx: Context?, intent: Intent?) {
                 val method = intent?.getStringExtra("method") ?: "auto"
                 val source = intent?.getStringExtra("source") ?: "all"
-                Log.i("MrzBench", "PHOTO_BATCH method=$method source=$source")
-                Toast.makeText(this@MainActivity, "PHOTO_BATCH $method/$source", Toast.LENGTH_SHORT).show()
+                val loader = intent?.getStringExtra("loader")
+                Log.i("MrzBench", "PHOTO_BATCH method=$method source=$source loader=$loader")
+                Toast.makeText(this@MainActivity, "PHOTO_BATCH $method/$source/$loader", Toast.LENGTH_SHORT).show()
 
                 val photoFrag = fragments[3] as PhotoMrzFragment
-                photoFrag.runBatchFromBroadcast(method, source)
+                photoFrag.runBatchFromBroadcast(method, source, loader)
             }
         }
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {

@@ -86,3 +86,4 @@ outputs/
 .codeartsdoer/
 .env.bak*
 .paddle_local_tmp/
+.kotlin/

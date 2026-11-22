@@ -13,7 +13,7 @@ int face_to_grayscale(const face_image_t *in, uint8_t *out) {
         /* BT.601 luma */
         int y = (299 * in->pixels[i*3 + 0] +
                  587 * in->pixels[i*3 + 1] +
-                 114 * in->pixels[i*3 + 2]) / 1000;
+                 114 * in->pixels[i*3 + 2] + 500) / 1000;
         if (y < 0) y = 0; else if (y > 255) y = 255;
         out[i] = (uint8_t)y;
     }

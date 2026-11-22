@@ -478,9 +478,10 @@ class PhotoMrzFragment : Fragment() {
      *     --es method crnn \
      *     --es source tmp/PassPortPhoto
      */
-    fun runBatchFromBroadcast(methodArg: String, sourceArg: String) {
+    fun runBatchFromBroadcast(methodArg: String, sourceArg: String, loaderArg: String? = null) {
         method = methodArg
         batchGroupFilter = sourceArg
+        PhotoBatchRunner.decodeMode = PhotoBatchRunner.DecodeMode.fromKey(loaderArg)
         methodButton.text = "算法: ${photoMethodOptions().find { it.first == method }?.second ?: method}"
         batchGroup.text = "图片源: ${sourceArg}"
 
@@ -524,6 +525,7 @@ class PhotoMrzFragment : Fragment() {
                     val json = org.json.JSONObject()
                     json.put("method", method)
                     json.put("source", sourceArg)
+                    json.put("loader", PhotoBatchRunner.decodeMode.key)
                     json.put("total", summary.total)
                     json.put("pass", summary.pass)
                     json.put("suspect", summary.suspect)
