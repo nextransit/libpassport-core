@@ -1,0 +1,3409 @@
+{
+ "generated_at": "2026-11-21T22:29:01",
+ "elapsed_s": 4.806,
+ "resident": true,
+ "preload_ms": 3990.304,
+ "tesseract_fallback": false,
+ "methods": [
+  "crnn"
+ ],
+ "official": {
+  "photos": 50,
+  "grades": {
+   "PASS": 50
+  },
+  "verified": 50,
+  "ms_mean": 70.31884836032987,
+  "ms_median": 41.52466682717204,
+  "ms_p95": 100.16541718505323,
+  "engines": {
+   "crnn": {
+    "runs": 50,
+    "decode": 50,
+    "fallback": 0,
+    "ms": [
+     35.137333208695054,
+     20.4415840562433,
+     18.520375015214086,
+     18.660958157852292,
+     18.549750093370676,
+     17.487416975200176,
+     18.731582909822464,
+     21.27245906740427,
+     17.93170883320272,
+     17.55208382382989,
+     17.131124855950475,
+     17.86779216490686,
+     18.588375067338347,
+     19.003417110070586,
+     18.419584026560187,
+     18.767999950796366,
+     18.830875167623162,
+     18.72841687873006,
+     18.415791913866997,
+     18.4625000692904,
+     19.321833038702607,
+     23.37854215875268,
+     19.47158412076533,
+     20.051707979291677,
+     22.770416922867298,
+     25.35287500359118,
+     18.556582974269986,
+     18.150624819099903,
+     17.68908416852355,
+     18.494166899472475,
+     20.860249875113368,
+     21.91220805980265,
+     19.838458159938455,
+     19.005582900717854,
+     19.020208157598972,
+     19.23937490209937,
+     20.210999995470047,
+     23.68350001052022,
+     23.3090000692755,
+     22.68116595223546,
+     34.98666686937213,
+     58.0097921192646,
+     34.00145820342004,
+     58.087874902412295,
+     26.29108284600079,
+     23.37304106913507,
+     22.469667019322515,
+     23.37475004605949,
+     19.212708109989762,
+     23.082167143002152
+    ]
+   },
+   "fuse": {
+    "runs": 50,
+    "decode": 49,
+    "fallback": 0,
+    "ms": [
+     39.55920785665512,
+     23.766125086694956,
+     22.58837502449751,
+     22.797459037974477,
+     22.79370790347457,
+     19.827417097985744,
+     21.68500004336238,
+     18.230540910735726,
+     22.78029196895659,
+     20.411917008459568,
+     20.501708844676614,
+     21.427375031635165,
+     20.60958300717175,
+     21.643750136718154,
+     22.079583955928683,
+     21.945249987766147,
+     22.660791873931885,
+     22.395500214770436,
+     22.540666861459613,
+     22.066625067964196,
+     21.524291951209307,
+     19.80883302167058,
+     21.753582870587707,
+     23.12341588549316,
+     19.19183391146362,
+     22.467958042398095,
+     21.84679196216166,
+     20.516583928838372,
+     20.35524998791516,
+     21.028958028182387,
+     24.631667183712125,
+     18.958874978125095,
+     22.94183406047523,
+     21.927500143647194,
+     21.989500150084496,
+     22.17891695909202,
+     22.942665964365005,
+     19.433374982327223,
+     20.078832982107997,
+     19.135250011458993,
+     33.098707906901836,
+     60.565165942534804,
+     36.999667063355446,
+     47.50049998983741,
+     23.500791052356362,
+     25.954541051760316,
+     25.00712499022484,
+     25.295000057667494,
+     22.85341708920896,
+     26.50616690516472
+    ]
+   },
+   "traditional": {
+    "runs": 2,
+    "decode": 0,
+    "fallback": 0,
+    "ms": [
+     0.024625100195407867,
+     0.03033410757780075
+    ]
+   },
+   "cnn": {
+    "runs": 2,
+    "decode": 1,
+    "fallback": 0,
+    "ms": [
+     39.133124984800816,
+     62.75329110212624
+    ]
+   },
+   "paddle": {
+    "runs": 2,
+    "decode": 1,
+    "fallback": 0,
+    "ms": [
+     214.27441597916186,
+     419.37437490560114
+    ]
+   },
+   "indra": {
+    "runs": 2,
+    "decode": 2,
+    "fallback": 0,
+    "ms": [
+     497.1505419816822,
+     277.3619999643415
+    ]
+   },
+   "tesseract": {
+    "runs": 2,
+    "decode": 2,
+    "fallback": 0,
+    "ms": [
+     180.0057089421898,
+     192.86324991844594
+    ]
+   }
+  }
+ },
+ "raw": {
+  "crnn": {
+   "total": 50,
+   "located": 50,
+   "ran": 50,
+   "decode": 47,
+   "shaped": 3,
+   "fail": 0,
+   "skip": 0,
+   "no_pair": 0,
+   "fallback": 0,
+   "ms": [
+    18.875999841839075,
+    18.03375012241304,
+    17.882958985865116,
+    18.223374849185348,
+    18.295041983947158,
+    17.717333044856787,
+    17.234791070222855,
+    17.68454210832715,
+    18.666082993149757,
+    17.828791169449687,
+    17.409709049388766,
+    17.34308316372335,
+    17.119166906923056,
+    16.663166927173734,
+    18.57758406549692,
+    17.94154103845358,
+    17.808167031034827,
+    17.697749892249703,
+    18.194207921624184,
+    18.46187491901219,
+    17.53679197281599,
+    17.795709194615483,
+    20.37974982522428,
+    18.796541960909963,
+    18.667708849534392,
+    19.012999953702092,
+    17.273541074246168,
+    17.060125013813376,
+    18.68520793505013,
+    17.04133301973343,
+    19.073625095188618,
+    17.699083080515265,
+    18.5502499807626,
+    18.92291591502726,
+    17.890917137265205,
+    17.64908409677446,
+    18.715334124863148,
+    19.64791677892208,
+    19.03212512843311,
+    19.27924994379282,
+    19.019708037376404,
+    23.400540929287672,
+    21.16533392108977,
+    22.766167065128684,
+    22.18029205687344,
+    22.97929092310369,
+    21.912916796281934,
+    22.408333141356707,
+    21.036875201389194,
+    22.449915995821357
+   ],
+   "gt_total": 47,
+   "gt_exact": 47,
+   "gt_bad": 3,
+   "acc1": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "acc2": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ]
+  }
+ },
+ "records": [
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-A.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-29-A.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 100.16541718505323,
+    "wall_ms": 100.64179101027548,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNYUN<<YAOYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E0132B7855CHN0110141M3105179GB682O5O108G0B88",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 94,
+      "backend": "",
+      "error": "",
+      "ms": 35.137333208695054
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 39.55920785665512
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNYUN<<YAOYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E0132B7855CHN0110141M3105179GB682O5O108G0B88"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNYUN<<YAOYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E0132B7855CHN0110141M3105179GB682O5O108G0B88",
+     "conf1": 98,
+     "conf2": 94,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 18.875999841839075
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-B.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-29-B.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 42.765541933476925,
+    "wall_ms": 43.03362499922514,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNZHAO<<YONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E216923764CHN6703222M3510203H01JE6IP966FG406",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 98,
+      "backend": "",
+      "error": "",
+      "ms": 20.4415840562433
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 100,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 23.766125086694956
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNZHAO<<YONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E216923764CHN6703222M3510203H01JE6IP966FG406"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNZHAO<<YONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E216923764CHN6703222M3510203H01JE6IP966FG406",
+     "conf1": 99,
+     "conf2": 98,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 18.03375012241304
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-C.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-29-C.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 42.33858408406377,
+    "wall_ms": 42.59516717866063,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNZHOU<<YUANSU<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E639O21058CHN7005059F3110153O50Z68SZOB1I0074",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 97,
+      "backend": "",
+      "error": "",
+      "ms": 18.520375015214086
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 100,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 22.58837502449751
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNZHOU<<YUANSU<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E639O21058CHN7005059F3110153O50Z68SZOB1I0074"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNZHOU<<YUANSU<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E639O21058CHN7005059F3110153O50Z68SZOB1I0074",
+     "conf1": 98,
+     "conf2": 97,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 17.882958985865116
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-D.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-29-D.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 42.49420901760459,
+    "wall_ms": 42.704000137746334,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNBAO<<HUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E797044113CHN9004300F3405226GE0660IR06BAI310",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 98,
+      "backend": "",
+      "error": "",
+      "ms": 18.660958157852292
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 100,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 22.797459037974477
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNBAO<<HUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E797044113CHN9004300F3405226GE0660IR06BAI310"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNBAO<<HUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E797044113CHN9004300F3405226GE0660IR06BAI310",
+     "conf1": 99,
+     "conf2": 98,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 18.223374849185348
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-E.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-29-E.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 42.508333222940564,
+    "wall_ms": 42.73208393715322,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E454243381CHN0703013F4211172S63108B6Z6637626",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 98,
+      "backend": "",
+      "error": "",
+      "ms": 18.549750093370676
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 100,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 22.79370790347457
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E454243381CHN0703013F4211172S63108B6Z6637626"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNCHU<<YOUYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E454243381CHN0703013F4211172S63108B6Z6637626",
+     "conf1": 98,
+     "conf2": 98,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 18.295041983947158
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-F.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-29-F.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 38.65241608582437,
+    "wall_ms": 38.873250130563974,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNDENG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E410968B47CHN9311103F311203262G49S6626292Z52",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 98,
+      "backend": "",
+      "error": "",
+      "ms": 17.487416975200176
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 19.827417097985744
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNDENG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E410968B47CHN9311103F311203262G49S6626292Z52"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNDENG<<PENGWEN<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E410968B47CHN9311103F311203262G49S6626292Z52",
+     "conf1": 98,
+     "conf2": 98,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 17.717333044856787
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-G.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-29-G.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 41.96054209023714,
+    "wall_ms": 42.19891596585512,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNDING<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E505029416CHN6806178M2604114L2Y8F2Z01K4IF010",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 97,
+      "backend": "",
+      "error": "",
+      "ms": 18.731582909822464
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 21.68500004336238
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNDING<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E505029416CHN6806178M2604114L2Y8F2Z01K4IF010"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNDING<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E505029416CHN6806178M2604114L2Y8F2Z01K4IF010",
+     "conf1": 98,
+     "conf2": 97,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 17.234791070222855
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-H.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-29-H.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 40.09629203937948,
+    "wall_ms": 40.2987499255687,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNDING<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E505029416CHN6806178M2604114L2Y8F2ZO1K4IF034",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 97,
+      "backend": "",
+      "error": "",
+      "ms": 21.27245906740427
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 98,
+      "backend": "",
+      "error": "",
+      "ms": 18.230540910735726
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNDING<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E505029416CHN6806178M2604114L2Y8F2ZO1K4IF034"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNDING<<PINGMO<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E505029416CHN6806178M2604114L2Y8F2ZO1K4IF034",
+     "conf1": 98,
+     "conf2": 97,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 17.68454210832715
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-I.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-29-I.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 41.25154088251293,
+    "wall_ms": 41.489416966214776,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNGE<<MOHUA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E592235158CHN6905163M30012716GOB6I2258S28846",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 98,
+      "backend": "",
+      "error": "",
+      "ms": 17.93170883320272
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 100,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 22.78029196895659
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNGE<<MOHUA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E592235158CHN6905163M30012716GOB6I2258S28846"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNGE<<MOHUA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E592235158CHN6905163M30012716GOB6I2258S28846",
+     "conf1": 98,
+     "conf2": 98,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 18.666082993149757
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-J.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-29-J.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 38.05733402259648,
+    "wall_ms": 38.26962481252849,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNGE<<SUDONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E062480684CHN8201113F251225501S8IBBG51B52Z66",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 98,
+      "backend": "",
+      "error": "",
+      "ms": 17.55208382382989
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 100,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 20.411917008459568
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNGE<<SUDONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E062480684CHN8201113F251225501S8IBBG51B52Z66"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNGE<<SUDONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E062480684CHN8201113F251225501S8IBBG51B52Z66",
+     "conf1": 98,
+     "conf2": 98,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 17.828791169449687
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-K.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-29-K.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 39.21512491069734,
+    "wall_ms": 39.421499939635396,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNGUO<<LURU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E916769I46CHN6008248M240122126QZG26600S16132",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 96,
+      "backend": "",
+      "error": "",
+      "ms": 17.131124855950475
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 20.501708844676614
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNGUO<<LURU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E916769I46CHN6008248M240122126QZG26600S16132"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNGUO<<LURU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E916769I46CHN6008248M240122126QZG26600S16132",
+     "conf1": 98,
+     "conf2": 96,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 17.409709049388766
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-L.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-29-L.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 39.12958293221891,
+    "wall_ms": 39.36212509870529,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNGU<<YINGYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E665282843CHN8807054M2810216001Z032II9808660",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 98,
+      "backend": "",
+      "error": "",
+      "ms": 17.86779216490686
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 100,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 21.427375031635165
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNGU<<YINGYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E665282843CHN8807054M2810216001Z032II9808660"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNGU<<YINGYOU<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E665282843CHN8807054M2810216001Z032II9808660",
+     "conf1": 98,
+     "conf2": 98,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 17.34308316372335
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-M.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-29-M.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 39.172499906271696,
+    "wall_ms": 39.395540952682495,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNGU<<YUYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E096730195CHN8410021M300821488S61022S7Z59328",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 98,
+      "backend": "",
+      "error": "",
+      "ms": 18.588375067338347
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 100,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 20.60958300717175
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNGU<<YUYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E096730195CHN8410021M300821488S61022S7Z59328"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNGU<<YUYU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E096730195CHN8410021M300821488S61022S7Z59328",
+     "conf1": 98,
+     "conf2": 98,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 17.119166906923056
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-N.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-29-N.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 39.04695785604417,
+    "wall_ms": 39.27695797756314,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNSU<<SHUYUE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E653505611CHN8409285F3001167B0BS1G1886G2O864",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 97,
+      "backend": "",
+      "error": "",
+      "ms": 19.003417110070586
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 100,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 21.643750136718154
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNSU<<SHUYUE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E653505611CHN8409285F3001167B0BS1G1886G2O864"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNSU<<SHUYUE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E653505611CHN8409285F3001167B0BS1G1886G2O864",
+     "conf1": 98,
+     "conf2": 97,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 16.663166927173734
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-O.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-29-O.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 40.78129190020263,
+    "wall_ms": 41.0023748409003,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNWEN<<YUEYUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E421853076CHN7906282F3506190JJ6MVT1JVTBGC610",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 98,
+      "backend": "",
+      "error": "",
+      "ms": 18.419584026560187
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 22.079583955928683
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNWEN<<YUEYUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E421853076CHN7906282F3506190JJ6MVT1JVTBGC610"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNWEN<<YUEYUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E421853076CHN7906282F3506190JJ6MVT1JVTBGC610",
+     "conf1": 98,
+     "conf2": 98,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 18.57758406549692
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-P.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-29-P.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 39.394540945068,
+    "wall_ms": 39.60245894268155,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNWU<<FANGYAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E766622355CHN0011293F2604181Y861DEUSDLKZG542",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 97,
+      "backend": "",
+      "error": "",
+      "ms": 18.767999950796366
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 21.945249987766147
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNWU<<FANGYAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E766622355CHN0011293F2604181Y861DEUSDLKZG542"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNWU<<FANGYAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E766622355CHN0011293F2604181Y861DEUSDLKZG542",
+     "conf1": 98,
+     "conf2": 97,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 17.94154103845358
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-Q.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-29-Q.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 40.9534580539912,
+    "wall_ms": 41.19141702540219,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNWU<<RUZHU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E436102633CHN8211158F32082106GIBI5B16Z6BBZ64",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 97,
+      "backend": "",
+      "error": "",
+      "ms": 18.830875167623162
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 100,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 22.660791873931885
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNWU<<RUZHU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E436102633CHN8211158F32082106GIBI5B16Z6BBZ64"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNWU<<RUZHU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E436102633CHN8211158F32082106GIBI5B16Z6BBZ64",
+     "conf1": 98,
+     "conf2": 97,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 17.808167031034827
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-R.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-29-R.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 41.52466682717204,
+    "wall_ms": 41.7322909925133,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNXI<<YU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E123241791CHN6208185M36010409K94WG6UGCK6FR64",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 97,
+      "backend": "",
+      "error": "",
+      "ms": 18.72841687873006
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 100,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 22.395500214770436
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNXI<<YU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E123241791CHN6208185M36010409K94WG6UGCK6FR64"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNXI<<YU<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E123241791CHN6208185M36010409K94WG6UGCK6FR64",
+     "conf1": 98,
+     "conf2": 97,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 17.697749892249703
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-S.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-29-S.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 40.84599995985627,
+    "wall_ms": 41.11495800316334,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNYUAN<<YOUSUI<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E62588I562CHN9505209F3503269OIZI5Z52O12IS504",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 97,
+      "backend": "",
+      "error": "",
+      "ms": 18.415791913866997
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 100,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 22.540666861459613
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNYUAN<<YOUSUI<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E62588I562CHN9505209F3503269OIZI5Z52O12IS504"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNYUAN<<YOUSUI<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E62588I562CHN9505209F3503269OIZI5Z52O12IS504",
+     "conf1": 99,
+     "conf2": 97,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 18.194207921624184
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-T.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-29-T.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 40.846833027899265,
+    "wall_ms": 41.065665893256664,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNYUAN<<YUESUI<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E0755268S1CHN9004012M27090195GI5BBISB85B1O26",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 98,
+      "backend": "",
+      "error": "",
+      "ms": 18.4625000692904
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 22.066625067964196
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNYUAN<<YUESUI<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E0755268S1CHN9004012M27090195GI5BBISB85B1O26"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNYUAN<<YUESUI<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E0755268S1CHN9004012M27090195GI5BBISB85B1O26",
+     "conf1": 99,
+     "conf2": 98,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 18.46187491901219
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-U.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-29-U.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 41.156250052154064,
+    "wall_ms": 41.39399994164705,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNYUE<<YUESHU<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E158193223CHN7807091M2505233356G5111BO7S6134",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 96,
+      "conf2": 94,
+      "backend": "",
+      "error": "",
+      "ms": 19.321833038702607
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 98,
+      "backend": "",
+      "error": "",
+      "ms": 21.524291951209307
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNYUE<<YUESHU<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E158193223CHN7807091M2505233356G5111BO7S6134"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNYUE<<YUESHU<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E158193223CHN7807091M2505233356G5111BO7S6134",
+     "conf1": 96,
+     "conf2": 94,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 17.53679197281599
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-29-W.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-29-W.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 41.31654207594693,
+    "wall_ms": 41.50212509557605,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNYUN<<PUYING<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E048156G62CHN6209285F3512252O85OZ1GZG258IG50",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 96,
+      "backend": "",
+      "error": "",
+      "ms": 23.37854215875268
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 98,
+      "backend": "",
+      "error": "",
+      "ms": 19.80883302167058
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNYUN<<PUYING<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E048156G62CHN6209285F3512252O85OZ1GZG258IG50"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNYUN<<PUYING<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E048156G62CHN6209285F3512252O85OZ1GZG258IG50",
+     "conf1": 98,
+     "conf2": 96,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 17.795709194615483
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-A.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-30-A.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 41.16479214280844,
+    "wall_ms": 41.37304192408919,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "POCHNRAO<<MEINA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E821973372CHN8612261F2607078MIMEMDMEMEMIA944",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 98,
+      "backend": "",
+      "error": "",
+      "ms": 19.47158412076533
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 21.753582870587707
+     }
+    ]
+   },
+   "gt": {
+    "line1": "POCHNRAO<<MEINA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E821973372CHN8612261F2607078MIMEMDMEMEMIA944"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "POCHNRAO<<MEINA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E821973372CHN8612261F2607078MIMEMDMEMEMIA944",
+     "conf1": 98,
+     "conf2": 98,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 20.37974982522428
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-AA.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-30-AA.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 42.71066701039672,
+    "wall_ms": 42.94354212470353,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNLIN<<YUNLAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E940780938CHN8410179F3401077KJYROL12DY2WM670",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 97,
+      "backend": "",
+      "error": "",
+      "ms": 20.051707979291677
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 23.12341588549316
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNLIN<<YUNLAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E940780938CHN8410179F3401077KJYROL12DY2WM670"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNLIN<<YUNLAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E940780938CHN8410179F3401077KJYROL12DY2WM670",
+     "conf1": 98,
+     "conf2": 97,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 18.796541960909963
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-AB.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-30-AB.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 40.853249840438366,
+    "wall_ms": 41.09708312898874,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNBAO<<YUEYA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E602701156CHN6901084F2808222Q75OWNC9HSVEJZ42",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 97,
+      "backend": "",
+      "error": "",
+      "ms": 22.770416922867298
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 19.19183391146362
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNBAO<<YUEYA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E602701156CHN6901084F2808222Q75OWNC9HSVEJZ42"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNBAO<<YUEYA<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E602701156CHN6901084F2808222Q75OWNC9HSVEJZ42",
+     "conf1": 98,
+     "conf2": 97,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 18.667708849534392
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-AC.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-30-AC.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 44.50675006955862,
+    "wall_ms": 44.721500016748905,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E141543482CHN6011103M3206261OMU9FH60NPJJ7G24",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 98,
+      "backend": "",
+      "error": "",
+      "ms": 25.35287500359118
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 22.467958042398095
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E141543482CHN6011103M3206261OMU9FH60NPJJ7G24"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E141543482CHN6011103M3206261OMU9FH60NPJJ7G24",
+     "conf1": 98,
+     "conf2": 98,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 19.012999953702092
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-AC_R.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-30-AC_R.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 43.10825001448393,
+    "wall_ms": 43.347249971702695,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E141543482CHN6011103M3206261OMU9FH60NPJJ7G24",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 98,
+      "backend": "",
+      "error": "",
+      "ms": 18.556582974269986
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 21.84679196216166
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E141543482CHN6011103M3206261OMU9FH60NPJJ7G24"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNBU<<KAIYUAN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E141543482CHN6011103M3206261OMU9FH60NPJJ7G24",
+     "conf1": 98,
+     "conf2": 98,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 17.273541074246168
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-AD.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-30-AD.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 38.75579102896154,
+    "wall_ms": 38.95387495867908,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNCAI<<FANGMENG<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E277194572CHN9601189F30052246MN1TZC2X4MC4X60",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 97,
+      "conf2": 90,
+      "backend": "",
+      "error": "",
+      "ms": 18.150624819099903
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 20.516583928838372
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNCAI<<FANGMENG<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E277194572CHN9601189F30052246MN1TZC2X4MC4X60"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNCAI<<FANGMENG<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E277194572CHN9601189F30052246MN1TZC2X4MC4X60",
+     "conf1": 97,
+     "conf2": 90,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 17.060125013813376
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-AE.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-30-AE.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 39.54737517051399,
+    "wall_ms": 39.7774581797421,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNCHANG<<NI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E309178198CHN9612202F2702261G3JPA90J2I<K6Z66",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 96,
+      "backend": "",
+      "error": "",
+      "ms": 17.68908416852355
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 20.35524998791516
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNCHANG<<NI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E309178198CHN9612202F2702261G3JPA90J2I<K6Z66"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNCHANG<<NI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E309178198CHN9612202F2702261G3JPA90J2I<K6Z66",
+     "conf1": 98,
+     "conf2": 96,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 18.68520793505013
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-AF.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-30-AF.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 38.972332840785384,
+    "wall_ms": 39.16374989785254,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNCHEN<<DAJUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E646452438CHN0211196M3203075FIJJWA3L90ZU0054",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 97,
+      "backend": "",
+      "error": "",
+      "ms": 18.494166899472475
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 21.028958028182387
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNCHEN<<DAJUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E646452438CHN0211196M3203075FIJJWA3L90ZU0054"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNCHEN<<DAJUN<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E646452438CHN0211196M3203075FIJJWA3L90ZU0054",
+     "conf1": 98,
+     "conf2": 97,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 17.04133301973343
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-AG.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-30-AG.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 43.07754198089242,
+    "wall_ms": 43.32116711884737,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNCONG<<YINGXIAO<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E066908744CHN9303298F3411263TWW9ZQLBES7OS062",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 94,
+      "backend": "",
+      "error": "",
+      "ms": 20.860249875113368
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 24.631667183712125
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNCONG<<YINGXIAO<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E066908744CHN9303298F3411263TWW9ZQLBES7OS062"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNCONG<<YINGXIAO<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E066908744CHN9303298F3411263TWW9ZQLBES7OS062",
+     "conf1": 98,
+     "conf2": 94,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 19.073625095188618
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-AH.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-30-AH.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 39.0477089677006,
+    "wall_ms": 39.28320901468396,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNCUI<<LIYI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E581043494CHN7012299F3110201S1UBJ2E<3D3PLJ56",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 95,
+      "backend": "",
+      "error": "",
+      "ms": 21.91220805980265
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 18.958874978125095
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNCUI<<LIYI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E581043494CHN7012299F3110201S1UBJ2E<3D3PLJ56"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNCUI<<LIYI<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E581043494CHN7012299F3110201S1UBJ2E<3D3PLJ56",
+     "conf1": 98,
+     "conf2": 95,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 17.699083080515265
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-AI.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-30-AI.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 42.82137495465577,
+    "wall_ms": 43.02025004290044,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNDAI<<XIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E996968603CHN0205089M3208184OK1U4WCP4K4E7L42",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 98,
+      "backend": "",
+      "error": "",
+      "ms": 19.838458159938455
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 22.94183406047523
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNDAI<<XIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E996968603CHN0205089M3208184OK1U4WCP4K4E7L42"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNDAI<<XIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E996968603CHN0205089M3208184OK1U4WCP4K4E7L42",
+     "conf1": 98,
+     "conf2": 98,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 18.5502499807626
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-AJ.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-30-AJ.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 40.476791094988585,
+    "wall_ms": 40.71158287115395,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNDING<<HANGYAN<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E818572393CHN6603171M2702157FHS9IS8GQWHI6I88",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 95,
+      "backend": "",
+      "error": "",
+      "ms": 19.005582900717854
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 21.927500143647194
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNDING<<HANGYAN<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E818572393CHN6603171M2702157FHS9IS8GQWHI6I88"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNDING<<HANGYAN<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E818572393CHN6603171M2702157FHS9IS8GQWHI6I88",
+     "conf1": 98,
+     "conf2": 95,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 18.92291591502726
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-B.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-30-B.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 40.9703750628978,
+    "wall_ms": 41.18716693483293,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "POCHNHU<<HAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E187424516CHN8706216M2406086LKPKOFLA<<<<A936",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 98,
+      "backend": "",
+      "error": "",
+      "ms": 19.020208157598972
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 100,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 21.989500150084496
+     }
+    ]
+   },
+   "gt": {
+    "line1": "POCHNHU<<HAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E187424516CHN8706216M2406086LKPKOFLA<<<<A936"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "POCHNHU<<HAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E187424516CHN8706216M2406086LKPKOFLA<<<<A936",
+     "conf1": 99,
+     "conf2": 98,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 17.890917137265205
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-C.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-30-C.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 46.147125074639916,
+    "wall_ms": 46.35087517090142,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<AUSRICHARDS<<KEIRA<JAYNE<<<<<<<<<<<<<<<<<<",
+    "line2": "N7368155<2AUS8703226F2306186<12078730W<<<<68",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 97,
+      "backend": "",
+      "error": "",
+      "ms": 19.23937490209937
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 22.17891695909202
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<AUSRICHARDS<<KEIRA<JAYNE<<<<<<<<<<<<<<<<<<",
+    "line2": "N7368155<2AUS8703226F2306186<12078730W<<<<68"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<AUSRICHARDS<<KEIRA<JAYNE<<<<<<<<<<<<<<<<<<",
+     "line2": "N7368155<2AUS8703226F2306186<12078730W<<<<68",
+     "conf1": 98,
+     "conf2": 97,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 17.64908409677446
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-D.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-30-D.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 43.68816688656807,
+    "wall_ms": 43.85379096493125,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "AKCHNZHOU<<QIANG<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "KE00345952CHN9207156M2912095A911<611158<<<14",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 97,
+      "backend": "",
+      "error": "",
+      "ms": 20.210999995470047
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 22.942665964365005
+     }
+    ]
+   },
+   "gt": {
+    "line1": "AKCHNZHOU<<QIANG<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "KE00345952CHN9207156M2912095A911<611158<<<14"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "AKCHNZHOU<<QIANG<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "KE00345952CHN9207156M2912095A911<611158<<<14",
+     "conf1": 98,
+     "conf2": 97,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 18.715334124863148
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-E.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-30-E.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 43.28012512996793,
+    "wall_ms": 43.504999950528145,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "POCHNZHANG<<WANWEN<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E662323994CHN9009121F2601113NFMFMNPBMOMEA976",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 97,
+      "backend": "",
+      "error": "",
+      "ms": 23.68350001052022
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 19.433374982327223
+     }
+    ]
+   },
+   "gt": {
+    "line1": "POCHNZHANG<<WANWEN<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "E662323994CHN9009121F2601113NFMFMNPBMOMEA976"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "POCHNZHANG<<WANWEN<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "E662323994CHN9009121F2601113NFMFMNPBMOMEA976",
+     "conf1": 98,
+     "conf2": 97,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 19.64791677892208
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-F.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-30-F.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 43.924582889303565,
+    "wall_ms": 44.21162488870323,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "PMCHNYAN<<ZHE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "A000000000CHN9801060M2406190ODMGNFNM<<<<A998",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 97,
+      "backend": "",
+      "error": "",
+      "ms": 23.3090000692755
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 100,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 20.078832982107997
+     }
+    ]
+   },
+   "gt": {
+    "line1": "PMCHNYAN<<ZHE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "A000000000CHN9801060M2406190ODMGNFNM<<<<A998"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "PMCHNYAN<<ZHE<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "A000000000CHN9801060M2406190ODMGNFNM<<<<A998",
+     "conf1": 98,
+     "conf2": 97,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 19.03212512843311
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-G.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-30-G.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 43.486458947882056,
+    "wall_ms": 43.687165947631,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "P<CHNSUN<<HAI<HUA<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "H224724969CHN0907246M2808185<S3054553<<<<<90",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 97,
+      "backend": "",
+      "error": "",
+      "ms": 22.68116595223546
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 19.135250011458993
+     }
+    ]
+   },
+   "gt": {
+    "line1": "P<CHNSUN<<HAI<HUA<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "H224724969CHN0907246M2808185<S3054553<<<<<90"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "P<CHNSUN<<HAI<HUA<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "H224724969CHN0907246M2808185<S3054553<<<<<90",
+     "conf1": 98,
+     "conf2": 97,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 19.27924994379282
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-H.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-30-H.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 703.7007079925388,
+    "wall_ms": 703.8930410053581,
+    "reason": "融合CNN+CRNN · 多引擎逐行仲裁(6/6 候选) 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "AKCHNYANG<<ZHEN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "KE90003518CHN9707014F2912268A911<121101<<<72",
+    "engines": [
+     {
+      "method": "traditional",
+      "decode_ok": false,
+      "engine_ok": false,
+      "engine_status": "FAIL",
+      "conf1": 0,
+      "conf2": 0,
+      "backend": "",
+      "error": "工具不存在: /Users/zhouyong/Desktop/work/Decard/gitlab/passport/6_mrz_ocr/build/mrz_ocr_tool",
+      "ms": 0.024625100195407867
+     },
+     {
+      "method": "cnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 91,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 39.133124984800816
+     },
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 94,
+      "conf2": 97,
+      "backend": "",
+      "error": "",
+      "ms": 34.98666686937213
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 33.098707906901836
+     },
+     {
+      "method": "paddle",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 99,
+      "backend": "paddle-onnxruntime",
+      "error": "",
+      "ms": 214.27441597916186
+     },
+     {
+      "method": "indra",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 96,
+      "conf2": 95,
+      "backend": "indra",
+      "error": "",
+      "ms": 497.1505419816822
+     },
+     {
+      "method": "tesseract",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 0,
+      "conf2": 0,
+      "backend": "tesseract",
+      "error": "",
+      "ms": 180.0057089421898
+     }
+    ]
+   },
+   "gt": {
+    "line1": "AKCHNYANG<<ZHEN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "KE90003518CHN9707014F2912268A911<121101<<<72"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "AKCHNYANG<<ZHEN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "KE90003518CHN9707014F2912268A911<121101<<<72",
+     "conf1": 94,
+     "conf2": 97,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 19.019708037376404
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-I.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-30-I.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 77.88345799781382,
+    "wall_ms": 78.16429203376174,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "CSC733210936<2711209<8612261<8",
+    "line2": "",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 0,
+      "backend": "",
+      "error": "",
+      "ms": 58.0097921192646
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 0,
+      "backend": "",
+      "error": "",
+      "ms": 60.565165942534804
+     }
+    ]
+   },
+   "gt": {
+    "line1": "CSC733210936<2711209<8612261<8",
+    "line2": ""
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": false,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "CST733210936<2711209<3513151<2",
+     "line2": "",
+     "conf1": 84,
+     "conf2": 0,
+     "backend": "",
+     "error": "decode failed: check digit mismatch",
+     "note": "",
+     "ms": 23.400540929287672
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-J.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-30-J.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 55.30470795929432,
+    "wall_ms": 55.52966706454754,
+    "reason": "CRNN序列 · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "CSC482624408<2610106<7410024<0",
+    "line2": "",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 0,
+      "backend": "",
+      "error": "",
+      "ms": 34.00145820342004
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 97,
+      "conf2": 0,
+      "backend": "",
+      "error": "",
+      "ms": 36.999667063355446
+     }
+    ]
+   },
+   "gt": {
+    "line1": "CSC482624408<2610106<7410024<0",
+    "line2": ""
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": false,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "CSG455050532<6311131<3111111<2",
+     "line2": "",
+     "conf1": 63,
+     "conf2": 0,
+     "backend": "",
+     "error": "decode failed: check digit mismatch",
+     "note": "",
+     "ms": 21.16533392108977
+    }
+   }
+  },
+  {
+   "label": "tmp/PassPortPhoto/2026-9-30-K.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/tmp/PassPortPhoto/2026-9-30-K.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 604.3875832110643,
+    "wall_ms": 604.5968749094754,
+    "reason": "CRNN序列 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "CSC495643597<2610265<8706216<0",
+    "line2": "",
+    "engines": [
+     {
+      "method": "traditional",
+      "decode_ok": false,
+      "engine_ok": false,
+      "engine_status": "FAIL",
+      "conf1": 0,
+      "conf2": 0,
+      "backend": "",
+      "error": "工具不存在: /Users/zhouyong/Desktop/work/Decard/gitlab/passport/6_mrz_ocr/build/mrz_ocr_tool",
+      "ms": 0.03033410757780075
+     },
+     {
+      "method": "cnn",
+      "decode_ok": false,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 62,
+      "conf2": 0,
+      "backend": "",
+      "error": "decode failed: check digit mismatch",
+      "ms": 62.75329110212624
+     },
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 0,
+      "backend": "",
+      "error": "",
+      "ms": 58.087874902412295
+     },
+     {
+      "method": "fuse",
+      "decode_ok": false,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 97,
+      "conf2": 0,
+      "backend": "",
+      "error": "decode failed: check digit mismatch",
+      "ms": 47.50049998983741
+     },
+     {
+      "method": "paddle",
+      "decode_ok": false,
+      "engine_ok": false,
+      "engine_status": "FAIL",
+      "conf1": 26,
+      "conf2": 0,
+      "backend": "paddle-onnxruntime",
+      "error": "decode failed: check digit mismatch",
+      "ms": 419.37437490560114
+     },
+     {
+      "method": "indra",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 0,
+      "conf2": 0,
+      "backend": "indra",
+      "error": "",
+      "ms": 277.3619999643415
+     },
+     {
+      "method": "tesseract",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 0,
+      "conf2": 0,
+      "backend": "tesseract",
+      "error": "",
+      "ms": 192.86324991844594
+     }
+    ]
+   },
+   "gt": {
+    "line1": "CSC495643597<2610265<8706216<0",
+    "line2": ""
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": false,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "CSZZ57443597<2610265<8705218<0",
+     "line2": "",
+     "conf1": 81,
+     "conf2": 0,
+     "backend": "",
+     "error": "decode failed: check digit mismatch",
+     "note": "",
+     "ms": 22.766167065128684
+    }
+   }
+  },
+  {
+   "label": "Photo/3/IMG_1792133000_003.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/Photo/3/IMG_1792133000_003.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 66.70058285817504,
+    "wall_ms": 66.9344998896122,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 98,
+      "backend": "",
+      "error": "",
+      "ms": 26.29108284600079
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 23.500791052356362
+     }
+    ]
+   },
+   "gt": {
+    "line1": "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970",
+     "conf1": 99,
+     "conf2": 98,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 22.18029205687344
+    }
+   }
+  },
+  {
+   "label": "Photo/4/IMG_1792133002_004.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/Photo/4/IMG_1792133002_004.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 66.76779198460281,
+    "wall_ms": 67.00116698630154,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 98,
+      "backend": "",
+      "error": "",
+      "ms": 23.37304106913507
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 25.954541051760316
+     }
+    ]
+   },
+   "gt": {
+    "line1": "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970",
+     "conf1": 99,
+     "conf2": 98,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 22.97929092310369
+    }
+   }
+  },
+  {
+   "label": "Photo/5/IMG_1792133232_005.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/Photo/5/IMG_1792133232_005.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 64.53137495554984,
+    "wall_ms": 64.7907080128789,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 98,
+      "backend": "",
+      "error": "",
+      "ms": 22.469667019322515
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 25.00712499022484
+     }
+    ]
+   },
+   "gt": {
+    "line1": "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970",
+     "conf1": 99,
+     "conf2": 98,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 21.912916796281934
+    }
+   }
+  },
+  {
+   "label": "Photo/6/IMG_1792133581_006.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/Photo/6/IMG_1792133581_006.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 65.31020905822515,
+    "wall_ms": 65.53441588766873,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 98,
+      "backend": "",
+      "error": "",
+      "ms": 23.37475004605949
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 25.295000057667494
+     }
+    ]
+   },
+   "gt": {
+    "line1": "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970",
+     "conf1": 99,
+     "conf2": 98,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 22.408333141356707
+    }
+   }
+  },
+  {
+   "label": "Photo/7/IMG_1792133649_007.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/Photo/7/IMG_1792133649_007.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 33.924374962225556,
+    "wall_ms": 34.14533310569823,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 96,
+      "backend": "",
+      "error": "",
+      "ms": 19.212708109989762
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 98,
+      "backend": "",
+      "error": "",
+      "ms": 22.85341708920896
+     }
+    ]
+   },
+   "gt": {
+    "line1": "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970",
+     "conf1": 98,
+     "conf2": 96,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 21.036875201389194
+    }
+   }
+  },
+  {
+   "label": "Photo/8/IMG_1792133682_008.jpg",
+   "path": "/Users/zhouyong/Desktop/work/Decard/gitlab/passport/Photo/8/IMG_1792133682_008.jpg",
+   "pair": true,
+   "official": {
+    "grade": "PASS",
+    "verified": true,
+    "ms": 67.21820891834795,
+    "wall_ms": 67.42562493309379,
+    "reason": "融合CNN+CRNN · CRNN+fuse一致直出 识别并通过校验",
+    "chosen": "crnn",
+    "line1": "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970",
+    "engines": [
+     {
+      "method": "crnn",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 98,
+      "conf2": 97,
+      "backend": "",
+      "error": "",
+      "ms": 23.082167143002152
+     },
+     {
+      "method": "fuse",
+      "decode_ok": true,
+      "engine_ok": true,
+      "engine_status": "OK",
+      "conf1": 99,
+      "conf2": 99,
+      "backend": "",
+      "error": "",
+      "ms": 26.50616690516472
+     }
+    ]
+   },
+   "gt": {
+    "line1": "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+    "line2": "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970"
+   },
+   "raw": {
+    "crnn": {
+     "status": "run",
+     "decode_ok": true,
+     "engine_ok": true,
+     "engine_status": "OK",
+     "line1": "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+     "line2": "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970",
+     "conf1": 98,
+     "conf2": 97,
+     "backend": "",
+     "error": "",
+     "note": "",
+     "ms": 22.449915995821357
+    }
+   }
+  }
+ ]
+}

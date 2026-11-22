@@ -1,0 +1,53 @@
+{
+ "_comment": "Truth for the six passport-scanner camshots (Photo/3..8), read from 10_ocr_research/gt_review_loop.xlsx by tests/build_gt_from_xlsx.py.  These six photos are the holdout set of the 50-photo metric (tests/photo_sets.json: passport_union), so a model that is trained on any of them must not be scored on this file.",
+ "gt": {
+  "IMG_1792133000_003.jpg": {
+   "label": "Photo/3/IMG_1792133000_003.jpg",
+   "l1": "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970",
+   "tier": "A",
+   "l1_tier": "A",
+   "l2_tier": "A"
+  },
+  "IMG_1792133002_004.jpg": {
+   "label": "Photo/4/IMG_1792133002_004.jpg",
+   "l1": "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970",
+   "tier": "A",
+   "l1_tier": "A",
+   "l2_tier": "A"
+  },
+  "IMG_1792133232_005.jpg": {
+   "label": "Photo/5/IMG_1792133232_005.jpg",
+   "l1": "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970",
+   "tier": "A",
+   "l1_tier": "A",
+   "l2_tier": "A"
+  },
+  "IMG_1792133581_006.jpg": {
+   "label": "Photo/6/IMG_1792133581_006.jpg",
+   "l1": "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970",
+   "tier": "A",
+   "l1_tier": "A",
+   "l2_tier": "A"
+  },
+  "IMG_1792133649_007.jpg": {
+   "label": "Photo/7/IMG_1792133649_007.jpg",
+   "l1": "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970",
+   "tier": "A",
+   "l1_tier": "A",
+   "l2_tier": "A"
+  },
+  "IMG_1792133682_008.jpg": {
+   "label": "Photo/8/IMG_1792133682_008.jpg",
+   "l1": "POCHNJIA<<LIMIN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
+   "l2": "EE20426536CHN7410024M2808303LMNGMBKCMDPBA970",
+   "tier": "A",
+   "l1_tier": "A",
+   "l2_tier": "A"
+  }
+ }
+}

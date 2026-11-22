@@ -1,0 +1,5 @@
+---
+triple:          'arm64-apple-darwin'
+binary-path:     'tools/face_smoke_host/build10/bin/seeta_model_probe'
+relocations:     []
+...

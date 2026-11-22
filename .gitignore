@@ -87,3 +87,48 @@ outputs/
 .env.bak*
 .paddle_local_tmp/
 .kotlin/
+build_v2/
+
+# Training data (regenerable, 20G+)
+6_mrz_ocr/data/corpus_cscd_photo/
+6_mrz_ocr/data/corpus_eval_legacy24/
+6_mrz_ocr/data/corpus_eval_phys/
+6_mrz_ocr/data/corpus_real2/
+6_mrz_ocr/data/corpus_train_legacy24/
+6_mrz_ocr/data/corpus_train_phys/
+6_mrz_ocr/data/mrz_easyocr_train/
+6_mrz_ocr/data/photo_train_passport/
+6_mrz_ocr/data/photo_train_passport_v2/
+6_mrz_ocr/data/photo_train_passport_v3/
+6_mrz_ocr/data/photo_train_pic/
+6_mrz_ocr/data/photo_train_pic_v2/
+6_mrz_ocr/data/photo_train_pic_v3/
+6_mrz_ocr/data/photo_train_pic_v4/
+6_mrz_ocr/data/photo_train_pic_v5/
+6_mrz_ocr/data/photo_train_synth/
+6_mrz_ocr/data/photo_train_v2/
+6_mrz_ocr/data/photo_train_v3/
+data/corpus_train_v2/
+
+# Binary build artifacts (regenerable)
+6_mrz_ocr/face_build/
+6_mrz_ocr/1
+6_mrz_ocr/_gc.npz
+6_mrz_ocr/check_line_weights
+6_mrz_ocr/gen_mrz_image
+6_mrz_ocr/mrz_ocr_cnn_tool
+6_mrz_ocr/mrz_ocr_tool
+6_mrz_ocr/test_crnn
+6_mrz_ocr/test_crnn_parity
+6_mrz_ocr/test_golden
+6_mrz_ocr/test_mrz_ocr
+6_mrz_ocr/test_postproc
+
+# Large external subprojects (tracked separately)
+11_indra/
+9_face_app_android/
+
+# Scratch / temp files
+_smoke_screenshots/
+passport_photo_restore/tests/_tmp_rect.ppm
+photo_batch_result.json

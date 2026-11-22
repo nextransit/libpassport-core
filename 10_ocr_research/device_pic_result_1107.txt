@@ -1,0 +1,872 @@
+--------- beginning of system
+11-05 17:24:42.805   720  1054 W NetworkStatsRecorder: unknown interfaces [lo, eth0], ignoring those stats
+--------- beginning of main
+11-07 08:55:43.149   420 12160 I ADB_SERVICES: post waitpid (pid=12159) status=0000
+11-07 08:55:43.149   420   420 I ADB_SERVICES: for fd 42, revents = 2011
+11-07 08:55:43.149   420   420 I ADB_SERVICES: for fd 42, revents = 2011
+11-07 08:55:43.150   420   420 I ADB_SERVICES: local_socket_flush_outgoing read_data=906
+11-07 08:55:43.230   420   420 I ADB_SERVICES: service_to_fd shell,v2,TERM=xterm-256color,raw:am instrument -w -e class com.nextransit.mrzbench.PhotoMrzDeviceTest -e methods auto -e parallel 1 -e weightSet pic -e imageFilter pic com.nextransit.mrzbench.test/androidx.test.runner.AndroidJUnitRunner
+11-07 08:55:43.295   420   420 I ADB_SERVICES: local_socket_flush_incoming write_data=34859856
+11-07 08:55:43.625   720  1058 E WifiVendorHal: getWifiLinkLayerStats(l.937) failed {.code = ERROR_NOT_SUPPORTED, .description = }
+11-07 08:55:05.341   720  1054 W NetworkStatsRecorder: unknown interfaces [lo, eth0], ignoring those stats
+11-07 08:55:43.967   720 10428 I ActivityManager: Force stopping com.nextransit.mrzbench appid=10103 user=0: start instr
+11-07 08:55:43.984   720   738 I ActivityManager: Start proc 12171:com.nextransit.mrzbench/u0a103 for added application com.nextransit.mrzbench
+11-07 08:55:43.984 12171 12171 I Zygote  : seccomp disabled by setenforce 0
+11-07 08:55:43.991 12171 12171 I ransit.mrzbenc: Late-enabling -Xcheck:jni
+11-07 08:55:44.050 12171 12171 I re-initialized>: type=1400 audit(0.0:298628): avc: denied { read } for name="u:object_r:mtk_amslog_prop:s0" dev="tmpfs" ino=8339 scontext=u:r:untrusted_app:s0:c103,c256,c512,c768 tcontext=u:object_r:mtk_amslog_prop:s0 tclass=file permissive=1
+11-07 08:55:44.050 12171 12171 I re-initialized>: type=1400 audit(0.0:298629): avc: denied { open } for path="/dev/__properties__/u:object_r:mtk_amslog_prop:s0" dev="tmpfs" ino=8339 scontext=u:r:untrusted_app:s0:c103,c256,c512,c768 tcontext=u:object_r:mtk_amslog_prop:s0 tclass=file permissive=1
+11-07 08:55:44.050 12171 12171 I re-initialized>: type=1400 audit(0.0:298630): avc: denied { getattr } for path="/dev/__properties__/u:object_r:mtk_amslog_prop:s0" dev="tmpfs" ino=8339 scontext=u:r:untrusted_app:s0:c103,c256,c512,c768 tcontext=u:object_r:mtk_amslog_prop:s0 tclass=file permissive=1
+11-07 08:55:44.067   374   691 I AudioPolicyService: Uid 10103 is going to be silented!
+11-07 08:55:44.067   374   691 I avRecordWhiteList: [avRecordWhiteList] process name is com.nextransit.mrzbench, ret 0 [1:SystemAPP,0:other]
+11-07 08:55:44.106 12171 12171 W ActivityThread: Package uses different ABI(s) than its instrumentation: package[com.nextransit.mrzbench]: arm64-v8a, null instrumentation[com.nextransit.mrzbench.test]: null, null
+11-07 08:55:45.800   318   318 W hwservicemanager: getTransport: Cannot find entry android.hardware.radio.deprecated@1.0::IOemHook/slot1 in either framework or device manifest.
+11-07 08:55:45.805   318   318 W hwservicemanager: getTransport: Cannot find entry android.hardware.radio.deprecated@1.0::IOemHook/slot2 in either framework or device manifest.
+11-07 08:55:46.205   446   446 I thermal_repeater: socket -1
+11-07 08:55:46.227 12171 12171 W ransit.mrzbenc: Accessing hidden method Landroid/app/Instrumentation;->execStartActivity(Landroid/content/Context;Landroid/os/IBinder;Landroid/os/IBinder;Landroid/app/Activity;Landroid/content/Intent;ILandroid/os/Bundle;)Landroid/app/Instrumentation$ActivityResult; (light greylist, linking)
+11-07 08:55:46.227 12171 12171 W ransit.mrzbenc: Accessing hidden method Landroid/app/Instrumentation;->execStartActivity(Landroid/content/Context;Landroid/os/IBinder;Landroid/os/IBinder;Ljava/lang/String;Landroid/content/Intent;ILandroid/os/Bundle;)Landroid/app/Instrumentation$ActivityResult; (light greylist, linking)
+11-07 08:55:46.239 12171 12171 I AndroidJUnitRunner: newApplication android.app.Application
+11-07 08:55:46.318 12171 12171 W ransit.mrzbenc: Accessing hidden field Landroid/os/Trace;->TRACE_TAG_APP:J (light greylist, reflection)
+11-07 08:55:46.318 12171 12171 W ransit.mrzbenc: Accessing hidden method Landroid/os/Trace;->isTagEnabled(J)Z (light greylist, reflection)
+11-07 08:55:46.365 12171 12171 I AndroidJUnitRunner: onCreate Bundle[mParcelledData.dataSize=276]
+11-07 08:55:46.525 12171 12191 I TestRunner: run started: 3 tests
+11-07 08:55:46.531 12171 12191 I TestRunner: started: probeBandPpm(com.nextransit.mrzbench.PhotoMrzDeviceTest)
+11-07 08:55:46.561 12171 12191 I MrzOcr  : PROBE recogn_string={"ok":false,"err":"load-ppm"}
+11-07 08:55:46.561 12171 12191 I TestRunner: finished: probeBandPpm(com.nextransit.mrzbench.PhotoMrzDeviceTest)
+11-07 08:55:46.565 12171 12191 I TestRunner: started: allMethodsOnAllImages(com.nextransit.mrzbench.PhotoMrzDeviceTest)
+11-07 08:55:46.610 12171 12191 I MrzOcr  : TEST externalDir='/data/user/0/com.nextransit.mrzbench/files/omtest'
+11-07 08:55:46.610 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:46.611 12171 12191 I MrzOcr  : TEST parallel=true
+11-07 08:55:46.611 12171 12191 I MrzNative: MRZ_WEIGHTS_SET=pic
+11-07 08:55:46.611 12171 12191 I MrzNative: MRZ_WEIGHTS_SET=pic
+11-07 08:55:46.612 12171 12191 I MrzOcr  : TEST weightSet=pic
+11-07 08:55:46.630   720  1058 E WifiVendorHal: getWifiLinkLayerStats(l.937) failed {.code = ERROR_NOT_SUPPORTED, .description = }
+11-07 08:55:46.967 12171 12191 I MrzOcr  : TEST start images=65 filter='pic' externalDir='/data/user/0/com.nextransit.mrzbench/files/omtest'
+11-07 08:55:47.006 12171 12191 I MrzOcr  : TEST methods=[auto]
+11-07 08:55:47.031 12171 12191 I MrzOcr  : locator dark path: (111..122, 141..152)
+11-07 08:55:47.031 12171 12191 I MrzOcr  : locator chosen dark(y=111-152) y0=235
+11-07 08:55:47.044 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:47.107 12171 12191 I MrzOcr  : segScore=96 raw2len=44 raw2='S2100023<6CHE7108019M200'
+11-07 08:55:47.130 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=true conf=99/99 ambiguous=false altMargin=0 structure=13ms normalize=0ms ocr=84ms total=110ms
+11-07 08:55:47.134 12171 12191 I MrzOcr  : RESULT external/pic/08806d29a6268e1f_0003.jpg | 自动 | decode=true | wall=115ms | total=110ms | backend=native-cnn | ocr=84ms | structure=13ms | raw=false | repaired=true | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<CHEDE<MAIENFELD<<PIERRE<<<<<<<<<<<<<<<<<<< | L2=S2100023<6CHE7108019M2002293<<<<<<<<<<<<<<06 | err=
+11-07 08:55:47.198 12171 12191 I MrzOcr  : locator dark path: (480..512, 517..531)
+11-07 08:55:47.198 12171 12191 I MrzOcr  : locator chosen dark(y=480-531) y0=724
+11-07 08:55:47.204 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:47.276 12171 12191 I MrzOcr  : segScore=93 raw2len=44 raw2='111RR4R1R4<UU13R34171114'
+11-07 08:55:47.281 12171 12191 I MrzOcr  : framing candidates: primary rejected, trying 5 alternates
+11-07 08:55:47.283 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:47.328 12171 12191 I MrzOcr  : framing candidate 0 (pad=1.35): accept=true line2='3400072370USA6707046F1608078910000193<113538'
+11-07 08:55:47.331 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=true decode=true conf=96/100 ambiguous=false altMargin=0 structure=10ms normalize=0ms ocr=125ms total=141ms
+11-07 08:55:47.331 12171 12191 I MrzOcr  : RESULT external/pic/0f9780b8e1e3cc21_0008.jpg | 自动 | decode=true | wall=143ms | total=141ms | backend=native-cnn | ocr=125ms | structure=10ms | raw=true | repaired=false | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<USATHAVELEH<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<< | L2=3400072370USA6707046F1608078910000193<113538 | err=
+11-07 08:55:47.344 12171 12191 I MrzOcr  : locator dark path: (103..113, 132..144)
+11-07 08:55:47.345 12171 12191 I MrzOcr  : locator chosen dark(y=103-144) y0=228
+11-07 08:55:47.347 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:47.379 12171 12191 I MrzOcr  : segScore=89 raw2len=44 raw2='99009054<4CZE6906229F160'
+11-07 08:55:47.384 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=true decode=true conf=99/99 ambiguous=false altMargin=0 structure=2ms normalize=0ms ocr=36ms total=41ms
+11-07 08:55:47.386 12171 12191 I MrzOcr  : RESULT external/pic/16c07a99a0fb81e4_0013.jpg | 自动 | decode=true | wall=43ms | total=41ms | backend=native-cnn | ocr=36ms | structure=2ms | raw=true | repaired=false | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<CZESPECIMEN<<VZOR<<<<<<<<<<<<<<<<<<<<<<<<< | L2=99009054<4CZE6906229F16072996956220612<<<<74 | err=
+11-07 08:55:47.442 12171 12191 I MrzOcr  : locator dark path: (482..494, 525..543)
+11-07 08:55:47.443 12171 12191 I MrzOcr  : locator chosen dark(y=482-543) y0=738
+11-07 08:55:47.448 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:47.463 12171 12191 I MrzOcr  : segScore=-1 raw2len=0 raw2=''
+11-07 08:55:47.468 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:47.484 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=false conf=0/0 ambiguous=false altMargin=0 structure=10ms normalize=0ms ocr=35ms total=50ms
+11-07 08:55:47.485 12171 12191 I MrzOcr  : RESULT external/pic/16e75f8372cca686_0010.jpg | 自动 | decode=false | wall=52ms | total=50ms | backend=native-cnn | ocr=35ms | structure=10ms | raw=false | repaired=false | struct=true | nat=false | issuer=false | country=false | verdict=FAIL | L1=P<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< | L2= | err=could not split into two lines
+11-07 08:55:47.504 12171 12191 I MrzOcr  : locator dark path: null
+11-07 08:55:47.506 12171 12191 I MrzOcr  : locator var-fallback img-h=649 rowStd=267 sw=226 thr=40000 peaks=[40,106], [109,110], [117,118], [194,214], [241,264] cand=(194..214, 241..264)
+11-07 08:55:47.506 12171 12191 I MrzOcr  : locator chosen dark(y=194-264) y0=356
+11-07 08:55:47.511 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:47.555 12171 12191 I MrzOcr  : segScore=84 raw2len=44 raw2='E900000821CHN8108038F211'
+11-07 08:55:47.562 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=true conf=99/99 ambiguous=false altMargin=0 structure=6ms normalize=0ms ocr=50ms total=61ms
+11-07 08:55:47.563 12171 12191 I MrzOcr  : RESULT external/pic/1792f7a2d79c7a8a_0017.jpg | 自动 | decode=true | wall=63ms | total=61ms | backend=native-cnn | ocr=50ms | structure=6ms | raw=false | repaired=true | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<CHNZHENGJIAN<<YANGBEN<<<<<<<<<<<<<<<<<<<<< | L2=E900000821CHN8108038F2110189NGKELMPONBPJB978 | err=
+11-07 08:55:47.606 12171 12191 I MrzOcr  : locator dark path: null
+11-07 08:55:47.607 12171 12191 I MrzOcr  : locator var-fallback img-h=1339 rowStd=549 sw=226 thr=40000 peaks=[82,405], [489,511], [535,548] cand=(489..511, 535..548)
+11-07 08:55:47.607 12171 12191 I MrzOcr  : locator chosen dark(y=489-548) y0=736
+11-07 08:55:47.613 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:47.706 12171 12191 I MrzOcr  : segScore=51 raw2len=44 raw2='LLLLP0UU03<SJ100ULL10325'
+11-07 08:55:47.713 12171 12191 I MrzOcr  : framing candidates: primary rejected, trying 5 alternates
+11-07 08:55:47.715 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:47.862 12171 12191 I MrzOcr  : framing candidate 0 (pad=1.35): accept=false line2='LLLLP0UU03<SJ100ULL10325<HH0LO4<<<<2HLU44<50'
+11-07 08:55:47.862 12171 12191 I MrzOcr  : framing candidate 1 skipped: remaining=1ms < 55
+11-07 08:55:47.864 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=false conf=94/85 ambiguous=false altMargin=0 structure=11ms normalize=0ms ocr=249ms total=266ms
+11-07 08:55:47.864 12171 12191 I MrzOcr  : RESULT external/pic/1a62700c228ccff5_0053.jpg | 自动 | decode=false | wall=268ms | total=266ms | backend=native-cnn | ocr=249ms | structure=11ms | raw=false | repaired=false | struct=false | nat=false | issuer=false | country=false | verdict=FAIL | L1=P<PHLPPPP<<<PPPPPPPPP<<<<<<<<<<<<<<<<<<<<<<< | L2=LLLLP0UU03<SJ10001110325<HH0LO4<<<<2HLU44<50 | err=MRZ 校验未通过; 字段结构不可能（日期非法）
+11-07 08:55:47.879 12171 12191 I MrzOcr  : locator dark path: (80..88, 103..112)
+11-07 08:55:47.879 12171 12191 I MrzOcr  : locator chosen dark(y=80-112) y0=162
+11-07 08:55:47.882 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:48.059 12171 12191 I MrzOcr  : segScore=92 raw2len=44 raw2='14PE101777UTF7111102U111'
+11-07 08:55:48.063 12171 12191 I MrzOcr  : framing candidates: primary rejected, trying 5 alternates
+11-07 08:55:48.063 12171 12191 I MrzOcr  : framing candidate 0 skipped: remaining=3ms < 55
+11-07 08:55:48.066 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=false conf=98/80 ambiguous=false altMargin=0 structure=3ms normalize=0ms ocr=181ms total=188ms
+11-07 08:55:48.066 12171 12191 I MrzOcr  : RESULT external/pic/1cce0f3fc387c893_0001.jpg | 自动 | decode=false | wall=191ms | total=188ms | backend=native-cnn | ocr=181ms | structure=3ms | raw=false | repaired=true | struct=false | nat=true | issuer=false | country=true | verdict=FAIL | L1=P<POLKOWALSKI<<JAN<<<<<<<<<<<<<<<<<<<<<<<<<< | L2=14PE101777UTF7111102U1115180PPGPGGGPPPPPFP03 | err=MRZ 校验未通过; 字段结构不可能（日期非法）; 国籍码可疑; 签发国与国籍不一致
+11-07 08:55:48.163 12171 12191 I MrzOcr  : locator dark path: null
+11-07 08:55:48.166 12171 12191 I MrzOcr  : locator var-fallback img-h=1353 rowStd=554 sw=226 thr=40000 peaks=[83,424], [449,456], [472,478], [483,485], [505,512], [528,530], [537,541] cand=(528..530, 537..541)
+11-07 08:55:48.166 12171 12191 I MrzOcr  : locator chosen dark(y=528-541) y0=744
+11-07 08:55:48.171 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:48.202 12171 12191 I MrzOcr  : segScore=-1 raw2len=0 raw2=''
+11-07 08:55:48.205 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:48.232 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=false conf=0/0 ambiguous=false altMargin=0 structure=19ms normalize=0ms ocr=60ms total=84ms
+11-07 08:55:48.233 12171 12191 I MrzOcr  : RESULT external/pic/1f2efa72ff601a1c_0112.jpg | 自动 | decode=false | wall=86ms | total=84ms | backend=native-cnn | ocr=60ms | structure=19ms | raw=false | repaired=false | struct=true | nat=false | issuer=false | country=false | verdict=FAIL | L1=P<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< | L2= | err=could not split into two lines
+11-07 08:55:48.262 12171 12191 I MrzOcr  : locator dark path: (188..206, 234..255)
+11-07 08:55:48.262 12171 12191 I MrzOcr  : locator chosen dark(y=188-255) y0=367
+11-07 08:55:48.268 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:48.309 12171 12191 I MrzOcr  : segScore=88 raw2len=44 raw2='SE00000008CHN8509037F150'
+11-07 08:55:48.315 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=true conf=99/99 ambiguous=false altMargin=0 structure=6ms normalize=0ms ocr=47ms total=58ms
+11-07 08:55:48.316 12171 12191 I MrzOcr  : RESULT external/pic/239e042aba0c3ab2_0102.jpg | 自动 | decode=true | wall=60ms | total=58ms | backend=native-cnn | ocr=47ms | structure=6ms | raw=false | repaired=true | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<CHNYANG<<ZHAO<<<<<<<<<<<<<<<<<<<<<<<<<<<<< | L2=SE00000008CHN8509037F150501819200001<<<<<<92 | err=
+11-07 08:55:48.339 12171 12191 I MrzOcr  : locator dark path: (99..109, 127..138)
+11-07 08:55:48.339 12171 12191 I MrzOcr  : locator chosen dark(y=99-138) y0=223
+11-07 08:55:48.342 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:48.387 12171 12191 I MrzOcr  : segScore=91 raw2len=44 raw2='MK000001<7UKR8307255M190'
+11-07 08:55:48.391 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=true decode=true conf=99/99 ambiguous=false altMargin=0 structure=2ms normalize=0ms ocr=49ms total=54ms
+11-07 08:55:48.392 12171 12191 I MrzOcr  : RESULT external/pic/23f16a7d9b6ab9da_0062.jpg | 自动 | decode=true | wall=56ms | total=54ms | backend=native-cnn | ocr=49ms | structure=2ms | raw=true | repaired=false | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<UKRGRYTSENKO<<IVAN<<<<<<<<<<<<<<<<<<<<<<<< | L2=MK000001<7UKR8307255M19080333052125257<<<<00 | err=
+11-07 08:55:48.414 12171 12191 I MrzOcr  : locator dark path: (188..204, 235..254)
+11-07 08:55:48.414 12171 12191 I MrzOcr  : locator chosen dark(y=188-254) y0=361
+11-07 08:55:48.419 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:48.455 12171 12191 I MrzOcr  : segScore=92 raw2len=44 raw2='PO00V000A0PHL8003166F270'
+11-07 08:55:48.462 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=true decode=true conf=98/99 ambiguous=false altMargin=0 structure=4ms normalize=0ms ocr=41ms total=52ms
+11-07 08:55:48.463 12171 12191 I MrzOcr  : RESULT external/pic/28ccd101a752acef_0016.jpg | 自动 | decode=true | wall=53ms | total=52ms | backend=native-cnn | ocr=41ms | structure=4ms | raw=true | repaired=false | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<PHLDELA<CRUZ<<MARIA<<<<<<<<<<<<<<<<<<<<<<< | L2=PO00V000A0PHL8003166F2706269<<<<<<<<<<<<<<02 | err=
+11-07 08:55:48.484 12171 12191 I MrzOcr  : locator dark path: (173..192, 220..241)
+11-07 08:55:48.484 12171 12191 I MrzOcr  : locator chosen dark(y=173-241) y0=349
+11-07 08:55:48.490 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:48.523 12171 12191 I MrzOcr  : segScore=92 raw2len=44 raw2='LV90008223LVA8612010F250'
+11-07 08:55:48.529 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=true decode=true conf=99/100 ambiguous=false altMargin=0 structure=5ms normalize=0ms ocr=38ms total=49ms
+11-07 08:55:48.530 12171 12191 I MrzOcr  : RESULT external/pic/2c793efe12276f9b_0258.jpg | 自动 | decode=true | wall=51ms | total=49ms | backend=native-cnn | ocr=38ms | structure=5ms | raw=true | repaired=false | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<LVAOZOLKALNA<<LIENE<MARA<<<<<<<<<<<<<<<<<< | L2=LV90008223LVA8612010F2501121111111<11410<<70 | err=
+11-07 08:55:48.583 12171 12191 I MrzOcr  : locator dark path: (0..74, 78..120)
+11-07 08:55:48.583 12171 12191 I MrzOcr  : locator chosen dark(y=0-120) y0=690
+11-07 08:55:48.597 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:48.652 12171 12191 I MrzOcr  : segScore=0 raw2len=44 raw2='009UUUUUU6LLLLU00H00Z<00'
+11-07 08:55:48.663 12171 12191 I MrzOcr  : framing candidates: primary rejected, trying 5 alternates
+11-07 08:55:48.665 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:48.751 12171 12191 I MrzOcr  : framing candidate 0 (pad=1.35): accept=false line2='08UUUUHHL0LLU0UU0X100P909GG7XJ58<010<9038B00'
+11-07 08:55:48.751 12171 12191 I MrzOcr  : framing candidate 1 skipped: remaining=1ms < 55
+11-07 08:55:48.752 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=false conf=78/91 ambiguous=false altMargin=0 structure=25ms normalize=0ms ocr=154ms total=194ms
+11-07 08:55:48.753 12171 12191 I MrzOcr  : RESULT external/pic/2d6029eb8d489f68_0004.jpg | 自动 | decode=false | wall=195ms | total=194ms | backend=native-cnn | ocr=154ms | structure=25ms | raw=false | repaired=true | struct=false | nat=true | issuer=false | country=true | verdict=FAIL | L1=P<GMBPPP<TJPPI<<OPP<PP<<OL<O<<<P<<PPPPP<HMPP | L2=009UUUUUU6LLL1000H00Z<0000P99047Z0P999909P53 | err=MRZ 校验未通过; 字段结构不可能（日期非法）; 国籍码可疑; 签发国与国籍不一致
+11-07 08:55:48.792 12171 12191 I MrzOcr  : locator dark path: null
+11-07 08:55:48.793 12171 12191 I MrzOcr  : locator var-fallback img-h=872 rowStd=358 sw=301 thr=40000 peaks=[53,156], [160,175], [233,266], [302,337] cand=(233..266, 302..337)
+11-07 08:55:48.793 12171 12191 I MrzOcr  : locator chosen dark(y=233-337) y0=479
+11-07 08:55:48.803 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:48.838 12171 12191 I MrzOcr  : segScore=84 raw2len=44 raw2='ZF40004998PQL8101028M320'
+11-07 08:55:48.846 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=true decode=true conf=98/96 ambiguous=false altMargin=0 structure=9ms normalize=0ms ocr=42ms total=61ms
+11-07 08:55:48.847 12171 12191 I MrzOcr  : RESULT external/pic/31611582cbf14d7f_0018.jpg | 自动 | decode=true | wall=63ms | total=61ms | backend=native-cnn | ocr=42ms | structure=9ms | raw=true | repaired=false | struct=true | nat=true | issuer=false | country=true | verdict=SUSPECT | L1=P<POLKOWALSKI<<JAN<<<<<<<<<<<<<<<<<<<<<<<<<< | L2=ZF40004998PQL8101028M32030310<<<<<<<<<<<<<00 | err=国籍码可疑; 签发国与国籍不一致
+11-07 08:55:48.896 12171 12191 I MrzOcr  : locator dark path: (298..325, 335..346)
+11-07 08:55:48.896 12171 12191 I MrzOcr  : locator chosen dark(y=298-346) y0=737
+11-07 08:55:48.901 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:48.996 12171 12191 I MrzOcr  : segScore=58 raw2len=44 raw2='WF000UF093LLB14B1XE0NUL0'
+11-07 08:55:49.003 12171 12191 I MrzOcr  : framing candidates: primary rejected, trying 5 alternates
+11-07 08:55:49.004 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:49.078 12171 12191 I MrzOcr  : framing candidate 0 (pad=1.35): accept=false line2=''
+11-07 08:55:49.078 12171 12191 I MrzOcr  : framing candidate 1 skipped: remaining=1ms < 55
+11-07 08:55:49.079 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=false conf=74/89 ambiguous=false altMargin=0 structure=9ms normalize=0ms ocr=177ms total=192ms
+11-07 08:55:49.080 12171 12191 I MrzOcr  : RESULT external/pic/4023a0d69dbd6cf7_0120.jpg | 自动 | decode=false | wall=193ms | total=192ms | backend=native-cnn | ocr=177ms | structure=9ms | raw=false | repaired=true | struct=false | nat=true | issuer=false | country=true | verdict=FAIL | L1=P<LSO<BWV<<<ETB<<LUVNOCCBYJ<<<<<<<<<<<<<<<<< | L2=WF000UF093LLB14818E0N010010600L03<N40U<V6640 | err=MRZ 校验未通过; 字段结构不可能（日期非法）; 国籍码可疑; 签发国与国籍不一致
+11-07 08:55:49.107 12171 12191 I MrzOcr  : locator dark path: (178..196, 225..245)
+11-07 08:55:49.107 12171 12191 I MrzOcr  : locator chosen dark(y=178-245) y0=381
+11-07 08:55:49.113 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:49.175 12171 12191 I MrzOcr  : segScore=93 raw2len=44 raw2='1100000000RUS8008046F090'
+11-07 08:55:49.182 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=true conf=99/99 ambiguous=false altMargin=0 structure=7ms normalize=0ms ocr=68ms total=81ms
+11-07 08:55:49.184 12171 12191 I MrzOcr  : RESULT external/pic/4086f51e94e9c5c7_0007.jpg | 自动 | decode=true | wall=83ms | total=81ms | backend=native-cnn | ocr=68ms | structure=7ms | raw=false | repaired=true | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<RUSSMIRNOVA<<VALENTINA<<<<<<<<<<<<<<<<<<<< | L2=1100000000RUS8008046F0902274<<<<<<<<<<<<<<08 | err=
+11-07 08:55:49.212 12171 12191 I MrzOcr  : locator dark path: (173..190, 220..240)
+11-07 08:55:49.213 12171 12191 I MrzOcr  : locator chosen dark(y=173-240) y0=377
+11-07 08:55:49.218 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:49.273 12171 12191 I MrzOcr  : segScore=93 raw2len=44 raw2='X110003442AZE7503153M230'
+11-07 08:55:49.281 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=true conf=99/99 ambiguous=false altMargin=0 structure=6ms normalize=0ms ocr=61ms total=73ms
+11-07 08:55:49.282 12171 12191 I MrzOcr  : RESULT external/pic/41ab45d4bde758dc_0306.jpg | 自动 | decode=true | wall=76ms | total=73ms | backend=native-cnn | ocr=61ms | structure=6ms | raw=false | repaired=true | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<AZEHUSEYNLI<<ORKHAN<<<<<<<<<<<<<<<<<<<<<<< | L2=X110003442AZE7503153M230801030LJV5Z<<<<<<<86 | err=
+11-07 08:55:49.338 12171 12191 I MrzOcr  : locator dark path: (474..491, 520..537)
+11-07 08:55:49.338 12171 12191 I MrzOcr  : locator chosen dark(y=474-537) y0=745
+11-07 08:55:49.345 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:49.465 12171 12191 I MrzOcr  : segScore=91 raw2len=44 raw2='0402276931USA3309209F170'
+11-07 08:55:49.475 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=true decode=true conf=97/98 ambiguous=false altMargin=0 structure=11ms normalize=0ms ocr=128ms total=146ms
+11-07 08:55:49.476 12171 12191 I MrzOcr  : RESULT external/pic/43ecb49033fb30c1_0073.jpg | 自动 | decode=true | wall=149ms | total=146ms | backend=native-cnn | ocr=128ms | structure=11ms | raw=true | repaired=false | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<USATRUNZO<<ONDINA<MICHELLE<<<<<<<<<<<<<<<< | L2=0402276931USA3309209F1707018<<<<<<<<<<<<<<04 | err=
+11-07 08:55:49.534 12171 12191 I MrzOcr  : locator dark path: (164..192, 207..241)
+11-07 08:55:49.534 12171 12191 I MrzOcr  : locator chosen dark(y=164-241) y0=369
+11-07 08:55:49.542 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:49.638   720  1058 E WifiVendorHal: getWifiLinkLayerStats(l.937) failed {.code = ERROR_NOT_SUPPORTED, .description = }
+11-07 08:55:49.695 12171 12191 I MrzOcr  : segScore=63 raw2len=44 raw2='<LU0400210XPCR0UG001014F'
+11-07 08:55:49.704 12171 12191 I MrzOcr  : framing candidates: primary rejected, trying 5 alternates
+11-07 08:55:49.704 12171 12191 I MrzOcr  : framing candidate 0 skipped: remaining=13ms < 55
+11-07 08:55:49.706 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=false conf=82/92 ambiguous=false altMargin=0 structure=8ms normalize=0ms ocr=162ms total=178ms
+11-07 08:55:49.707 12171 12191 I MrzOcr  : RESULT external/pic/526d2e38b6b977bc_0014.jpg | 自动 | decode=false | wall=180ms | total=178ms | backend=native-cnn | ocr=162ms | structure=8ms | raw=false | repaired=true | struct=false | nat=true | issuer=false | country=true | verdict=FAIL | L1=P<BRNRR<<B<<W<WAALA<<TR<AWTA<<<<<<<<<<<<<<<< | L2=<LU0400210XPC8000001014F34090284800101017005 | err=MRZ 校验未通过; 字段结构不可能（日期非法）; 国籍码可疑; 签发国与国籍不一致
+11-07 08:55:49.750 12171 12191 I MrzOcr  : locator dark path: (165..182, 212..232)
+11-07 08:55:49.750 12171 12191 I MrzOcr  : locator chosen dark(y=165-232) y0=353
+11-07 08:55:49.758 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:49.805   318   318 W hwservicemanager: getTransport: Cannot find entry android.hardware.radio.deprecated@1.0::IOemHook/slot1 in either framework or device manifest.
+11-07 08:55:49.811   318   318 W hwservicemanager: getTransport: Cannot find entry android.hardware.radio.deprecated@1.0::IOemHook/slot2 in either framework or device manifest.
+11-07 08:55:49.817 12171 12191 I MrzOcr  : segScore=95 raw2len=44 raw2='RC00150586UTO9105045F250'
+11-07 08:55:49.824 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=true decode=true conf=99/99 ambiguous=false altMargin=0 structure=8ms normalize=0ms ocr=64ms total=80ms
+11-07 08:55:49.825 12171 12191 I MrzOcr  : RESULT external/pic/52f421c92ccf6ba4_0136.jpg | 自动 | decode=true | wall=83ms | total=80ms | backend=native-cnn | ocr=64ms | structure=8ms | raw=true | repaired=false | struct=true | nat=false | issuer=false | country=true | verdict=PASS | L1=P<AUSCITIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<< | L2=RC00150586UTO9105045F2509013<99999000T<<<<82 | err=签发国与国籍不一致
+11-07 08:55:49.837 12114 12128 E ccci_lib: ccb poll fail, ret=-1, md is not ready
+11-07 08:55:49.838 12114 12128 W EMDLOGGER1: mdlog_ccb_ctrl_reader_thread: ccci_ccb_poll error, ret = -2
+11-07 08:55:49.838 12114 12128 W EMDLOGGER1: ccci_ccb_poll return:-2,reset MDLogger
+11-07 08:55:49.838 12114 12128 I EMDLOGGER1: Exit ccb MD CTRL reader thread
+11-07 08:55:49.838 12171 12191 I MrzOcr  : locator dark path: (236..243, 258..266)
+11-07 08:55:49.838 12171 12191 I MrzOcr  : locator chosen dark(y=236-266) y0=356
+11-07 08:55:49.841 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:49.934 12171 12191 I MrzOcr  : segScore=89 raw2len=44 raw2='9850701805KNH7307052F120'
+11-07 08:55:49.937 12171 12191 I MrzOcr  : framing candidates: primary rejected, trying 5 alternates
+11-07 08:55:49.938 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:49.956   389   389 I ccci_mdinit: (1):wait_for_property:success(init.svc.vendor.ccci_fsd=stopped), loop:599
+11-07 08:55:49.957   389   389 I ccci_mdinit: (1):wait_for_property:success(init.svc.vendor.ril-daemon-mtk=stopped), loop:600
+11-07 08:55:50.085 12171 12191 I MrzOcr  : framing candidate 0 (pad=1.35): accept=false line2='9850701805KNH7307052F1204089K2O1781104<<<<07'
+11-07 08:55:50.085 12171 12191 I MrzOcr  : framing candidate 1 skipped: remaining=1ms < 55
+11-07 08:55:50.087 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=false conf=97/99 ambiguous=false altMargin=0 structure=3ms normalize=0ms ocr=244ms total=250ms
+11-07 08:55:50.087 12171 12191 I MrzOcr  : RESULT external/pic/556644d1d8bf4672_0215.jpg | 自动 | decode=false | wall=252ms | total=250ms | backend=native-cnn | ocr=244ms | structure=3ms | raw=false | repaired=true | struct=true | nat=true | issuer=false | country=true | verdict=FAIL | L1=P<TWN<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< | L2=9850701805KNH7307052F1204089K201781104<<<<07 | err=MRZ 校验未通过; 国籍码可疑; 签发国与国籍不一致
+11-07 08:55:50.212 12171 12191 I MrzOcr  : locator dark path: null
+11-07 08:55:50.214 12171 12191 I MrzOcr  : locator var-fallback img-h=1334 rowStd=547 sw=226 thr=40000 peaks=[82,385], [388,390], [394,438], [441,446], [450,455], [460,534] cand=(441..446, 450..455)
+11-07 08:55:50.214 12171 12191 I MrzOcr  : locator chosen dark(y=441-455) y0=733
+11-07 08:55:50.222 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:50.252 12171 12191 I MrzOcr  : segScore=47 raw2len=0 raw2=''
+11-07 08:55:50.257 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:50.266   389   389 I ccci_mdinit: (1):wait_property_ready: count:2, waitmsec:6000, loop:600
+11-07 08:55:50.266   389   389 I ccci_mdinit: (1):wait_for_property:success(init.svc.vendor.gsm0710muxd=stopped), loop:0
+11-07 08:55:50.284 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=false conf=38/0 ambiguous=false altMargin=0 structure=46ms normalize=0ms ocr=60ms total=116ms
+11-07 08:55:50.285 12171 12191 I MrzOcr  : RESULT external/pic/58b7776585fe04f3_0024.jpg | 自动 | decode=false | wall=117ms | total=116ms | backend=native-cnn | ocr=60ms | structure=46ms | raw=false | repaired=false | struct=false | nat=false | issuer=false | country=false | verdict=FAIL | L1=CSJWOSBGTOOO<99OGOGO<BGGOBOO<O<<<<<<<<<<<<<< | L2= | err=MRZ 校验未通过; 字段结构不可能（日期非法）
+11-07 08:55:50.287   389   389 I ccci_mdinit: (1):wait_for_property:success(init.svc.emdlogger1=stopped), loop:0
+11-07 08:55:50.287   389   389 I ccci_mdinit: (1):wait_property_ready:Succeeded! count:2, waitmsec:6000, loop:597
+11-07 08:55:50.288   389   389 I ccci_mdinit: (1):MD1 set status: mtk.md1.status=stop 
+11-07 08:55:50.290   389   389 I ccci_mdinit: type=1400 audit(0.0:298631): avc: denied { read } for name="mdlog1_config" dev="mmcblk0p38" ino=786435 scontext=u:r:ccci_mdinit:s0 tcontext=u:object_r:mdlog_data_file:s0 tclass=file permissive=1
+11-07 08:55:50.290   389   389 I ccci_mdinit: type=1400 audit(0.0:298632): avc: denied { open } for path="/data/mdlog/mdlog1_config" dev="mmcblk0p38" ino=786435 scontext=u:r:ccci_mdinit:s0 tcontext=u:object_r:mdlog_data_file:s0 tclass=file permissive=1
+11-07 08:55:50.290   389   389 I ccci_mdinit: (1):MD1 set status: mtk.md1.status=reset 
+11-07 08:55:50.290   389   389 I ccci_mdinit: (1):rild_generation value: c6m_1rild [1]
+11-07 08:55:50.291   389   389 I ccci_mdinit: (1):check_to_restart_md:vendor.mtk.md3.status not exist
+11-07 08:55:50.291   389   389 I ccci_mdinit: (1):start_service init.svc.vendor.ccci_fsd, current state:stopped, returned:7
+11-07 08:55:50.294   389   389 I ccci_mdinit: (1):wait_for_property:success(init.svc.vendor.ccci_fsd=running), loop:600
+11-07 08:55:50.294   389   389 E ccci_mdinit: (1):fail to open /mnt/vendor/nvdata/APCFG/APRDCL/CXP_SBP: 2
+11-07 08:55:50.294   389   389 I ccci_mdinit: (1):get_cip_sbp_setting, file /custom/etc/firmware/CIP_MD_SBP NOT exists!
+11-07 08:55:50.294   389   389 I ccci_mdinit: (1):PRJ_SBP_ID:ro.vendor.mtk_md_sbp_custom_value not exist, using default value
+11-07 08:55:50.298 12197 12197 I ccci_fsd: type=1400 audit(0.0:298633): avc: denied { getattr } for path="/odm" dev="mmcblk0p30" ino=2 scontext=u:r:ccci_fsd:s0 tcontext=u:object_r:unlabeled:s0 tclass=dir permissive=1
+11-07 08:55:50.299   389   389 I ccci_mdinit: (1):SBP_SUB_ID:persist.vendor.operator.subid not exist
+11-07 08:55:50.300   389   389 I ccci_mdinit: (1):set md boot data:mdl=0 sbp=0 dbg_dump=-1 sbp_sub=0
+11-07 08:55:50.305   389   389 I ccci_mdinit: (1):MD1 set status: mtk.md1.status=bootup 
+11-07 08:55:50.320 12197 12197 E ccci_fsd(0): md_fsd Ver:v2.3, CCCI Ver:6
+11-07 08:55:50.321 12197 12197 E ccci_fsd(1): FS_OTP_init:otp_open failed, errno=2!
+11-07 08:55:50.321 12197 12197 E ccci_fsd(1): can't catch SIGKILL
+11-07 08:55:50.334 12171 12191 I MrzOcr  : locator dark path: (7..17, 26..33)
+11-07 08:55:50.334 12171 12191 I MrzOcr  : locator chosen dark(y=7-33) y0=754
+11-07 08:55:50.338 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:50.363 12171 12191 I MrzOcr  : segScore=0 raw2len=0 raw2=''
+11-07 08:55:50.367 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:50.392 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=false conf=57/0 ambiguous=false altMargin=0 structure=9ms normalize=0ms ocr=53ms total=67ms
+11-07 08:55:50.393 12171 12191 I MrzOcr  : RESULT external/pic/5910a51436407dde_0086.jpg | 自动 | decode=false | wall=68ms | total=67ms | backend=native-cnn | ocr=53ms | structure=9ms | raw=false | repaired=false | struct=false | nat=false | issuer=false | country=false | verdict=FAIL | L1=CDANOOOOOOOO<OOOOGIW<OOO3G9O<3<<<<<<<<<<<<<< | L2= | err=MRZ 校验未通过; 字段结构不可能（日期非法）
+11-07 08:55:50.415 12171 12191 I MrzOcr  : locator dark path: null
+11-07 08:55:50.416 12171 12191 I MrzOcr  : locator var-fallback img-h=698 rowStd=287 sw=226 thr=40000 peaks=[43,230], [248,286] cand=(43..230, 248..286)
+11-07 08:55:50.416 12171 12191 I MrzOcr  : locator chosen dark(y=43-286) y0=383
+11-07 08:55:50.430 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:50.564 12171 12191 I MrzOcr  : segScore=48 raw2len=0 raw2=''
+11-07 08:55:50.574 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=false conf=0/0 ambiguous=false altMargin=0 structure=6ms normalize=0ms ocr=143ms total=164ms
+11-07 08:55:50.575 12171 12191 I MrzOcr  : RESULT external/pic/64cf2acb2e4f1593_0104.jpg | 自动 | decode=false | wall=165ms | total=164ms | backend=native-cnn | ocr=143ms | structure=6ms | raw=false | repaired=false | struct=true | nat=false | issuer=false | country=false | verdict=FAIL | L1=P<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< | L2= | err=could not split into two lines
+11-07 08:55:50.578 12197 12197 E ccci_fsd(1): FS_IsReadOnly: [error]fail on file: /mnt/vendor/nvdata/md/FAT6E63FA35.log, error=2
+11-07 08:55:50.581 12197 12197 W ccci_fsd(1): O: X://MT00A001, flag 0x700, ret 1
+11-07 08:55:50.581 12197 12197 W ccci_fsd(1): O: X://MT00B001, flag 0x700, ret 1
+11-07 08:55:50.581 12197 12197 W ccci_fsd(1): O: X://MT00A001, flag 0x700, ret 1
+11-07 08:55:50.582 12197 12197 W ccci_fsd(1): O: X://MT00B001, flag 0x700, ret 1
+11-07 08:55:50.582 12197 12197 W ccci_fsd(1): O: X://MTFW_000, flag 0x700, ret 1
+11-07 08:55:50.582 12197 12197 W ccci_fsd(1): O: Y://MTFW_000, flag 0x700, ret 1
+11-07 08:55:50.583 12197 12197 W ccci_fsd(1): O: X://MT00A001, flag 0x700, ret 1
+11-07 08:55:50.583 12197 12197 W ccci_fsd(1): O: X://MT00B001, flag 0x700, ret 1
+11-07 08:55:50.583 12197 12197 W ccci_fsd(1): O: X://MT00A001, flag 0x700, ret 1
+11-07 08:55:50.583 12197 12197 W ccci_fsd(1): O: X://MT00B001, flag 0x700, ret 1
+11-07 08:55:50.597 12197 12197 W ccci_fsd(1): O: X://NA77_005, flag 0x700, ret 1
+11-07 08:55:50.598 12197 12197 W ccci_fsd(1): O: Y://NA77_005, flag 0x700, ret 1
+11-07 08:55:50.599 12197 12197 W ccci_fsd(1): O: X://NA77_005, flag 0x700, ret 1
+11-07 08:55:50.600 12197 12197 W ccci_fsd(1): O: Y://NA77_005, flag 0x700, ret 1
+11-07 08:55:50.621 12171 12191 I MrzOcr  : locator dark path: (7..17, 26..33)
+11-07 08:55:50.621 12171 12191 I MrzOcr  : locator chosen dark(y=7-33) y0=754
+11-07 08:55:50.625 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:50.649 12171 12191 I MrzOcr  : segScore=0 raw2len=0 raw2=''
+11-07 08:55:50.652 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:50.671   389   389 I ccci_mdinit: (1):MD1 set status: mtk.md1.status=ready 
+11-07 08:55:50.674   389   389 I ccci_mdinit: (1):start_service init.svc.emdlogger1, current state:stopped, returned:7
+11-07 08:55:50.678 12199 12199 I bip     : type=1400 audit(0.0:298634): avc: denied { getattr } for path="/odm" dev="mmcblk0p30" ino=2 scontext=u:r:bip:s0 tcontext=u:object_r:unlabeled:s0 tclass=dir permissive=1
+11-07 08:55:50.681   389   389 I ccci_mdinit: (1):wait_for_property:success(init.svc.emdlogger1=running), loop:0
+11-07 08:55:50.681   389   389 I ccci_mdinit: (1):start_service init.svc.vendor.gsm0710muxd, current state:stopped, returned:7
+11-07 08:55:50.683 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=false conf=57/0 ambiguous=false altMargin=0 structure=10ms normalize=0ms ocr=56ms total=70ms
+11-07 08:55:50.683 12171 12191 I MrzOcr  : RESULT external/pic/698bfa379b5859ab_0088.jpg | 自动 | decode=false | wall=72ms | total=70ms | backend=native-cnn | ocr=56ms | structure=10ms | raw=false | repaired=false | struct=false | nat=false | issuer=false | country=false | verdict=FAIL | L1=CDANOOOOOOOO<OOOOGIW<OOO3G9O<3<<<<<<<<<<<<<< | L2= | err=MRZ 校验未通过; 字段结构不可能（日期非法）
+11-07 08:55:50.685   389   389 I ccci_mdinit: (1):wait_for_property:success(init.svc.vendor.gsm0710muxd=running), loop:600
+11-07 08:55:50.686 12200 12200 I volte_imsm_93: type=1400 audit(0.0:298635): avc: denied { getattr } for path="/odm" dev="mmcblk0p30" ino=2 scontext=u:r:volte_imsm_93:s0 tcontext=u:object_r:unlabeled:s0 tclass=dir permissive=1
+11-07 08:55:50.689 12197 12197 E ccci_fsd(1): Failed to write only one FS packet(32)!! (-1/19)
+11-07 08:55:50.690 12197 12197 E ccci_fsd(1): Main: [error]fail write fs stream: op_id=ffff1005
+11-07 08:55:50.694 12171 12191 I MrzOcr  : locator dark path: (108..119, 137..150)
+11-07 08:55:50.694 12171 12191 I MrzOcr  : locator chosen dark(y=108-150) y0=230
+11-07 08:55:50.697 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:50.698 12201 12201 I emdlogger1: type=1400 audit(0.0:298636): avc: denied { getattr } for path="/odm" dev="mmcblk0p30" ino=2 scontext=u:r:emdlogger:s0 tcontext=u:object_r:unlabeled:s0 tclass=dir permissive=1
+11-07 08:55:50.706 12200 12200 I VoLTE IMSMx: IMSM -> IMSMMD : [0] AP_ID_IMSM_GET_VERSION_REQ
+11-07 08:55:50.707 12200 12200 E VoLTE IMSM: write hdr error (module/mdagent/volte_imsm_93/src/imsmmd.c:2874)
+11-07 08:55:50.707 12200 12200 E VoLTE IMSM: write ilm error (module/mdagent/volte_imsm_93/src/imsmmd.c:2881)
+11-07 08:55:50.715 12201 12201 I EMDLOGGER1: 2018-09-15 previous mask value is 077
+11-07 08:55:50.715 12201 12201 I EMDLOGGER1: ro.crypto.state: unencrypted
+11-07 08:55:50.715 12201 12201 W EMDLOGGER1: Failed to open file /data/mdlog/mdlog1_customize_config, errno=2, get default value
+11-07 08:55:50.715 12201 12201 I EMDLOGGER1: normal file size 0 
+11-07 08:55:50.716 12201 12201 I EMDLOGGER1: PROP_ENABLE_DEBUG_LOG persist.vendor.logmuch.mdlogger = 0 mEnableLogPrintTooMuch = 0
+11-07 08:55:50.716 12201 12201 E EMDLOGGER1: dllopen fail: dlopen failed: library "/system/lib64/libsysenv_system.so" not found
+11-07 08:55:50.716 12201 12201 E linker  : library "/system/lib/libsysenv_system.so" ("/system/lib/libsysenv_system.so") needed or dlopened by "/system/bin/emdlogger1" is not accessible for the namespace: [name="(default)", ld_library_paths="", default_library_paths="/system/lib64", permitted_paths="/system/lib64/drm:/system/lib64/extractors:/system/lib64/hw:/system/product/lib64:/system/framework:/system/app:/system/priv-app:/vendor/framework:/vendor/app:/vendor/priv-app:/odm/framework:/odm/app:/odm/priv-app:/oem/app:/system/product/framework:/system/product/app:/system/product/priv-app:/data:/mnt/expand"]
+11-07 08:55:50.716 12201 12201 E EMDLOGGER1: dllopen fail too dlopen failed: library "/system/lib/libsysenv_system.so" needed or dlopened by "/system/bin/emdlogger1" is not accessible for the namespace "(default)"
+11-07 08:55:50.722 12201 12201 I EMDLOGGER1: mkdir: Failed.[/data/mdlog/bootupLog/] errno=17
+11-07 08:55:50.723 12199 12199 I [BIP]   :  [BIP TASK] Init start (0)
+11-07 08:55:50.723 12199 12199 I [BIP]   :  [BIP KAL TIMER] timer init
+11-07 08:55:50.723 12199 12199 I [BIP]   :  [BIP KAL MSG] msg init, int_num = (20), ext_num = (20), name = (BIP)
+11-07 08:55:50.723 12199 12199 I [BIP]   :  [BIP TASK] Init end (0)
+11-07 08:55:50.723 12199 12199 I [BIP]   :  [BIP TASK] Init start (1)
+11-07 08:55:50.723 12199 12199 I [BIP]   :  [BIP AGENT] can open port, FD = (5)
+11-07 08:55:50.723 12199 12199 I [BIP]   :  [BIP AGENT] request INFO: ap_seq = 0, address is (0xb6020290)
+11-07 08:55:50.723 12199 12199 I [BIP]   :  [BIP AGENT] add header data in current buffer queue: ap_seq = (0), pkt_type = (0xffff0000), data_len = (0)
+11-07 08:55:50.723 12199 12199 I [BIP]   :  [BIP AGENT] the enqueue info. : need_to_write = (1), num_push = (1), num_pop = (0)
+11-07 08:55:50.723 12199 12199 I [BIP]   :  [BIP AGENT] start handshake!
+11-07 08:55:50.723 12199 12199 I [BIP]   :  [BIP AGENT] can not write data now, FD = (5), error number = (-403300547)
+11-07 08:55:50.732 12201 12201 I EMDLOGGER1: mkdir: access file ok
+11-07 08:55:50.733 12171 12191 I MrzOcr  : segScore=88 raw2len=44 raw2='ZAB0002549ESP8001014F250'
+11-07 08:55:50.737 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=true decode=true conf=99/99 ambiguous=false altMargin=0 structure=2ms normalize=0ms ocr=39ms total=44ms
+11-07 08:55:50.738 12171 12191 I MrzOcr  : RESULT external/pic/6b0e5919dd6f3ac8_0006.jpg | 自动 | decode=true | wall=46ms | total=44ms | backend=native-cnn | ocr=39ms | structure=2ms | raw=true | repaired=false | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<ESPESPANOLA<ESPANOLA<<CARMEN<<<<<<<<<<<<<< | L2=ZAB0002549ESP8001014F2501017A9999999900<<<44 | err=
+11-07 08:55:50.764 12171 12191 I MrzOcr  : locator dark path: (172..190, 216..237)
+11-07 08:55:50.765 12171 12191 I MrzOcr  : locator chosen dark(y=172-237) y0=376
+11-07 08:55:50.769 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:50.813 12171 12191 I MrzOcr  : segScore=95 raw2len=44 raw2='JG20705515OMN7803048M241'
+11-07 08:55:50.819 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=true decode=true conf=99/99 ambiguous=false altMargin=0 structure=5ms normalize=0ms ocr=49ms total=59ms
+11-07 08:55:50.820 12171 12191 I MrzOcr  : RESULT external/pic/6b91117492dc24f3_0022.jpg | 自动 | decode=true | wall=61ms | total=59ms | backend=native-cnn | ocr=49ms | structure=5ms | raw=true | repaired=false | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<OMNAL<SIYABI<<ISSA<ABDULLAH<SALEH<<<<<<<<< | L2=JG20705515OMN7803048M241118530003614<<<<<<50 | err=
+11-07 08:55:50.840 12171 12191 I MrzOcr  : locator dark path: (189..207, 221..240)
+11-07 08:55:50.841 12171 12191 I MrzOcr  : locator chosen dark(y=189-240) y0=367
+11-07 08:55:50.845 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:50.898 12171 12191 I MrzOcr  : segScore=93 raw2len=44 raw2='AA000261<7BRA0403162M250'
+11-07 08:55:50.905 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=true decode=true conf=99/99 ambiguous=false altMargin=0 structure=5ms normalize=0ms ocr=59ms total=69ms
+11-07 08:55:50.906 12171 12191 I MrzOcr  : RESULT external/pic/7294ad26ea8d95e0_0010.jpg | 自动 | decode=true | wall=71ms | total=69ms | backend=native-cnn | ocr=59ms | structure=5ms | raw=true | repaired=false | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<BRAFARIAS<DOS<SANTOS<<RODRIGO<<<<<<<<<<<<< | L2=AA000261<7BRA0403162M2507053<<<<<<<<<<<<<<00 | err=
+11-07 08:55:50.922 12171 12191 I MrzOcr  : locator dark path: (6..11, 17..24)
+11-07 08:55:50.922 12171 12191 I MrzOcr  : locator chosen dark(y=6-24) y0=377
+11-07 08:55:50.925 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:50.962 12171 12191 I MrzOcr  : segScore=0 raw2len=0 raw2=''
+11-07 08:55:50.964 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:50.996 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=false conf=59/0 ambiguous=false altMargin=0 structure=4ms normalize=0ms ocr=70ms total=77ms
+11-07 08:55:50.996 12171 12191 I MrzOcr  : RESULT external/pic/72ef4ce48bf27731_0002.jpg | 自动 | decode=false | wall=78ms | total=77ms | backend=native-cnn | ocr=70ms | structure=4ms | raw=false | repaired=false | struct=false | nat=false | issuer=false | country=false | verdict=FAIL | L1=CSPLOOOOOIOO<IOOOOOO<OOOOW3W<O<<<<<<<<<<<<<< | L2= | err=MRZ 校验未通过; 字段结构不可能（日期非法）
+11-07 08:55:51.021 12171 12191 I MrzOcr  : locator dark path: (171..187, 220..237)
+11-07 08:55:51.021 12171 12191 I MrzOcr  : locator chosen dark(y=171-237) y0=350
+11-07 08:55:51.026 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:51.109 12171 12191 I MrzOcr  : segScore=92 raw2len=44 raw2='X00000O<<9IDN4508179S160'
+11-07 08:55:51.114 12171 12191 I MrzOcr  : framing candidates: primary rejected, trying 5 alternates
+11-07 08:55:51.116 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:51.206   446   446 I thermal_repeater: socket -1
+11-07 08:55:51.219 12171 12191 I MrzOcr  : framing candidate 0 (pad=1.35): accept=false line2='X00000O<<9IDN4508179S1601269<<<<<<<<<<<<<<91'
+11-07 08:55:51.220 12171 12191 I MrzOcr  : framing candidate 1 skipped: remaining=1ms < 55
+11-07 08:55:51.221 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=false conf=99/99 ambiguous=false altMargin=0 structure=5ms normalize=0ms ocr=194ms total=204ms
+11-07 08:55:51.222 12171 12191 I MrzOcr  : RESULT external/pic/78f45152a658f728_0012.jpg | 自动 | decode=false | wall=206ms | total=204ms | backend=native-cnn | ocr=194ms | structure=5ms | raw=false | repaired=false | struct=true | nat=false | issuer=false | country=false | verdict=FAIL | L1=P<IDNLENGKAP<<NAMA<<<<<<<<<<<<<<<<<<<<<<<<<< | L2=X00000O<<9IDN4508179S1601269<<<<<<<<<<<<<<91 | err=MRZ 校验未通过
+11-07 08:55:51.268 12171 12191 I MrzOcr  : locator dark path: (168..186, 215..235)
+11-07 08:55:51.269 12171 12191 I MrzOcr  : locator chosen dark(y=168-235) y0=361
+11-07 08:55:51.276 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:51.354 12171 12191 I MrzOcr  : segScore=88 raw2len=44 raw2='00000000<0LTU9003118F290'
+11-07 08:55:51.363 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=true decode=true conf=99/99 ambiguous=false altMargin=0 structure=8ms normalize=0ms ocr=86ms total=101ms
+11-07 08:55:51.365 12171 12191 I MrzOcr  : RESULT external/pic/7c5899e1f86a07a0_0008.jpg | 自动 | decode=true | wall=104ms | total=101ms | backend=native-cnn | ocr=86ms | structure=8ms | raw=true | repaired=false | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<LTUBASANAVICIENE<<BIRUTE<<<<<<<<<<<<<<<<<< | L2=00000000<0LTU9003118F290102049003111045<<<86 | err=
+11-07 08:55:51.383 12171 12191 I MrzOcr  : locator dark path: (109..121, 141..154)
+11-07 08:55:51.383 12171 12191 I MrzOcr  : locator chosen dark(y=109-154) y0=237
+11-07 08:55:51.388 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:51.476 12171 12191 I MrzOcr  : segScore=89 raw2len=44 raw2='MA01235164AUS9105045F320'
+11-07 08:55:51.483 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:51.585 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=true decode=true conf=97/97 ambiguous=true altMargin=0 structure=4ms normalize=0ms ocr=196ms total=204ms
+11-07 08:55:51.587 12171 12191 I MrzOcr  : RESULT external/pic/7c6f47bad47d70e9_0230.jpg | 自动 | decode=true | wall=207ms | total=204ms | backend=native-cnn | ocr=196ms | structure=4ms | raw=true | repaired=false | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<AUSCITIJEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<< | L2=MA01235164AUS9105045F3208014<9999900Q1<<<<86 | err=
+11-07 08:55:51.662 12171 12191 I MrzOcr  : locator dark path: (471..490, 520..540)
+11-07 08:55:51.663 12171 12191 I MrzOcr  : locator chosen dark(y=471-540) y0=742
+11-07 08:55:51.671 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:51.714 12201 12201 I EMDLOGGER1: MAL_ccb_Init: CCB is ready
+11-07 08:55:51.715 12201 12209 I EMDLOGGER1: mdlog_ccb_ctrl_reader_thread started
+11-07 08:55:51.716   389   389 I ccci_mdinit: (1):wait_for_property:success(init.svc.vendor.ccci_fsd=stopped), loop:599
+11-07 08:55:51.718   389   389 I ccci_mdinit: (1):wait_for_property:success(init.svc.vendor.ril-daemon-mtk=stopped), loop:600
+11-07 08:55:51.724 12199 12199 I [BIP]   :  [BIP AGENT] can not write data now, FD = (5), error number = (-403300547)
+11-07 08:55:51.794 12171 12191 I MrzOcr  : segScore=95 raw2len=44 raw2='0900292497USA0002565M900'
+11-07 08:55:51.803 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=true decode=true conf=87/98 ambiguous=false altMargin=0 structure=15ms normalize=0ms ocr=131ms total=154ms
+11-07 08:55:51.805 12171 12191 I MrzOcr  : RESULT external/pic/8627765d2a1a0bf9_0049.jpg | 自动 | decode=true | wall=157ms | total=154ms | backend=native-cnn | ocr=131ms | structure=15ms | raw=true | repaired=false | struct=false | nat=false | issuer=true | country=true | verdict=SUSPECT | L1=P<OSCJATE<<<ENNETH<INO<SM<<<<<<<<<<<<<<<<<<< | L2=0900292497USA0002565M9003853<<<<<<<<<<<<<<00 | err=字段结构不可能（日期非法）; 签发国与国籍不一致; 签发国码可疑
+11-07 08:55:51.823 12171 12191 I MrzOcr  : locator dark path: (103..114, 132..145)
+11-07 08:55:51.824 12171 12191 I MrzOcr  : locator chosen dark(y=103-145) y0=224
+11-07 08:55:51.828 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:51.889 12171 12191 I MrzOcr  : segScore=88 raw2len=44 raw2='0981489<<5MLT6811118M200'
+11-07 08:55:51.895 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=true decode=true conf=99/99 ambiguous=false altMargin=0 structure=4ms normalize=0ms ocr=66ms total=74ms
+11-07 08:55:51.897 12171 12191 I MrzOcr  : RESULT external/pic/86c6d990773daff2_0002.jpg | 自动 | decode=true | wall=77ms | total=74ms | backend=native-cnn | ocr=66ms | structure=4ms | raw=true | repaired=false | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<MLTMICALLEF<<GIOVANNI<<<<<<<<<<<<<<<<<<<<< | L2=0981489<<5MLT6811118M2006268<<<<<<<<<<<<<<06 | err=
+11-07 08:55:51.973 12171 12191 I MrzOcr  : locator dark path: (464..482, 510..529)
+11-07 08:55:51.973 12171 12191 I MrzOcr  : locator chosen dark(y=464-529) y0=763
+11-07 08:55:51.984 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:52.025 12171 12191 I MrzOcr  : segScore=92 raw2len=44 raw2='SPECI20142NLD6503101F240'
+11-07 08:55:52.034   389   389 I ccci_mdinit: (1):wait_property_ready: count:2, waitmsec:6000, loop:600
+11-07 08:55:52.034   389   389 I ccci_mdinit: (1):wait_for_property:success(init.svc.vendor.gsm0710muxd=stopped), loop:0
+11-07 08:55:52.034 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=true decode=true conf=99/99 ambiguous=false altMargin=0 structure=37ms normalize=0ms ocr=49ms total=98ms
+11-07 08:55:52.035 12171 12191 I MrzOcr  : RESULT external/pic/8a5e3bc18a6ff7d2_0043.jpg | 自动 | decode=true | wall=100ms | total=98ms | backend=native-cnn | ocr=49ms | structure=37ms | raw=true | repaired=false | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<NLDDE<BRUIJN<<WILLEKE<LISELOTTE<<<<<<<<<<< | L2=SPECI20142NLD6503101F2403096999999990<<<<<84 | err=
+11-07 08:55:52.043 12171 12191 I MrzOcr  : locator dark path: (119..129, 149..160)
+11-07 08:55:52.043 12171 12191 I MrzOcr  : locator chosen dark(y=119-160) y0=231
+11-07 08:55:52.046 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:52.054   389   389 I ccci_mdinit: (1):wait_for_property:success(init.svc.emdlogger1=stopped), loop:0
+11-07 08:55:52.054   389   389 I ccci_mdinit: (1):wait_property_ready:Succeeded! count:2, waitmsec:6000, loop:597
+11-07 08:55:52.055   389   389 I ccci_mdinit: (1):MD1 set status: mtk.md1.status=stop 
+11-07 08:55:52.058   267   267 I init    : type=1400 audit(0.0:298641): avc: denied { unlink } for name="pttyims" dev="tmpfs" ino=18175980 scontext=u:r:vendor_init:s0 tcontext=u:object_r:device:s0 tclass=lnk_file permissive=1
+11-07 08:55:52.062   389   389 I ccci_mdinit: (1):MD1 set status: mtk.md1.status=reset 
+11-07 08:55:52.064   389   389 I ccci_mdinit: (1):rild_generation value: c6m_1rild [1]
+11-07 08:55:52.064   389   389 I ccci_mdinit: (1):check_to_restart_md:vendor.mtk.md3.status not exist
+11-07 08:55:52.064   389   389 I ccci_mdinit: (1):start_service init.svc.vendor.ccci_fsd, current state:stopped, returned:7
+11-07 08:55:52.067   389   389 I ccci_mdinit: (1):wait_for_property:success(init.svc.vendor.ccci_fsd=running), loop:600
+11-07 08:55:52.067   389   389 E ccci_mdinit: (1):fail to open /mnt/vendor/nvdata/APCFG/APRDCL/CXP_SBP: 2
+11-07 08:55:52.067   389   389 I ccci_mdinit: (1):get_cip_sbp_setting, file /custom/etc/firmware/CIP_MD_SBP NOT exists!
+11-07 08:55:52.067   389   389 I ccci_mdinit: (1):PRJ_SBP_ID:ro.vendor.mtk_md_sbp_custom_value not exist, using default value
+11-07 08:55:52.070   389   389 I ccci_mdinit: (1):SBP_SUB_ID:persist.vendor.operator.subid not exist
+11-07 08:55:52.070   389   389 I ccci_mdinit: (1):set md boot data:mdl=0 sbp=0 dbg_dump=-1 sbp_sub=0
+11-07 08:55:52.073   389   389 I ccci_mdinit: (1):MD1 set status: mtk.md1.status=bootup 
+11-07 08:55:52.090 12171 12191 I MrzOcr  : segScore=93 raw2len=44 raw2='A2040611<0ISL1212123F110'
+11-07 08:55:52.093 12212 12212 E ccci_fsd(0): md_fsd Ver:v2.3, CCCI Ver:6
+11-07 08:55:52.094 12212 12212 E ccci_fsd(1): FS_OTP_init:otp_open failed, errno=2!
+11-07 08:55:52.094 12212 12212 E ccci_fsd(1): can't catch SIGKILL
+11-07 08:55:52.094 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=true conf=99/99 ambiguous=false altMargin=0 structure=2ms normalize=0ms ocr=47ms total=52ms
+11-07 08:55:52.095 12171 12191 I MrzOcr  : RESULT external/pic/8de1f04907363a2d_0000.jpg | 自动 | decode=true | wall=54ms | total=52ms | backend=native-cnn | ocr=47ms | structure=2ms | raw=false | repaired=true | struct=false | nat=false | issuer=false | country=false | verdict=SUSPECT | L1=P<ISLAEVARSDOTTIR<<THURIDUR<OESP<<<<<<<<<<<< | L2=A2040611<0ISL1212123F1106297121212<1239<<<66 | err=字段结构不可能（日期非法）
+11-07 08:55:52.118 12171 12191 I MrzOcr  : locator dark path: (177..194, 222..242)
+11-07 08:55:52.118 12171 12191 I MrzOcr  : locator chosen dark(y=177-242) y0=372
+11-07 08:55:52.123 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:52.203 12171 12191 I MrzOcr  : segScore=94 raw2len=44 raw2='NS000004<7SYC8601137O320'
+11-07 08:55:52.209 12171 12191 I MrzOcr  : framing candidates: primary rejected, trying 5 alternates
+11-07 08:55:52.211 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:52.333 12171 12191 I MrzOcr  : framing candidate 0 (pad=1.35): accept=false line2='NS000004<7SYC8601137O3203101<<<<<<<<<<<<<<00'
+11-07 08:55:52.334 12171 12191 I MrzOcr  : framing candidate 1 skipped: remaining=1ms < 55
+11-07 08:55:52.335 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=false conf=99/99 ambiguous=false altMargin=0 structure=6ms normalize=0ms ocr=211ms total=222ms
+11-07 08:55:52.335 12171 12191 I MrzOcr  : RESULT external/pic/90b464ea218a9909_0001.jpg | 自动 | decode=false | wall=223ms | total=222ms | backend=native-cnn | ocr=211ms | structure=6ms | raw=false | repaired=false | struct=true | nat=false | issuer=false | country=false | verdict=FAIL | L1=P<SYCSAMPLE<<ORDINARY<<<<<<<<<<<<<<<<<<<<<<< | L2=NS000004<7SYC8601137O3203101<<<<<<<<<<<<<<00 | err=MRZ 校验未通过
+11-07 08:55:52.345 12212 12212 E ccci_fsd(1): FS_IsReadOnly: [error]fail on file: /mnt/vendor/nvdata/md/FAT6E63FA35.log, error=2
+11-07 08:55:52.349 12212 12212 W ccci_fsd(1): O: X://MT00A001, flag 0x700, ret 1
+11-07 08:55:52.350 12212 12212 W ccci_fsd(1): O: X://MT00B001, flag 0x700, ret 1
+11-07 08:55:52.350 12212 12212 W ccci_fsd(1): O: X://MT00A001, flag 0x700, ret 1
+11-07 08:55:52.351 12212 12212 W ccci_fsd(1): O: X://MT00B001, flag 0x700, ret 1
+11-07 08:55:52.351 12212 12212 W ccci_fsd(1): O: X://MTFW_000, flag 0x700, ret 1
+11-07 08:55:52.352 12212 12212 W ccci_fsd(1): O: Y://MTFW_000, flag 0x700, ret 1
+11-07 08:55:52.352 12212 12212 W ccci_fsd(1): O: X://MT00A001, flag 0x700, ret 1
+11-07 08:55:52.352 12212 12212 W ccci_fsd(1): O: X://MT00B001, flag 0x700, ret 1
+11-07 08:55:52.353 12212 12212 W ccci_fsd(1): O: X://MT00A001, flag 0x700, ret 1
+11-07 08:55:52.353 12212 12212 W ccci_fsd(1): O: X://MT00B001, flag 0x700, ret 1
+11-07 08:55:52.370 12212 12212 W ccci_fsd(1): O: X://NA77_005, flag 0x700, ret 1
+11-07 08:55:52.371 12212 12212 W ccci_fsd(1): O: Y://NA77_005, flag 0x700, ret 1
+11-07 08:55:52.372 12212 12212 W ccci_fsd(1): O: X://NA77_005, flag 0x700, ret 1
+11-07 08:55:52.373 12212 12212 W ccci_fsd(1): O: Y://NA77_005, flag 0x700, ret 1
+11-07 08:55:52.379 12171 12191 I MrzOcr  : locator dark path: (148..160, 184..195)
+11-07 08:55:52.379 12171 12191 I MrzOcr  : locator chosen dark(y=148-195) y0=382
+11-07 08:55:52.385 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:52.439   389   389 I ccci_mdinit: (1):MD1 set status: mtk.md1.status=ready 
+11-07 08:55:52.440   389   389 I ccci_mdinit: (1):start_service init.svc.emdlogger1, current state:stopped, returned:7
+11-07 08:55:52.446   389   389 I ccci_mdinit: (1):wait_for_property:success(init.svc.emdlogger1=running), loop:0
+11-07 08:55:52.447   389   389 I ccci_mdinit: (1):start_service init.svc.vendor.gsm0710muxd, current state:stopped, returned:7
+11-07 08:55:52.454   389   389 I ccci_mdinit: (1):wait_for_property:success(init.svc.vendor.gsm0710muxd=running), loop:600
+11-07 08:55:52.456 12212 12212 E ccci_fsd(1): Failed to write only one FS packet(32)!! (-1/19)
+11-07 08:55:52.456 12212 12212 E ccci_fsd(1): Main: [error]fail write fs stream: op_id=ffff1005
+11-07 08:55:52.476 12214 12214 I [BIP]   :  [BIP TASK] Init start (0)
+11-07 08:55:52.476 12214 12214 I [BIP]   :  [BIP KAL TIMER] timer init
+11-07 08:55:52.476 12214 12214 I [BIP]   :  [BIP KAL MSG] msg init, int_num = (20), ext_num = (20), name = (BIP)
+11-07 08:55:52.476 12214 12214 I [BIP]   :  [BIP TASK] Init end (0)
+11-07 08:55:52.476 12214 12214 I [BIP]   :  [BIP TASK] Init start (1)
+11-07 08:55:52.477 12214 12214 I [BIP]   :  [BIP AGENT] can open port, FD = (5)
+11-07 08:55:52.477 12214 12214 I [BIP]   :  [BIP AGENT] request INFO: ap_seq = 0, address is (0xaced7290)
+11-07 08:55:52.477 12214 12214 I [BIP]   :  [BIP AGENT] add header data in current buffer queue: ap_seq = (0), pkt_type = (0xffff0000), data_len = (0)
+11-07 08:55:52.477 12214 12214 I [BIP]   :  [BIP AGENT] the enqueue info. : need_to_write = (1), num_push = (1), num_pop = (0)
+11-07 08:55:52.477 12214 12214 I [BIP]   :  [BIP AGENT] start handshake!
+11-07 08:55:52.477 12214 12214 I [BIP]   :  [BIP AGENT] can not write data now, FD = (5), error number = (-271225027)
+11-07 08:55:52.498 12215 12215 I emdlogger1: type=1400 audit(0.0:298642): avc: denied { read } for name="u:object_r:logmuch_prop:s0" dev="tmpfs" ino=8326 scontext=u:r:emdlogger:s0 tcontext=u:object_r:logmuch_prop:s0 tclass=file permissive=1
+11-07 08:55:52.498 12215 12215 I emdlogger1: type=1400 audit(0.0:298643): avc: denied { open } for path="/dev/__properties__/u:object_r:logmuch_prop:s0" dev="tmpfs" ino=8326 scontext=u:r:emdlogger:s0 tcontext=u:object_r:logmuch_prop:s0 tclass=file permissive=1
+11-07 08:55:52.498 12215 12215 I emdlogger1: type=1400 audit(0.0:298644): avc: denied { getattr } for path="/dev/__properties__/u:object_r:logmuch_prop:s0" dev="tmpfs" ino=8326 scontext=u:r:emdlogger:s0 tcontext=u:object_r:logmuch_prop:s0 tclass=file permissive=1
+11-07 08:55:52.504 12215 12215 I EMDLOGGER1: 2018-09-15 previous mask value is 077
+11-07 08:55:52.505 12215 12215 I EMDLOGGER1: ro.crypto.state: unencrypted
+11-07 08:55:52.505 12215 12215 W EMDLOGGER1: Failed to open file /data/mdlog/mdlog1_customize_config, errno=2, get default value
+11-07 08:55:52.505 12215 12215 I EMDLOGGER1: normal file size 0 
+11-07 08:55:52.505 12215 12215 I EMDLOGGER1: PROP_ENABLE_DEBUG_LOG persist.vendor.logmuch.mdlogger = 0 mEnableLogPrintTooMuch = 0
+11-07 08:55:52.505 12215 12215 E EMDLOGGER1: dllopen fail: dlopen failed: library "/system/lib64/libsysenv_system.so" not found
+11-07 08:55:52.505 12215 12215 E linker  : library "/system/lib/libsysenv_system.so" ("/system/lib/libsysenv_system.so") needed or dlopened by "/system/bin/emdlogger1" is not accessible for the namespace: [name="(default)", ld_library_paths="", default_library_paths="/system/lib64", permitted_paths="/system/lib64/drm:/system/lib64/extractors:/system/lib64/hw:/system/product/lib64:/system/framework:/system/app:/system/priv-app:/vendor/framework:/vendor/app:/vendor/priv-app:/odm/framework:/odm/app:/odm/priv-app:/oem/app:/system/product/framework:/system/product/app:/system/product/priv-app:/data:/mnt/expand"]
+11-07 08:55:52.505 12215 12215 E EMDLOGGER1: dllopen fail too dlopen failed: library "/system/lib/libsysenv_system.so" needed or dlopened by "/system/bin/emdlogger1" is not accessible for the namespace "(default)"
+11-07 08:55:52.506 12171 12191 I MrzOcr  : segScore=90 raw2len=44 raw2='P<CHUL0T<4HANG<MT0<7<<<<'
+11-07 08:55:52.511 12171 12191 I MrzOcr  : framing candidates: primary rejected, trying 5 alternates
+11-07 08:55:52.511 12171 12191 I MrzOcr  : framing candidate 0 skipped: remaining=51ms < 55
+11-07 08:55:52.511 12215 12215 I EMDLOGGER1: mkdir: Failed.[/data/mdlog/bootupLog/] errno=17
+11-07 08:55:52.513 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=false conf=68/91 ambiguous=false altMargin=0 structure=8ms normalize=0ms ocr=126ms total=139ms
+11-07 08:55:52.513 12171 12191 I MrzOcr  : RESULT external/pic/927cd546b5a8111d_0108.jpg | 自动 | decode=false | wall=141ms | total=139ms | backend=native-cnn | ocr=126ms | structure=8ms | raw=false | repaired=true | struct=false | nat=true | issuer=false | country=true | verdict=FAIL | L1=P<VNMNMVOWPPO<HPWWWWLNHHPH<NWWWOWPWVPP<WOOO< | L2=P<CHUL0T<4HAN0<810<7<<<<<<<0<<<<<<<<<<<<<<02 | err=MRZ 校验未通过; 字段结构不可能（日期非法）; 国籍码可疑; 签发国与国籍不一致
+11-07 08:55:52.521 12216 12216 I VoLTE IMSMx: IMSM -> IMSMMD : [0] AP_ID_IMSM_GET_VERSION_REQ
+11-07 08:55:52.521 12216 12216 E VoLTE IMSM: write hdr error (module/mdagent/volte_imsm_93/src/imsmmd.c:2874)
+11-07 08:55:52.521 12216 12216 E VoLTE IMSM: write ilm error (module/mdagent/volte_imsm_93/src/imsmmd.c:2881)
+11-07 08:55:52.522 12215 12215 I EMDLOGGER1: mkdir: access file ok
+11-07 08:55:52.566 12171 12191 I MrzOcr  : locator dark path: (19..57, 61..78)
+11-07 08:55:52.567 12171 12191 I MrzOcr  : locator chosen dark(y=19-78) y0=754
+11-07 08:55:52.572 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:52.655   720  1058 E WifiVendorHal: getWifiLinkLayerStats(l.937) failed {.code = ERROR_NOT_SUPPORTED, .description = }
+11-07 08:55:52.714 12171 12191 I MrzOcr  : segScore=47 raw2len=44 raw2='L00F2P9F01FFL000L00700L0'
+11-07 08:55:52.721 12171 12191 I MrzOcr  : framing candidates: primary rejected, trying 5 alternates
+11-07 08:55:52.721 12171 12191 I MrzOcr  : framing candidate 0 skipped: remaining=26ms < 55
+11-07 08:55:52.723 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=false conf=70/84 ambiguous=false altMargin=0 structure=9ms normalize=0ms ocr=149ms total=165ms
+11-07 08:55:52.724 12171 12191 I MrzOcr  : RESULT external/pic/a5964dd742a6c084_0053.jpg | 自动 | decode=false | wall=166ms | total=165ms | backend=native-cnn | ocr=149ms | structure=9ms | raw=false | repaired=true | struct=false | nat=true | issuer=false | country=true | verdict=FAIL | L1=P<IRNMYALPH<EH<<A<L<PP<P<<<PTT<TP<<<<<<<<<<< | L2=L00F2P9F01FFL000100700100106LLLLLJOEU00L0L40 | err=MRZ 校验未通过; 字段结构不可能（日期非法）; 国籍码可疑; 签发国与国籍不一致
+11-07 08:55:52.761 12171 12191 I MrzOcr  : locator dark path: (181..198, 231..250)
+11-07 08:55:52.761 12171 12191 I MrzOcr  : locator chosen dark(y=181-250) y0=376
+11-07 08:55:52.767 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:52.802 12171 12191 I MrzOcr  : segScore=94 raw2len=44 raw2='XX000000<0UKR9108242F230'
+11-07 08:55:52.808 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=true decode=true conf=99/99 ambiguous=false altMargin=0 structure=5ms normalize=0ms ocr=40ms total=51ms
+11-07 08:55:52.809 12171 12191 I MrzOcr  : RESULT external/pic/a60aae34a06f1867_0016.jpg | 自动 | decode=true | wall=52ms | total=51ms | backend=native-cnn | ocr=40ms | structure=5ms | raw=true | repaired=false | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<UKRTKACHENKO<<MARIANA<<<<<<<<<<<<<<<<<<<<< | L2=XX000000<0UKR9108242F23092571234567890<<<<70 | err=
+11-07 08:55:52.830 12171 12191 I MrzOcr  : locator dark path: (167..184, 212..232)
+11-07 08:55:52.831 12171 12191 I MrzOcr  : locator chosen dark(y=167-232) y0=372
+11-07 08:55:52.836 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:52.870 12171 12191 I MrzOcr  : segScore=91 raw2len=44 raw2='N000000001SYR8801018M270'
+11-07 08:55:52.876 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=true conf=99/99 ambiguous=false altMargin=0 structure=6ms normalize=0ms ocr=39ms total=50ms
+11-07 08:55:52.876 12171 12191 I MrzOcr  : RESULT external/pic/a955e21ae58d8c1d_0013.jpg | 自动 | decode=true | wall=51ms | total=50ms | backend=native-cnn | ocr=39ms | structure=6ms | raw=false | repaired=true | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<SYRMANSOUR<<DANI<<<<<<<<<<<<<<<<<<<<<<<<<< | L2=N000000001SYR8801018M270824101040069155<<<12 | err=
+11-07 08:55:52.915 12171 12191 I MrzOcr  : locator dark path: (468..484, 514..534)
+11-07 08:55:52.915 12171 12191 I MrzOcr  : locator chosen dark(y=468-534) y0=735
+11-07 08:55:52.921 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:52.952 12171 12191 I MrzOcr  : segScore=0 raw2len=44 raw2='GB1<2U7F30CHN9310140M020'
+11-07 08:55:52.956 12171 12191 I MrzOcr  : framing candidates: primary rejected, trying 5 alternates
+11-07 08:55:52.958 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:52.990 12171 12191 I MrzOcr  : framing candidate 0 (pad=1.35): accept=false line2='GB1<2U7F30CHN9310140M02000U30<003009<<<<<<60'
+11-07 08:55:52.991 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:53.021 12171 12191 I MrzOcr  : framing candidate 1 (pad=0.45): accept=false line2='GB1<2U7F30CHN9310140M02000U30<003009<<<<<<60'
+11-07 08:55:53.023 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:53.055 12171 12191 I MrzOcr  : framing candidate 2 (pad=1.15): accept=false line2='GB1<2U7F30CHN9310140M02000U30<003009<<<<<<60'
+11-07 08:55:53.055 12171 12191 I MrzOcr  : framing candidate 3 skipped: remaining=41ms < 55
+11-07 08:55:53.056 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=false conf=91/94 ambiguous=false altMargin=0 structure=9ms normalize=0ms ocr=134ms total=149ms
+11-07 08:55:53.056 12171 12191 I MrzOcr  : RESULT external/pic/ab01dc87d9ed045a_0068.jpg | 自动 | decode=false | wall=150ms | total=149ms | backend=native-cnn | ocr=134ms | structure=9ms | raw=false | repaired=true | struct=false | nat=false | issuer=false | country=false | verdict=FAIL | L1=P<CHNZHANG<<<J<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< | L2=GB1<2U7F30CHN9310140M02000030<003009<<<<<<60 | err=MRZ 校验未通过; 字段结构不可能（日期非法）
+11-07 08:55:53.066 12171 12191 I MrzOcr  : locator dark path: (111..122, 141..152)
+11-07 08:55:53.066 12171 12191 I MrzOcr  : locator chosen dark(y=111-152) y0=232
+11-07 08:55:53.068 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:53.097 12171 12191 I MrzOcr  : segScore=89 raw2len=44 raw2='5334755143GBR8812049F250'
+11-07 08:55:53.101 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=true decode=true conf=99/100 ambiguous=false altMargin=0 structure=2ms normalize=0ms ocr=31ms total=36ms
+11-07 08:55:53.102 12171 12191 I MrzOcr  : RESULT external/pic/acd3e9fd1ce9bd0a_0016.jpg | 自动 | decode=true | wall=38ms | total=36ms | backend=native-cnn | ocr=31ms | structure=2ms | raw=true | repaired=false | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<GBRUK<SPECIMEN<<ANGELA<ZOE<<<<<<<<<<<<<<<< | L2=5334755143GBR8812049F2509286<<<<<<<<<<<<<<04 | err=
+11-07 08:55:53.131 12171 12191 I MrzOcr  : locator dark path: (356..370, 399..415)
+11-07 08:55:53.131 12171 12191 I MrzOcr  : locator chosen dark(y=356-415) y0=599
+11-07 08:55:53.136 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:53.172 12171 12191 I MrzOcr  : segScore=95 raw2len=44 raw2='E000077347USA6502056F301'
+11-07 08:55:53.177 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=true decode=true conf=94/97 ambiguous=false altMargin=0 structure=7ms normalize=0ms ocr=40ms total=52ms
+11-07 08:55:53.178 12171 12191 I MrzOcr  : RESULT external/pic/b1442018a8167bf5_0046.jpg | 自动 | decode=true | wall=54ms | total=52ms | backend=native-cnn | ocr=40ms | structure=7ms | raw=true | repaired=false | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<USATHAVELEH<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<< | L2=E000077347USA6502056F3010149500100120<095838 | err=
+11-07 08:55:53.189 12171 12191 I MrzOcr  : locator dark path: (109..118, 136..146)
+11-07 08:55:53.189 12171 12191 I MrzOcr  : locator chosen dark(y=109-146) y0=232
+11-07 08:55:53.191 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:53.239 12171 12191 I MrzOcr  : segScore=89 raw2len=44 raw2='M706890985KOR8507022F240'
+11-07 08:55:53.243 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=true conf=99/99 ambiguous=false altMargin=0 structure=2ms normalize=0ms ocr=51ms total=55ms
+11-07 08:55:53.244 12171 12191 I MrzOcr  : RESULT external/pic/b284565582147454_0098.jpg | 自动 | decode=true | wall=57ms | total=55ms | backend=native-cnn | ocr=51ms | structure=2ms | raw=false | repaired=true | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<KORLEE<<SUYEON<<<<<<<<<<<<<<<<<<<<<<<<<<<< | L2=M706890985KOR8507022F24041522154710V17627884 | err=
+11-07 08:55:53.256 12171 12191 I MrzOcr  : locator dark path: (109..118, 136..146)
+11-07 08:55:53.256 12171 12191 I MrzOcr  : locator chosen dark(y=109-146) y0=232
+11-07 08:55:53.259 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:53.326 12171 12191 I MrzOcr  : segScore=89 raw2len=44 raw2='M706890985KOR8507022F240'
+11-07 08:55:53.331 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=true conf=99/99 ambiguous=false altMargin=0 structure=2ms normalize=0ms ocr=71ms total=76ms
+11-07 08:55:53.333 12171 12191 I MrzOcr  : RESULT external/pic/b284565582147454_0115.jpg | 自动 | decode=true | wall=79ms | total=76ms | backend=native-cnn | ocr=71ms | structure=2ms | raw=false | repaired=true | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<KORLEE<<SUYEON<<<<<<<<<<<<<<<<<<<<<<<<<<<< | L2=M706890985KOR8507022F24041522154710V17627884 | err=
+11-07 08:55:53.348 12171 12191 I MrzOcr  : locator dark path: (106..116, 135..146)
+11-07 08:55:53.348 12171 12191 I MrzOcr  : locator chosen dark(y=106-146) y0=243
+11-07 08:55:53.352 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:53.399 12171 12191 I MrzOcr  : segScore=88 raw2len=44 raw2='PB90062122SVN7811182F261'
+11-07 08:55:53.403 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=true decode=true conf=99/99 ambiguous=false altMargin=0 structure=4ms normalize=0ms ocr=50ms total=58ms
+11-07 08:55:53.405 12171 12191 I MrzOcr  : RESULT external/pic/b2b5008f3839530d_0001.jpg | 自动 | decode=true | wall=60ms | total=58ms | backend=native-cnn | ocr=50ms | structure=4ms | raw=true | repaired=false | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<SVNVZOREC<<ANA<<<<<<<<<<<<<<<<<<<<<<<<<<<< | L2=PB90062122SVN7811182F26121221811978505602<14 | err=
+11-07 08:55:53.416 12171 12191 I MrzOcr  : locator dark path: (105..117, 134..148)
+11-07 08:55:53.416 12171 12191 I MrzOcr  : locator chosen dark(y=105-148) y0=232
+11-07 08:55:53.419 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:53.454 12171 12191 I MrzOcr  : segScore=88 raw2len=44 raw2='A3501291<5ISL1212123F290'
+11-07 08:55:53.458 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=true conf=99/100 ambiguous=false altMargin=0 structure=2ms normalize=0ms ocr=37ms total=43ms
+11-07 08:55:53.459 12171 12191 I MrzOcr  : RESULT external/pic/b30dc79ee9550e9e_0024.jpg | 自动 | decode=true | wall=45ms | total=43ms | backend=native-cnn | ocr=37ms | structure=2ms | raw=false | repaired=true | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<ISLSPECIMEN<<THAEOE<SPECIMEN<<<<<<<<<<<<<< | L2=A3501291<5ISL1212123F2902049121212<1239<<<62 | err=
+11-07 08:55:53.477 12214 12214 I [BIP]   :  [BIP AGENT] can not write data now, FD = (5), error number = (-271225027)
+11-07 08:55:53.487 12215 12215 I EMDLOGGER1: MAL_ccb_Init: CCB is ready
+11-07 08:55:53.488 12215 12224 I EMDLOGGER1: mdlog_ccb_ctrl_reader_thread started
+11-07 08:55:53.488 12171 12191 I MrzOcr  : locator dark path: (133..153, 175..189)
+11-07 08:55:53.488 12171 12191 I MrzOcr  : locator chosen dark(y=133-189) y0=503
+11-07 08:55:53.490   389   389 I ccci_mdinit: (1):wait_for_property:success(init.svc.vendor.ccci_fsd=stopped), loop:599
+11-07 08:55:53.492   389   389 I ccci_mdinit: (1):wait_for_property:success(init.svc.vendor.ril-daemon-mtk=stopped), loop:600
+11-07 08:55:53.493 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:53.568 12171 12191 I MrzOcr  : segScore=45 raw2len=44 raw2='2<<30900G0LLL000F0L6<7L0'
+11-07 08:55:53.573 12171 12191 I MrzOcr  : framing candidates: primary rejected, trying 5 alternates
+11-07 08:55:53.575 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:53.643 12171 12191 I MrzOcr  : framing candidate 0 (pad=1.35): accept=false line2=''
+11-07 08:55:53.643 12171 12191 I MrzOcr  : framing candidate 1 skipped: remaining=28ms < 55
+11-07 08:55:53.644 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=false conf=77/86 ambiguous=false altMargin=0 structure=7ms normalize=0ms ocr=149ms total=162ms
+11-07 08:55:53.644 12171 12191 I MrzOcr  : RESULT external/pic/b43dea2a9c578cd0_0092.jpg | 自动 | decode=false | wall=164ms | total=162ms | backend=native-cnn | ocr=149ms | structure=7ms | raw=false | repaired=true | struct=false | nat=true | issuer=false | country=true | verdict=FAIL | L1=P<VNMPWWE<<PP<<<<<<<<TP<<<<<<<<<<<<H<<<<<<<< | L2=2<<30900G0LLL000F016<7100P071V114UL00LLHJ070 | err=MRZ 校验未通过; 字段结构不可能（日期非法）; 国籍码可疑; 签发国与国籍不一致
+11-07 08:55:53.659 12171 12191 I MrzOcr  : locator dark path: (265..277, 282..294)
+11-07 08:55:53.659 12171 12191 I MrzOcr  : locator chosen dark(y=265-294) y0=463
+11-07 08:55:53.662 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:53.747 12171 12191 I MrzOcr  : segScore=0 raw2len=44 raw2='LULL0000U0UUP6<00U00U006'
+11-07 08:55:53.749 12171 12191 I MrzOcr  : framing candidates: primary rejected, trying 5 alternates
+11-07 08:55:53.750 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:53.807   389   389 I ccci_mdinit: (1):wait_property_ready: count:2, waitmsec:6000, loop:600
+11-07 08:55:53.807   389   389 I ccci_mdinit: (1):wait_for_property:success(init.svc.vendor.gsm0710muxd=stopped), loop:0
+11-07 08:55:53.809   318   318 W hwservicemanager: getTransport: Cannot find entry android.hardware.radio.deprecated@1.0::IOemHook/slot1 in either framework or device manifest.
+11-07 08:55:53.814   318   318 W hwservicemanager: getTransport: Cannot find entry android.hardware.radio.deprecated@1.0::IOemHook/slot2 in either framework or device manifest.
+11-07 08:55:53.827   389   389 I ccci_mdinit: (1):wait_for_property:success(init.svc.emdlogger1=stopped), loop:0
+11-07 08:55:53.827   389   389 I ccci_mdinit: (1):wait_property_ready:Succeeded! count:2, waitmsec:6000, loop:597
+11-07 08:55:53.828   389   389 I ccci_mdinit: (1):MD1 set status: mtk.md1.status=stop 
+11-07 08:55:53.835   389   389 I ccci_mdinit: (1):MD1 set status: mtk.md1.status=reset 
+11-07 08:55:53.842   389   389 I ccci_mdinit: (1):rild_generation value: c6m_1rild [1]
+11-07 08:55:53.842   389   389 I ccci_mdinit: (1):check_to_restart_md:vendor.mtk.md3.status not exist
+11-07 08:55:53.842   389   389 I ccci_mdinit: (1):start_service init.svc.vendor.ccci_fsd, current state:stopped, returned:7
+11-07 08:55:53.845   389   389 I ccci_mdinit: (1):wait_for_property:success(init.svc.vendor.ccci_fsd=running), loop:600
+11-07 08:55:53.845   389   389 E ccci_mdinit: (1):fail to open /mnt/vendor/nvdata/APCFG/APRDCL/CXP_SBP: 2
+11-07 08:55:53.845   389   389 I ccci_mdinit: (1):get_cip_sbp_setting, file /custom/etc/firmware/CIP_MD_SBP NOT exists!
+11-07 08:55:53.845   389   389 I ccci_mdinit: (1):PRJ_SBP_ID:ro.vendor.mtk_md_sbp_custom_value not exist, using default value
+11-07 08:55:53.846 12228 12228 I ccci_fsd: type=1400 audit(0.0:298645): avc: denied { getattr } for path="/odm" dev="mmcblk0p30" ino=2 scontext=u:r:ccci_fsd:s0 tcontext=u:object_r:unlabeled:s0 tclass=dir permissive=1
+11-07 08:55:53.846 12171 12191 I MrzOcr  : framing candidate 0 (pad=1.35): accept=false line2='LUFL000UU0U<UU0000U0060UULL000UU00000U60U000'
+11-07 08:55:53.847 12171 12191 I MrzOcr  : framing candidate 1 skipped: remaining=1ms < 55
+11-07 08:55:53.848 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=false conf=72/87 ambiguous=false altMargin=0 structure=4ms normalize=0ms ocr=185ms total=192ms
+11-07 08:55:53.848 12171 12191 I MrzOcr  : RESULT external/pic/b7a97ca0edede07b_0164.jpg | 自动 | decode=false | wall=193ms | total=192ms | backend=native-cnn | ocr=185ms | structure=4ms | raw=false | repaired=true | struct=false | nat=true | issuer=true | country=true | verdict=FAIL | L1=P<WBBUVEE<<<<I<HH<V<L<<<<<<<<<<<<<<<<<<<<<<< | L2=LULL0000U0UUP6<00000U0060000L000UU<<0000U006 | err=MRZ 校验未通过; 字段结构不可能（日期非法）; 国籍码可疑; 签发国与国籍不一致; 签发国码可疑
+11-07 08:55:53.851   389   389 I ccci_mdinit: (1):SBP_SUB_ID:persist.vendor.operator.subid not exist
+11-07 08:55:53.852   389   389 I ccci_mdinit: (1):set md boot data:mdl=0 sbp=0 dbg_dump=-1 sbp_sub=0
+11-07 08:55:53.855   389   389 I ccci_mdinit: (1):MD1 set status: mtk.md1.status=bootup 
+11-07 08:55:53.858 12171 12191 I MrzOcr  : locator dark path: (92..123, 139..152)
+11-07 08:55:53.858 12171 12191 I MrzOcr  : locator chosen dark(y=92-152) y0=227
+11-07 08:55:53.862 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:53.866 12228 12228 E ccci_fsd(0): md_fsd Ver:v2.3, CCCI Ver:6
+11-07 08:55:53.867 12228 12228 E ccci_fsd(1): FS_OTP_init:otp_open failed, errno=2!
+11-07 08:55:53.867 12228 12228 E ccci_fsd(1): can't catch SIGKILL
+11-07 08:55:53.910 12171 12191 I MrzOcr  : segScore=88 raw2len=44 raw2='90RF023318FRA7307122F290'
+11-07 08:55:53.915 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=true decode=true conf=99/99 ambiguous=false altMargin=0 structure=2ms normalize=0ms ocr=52ms total=58ms
+11-07 08:55:53.916 12171 12191 I MrzOcr  : RESULT external/pic/bc1ddfd8c13b5ca9_0007.jpg | 自动 | decode=true | wall=60ms | total=58ms | backend=native-cnn | ocr=52ms | structure=2ms | raw=true | repaired=false | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<FRASPECIMEN<ABB<<NATACHA<<<<<<<<<<<<<<<<<< | L2=90RF023318FRA7307122F2903035<<<<<<<<<<<<<<02 | err=
+11-07 08:55:53.927 12171 12191 I MrzOcr  : locator dark path: (0..80, 112..145)
+11-07 08:55:53.927 12171 12191 I MrzOcr  : locator chosen dark(y=0-145) y0=223
+11-07 08:55:53.933 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:54.012 12171 12191 I MrzOcr  : segScore=87 raw2len=44 raw2='4WI2SW5N28GRC2505152M331'
+11-07 08:55:54.019 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=true conf=71/94 ambiguous=false altMargin=0 structure=2ms normalize=0ms ocr=85ms total=94ms
+11-07 08:55:54.020 12171 12191 I MrzOcr  : RESULT external/pic/c0cbf7c176328f3d_0006.jpg | 自动 | decode=true | wall=96ms | total=94ms | backend=native-cnn | ocr=85ms | structure=2ms | raw=false | repaired=true | struct=true | nat=false | issuer=false | country=true | verdict=PASS | L1=P<GBPBWUGWWG<O<<O<<S<UUWNWWWYSOOS<<<PMMU<<<< | L2=4WI2SW5N28GRC2505152M3312108<<<<<<<<<<<<<<06 | err=签发国与国籍不一致
+11-07 08:55:54.045 12171 12191 I MrzOcr  : locator dark path: (173..191, 202..208)
+11-07 08:55:54.045 12171 12191 I MrzOcr  : locator chosen dark(y=173-208) y0=381
+11-07 08:55:54.049 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:54.079 12171 12191 I MrzOcr  : segScore=49 raw2len=44 raw2='BL00U00000UUL0000000U000'
+11-07 08:55:54.083 12171 12191 I MrzOcr  : framing candidates: primary rejected, trying 5 alternates
+11-07 08:55:54.084 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:54.130 12228 12228 E ccci_fsd(1): FS_IsReadOnly: [error]fail on file: /mnt/vendor/nvdata/md/FAT6E63FA35.log, error=2
+11-07 08:55:54.133 12228 12228 W ccci_fsd(1): O: X://MT00A001, flag 0x700, ret 1
+11-07 08:55:54.133 12228 12228 W ccci_fsd(1): O: X://MT00B001, flag 0x700, ret 1
+11-07 08:55:54.133 12228 12228 W ccci_fsd(1): O: X://MT00A001, flag 0x700, ret 1
+11-07 08:55:54.134 12228 12228 W ccci_fsd(1): O: X://MT00B001, flag 0x700, ret 1
+11-07 08:55:54.134 12228 12228 W ccci_fsd(1): O: X://MTFW_000, flag 0x700, ret 1
+11-07 08:55:54.134 12228 12228 W ccci_fsd(1): O: Y://MTFW_000, flag 0x700, ret 1
+11-07 08:55:54.134 12228 12228 W ccci_fsd(1): O: X://MT00A001, flag 0x700, ret 1
+11-07 08:55:54.135 12228 12228 W ccci_fsd(1): O: X://MT00B001, flag 0x700, ret 1
+11-07 08:55:54.135 12228 12228 W ccci_fsd(1): O: X://MT00A001, flag 0x700, ret 1
+11-07 08:55:54.135 12228 12228 W ccci_fsd(1): O: X://MT00B001, flag 0x700, ret 1
+11-07 08:55:54.149 12228 12228 W ccci_fsd(1): O: X://NA77_005, flag 0x700, ret 1
+11-07 08:55:54.150 12228 12228 W ccci_fsd(1): O: Y://NA77_005, flag 0x700, ret 1
+11-07 08:55:54.151 12228 12228 W ccci_fsd(1): O: X://NA77_005, flag 0x700, ret 1
+11-07 08:55:54.152 12228 12228 W ccci_fsd(1): O: Y://NA77_005, flag 0x700, ret 1
+11-07 08:55:54.165 12171 12191 I MrzOcr  : framing candidate 0 (pad=1.35): accept=false line2='800<00<0<6XXAO<00<U8M1110230<<<<<<<<<<<<<<08'
+11-07 08:55:54.166 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:54.223   389   389 I ccci_mdinit: (1):MD1 set status: mtk.md1.status=ready 
+11-07 08:55:54.224   389   389 I ccci_mdinit: (1):start_service init.svc.emdlogger1, current state:stopped, returned:7
+11-07 08:55:54.231   389   389 I ccci_mdinit: (1):wait_for_property:success(init.svc.emdlogger1=running), loop:0
+11-07 08:55:54.231   389   389 I ccci_mdinit: (1):start_service init.svc.vendor.gsm0710muxd, current state:stopped, returned:7
+11-07 08:55:54.239   389   389 I ccci_mdinit: (1):wait_for_property:success(init.svc.vendor.gsm0710muxd=running), loop:600
+11-07 08:55:54.262 12228 12228 W ccci_fsd(1): O: X://NA77_005, flag 0x700, ret 1
+11-07 08:55:54.263 12229 12229 I [BIP]   :  [BIP TASK] Init start (0)
+11-07 08:55:54.263 12229 12229 I [BIP]   :  [BIP KAL TIMER] timer init
+11-07 08:55:54.263 12229 12229 I [BIP]   :  [BIP KAL MSG] msg init, int_num = (20), ext_num = (20), name = (BIP)
+11-07 08:55:54.263 12229 12229 I [BIP]   :  [BIP TASK] Init end (0)
+11-07 08:55:54.263 12229 12229 I [BIP]   :  [BIP TASK] Init start (1)
+11-07 08:55:54.263 12229 12229 I [BIP]   :  [BIP AGENT] can open port, FD = (5)
+11-07 08:55:54.263 12229 12229 I [BIP]   :  [BIP AGENT] request INFO: ap_seq = 0, address is (0xab93c290)
+11-07 08:55:54.263 12229 12229 I [BIP]   :  [BIP AGENT] add header data in current buffer queue: ap_seq = (0), pkt_type = (0xffff0000), data_len = (0)
+11-07 08:55:54.263 12229 12229 I [BIP]   :  [BIP AGENT] the enqueue info. : need_to_write = (1), num_push = (1), num_pop = (0)
+11-07 08:55:54.263 12229 12229 I [BIP]   :  [BIP AGENT] start handshake!
+11-07 08:55:54.263 12229 12229 I [BIP]   :  [BIP AGENT] can write data now, FD = (5), write length = (12)
+11-07 08:55:54.263 12229 12229 I [BIP]   :  [BIP AGENT] the dequeue info. : ap_seq = (0), push_time = (819757049), pop_time = (819757231), num_push = (1), num_pop = (1)
+11-07 08:55:54.264 12230 12230 I EMDLOGGER1: 2018-09-15 previous mask value is 077
+11-07 08:55:54.264 12228 12228 W ccci_fsd(1): O: Y://NA77_005, flag 0x700, ret 1
+11-07 08:55:54.265 12230 12230 I EMDLOGGER1: ro.crypto.state: unencrypted
+11-07 08:55:54.265 12230 12230 W EMDLOGGER1: Failed to open file /data/mdlog/mdlog1_customize_config, errno=2, get default value
+11-07 08:55:54.265 12230 12230 I EMDLOGGER1: normal file size 0 
+11-07 08:55:54.265 12230 12230 I EMDLOGGER1: PROP_ENABLE_DEBUG_LOG persist.vendor.logmuch.mdlogger = 0 mEnableLogPrintTooMuch = 0
+11-07 08:55:54.265 12230 12230 E EMDLOGGER1: dllopen fail: dlopen failed: library "/system/lib64/libsysenv_system.so" not found
+11-07 08:55:54.265 12230 12230 E linker  : library "/system/lib/libsysenv_system.so" ("/system/lib/libsysenv_system.so") needed or dlopened by "/system/bin/emdlogger1" is not accessible for the namespace: [name="(default)", ld_library_paths="", default_library_paths="/system/lib64", permitted_paths="/system/lib64/drm:/system/lib64/extractors:/system/lib64/hw:/system/product/lib64:/system/framework:/system/app:/system/priv-app:/vendor/framework:/vendor/app:/vendor/priv-app:/odm/framework:/odm/app:/odm/priv-app:/oem/app:/system/product/framework:/system/product/app:/system/product/priv-app:/data:/mnt/expand"]
+11-07 08:55:54.266 12230 12230 E EMDLOGGER1: dllopen fail too dlopen failed: library "/system/lib/libsysenv_system.so" needed or dlopened by "/system/bin/emdlogger1" is not accessible for the namespace "(default)"
+11-07 08:55:54.269 12229 12229 I [BIP]   :  [BIP AGENT] can read data now, FD = (5), read length = (26)
+11-07 08:55:54.269 12229 12229 I [BIP]   :  [BIP AGENT]  1  0 ff ff     4B:pkt_type
+11-07 08:55:54.269 12229 12229 I [BIP]   :  [BIP AGENT]  0  0  0  0     4B:pkt_num
+11-07 08:55:54.269 12229 12229 I [BIP]   :  [BIP AGENT]  e  0  0  0     4B:pkt_data_len
+11-07 08:55:54.269 12229 12229 I [BIP]   :  [BIP AGENT]  0  0  0  0   2B2B:(src_mod, dest_mod)
+11-07 08:55:54.269 12229 12229 I [BIP]   :  [BIP AGENT]  0  0  0  0   2B2B:(sap_id, msg_id)
+11-07 08:55:54.269 12229 12229 I [BIP]   :  [BIP AGENT] dc  5  c  0 1B1B2B:(ref_count, lp_reserved, msg_len)
+11-07 08:55:54.269 12229 12229 I [BIP]   :  [BIP AGENT] 8e  5  0  0   1B1B:(sim_id, bip_channel_id)
+11-07 08:55:54.269 12229 12229 I [BIP]   :  [BIP AGENT]  0  0  0  0     4B:bip_info pointer
+11-07 08:55:54.269 12229 12229 I [BIP]   :  [BIP AGENT] MD W/R buffer size = (1500)
+11-07 08:55:54.269 12229 12229 I [BIP]   :  [BIP AGENT] end handshake!
+11-07 08:55:54.269 12229 12229 I [BIP]   :  [BIP TASK] Init end (1)
+11-07 08:55:54.269 12229 12229 I [BIP]   :  [BIP TASK] Init start (2)
+11-07 08:55:54.269 12229 12229 I [BIP]   :  [BIP KAL TIMER] create timer info, timer[(0)] = (0xab9672f0), timer id = (0xab9672f0), inuse = (0), name = (BIP_NET_DATA)
+11-07 08:55:54.270 12229 12229 I bip     : type=1400 audit(0.0:298646): avc: denied { read } for name="u:object_r:net_dns_prop:s0" dev="tmpfs" ino=8461 scontext=u:r:bip:s0 tcontext=u:object_r:net_dns_prop:s0 tclass=file permissive=1
+11-07 08:55:54.270 12229 12229 I bip     : type=1400 audit(0.0:298647): avc: denied { open } for path="/dev/__properties__/u:object_r:net_dns_prop:s0" dev="tmpfs" ino=8461 scontext=u:r:bip:s0 tcontext=u:object_r:net_dns_prop:s0 tclass=file permissive=1
+11-07 08:55:54.270 12229 12229 I bip     : type=1400 audit(0.0:298648): avc: denied { getattr } for path="/dev/__properties__/u:object_r:net_dns_prop:s0" dev="tmpfs" ino=8461 scontext=u:r:bip:s0 tcontext=u:object_r:net_dns_prop:s0 tclass=file permissive=1
+11-07 08:55:54.270 12229 12229 I [BIP]   :  [BIP WIFI] Init end
+11-07 08:55:54.270 12229 12229 I [BIP]   :  [BIP TASK] Init end (2)
+11-07 08:55:54.270 12229 12229 I [BIP]   :  [BIP TASK] Init start (3)
+11-07 08:55:54.270 12229 12229 I [BIP]   :  [BIP KAL TIMER] create timer info, timer[(1)] = (0xab967340), timer id = (0xab967340), inuse = (0), name = (BIP_UICC_SERVER_DATA)
+11-07 08:55:54.270 12229 12229 I [BIP]   :  [BIP UICC SERVER] task init done
+11-07 08:55:54.270 12229 12229 I [BIP]   :  [BIP TASK] Init end (3)
+11-07 08:55:54.270 12229 12229 I [BIP]   :  [BIP TASK] Init start (4)
+11-07 08:55:54.271 12229 12229 I [BIP]   :  [BIP NL] init the link status of interface wlan0
+11-07 08:55:54.271 12229 12229 I [BIP]   :  [BIP NL] construct nl msg address f1608060
+11-07 08:55:54.271 12229 12229 I [BIP]   :  [BIP NL] event newlink match dev 1, interface index 31
+11-07 08:55:54.271 12229 12229 I [BIP]   :  [BIP NL] the link status of interface(index:1) changes to 1
+11-07 08:55:54.271 12229 12229 I [BIP]   :  [BIP NL] event newlink match dev 0, interface index 34
+11-07 08:55:54.271 12229 12229 I [BIP]   :  [BIP NL] the link status of interface(index:0) changes to 1
+11-07 08:55:54.272 12229 12229 I [BIP]   :  [BIP NL] destroy nl msg address f1608060
+11-07 08:55:54.272 12229 12229 I [BIP]   :  [BIP NL] init the addr status of interface wlan0
+11-07 08:55:54.272 12229 12229 I [BIP]   :  [BIP NL] construct nl msg address f1608060
+11-07 08:55:54.272 12229 12229 I [BIP]   :  [BIP NL] event newaddr match dev 0
+11-07 08:55:54.272 12229 12229 I [BIP]   :  [BIP NL] IPv4: *.*.*.*
+11-07 08:55:54.272 12229 12229 I [BIP]   :  [BIP NL] the addr status of interface(index:0) changes to 1
+11-07 08:55:54.272 12229 12229 I [BIP]   :  [BIP NL] addr state is 1, ipv4=*.*.*.*, ipv6=*:*:*:*:*:*:*:*
+11-07 08:55:54.272 12229 12229 I [BIP]   :  [BIP NL] event newaddr match dev 0
+11-07 08:55:54.272 12229 12229 I [BIP]   :  [BIP NL] IPv6: *:*:*:*:*:*:*:*
+11-07 08:55:54.272 12229 12229 I [BIP]   :  [BIP NL] the addr status of interface(index:0) changes to 3
+11-07 08:55:54.272 12229 12229 I [BIP]   :  [BIP NL] addr state is 3, ipv4=*.*.*.*, ipv6=*:*:*:*:*:*:*:*
+11-07 08:55:54.272 12229 12229 I [BIP]   :  [BIP NL] destroy nl msg address f1608060
+11-07 08:55:54.272 12229 12229 I [BIP]   :  [BIP NL] init the route status of interface wlan0
+11-07 08:55:54.272 12229 12229 I [BIP]   :  [BIP NL] construct nl msg address f1608060
+11-07 08:55:54.272 12229 12229 I [BIP]   :  [BIP NL] IPv4: *.*.*.*
+11-07 08:55:54.272 12229 12229 I [BIP]   :  [BIP NL] event newroute match dev 0
+11-07 08:55:54.272 12229 12229 I [BIP]   :  [BIP NL] the route status of interface(index:0) changes to 1
+11-07 08:55:54.272 12229 12229 I [BIP]   :  [BIP NL] route state is 1, ipv4=*.*.*.*, ipv6=*:*:*:*:*:*:*:*
+11-07 08:55:54.272 12229 12229 I [BIP]   :  [BIP NL] IPv4: *.*.*.*
+11-07 08:55:54.272 12229 12229 I [BIP]   :  [BIP NL] event newroute match dev 0
+11-07 08:55:54.272 12229 12229 I [BIP]   :  [BIP NL] route state is 1, ipv4=*.*.*.*, ipv6=*:*:*:*:*:*:*:*
+11-07 08:55:54.272 12229 12229 I [BIP]   :  [BIP NL] IPv4: *.*.*.*
+11-07 08:55:54.273 12229 12229 I chatty  : uid=0(root) /vendor/bin/bip identical 3 lines
+11-07 08:55:54.273 12229 12229 I [BIP]   :  [BIP NL] IPv4: *.*.*.*
+11-07 08:55:54.273 12229 12229 I [BIP]   :  [BIP NL] event newroute match dev 0
+11-07 08:55:54.273 12229 12229 I [BIP]   :  [BIP NL] route state is 1, ipv4=*.*.*.*, ipv6=*:*:*:*:*:*:*:*
+11-07 08:55:54.273 12229 12229 I [BIP]   :  [BIP NL] IPv4: *.*.*.*
+11-07 08:55:54.273 12229 12229 I [BIP]   :  [BIP NL] event newroute match dev 0
+11-07 08:55:54.273 12229 12229 I [BIP]   :  [BIP NL] route state is 1, ipv4=*.*.*.*, ipv6=*:*:*:*:*:*:*:*
+11-07 08:55:54.273 12229 12229 I [BIP]   :  [BIP NL] IPv4: *.*.*.*
+11-07 08:55:54.273 12229 12229 I [BIP]   :  [BIP NL] event newroute match dev 0
+11-07 08:55:54.273 12229 12229 I [BIP]   :  [BIP NL] route state is 1, ipv4=*.*.*.*, ipv6=*:*:*:*:*:*:*:*
+11-07 08:55:54.273 12229 12229 I [BIP]   :  [BIP NL] IPv6: *:*:*:*:*:*:*:*
+11-07 08:55:54.273 12229 12229 I [BIP]   :  [BIP NL] event newroute match dev 0
+11-07 08:55:54.273 12229 12229 I [BIP]   :  [BIP NL] the route status of interface(index:0) changes to 3
+11-07 08:55:54.273 12229 12229 I [BIP]   :  [BIP NL] route state is 3, ipv4=*.*.*.*, ipv6=*:*:*:*:*:*:*:*
+11-07 08:55:54.273 12229 12229 I [BIP]   :  [BIP NL] IPv6: *:*:*:*:*:*:*:*
+11-07 08:55:54.273 12229 12229 I [BIP]   :  [BIP NL] event newroute match dev 0
+11-07 08:55:54.273 12229 12229 I [BIP]   :  [BIP NL] route state is 3, ipv4=*.*.*.*, ipv6=*:*:*:*:*:*:*:*
+11-07 08:55:54.273 12229 12229 I [BIP]   :  [BIP NL] IPv6: *:*:*:*:*:*:*:*
+11-07 08:55:54.273 12229 12229 I chatty  : uid=0(root) /vendor/bin/bip identical 1 line
+11-07 08:55:54.273 12229 12229 I [BIP]   :  [BIP NL] IPv6: *:*:*:*:*:*:*:*
+11-07 08:55:54.273 12229 12229 I [BIP]   :  [BIP NL] event newroute match dev 0
+11-07 08:55:54.273 12229 12229 I [BIP]   :  [BIP NL] route state is 3, ipv4=*.*.*.*, ipv6=*:*:*:*:*:*:*:*
+11-07 08:55:54.273 12229 12229 I [BIP]   :  [BIP NL] destroy nl msg address f1608060
+11-07 08:55:54.273 12229 12229 I [BIP]   :  [BIP NL] init the DNS status of interface wlan0
+11-07 08:55:54.274 12230 12230 I EMDLOGGER1: mkdir: Failed.[/data/mdlog/bootupLog/] errno=17
+11-07 08:55:54.274 12229 12229 I [BIP]   :  [BIP TASK] Init end (4)
+11-07 08:55:54.274 12229 12229 I [BIP]   :  [BIP KAL] BIP task suspend
+11-07 08:55:54.277 12229 12233 I [BIP]   :  [BIP AGENT] start read() now, FD = (5)
+11-07 08:55:54.280 12229 12237 I [BIP]   :  [BIP NL] thread start
+11-07 08:55:54.284 12230 12230 I EMDLOGGER1: mkdir: access file ok
+11-07 08:55:54.287 12171 12191 I MrzOcr  : framing candidate 1 (pad=0.45): accept=false line2='J0UHH03336IIF31733H83333UH7133763373HL737770'
+11-07 08:55:54.287 12171 12191 I MrzOcr  : framing candidate 2 skipped: remaining=1ms < 55
+11-07 08:55:54.288 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=false conf=85/91 ambiguous=false altMargin=0 structure=6ms normalize=0ms ocr=238ms total=248ms
+11-07 08:55:54.289 12171 12191 I MrzOcr  : RESULT external/pic/c1dc9ecd737e1e4c_0085.jpg | 自动 | decode=false | wall=249ms | total=248ms | backend=native-cnn | ocr=238ms | structure=6ms | raw=false | repaired=true | struct=false | nat=true | issuer=true | country=true | verdict=FAIL | L1=P<DCCAJJ<AAJW<<ASVAO<<<<<<<<<<<<<<<<<<<<<<<< | L2=BL00U00000UUL0000000U00000000000000U0U00UU00 | err=MRZ 校验未通过; 字段结构不可能（日期非法）; 国籍码可疑; 签发国与国籍不一致; 签发国码可疑
+11-07 08:55:54.299 12231 12231 I VoLTE IMSMx: IMSM -> IMSMMD : [0] AP_ID_IMSM_GET_VERSION_REQ
+11-07 08:55:54.300 12231 12243 I VoLTE IMSMx: IMSMMD -> IMSM : [0] AP_ID_IMSM_GET_VERSION_CNF
+11-07 08:55:54.311 12171 12191 I MrzOcr  : locator dark path: (165..182, 212..231)
+11-07 08:55:54.311 12171 12191 I MrzOcr  : locator chosen dark(y=165-231) y0=368
+11-07 08:55:54.317 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:54.351 12171 12191 I MrzOcr  : segScore=90 raw2len=44 raw2='5200360198RUS5608087M200'
+11-07 08:55:54.357 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=true decode=true conf=99/99 ambiguous=false altMargin=0 structure=5ms normalize=0ms ocr=39ms total=50ms
+11-07 08:55:54.358 12171 12191 I MrzOcr  : RESULT external/pic/c2aee55b9017575f_0028.jpg | 自动 | decode=true | wall=52ms | total=50ms | backend=native-cnn | ocr=39ms | structure=5ms | raw=true | repaired=false | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<RUSOBRAZETS<<TESTER<<<<<<<<<<<<<<<<<<<<<<< | L2=5200360198RUS5608087M2002156<<<<<<<<<<<<<<08 | err=
+11-07 08:55:54.408 12171 12191 I MrzOcr  : locator dark path: (480..497, 528..547)
+11-07 08:55:54.408 12171 12191 I MrzOcr  : locator chosen dark(y=480-547) y0=749
+11-07 08:55:54.414 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:54.422 12228 12228 W ccci_fsd(1): O: X://NA77_005, flag 0x700, ret 1
+11-07 08:55:54.423 12228 12228 W ccci_fsd(1): O: Y://NA77_005, flag 0x700, ret 1
+11-07 08:55:54.446 12171 12191 I MrzOcr  : segScore=89 raw2len=44 raw2='XR12318830SVK1111112F340'
+11-07 08:55:54.452 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=true conf=99/100 ambiguous=false altMargin=0 structure=10ms normalize=0ms ocr=36ms total=53ms
+11-07 08:55:54.452 12171 12191 I MrzOcr  : RESULT external/pic/cb64e780ab32f735_0004.jpg | 自动 | decode=true | wall=55ms | total=53ms | backend=native-cnn | ocr=36ms | structure=10ms | raw=false | repaired=true | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<SVKSPECIMEN<<VZORKA<<<<<<<<<<<<<<<<<<<<<<< | L2=XR12318830SVK1111112F34091871111111111<<<<06 | err=
+11-07 08:55:54.463 12171 12191 I MrzOcr  : locator dark path: (103..114, 133..144)
+11-07 08:55:54.464 12171 12191 I MrzOcr  : locator chosen dark(y=103-144) y0=231
+11-07 08:55:54.466 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:54.495 12171 12191 I MrzOcr  : segScore=82 raw2len=44 raw2='0070070071HRV8212258F140'
+11-07 08:55:54.500 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=true decode=true conf=99/99 ambiguous=false altMargin=0 structure=2ms normalize=0ms ocr=33ms total=38ms
+11-07 08:55:54.501 12171 12191 I MrzOcr  : RESULT external/pic/cd83b43756aff32d_0013.jpg | 自动 | decode=true | wall=40ms | total=38ms | backend=native-cnn | ocr=33ms | structure=2ms | raw=true | repaired=false | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<HRVSPECIMEN<<SPECIMEN<<<<<<<<<<<<<<<<<<<<< | L2=0070070071HRV8212258F1407019<<<<<<<<<<<<<<06 | err=
+11-07 08:55:54.521 12171 12191 I MrzOcr  : locator dark path: (291..300, 320..331)
+11-07 08:55:54.521 12171 12191 I MrzOcr  : locator chosen dark(y=291-331) y0=462
+11-07 08:55:54.525 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:54.601 12171 12191 I MrzOcr  : segScore=92 raw2len=44 raw2='6451331382PRK6609302F100'
+11-07 08:55:54.605 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=true conf=99/99 ambiguous=false altMargin=0 structure=5ms normalize=0ms ocr=80ms total=88ms
+11-07 08:55:54.606 12171 12191 I MrzOcr  : RESULT external/pic/dd6a2ea3ce305a5d_0192.jpg | 自动 | decode=true | wall=90ms | total=88ms | backend=native-cnn | ocr=80ms | structure=5ms | raw=false | repaired=true | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<PRKJANG<<MYONGSUN<<<<<<<<<<<<<<<<<<<<<<<<< | L2=6451331382PRK6609302F1003145<<<<<<<<<<<<<<04 | err=
+11-07 08:55:54.634 12171 12191 I MrzOcr  : locator dark path: (163..183, 210..232)
+11-07 08:55:54.634 12171 12191 I MrzOcr  : locator chosen dark(y=163-232) y0=367
+11-07 08:55:54.641 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:54.676 12171 12191 I MrzOcr  : segScore=95 raw2len=44 raw2='3000000001BGR8508018F150'
+11-07 08:55:54.682 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=true decode=true conf=99/100 ambiguous=false altMargin=0 structure=6ms normalize=0ms ocr=40ms total=53ms
+11-07 08:55:54.683 12171 12191 I MrzOcr  : RESULT external/pic/e350cea71e824345_0007.jpg | 自动 | decode=true | wall=54ms | total=53ms | backend=native-cnn | ocr=40ms | structure=6ms | raw=true | repaired=false | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<BGRIVANOVA<<MARITSA<RADNEVA<<<<<<<<<<<<<<< | L2=3000000001BGR8508018F15032098508010133<<<<54 | err=
+11-07 08:55:54.708 12171 12191 I MrzOcr  : locator dark path: (164..185, 210..235)
+11-07 08:55:54.708 12171 12191 I MrzOcr  : locator chosen dark(y=164-235) y0=365
+11-07 08:55:54.713 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:54.748 12171 12191 I MrzOcr  : segScore=93 raw2len=44 raw2='0000000000SRB6802295F221'
+11-07 08:55:54.753 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=true decode=true conf=99/99 ambiguous=false altMargin=0 structure=5ms normalize=0ms ocr=39ms total=50ms
+11-07 08:55:54.754 12171 12191 I MrzOcr  : RESULT external/pic/e564d4372e28b9ed_0018.jpg | 自动 | decode=true | wall=52ms | total=50ms | backend=native-cnn | ocr=39ms | structure=5ms | raw=true | repaired=false | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<SRBTEST<<MILICA<<<<<<<<<<<<<<<<<<<<<<<<<<< | L2=0000000000SRB6802295F22101042902968000000<40 | err=
+11-07 08:55:54.777 12171 12191 I MrzOcr  : locator dark path: (172..189, 220..239)
+11-07 08:55:54.777 12171 12191 I MrzOcr  : locator chosen dark(y=172-239) y0=371
+11-07 08:55:54.781 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:54.810 12171 12191 I MrzOcr  : segScore=93 raw2len=44 raw2='AP12345673AUT0012315F331'
+11-07 08:55:54.816 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=true conf=99/99 ambiguous=false altMargin=0 structure=5ms normalize=0ms ocr=33ms total=43ms
+11-07 08:55:54.817 12171 12191 I MrzOcr  : RESULT external/pic/f22471c46575ec04_0008.jpg | 自动 | decode=true | wall=45ms | total=43ms | backend=native-cnn | ocr=33ms | structure=5ms | raw=false | repaired=true | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<AUTSPECIMEN<<MARIA<<<<<<<<<<<<<<<<<<<<<<<< | L2=AP12345673AUT0012315F3311307<<<<<<<<<<<<<<08 | err=
+11-07 08:55:54.842 12171 12191 I MrzOcr  : locator dark path: null
+11-07 08:55:54.843 12171 12191 I MrzOcr  : locator var-fallback img-h=654 rowStd=268 sw=226 thr=40000 peaks=[40,123], [126,131], [176,199], [227,252] cand=(176..199, 227..252)
+11-07 08:55:54.843 12171 12191 I MrzOcr  : locator chosen dark(y=176-252) y0=359
+11-07 08:55:54.848 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:54.883 12171 12191 I MrzOcr  : segScore=78 raw2len=44 raw2='ZF40004998POL8101028M320'
+11-07 08:55:54.889 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=true decode=true conf=99/97 ambiguous=false altMargin=0 structure=5ms normalize=0ms ocr=40ms total=50ms
+11-07 08:55:54.890 12171 12191 I MrzOcr  : RESULT external/pic/f385b0113d785dfd_0040.jpg | 自动 | decode=true | wall=52ms | total=50ms | backend=native-cnn | ocr=40ms | structure=5ms | raw=true | repaired=false | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<POLKOWALSKI<<JAN<<<<<<<<<<<<<<<<<<<<<<<<<< | L2=ZF40004998POL8101028M3203031<<<<<<<<<<<<<<00 | err=
+11-07 08:55:54.926 12171 12191 I MrzOcr  : locator dark path: null
+11-07 08:55:54.927 12171 12191 I MrzOcr  : locator var-fallback img-h=662 rowStd=271 sw=226 thr=40000 peaks=[40,140], [153,154], [164,188], [212,238] cand=(164..188, 212..238)
+11-07 08:55:54.927 12171 12191 I MrzOcr  : locator chosen dark(y=164-238) y0=364
+11-07 08:55:54.935 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:54.972 12171 12191 I MrzOcr  : segScore=53 raw2len=0 raw2=''
+11-07 08:55:54.981 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:55.018 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=false conf=39/0 ambiguous=false altMargin=0 structure=14ms normalize=0ms ocr=82ms total=105ms
+11-07 08:55:55.019 12171 12191 I MrzOcr  : RESULT external/pic/f46cf4a378fcd626_0015.jpg | 自动 | decode=false | wall=106ms | total=105ms | backend=native-cnn | ocr=82ms | structure=14ms | raw=false | repaired=false | struct=false | nat=false | issuer=false | country=false | verdict=FAIL | L1=CDEOOOOOOGOO<3OOOOO3<OB3GBBO<O<<<<<<<<<<<<<< | L2= | err=MRZ 校验未通过; 字段结构不可能（日期非法）
+11-07 08:55:55.051 12171 12191 I MrzOcr  : locator dark path: (158..177, 205..225)
+11-07 08:55:55.051 12171 12191 I MrzOcr  : locator chosen dark(y=158-225) y0=359
+11-07 08:55:55.059 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:55.094 12171 12191 I MrzOcr  : segScore=93 raw2len=44 raw2='CCC0022514NOR5604230M300'
+11-07 08:55:55.104 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=true decode=true conf=99/100 ambiguous=false altMargin=0 structure=13ms normalize=0ms ocr=44ms total=66ms
+11-07 08:55:55.105 12171 12191 I MrzOcr  : RESULT external/pic/f6132d0c5422d26a_0026.jpg | 自动 | decode=true | wall=68ms | total=66ms | backend=native-cnn | ocr=44ms | structure=13ms | raw=true | repaired=false | struct=true | nat=false | issuer=false | country=false | verdict=PASS | L1=P<NOROESTENBYEN<<AASAMUND<SPECIMEN<<<<<<<<<< | L2=CCC0022514NOR5604230M3004157<<<<<<<<<<<<<<04 | err=
+11-07 08:55:55.138 12171 12191 I MrzOcr  : locator dark path: (183..214, 233..253)
+11-07 08:55:55.139 12171 12191 I MrzOcr  : locator chosen dark(y=183-253) y0=339
+11-07 08:55:55.146 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:55.197 12171 12191 I MrzOcr  : segScore=87 raw2len=44 raw2='E000093499USA6502056M300'
+11-07 08:55:55.207 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=true decode=true conf=95/99 ambiguous=false altMargin=0 structure=13ms normalize=0ms ocr=59ms total=80ms
+11-07 08:55:55.208 12171 12191 I MrzOcr  : RESULT external/pic/f6eeb483a66e8d94_0084.jpg | 自动 | decode=true | wall=82ms | total=80ms | backend=native-cnn | ocr=59ms | structure=13ms | raw=true | repaired=false | struct=true | nat=false | issuer=false | country=true | verdict=PASS | L1=P<UNATRAVELAH<<HAPPY<<<<<<<<<<<<<<<<<<<<<<<< | L2=E000093499USA6502056M3007099340006673<085950 | err=签发国与国籍不一致
+11-07 08:55:55.254 12171 12191 I MrzOcr  : locator dark path: null
+11-07 08:55:55.255 12171 12191 I MrzOcr  : locator var-fallback img-h=1360 rowStd=557 sw=226 thr=40000 peaks=[83,447], [506,527], [550,556] cand=(506..527, 550..556)
+11-07 08:55:55.255 12171 12191 I MrzOcr  : locator chosen dark(y=506-556) y0=748
+11-07 08:55:55.258   389   389 I ccci_mdinit: (1):MD1 set status: mtk.md1.status=exception 
+11-07 08:55:55.261 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:55.262   267   267 I init    : type=1400 audit(0.0:298649): avc: denied { unlink } for name="pttyims" dev="tmpfs" ino=18181968 scontext=u:r:vendor_init:s0 tcontext=u:object_r:device:s0 tclass=lnk_file permissive=1
+11-07 08:55:55.269 12230 12230 I EMDLOGGER1: MAL_ccb_Init: CCB is ready
+11-07 08:55:55.270 12230 12246 I EMDLOGGER1: mdlog_ccb_ctrl_reader_thread started
+11-07 08:55:55.274 12171 12191 I MrzOcr  : segScore=-1 raw2len=0 raw2=''
+11-07 08:55:55.279 12171 12191 I MrzNative: MRZ_OCR_PAR ON (dual-line pthread forward)
+11-07 08:55:55.292 12171 12191 I MrzOcr  : fast chosen=native-cnn rawDecode=false decode=false conf=0/0 ambiguous=false altMargin=0 structure=10ms normalize=0ms ocr=30ms total=46ms
+11-07 08:55:55.293 12171 12191 I MrzOcr  : RESULT external/pic/f91e9a99cca60c68_0099.jpg | 自动 | decode=false | wall=47ms | total=46ms | backend=native-cnn | ocr=30ms | structure=10ms | raw=false | repaired=false | struct=true | nat=false | issuer=false | country=false | verdict=FAIL | L1=P<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< | L2= | err=could not split into two lines
+11-07 08:55:55.293 12171 12191 I MrzOcr  : TEST summary pass=42 fail=23
+11-07 08:55:55.293 12171 12191 I TestRunner: finished: allMethodsOnAllImages(com.nextransit.mrzbench.PhotoMrzDeviceTest)
+11-07 08:55:55.297 12171 12191 I TestRunner: started: probeBandPixels(com.nextransit.mrzbench.PhotoMrzDeviceTest)
+11-07 08:55:55.302 12171 12191 E BitmapFactory: Unable to decode stream: java.io.FileNotFoundException:  (No such file or directory)
+11-07 08:55:55.302 12171 12191 I MrzOcr  : PROBE decode-fail 
+11-07 08:55:55.302 12171 12191 I TestRunner: finished: probeBandPixels(com.nextransit.mrzbench.PhotoMrzDeviceTest)
+11-07 08:55:55.307 12171 12191 I TestRunner: run finished: 3 tests, 0 failed, 0 ignored
+11-07 08:55:55.317   720 11275 I ActivityManager: Force stopping com.nextransit.mrzbench appid=10103 user=0: finished inst
+11-07 08:55:55.317   720 12248 W Binder  : Outgoing transactions from this process must be FLAG_ONEWAY
+11-07 08:55:55.317   720 12248 W Binder  : java.lang.Throwable
+11-07 08:55:55.317   720 12248 W Binder  : 	at android.os.BinderProxy.transact(Binder.java:1124)
+11-07 08:55:55.317   720 12248 W Binder  : 	at android.app.IInstrumentationWatcher$Stub$Proxy.instrumentationFinished(IInstrumentationWatcher.java:164)
+11-07 08:55:55.317   720 12248 W Binder  : 	at com.android.server.am.InstrumentationReporter$MyThread.run(InstrumentationReporter.java:86)
+11-07 08:55:55.318   720 11275 I ActivityManager: Killing 12171:com.nextransit.mrzbench/u0a103 (adj 0): stop com.nextransit.mrzbench
+11-07 08:55:55.319   720   739 W libprocessgroup: kill(-12171, 9) failed: No such process
+11-07 08:55:55.328   374   691 I AudioPolicyService: Uid 10103 is going to be silented!
+11-07 08:55:55.328   374   691 I avRecordWhiteList: [avRecordWhiteList] process name is com.nextransit.mrzbench, ret 0 [1:SystemAPP,0:other]
+11-07 08:55:55.358   420   420 I ADB_SERVICES: for fd 31, revents = 2011
+11-07 08:55:55.358   420   420 I ADB_SERVICES: for fd 31, revents = 2011
+11-07 08:55:55.361   720   739 W libprocessgroup: kill(-12171, 9) failed: No such process
+11-07 08:55:55.361   720   739 I libprocessgroup: Successfully killed process cgroup uid 10103 pid 12171 in 42ms
+11-07 08:55:55.373   420 12162 I ADB_SERVICES: post waitpid (pid=12161) status=0000
+11-07 08:55:55.374   420   420 I ADB_SERVICES: for fd 42, revents = 2010
+11-07 08:55:55.374   420   420 I ADB_SERVICES: for fd 42, revents = 2010
+11-07 08:55:55.375   420   420 I ADB_SERVICES: ref_cnt != 0 ref_cnt=-1, id=3355, peer->id=7178
+11-07 08:55:55.675   720  1058 E WifiVendorHal: getWifiLinkLayerStats(l.937) failed {.code = ERROR_NOT_SUPPORTED, .description = }
+11-07 08:55:56.207   446   446 I thermal_repeater: socket -1
+11-07 08:55:56.819 12230 12246 I EMDLOGGER1: rm_sensitive_data = 0
+11-07 08:55:56.819 12230 12246 I EMDLOGGER1: dump_level = 0
+11-07 08:55:56.819 12230 12246 I EMDLOGGER1: log_src_ratio = 66311
+11-07 08:55:56.819 12230 12246 I EMDLOGGER1: payload length = 12
+11-07 08:55:57.816   318   318 W hwservicemanager: getTransport: Cannot find entry android.hardware.radio.deprecated@1.0::IOemHook/slot1 in either framework or device manifest.
+11-07 08:55:57.821   318   318 W hwservicemanager: getTransport: Cannot find entry android.hardware.radio.deprecated@1.0::IOemHook/slot2 in either framework or device manifest.
+11-07 08:55:57.851 12228 12228 E ccci_fsd(1): Open: [error]fail open Z:/NVRAM/NVD_DATA/EX03_000 /mnt/vendor/nvdata/md/NVRAM/NVD_DATA/EX03_000 :2 (0x0)
+11-07 08:55:58.684   720  1058 E WifiVendorHal: getWifiLinkLayerStats(l.937) failed {.code = ERROR_NOT_SUPPORTED, .description = }
+11-07 08:55:59.272 12230 12230 I EMDLOGGER1: MAL_ccb_Init: failed to set SPLM log level, rslt=200
+11-07 08:56:00.039  1395  1395 W SharedPreferencesImpl: /data/user/0/com.decard.cup.admin/shared_prefs/cache.xml key:KEY_CHECK_TERIMAL_TIME
+11-07 08:56:01.208   446   446 I thermal_repeater: socket -1
+11-07 08:56:01.704   720  1058 E WifiVendorHal: getWifiLinkLayerStats(l.937) failed {.code = ERROR_NOT_SUPPORTED, .description = }
+11-07 08:56:01.821   318   318 W hwservicemanager: getTransport: Cannot find entry android.hardware.radio.deprecated@1.0::IOemHook/slot1 in either framework or device manifest.
+11-07 08:56:01.827   318   318 W hwservicemanager: getTransport: Cannot find entry android.hardware.radio.deprecated@1.0::IOemHook/slot2 in either framework or device manifest.
+11-07 08:56:03.273 12230 12230 I EMDLOGGER1: MAL_ccb_Init: failed to get md version, rslt=200
+11-07 08:56:03.273 12230 12230 I EMDLOGGER1: Main: MAL init complete
+11-07 08:56:04.715   720  1058 E WifiVendorHal: getWifiLinkLayerStats(l.937) failed {.code = ERROR_NOT_SUPPORTED, .description = }
+11-07 08:56:04.790 12260 12260 I sh      : type=1400 audit(0.0:298650): avc: denied { getattr } for path="/odm" dev="mmcblk0p30" ino=2 scontext=u:r:shell:s0 tcontext=u:object_r:unlabeled:s0 tclass=dir permissive=1
+11-07 08:56:04.790   420   420 I ADB_SERVICES: service_to_fd shell,v2,TERM=xterm-256color:export ANDROID_LOG_TAGS=''; exec logcat '-d'
+11-07 08:56:04.838   420   420 I ADB_SERVICES: local_socket_flush_outgoing read_data=255
+11-07 08:56:04.924   440   583 I storaged: getDiskStats failed with result NOT_SUPPORTED and size 0

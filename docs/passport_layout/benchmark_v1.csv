@@ -1,0 +1,253 @@
+fname,region,pred_x,pred_y,pred_w,pred_h,pred_conf,human_missing,human_note,status
+08806d29a6268e1f_0003.jpg,photo,,,,,,1,,agree_missing
+08806d29a6268e1f_0003.jpg,data,34,30,532,284,0.92,0,覆盖了photo区域,wrong_bbox
+08806d29a6268e1f_0003.jpg,mrz,25,342,544,50,0.97,0,ok,agree
+0c7ddb43a8ff36a4_0033.png,photo,,,,,,1,,agree_missing
+0c7ddb43a8ff36a4_0033.png,data,54,34,906,713,0.92,0,,agree
+0c7ddb43a8ff36a4_0033.png,mrz,32,747,927,50,0.97,0,,agree
+0f9780b8e1e3cc21_0008.jpg,photo,292,241,258,352,0.99,0,无效证件,agree
+0f9780b8e1e3cc21_0008.jpg,data,0,241,959,992,0.92,0,,agree
+0f9780b8e1e3cc21_0008.jpg,mrz,0,1260,904,31,0.97,0,,agree
+16c07a99a0fb81e4_0013.jpg,photo,,,,,,1,,agree_missing
+16c07a99a0fb81e4_0013.jpg,data,28,30,547,268,0.92,0,,agree
+16c07a99a0fb81e4_0013.jpg,mrz,29,327,547,50,0.97,0,ok,agree
+16e75f8372cca686_0010.jpg,photo,,,,,,1,,agree_missing
+16e75f8372cca686_0010.jpg,data,4,39,952,1132,0.92,0,,agree
+16e75f8372cca686_0010.jpg,mrz,41,1211,860,27,0.97,0,,agree
+1792f7a2d79c7a8a_0017.jpg,photo,84,209,146,247,0.99,0,,agree
+1792f7a2d79c7a8a_0017.jpg,data,33,209,901,362,0.92,0,,agree
+1792f7a2d79c7a8a_0017.jpg,mrz,30,593,887,32,0.97,0,MRZ 只识别到第2行， 第1行被DATA区包含了,wrong_bbox
+1a62700c228ccff5_0053.jpg,photo,725,296,65,40,0.574,0,待审核,agree
+1a62700c228ccff5_0053.jpg,data,7,296,953,973,0.92,0,,agree
+1a62700c228ccff5_0053.jpg,mrz,131,1269,829,29,0.97,0,,agree
+1c6acd092dee7031_0222.png,photo,76,183,83,97,0.627,0,待审核,agree
+1c6acd092dee7031_0222.png,data,32,183,635,166,0.92,0,,agree
+1c6acd092dee7031_0222.png,mrz,33,378,636,30,0.97,0,,agree
+1cce0f3fc387c893_0001.jpg,photo,,,,,,1,,agree_missing
+1cce0f3fc387c893_0001.jpg,data,12,30,406,129,0.92,0,,agree
+1cce0f3fc387c893_0001.jpg,mrz,10,159,412,51,0.97,0,MRZ在图片底部，没有识别到,agree
+1f2efa72ff601a1c_0112.jpg,photo,867,303,46,47,0.575,0,无效证件,agree
+1f2efa72ff601a1c_0112.jpg,data,,,,,,1,,agree_missing
+1f2efa72ff601a1c_0112.jpg,mrz,0,768,938,76,0.97,0,,agree
+239e042aba0c3ab2_0102.jpg,photo,48,224,152,184,0.837,0,,agree
+239e042aba0c3ab2_0102.jpg,data,35,224,925,351,0.92,0,,agree
+239e042aba0c3ab2_0102.jpg,mrz,40,597,920,30,0.97,0,MRZ 只识别到第2行， 第1行被DATA区包含了,wrong_bbox
+23f16a7d9b6ab9da_0062.jpg,photo,,,,,,1,,agree_missing
+23f16a7d9b6ab9da_0062.jpg,data,15,30,536,264,0.92,0,,agree
+23f16a7d9b6ab9da_0062.jpg,mrz,20,318,520,48,0.97,0,ok,agree
+28a42952ba25584a_0078.png,photo,38,422,79,87,0.666,0,无效证件,agree
+28a42952ba25584a_0078.png,data,30,432,441,76,0.92,0,,agree
+28a42952ba25584a_0078.png,mrz,11,508,460,33,0.97,0,MRZ区域错误，在底部,agree
+28ccd101a752acef_0016.jpg,photo,120,244,71,56,0.581,0,,agree
+28ccd101a752acef_0016.jpg,data,54,244,855,323,0.92,0,,agree
+28ccd101a752acef_0016.jpg,mrz,55,593,861,27,0.97,0,,agree
+2c793efe12276f9b_0258.jpg,photo,742,436,218,51,0.74,0,待审核,agree
+2c793efe12276f9b_0258.jpg,data,,,,,,1,,agree_missing
+2c793efe12276f9b_0258.jpg,mrz,38,565,883,30,0.97,0,MRZ 只识别到第2行， 第1行被DATA区包含了,wrong_bbox
+2d6029eb8d489f68_0004.jpg,photo,239,798,28,49,0.581,0,无效证件,agree
+2d6029eb8d489f68_0004.jpg,data,22,798,896,48,0.92,0,,agree
+2d6029eb8d489f68_0004.jpg,mrz,16,846,935,65,0.97,0,,agree
+31611582cbf14d7f_0018.jpg,photo,537,622,447,157,0.99,0,,agree
+31611582cbf14d7f_0018.jpg,data,3,622,1255,124,0.92,0,,agree
+31611582cbf14d7f_0018.jpg,mrz,57,778,1155,42,0.97,0,MRZ 只识别到第2行， 第1行被DATA区包含了,wrong_bbox
+3f5bb54276c6b754_0110.png,photo,570,175,150,230,0.99,0,,agree
+3f5bb54276c6b754_0110.png,data,0,175,960,1143,0.92,0,,agree
+3f5bb54276c6b754_0110.png,mrz,,,,,,1,,agree_missing
+4023a0d69dbd6cf7_0120.jpg,photo,200,457,111,118,0.651,0,无效证件,agree
+4023a0d69dbd6cf7_0120.jpg,data,0,457,960,796,0.92,0,,agree
+4023a0d69dbd6cf7_0120.jpg,mrz,31,1277,890,30,0.97,0,,agree
+4086f51e94e9c5c7_0007.jpg,photo,,,,,,1,,agree_missing
+4086f51e94e9c5c7_0007.jpg,data,0,46,960,533,0.92,0,,agree
+4086f51e94e9c5c7_0007.jpg,mrz,0,602,914,29,0.97,0,MRZ 只识别到第2行， 第1行被DATA区包含了,wrong_bbox
+41ab45d4bde758dc_0306.jpg,photo,858,281,65,94,0.61,0,,agree
+41ab45d4bde758dc_0306.jpg,data,,,,,,1,,agree_missing
+41ab45d4bde758dc_0306.jpg,mrz,41,593,869,29,0.97,0,MRZ 只识别到第2行， 第1行被DATA区包含了,wrong_bbox
+43ecb49033fb30c1_0073.jpg,photo,49,836,260,330,0.99,0,,agree
+43ecb49033fb30c1_0073.jpg,data,11,836,867,340,0.92,0,,agree
+43ecb49033fb30c1_0073.jpg,mrz,49,1214,845,75,0.97,0,,agree
+4c5f5e1654002cd0_0050.png,photo,164,149,142,225,0.908,0,位置错误,wrong_bbox
+4c5f5e1654002cd0_0050.png,data,2,305,535,363,0.92,0,,agree
+4c5f5e1654002cd0_0050.png,mrz,0,687,510,48,0.97,0,ok,agree
+4dbd1b9e24b069f4_0023.png,photo,143,233,150,239,0.99,0,,agree
+4dbd1b9e24b069f4_0023.png,data,84,239,803,406,0.92,0,,agree
+4dbd1b9e24b069f4_0023.png,mrz,77,677,780,20,0.97,0,MRZ没有识别到,agree
+526d2e38b6b977bc_0014.jpg,photo,,,,,,1,,agree_missing
+526d2e38b6b977bc_0014.jpg,data,5,30,954,50,0.92,0,,agree
+526d2e38b6b977bc_0014.jpg,mrz,0,80,960,45,0.97,0,MRZ没有识别到,agree
+52f421c92ccf6ba4_0136.jpg,photo,328,10,632,552,0.99,0,待审核,agree
+52f421c92ccf6ba4_0136.jpg,data,,,,,,1,,agree_missing
+52f421c92ccf6ba4_0136.jpg,mrz,0,561,897,29,0.97,0,MRZ 只识别到第2行， 第1行被DATA区包含了,wrong_bbox
+556644d1d8bf4672_0215.jpg,photo,45,432,60,78,0.606,0,无效证件,agree
+556644d1d8bf4672_0215.jpg,data,9,432,448,169,0.92,0,,agree
+556644d1d8bf4672_0215.jpg,mrz,13,610,427,19,0.97,0,,agree
+58b7776585fe04f3_0024.jpg,photo,145,1121,150,28,0.58,0,无效证件,agree
+58b7776585fe04f3_0024.jpg,data,0,1121,956,103,0.92,0,,agree
+58b7776585fe04f3_0024.jpg,mrz,0,1224,899,28,0.97,0,,agree
+5910a51436407dde_0086.jpg,photo,79,915,184,282,0.99,0,无效证件,agree
+5910a51436407dde_0086.jpg,data,39,915,901,362,0.92,0,,agree
+5910a51436407dde_0086.jpg,mrz,30,1303,887,26,0.97,0,,agree
+61d671ec161f22e3_0042.png,photo,281,749,187,37,0.67,0,无效证件,agree
+61d671ec161f22e3_0042.png,data,,,,,,1,,agree_missing
+61d671ec161f22e3_0042.png,mrz,66,785,507,50,0.97,0,,agree
+63af2253ed025b0f_0012.png,photo,90,889,122,217,0.933,0,无效证件,agree
+63af2253ed025b0f_0012.png,data,29,891,898,324,0.92,0,,agree
+63af2253ed025b0f_0012.png,mrz,20,1242,913,27,0.97,0,,agree
+64cf2acb2e4f1593_0104.jpg,photo,,,,,,1,,agree_missing
+64cf2acb2e4f1593_0104.jpg,data,,,,,,1,,agree_missing
+64cf2acb2e4f1593_0104.jpg,mrz,0,0,960,34,0.97,0,,agree
+698bfa379b5859ab_0088.jpg,photo,79,915,184,282,0.99,0,无效证件,agree
+698bfa379b5859ab_0088.jpg,data,39,915,901,362,0.92,0,,agree
+698bfa379b5859ab_0088.jpg,mrz,30,1303,887,26,0.97,0,,agree
+6b0e5919dd6f3ac8_0006.jpg,photo,0,115,180,219,0.99,0,待审核,agree
+6b0e5919dd6f3ac8_0006.jpg,data,13,115,577,175,0.92,0,,agree
+6b0e5919dd6f3ac8_0006.jpg,mrz,26,333,552,52,0.97,0,,agree
+6b91117492dc24f3_0022.jpg,photo,4,495,956,49,0.99,0,,agree
+6b91117492dc24f3_0022.jpg,data,,,,,,1,,agree_missing
+6b91117492dc24f3_0022.jpg,mrz,36,543,868,75,0.97,0,MRZ 只识别到第2行， 第1行被DATA区包含了,wrong_bbox
+6dafa3b35c792d06_0039.png,photo,493,218,342,121,0.815,0,,agree
+6dafa3b35c792d06_0039.png,data,12,218,948,291,0.92,0,,agree
+6dafa3b35c792d06_0039.png,mrz,28,532,932,27,0.97,0,MRZ 只识别到第2行， 第1行被DATA区包含了,wrong_bbox
+7294ad26ea8d95e0_0010.jpg,photo,88,256,82,67,0.597,0,,agree
+7294ad26ea8d95e0_0010.jpg,data,38,256,922,238,0.92,0,,agree
+7294ad26ea8d95e0_0010.jpg,mrz,41,552,919,60,0.97,0,,agree
+72ef4ce48bf27731_0002.jpg,photo,47,468,69,67,0.606,0,,agree
+72ef4ce48bf27731_0002.jpg,data,15,468,485,147,0.92,0,,agree
+72ef4ce48bf27731_0002.jpg,mrz,12,618,482,50,0.97,0,,agree
+7626df394c39f314_0020.png,photo,117,240,117,121,0.692,0,,agree
+7626df394c39f314_0020.png,data,68,240,833,296,0.92,0,,agree
+7626df394c39f314_0020.png,mrz,59,559,836,28,0.97,0,,agree
+78f45152a658f728_0012.jpg,photo,,,,,,1,,agree_missing
+78f45152a658f728_0012.jpg,data,1,30,924,71,0.92,0,,agree
+78f45152a658f728_0012.jpg,mrz,0,101,954,45,0.97,0,MRZ在图片底部，没有识别到,agree
+7c5899e1f86a07a0_0008.jpg,photo,1,488,959,85,0.99,0,,agree
+7c5899e1f86a07a0_0008.jpg,data,,,,,,1,,agree_missing
+7c5899e1f86a07a0_0008.jpg,mrz,47,572,861,29,0.97,0,MRZ 只识别到第2行， 第1行被DATA区包含了,wrong_bbox
+7c6f47bad47d70e9_0230.jpg,photo,284,38,240,198,0.99,0,,agree
+7c6f47bad47d70e9_0230.jpg,data,19,64,629,247,0.92,0,,agree
+7c6f47bad47d70e9_0230.jpg,mrz,19,342,596,54,0.97,0,okay,agree
+8627765d2a1a0bf9_0049.jpg,photo,0,669,958,590,0.99,0,无效证件,agree
+8627765d2a1a0bf9_0049.jpg,data,,,,,,1,,agree_missing
+8627765d2a1a0bf9_0049.jpg,mrz,39,1258,878,29,0.97,0,,agree
+86c6d990773daff2_0002.jpg,photo,52,93,452,231,0.99,0,,agree
+86c6d990773daff2_0002.jpg,data,37,167,563,99,0.92,0,,agree
+86c6d990773daff2_0002.jpg,mrz,21,323,571,51,0.97,0,okay,agree
+8a5e3bc18a6ff7d2_0043.jpg,photo,,,,,,1,,agree_missing
+8a5e3bc18a6ff7d2_0043.jpg,data,52,35,887,1127,0.92,0,,agree
+8a5e3bc18a6ff7d2_0043.jpg,mrz,58,1222,840,75,0.97,0,,agree
+8de1f04907363a2d_0000.jpg,photo,0,74,199,272,0.99,0,,agree
+8de1f04907363a2d_0000.jpg,data,34,91,502,202,0.92,0,,agree
+8de1f04907363a2d_0000.jpg,mrz,20,345,554,53,0.97,0,okay,agree
+90b464ea218a9909_0001.jpg,photo,794,13,75,150,0.591,0,,agree
+90b464ea218a9909_0001.jpg,data,34,220,881,343,0.92,0,,agree
+90b464ea218a9909_0001.jpg,mrz,43,590,881,31,0.97,0,MRZ 只识别到第2行， 第1行被DATA区包含了,wrong_bbox
+927cd546b5a8111d_0108.jpg,photo,,,,,,1,,agree_missing
+927cd546b5a8111d_0108.jpg,data,149,52,690,63,0.92,0,,agree
+927cd546b5a8111d_0108.jpg,mrz,36,115,897,50,0.97,0,MRZ在图片底部，没有识别到,agree
+95f9bd53a7df7606_0079.png,photo,97,248,166,89,0.68,0,无效证件,agree
+95f9bd53a7df7606_0079.png,data,38,248,885,326,0.92,0,,agree
+95f9bd53a7df7606_0079.png,mrz,285,574,598,25,0.97,0,,agree
+a495fb368b46ab35_0280.png,photo,0,0,461,559,0.99,0,待审核,agree
+a495fb368b46ab35_0280.png,data,,,,,,1,,agree_missing
+a495fb368b46ab35_0280.png,mrz,4,605,458,19,0.97,0,,agree
+a5964dd742a6c084_0053.jpg,photo,204,470,78,53,0.584,0,,agree
+a5964dd742a6c084_0053.jpg,data,17,470,934,864,0.92,0,,agree
+a5964dd742a6c084_0053.jpg,mrz,17,1334,941,35,0.97,0,,agree
+a60aae34a06f1867_0016.jpg,photo,,,,,,1,,agree_missing
+a60aae34a06f1867_0016.jpg,data,0,41,960,535,0.92,0,,agree
+a60aae34a06f1867_0016.jpg,mrz,44,603,880,29,0.97,0,MRZ 只识别到第2行， 第1行被DATA区包含了,wrong_bbox
+a955e21ae58d8c1d_0013.jpg,photo,63,196,160,223,0.99,0,,agree
+a955e21ae58d8c1d_0013.jpg,data,7,197,943,361,0.92,0,,agree
+a955e21ae58d8c1d_0013.jpg,mrz,1,580,883,29,0.97,0,MRZ 只识别到第2行， 第1行被DATA区包含了,wrong_bbox
+ab01dc87d9ed045a_0068.jpg,photo,0,2,959,691,0.99,0,照片不清晰，无效证件,agree
+ab01dc87d9ed045a_0068.jpg,data,,,,,,1,,agree_missing
+ab01dc87d9ed045a_0068.jpg,mrz,38,1246,869,29,0.97,0,,agree
+acd3e9fd1ce9bd0a_0016.jpg,photo,74,123,91,161,0.762,0,,agree
+acd3e9fd1ce9bd0a_0016.jpg,data,10,124,565,190,0.92,0,,agree
+acd3e9fd1ce9bd0a_0016.jpg,mrz,24,339,548,50,0.97,0,okay,agree
+acf14e0c631ec935_0030.png,photo,781,271,145,139,0.63,0,,agree
+acf14e0c631ec935_0030.png,data,,,,,,1,,agree_missing
+acf14e0c631ec935_0030.png,mrz,22,596,903,31,0.97,0,MRZ 只识别到第2行， 第1行被DATA区包含了,wrong_bbox
+ae5fdb36f7498291_0019.png,photo,,,,,,1,,agree_missing
+ae5fdb36f7498291_0019.png,data,29,30,652,316,0.92,0,,agree
+ae5fdb36f7498291_0019.png,mrz,15,377,660,59,0.97,0,okay,agree
+b1442018a8167bf5_0046.jpg,photo,93,247,103,159,0.714,0,照片不清晰，无效证件,agree
+b1442018a8167bf5_0046.jpg,data,0,247,800,681,0.92,0,,agree
+b1442018a8167bf5_0046.jpg,mrz,0,928,800,47,0.97,0,,agree
+b284565582147454_0098.jpg,photo,,,,,,1,,agree_missing
+b284565582147454_0098.jpg,data,34,41,501,311,0.92,0,,agree
+b284565582147454_0098.jpg,mrz,30,363,513,20,0.97,0,MRZ 只识别到第2行， 第1行被DATA区包含了,wrong_bbox
+b284565582147454_0115.jpg,photo,,,,,,1,,agree_missing
+b284565582147454_0115.jpg,data,34,41,501,311,0.92,0,,agree
+b284565582147454_0115.jpg,mrz,30,363,513,20,0.97,0,MRZ 只识别到第2行， 第1行被DATA区包含了,wrong_bbox
+b2b5008f3839530d_0001.jpg,photo,,,,,,1,,agree_missing
+b2b5008f3839530d_0001.jpg,data,33,38,541,277,0.92,0,,agree
+b2b5008f3839530d_0001.jpg,mrz,29,345,533,49,0.97,0,okay,agree
+b30dc79ee9550e9e_0024.jpg,photo,55,137,86,149,0.787,0,,agree
+b30dc79ee9550e9e_0024.jpg,data,0,141,572,157,0.92,0,,agree
+b30dc79ee9550e9e_0024.jpg,mrz,0,333,575,51,0.97,0,okay,agree
+b43dea2a9c578cd0_0092.jpg,photo,,,,,,1,,agree_missing
+b43dea2a9c578cd0_0092.jpg,data,0,30,960,838,0.92,0,,agree
+b43dea2a9c578cd0_0092.jpg,mrz,0,868,960,31,0.97,0,,agree
+b7a97ca0edede07b_0164.jpg,photo,173,116,100,113,0.721,0,无效证件,agree
+b7a97ca0edede07b_0164.jpg,data,1,116,344,589,0.92,0,,agree
+b7a97ca0edede07b_0164.jpg,mrz,31,707,299,55,0.97,0,,agree
+bc1ddfd8c13b5ca9_0007.jpg,photo,192,103,240,231,0.99,0,,agree
+bc1ddfd8c13b5ca9_0007.jpg,data,10,111,574,174,0.92,0,,agree
+bc1ddfd8c13b5ca9_0007.jpg,mrz,23,333,543,51,0.97,0,okay,agree
+c0cbf7c176328f3d_0006.jpg,photo,45,139,81,38,0.608,0,,agree
+c0cbf7c176328f3d_0006.jpg,data,23,139,547,158,0.92,0,,agree
+c0cbf7c176328f3d_0006.jpg,mrz,20,332,580,52,0.97,0,okay,agree
+c1a15c65d128223e_0067.jpeg,photo,404,832,353,216,0.99,0,无效证件,agree
+c1a15c65d128223e_0067.jpeg,data,36,964,920,274,0.92,0,,agree
+c1a15c65d128223e_0067.jpeg,mrz,32,1261,927,22,0.97,0,,agree
+c1dc9ecd737e1e4c_0085.jpg,photo,32,256,917,345,0.99,0,无效证件,agree
+c1dc9ecd737e1e4c_0085.jpg,data,,,,,,1,,agree_missing
+c1dc9ecd737e1e4c_0085.jpg,mrz,0,600,916,29,0.97,0,,agree
+c2aee55b9017575f_0028.jpg,photo,,,,,,1,,agree_missing
+c2aee55b9017575f_0028.jpg,data,0,37,926,515,0.92,0,,agree
+c2aee55b9017575f_0028.jpg,mrz,0,576,906,28,0.97,0,MRZ 只识别到第2行， 第1行被DATA区包含了,wrong_bbox
+cb64e780ab32f735_0004.jpg,photo,,,,,,1,,agree_missing
+cb64e780ab32f735_0004.jpg,data,8,45,951,1203,0.92,0,,agree
+cb64e780ab32f735_0004.jpg,mrz,28,1272,881,30,0.97,0,,agree
+cd83b43756aff32d_0013.jpg,photo,543,164,57,140,0.615,0,,agree
+cd83b43756aff32d_0013.jpg,data,,,,,,1,,agree_missing
+cd83b43756aff32d_0013.jpg,mrz,0,330,600,51,0.97,0,okay,agree
+cdcc06ad360b7849_0019.png,photo,375,998,250,50,0.744,0,无效证件,agree
+cdcc06ad360b7849_0019.png,data,,,,,,1,,agree_missing
+cdcc06ad360b7849_0019.png,mrz,90,1047,672,65,0.97,0,,agree
+dd6a2ea3ce305a5d_0192.jpg,photo,53,496,88,159,0.719,0,无效证件,agree
+dd6a2ea3ce305a5d_0192.jpg,data,25,508,543,221,0.92,0,,agree
+dd6a2ea3ce305a5d_0192.jpg,mrz,13,748,551,50,0.97,0,,agree
+e350cea71e824345_0007.jpg,photo,4,3,956,157,0.99,0,,agree
+e350cea71e824345_0007.jpg,data,,,,,,1,,agree_missing
+e350cea71e824345_0007.jpg,mrz,0,574,960,29,0.97,0,MRZ 只识别到第2行， 第1行被DATA区包含了,wrong_bbox
+e564d4372e28b9ed_0018.jpg,photo,516,421,77,49,0.617,0,,agree
+e564d4372e28b9ed_0018.jpg,data,0,421,960,128,0.92,0,,agree
+e564d4372e28b9ed_0018.jpg,mrz,0,574,960,29,0.97,0,MRZ 只识别到第2行， 第1行被DATA区包含了,wrong_bbox
+e726442c11085334_0090.png,photo,,,,,,1,,agree_missing
+e726442c11085334_0090.png,data,11,30,948,545,0.92,0,,agree
+e726442c11085334_0090.png,mrz,34,596,883,30,0.97,0,MRZ 只识别到第2行， 第1行被DATA区包含了,wrong_bbox
+f22471c46575ec04_0008.jpg,photo,45,16,169,96,0.694,0,,agree
+f22471c46575ec04_0008.jpg,data,0,39,960,523,0.92,0,,agree
+f22471c46575ec04_0008.jpg,mrz,0,587,915,28,0.97,0,MRZ 只识别到第2行， 第1行被DATA区包含了,wrong_bbox
+f385b0113d785dfd_0040.jpg,photo,404,463,331,121,0.99,0,,agree
+f385b0113d785dfd_0040.jpg,data,2,463,946,97,0.92,0,,agree
+f385b0113d785dfd_0040.jpg,mrz,40,583,870,33,0.97,0,MRZ 只识别到第2行， 第1行被DATA区包含了,wrong_bbox
+f46cf4a378fcd626_0015.jpg,photo,84,197,167,214,0.99,0,,agree
+f46cf4a378fcd626_0015.jpg,data,0,197,960,428,0.92,0,,agree
+f46cf4a378fcd626_0015.jpg,mrz,0,625,960,37,0.97,0,MRZ在图片底部，没有识别到 MRZ 只有第1行有效,agree
+f6132d0c5422d26a_0026.jpg,photo,798,220,63,66,0.596,0,,agree
+f6132d0c5422d26a_0026.jpg,data,6,228,912,306,0.92,0,,agree
+f6132d0c5422d26a_0026.jpg,mrz,41,560,864,29,0.97,0,MRZ 只识别到第2行， 第1行被DATA区包含了,wrong_bbox
+f6eeb483a66e8d94_0084.jpg,photo,,,,,,1,,agree_missing
+f6eeb483a66e8d94_0084.jpg,data,26,30,934,528,0.92,0,,agree
+f6eeb483a66e8d94_0084.jpg,mrz,35,575,925,32,0.97,0,MRZ 只识别到第2行， 第1行被DATA区包含了,wrong_bbox
+f80334b200240666_0034.png,photo,27,103,158,185,0.936,0,,agree
+f80334b200240666_0034.png,data,32,103,505,195,0.92,0,,agree
+f80334b200240666_0034.png,mrz,23,314,527,48,0.97,0,okay,agree
+f91e9a99cca60c68_0099.jpg,photo,111,892,134,185,0.847,0,无效证件,agree
+f91e9a99cca60c68_0099.jpg,data,29,892,909,299,0.92,0,,agree
+f91e9a99cca60c68_0099.jpg,mrz,6,1251,924,95,0.97,0,,agree
+ffa1dc640314fa58_0089.png,photo,,,,,,1,,agree_missing
+ffa1dc640314fa58_0089.png,data,31,30,874,523,0.92,0,,agree
+ffa1dc640314fa58_0089.png,mrz,48,573,860,31,0.97,0,MRZ 只识别到第2行， 第1行被DATA区包含了,wrong_bbox
